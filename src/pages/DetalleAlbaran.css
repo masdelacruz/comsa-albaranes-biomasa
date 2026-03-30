@@ -1,0 +1,27 @@
+.detalle-page { min-height:100vh; }
+.detalle-content { padding:0 28px 40px; }
+.detalle-cols { display:grid; grid-template-columns:1fr 1fr; gap:16px; align-items:start; }
+.detalle-left, .detalle-right { display:flex; flex-direction:column; }
+.detalle-row { display:flex; justify-content:space-between; align-items:flex-start; gap:12px; padding:7px 0; border-bottom:var(--border-light); font-size:13px; }
+.detalle-row:last-child { border-bottom:none; }
+.detalle-key { color:var(--gray-400); flex-shrink:0; }
+.detalle-val { color:var(--gray-800); text-align:right; font-weight:500; }
+.detalle-val.warn { color:var(--amber-700); }
+.firma-block { border:var(--border); border-radius:var(--radius-md); padding:12px 14px; margin-bottom:8px; transition:border-color 0.15s; }
+.firma-block:last-child { margin-bottom:0; }
+.firma-block.done { border-color:var(--green-100); background:var(--green-50); }
+.firma-block-header { display:flex; justify-content:space-between; align-items:center; gap:8px; }
+.firma-actor { font-size:13px; font-weight:500; color:var(--gray-800); }
+.firma-sub   { font-size:11px; color:var(--gray-400); margin-top:2px; }
+.firma-fecha { font-size:11px; color:var(--green-600); margin-top:6px; }
+.campo-link-box { background:var(--gray-50); border:var(--border); border-radius:var(--radius-md); padding:12px 14px; }
+.campo-url { font-family:var(--font-mono); font-size:11px; color:var(--blue-700); word-break:break-all; display:block; }
+.timeline { display:flex; flex-direction:column; }
+.tl-item { display:flex; gap:10px; padding:6px 0; position:relative; }
+.tl-item:not(:last-child)::after { content:''; position:absolute; left:5px; top:20px; bottom:-6px; width:1px; background:var(--gray-200); }
+.tl-dot { width:11px; height:11px; border-radius:50%; background:var(--green-400); flex-shrink:0; margin-top:4px; }
+.tl-texto { font-size:13px; color:var(--gray-800); font-weight:500; }
+.tl-meta  { font-size:11px; color:var(--gray-400); margin-top:2px; }
+.doc-row { display:flex; align-items:center; justify-content:space-between; gap:12px; padding:10px 0; border-bottom:var(--border-light); }
+.doc-row:last-child { border-bottom:none; }
+@keyframes spin { to { transform:rotate(360deg); } }

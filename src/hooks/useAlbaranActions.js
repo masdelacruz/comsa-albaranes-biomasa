@@ -1,0 +1,163 @@
+import { supabase } from '../supabase'
+import { notificarNuevoAlbaran, notificarFirmaCompletada, notificarAlbaranCerrado } from '../utils/notificaciones'
+
+function generarId() {
+  const num = Math.floor(Math.random() * 900) + 100
+  return `ALB-2025-${num}`
+}
+
+function limpiarNombre(str) {
+  return str
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/[^a-zA-Z0-9._-]/g, '_')
+}
+
+export function useAlbaranActions(refetch) {
+
+  const addAlbaran = async (form) => {
+    const id = generarId()
+    const fecha = new Date().toLocaleString('es-ES')
+    const esOp1 = form.tipo.includes('1')
+    const docs = esOp1
+      ? ['Autodeclaración', 'Acuerdo de cesión', 'Contrato prestación servicios', 'Permiso de corta']
+      : ['Certificado SURE', 'Permiso de obra', 'Contrato prestación servicios']
+
+    await supabase.from('albaranes').insert({
+      id, fecha: form.fecha, hora: form.hora, num_camiones: form.numCamiones,
+      tipo: form.tipo, astilladora: form.astilladora, transportista: form.transportista,
+      instalacion: form.instalacion, especie: form.especie, tipo_biomasa: form.tipoBiomasa,
+      origen: form.origen, permiso: form.permiso, observaciones: form.observaciones,
+      estado: 'pendiente_campo', maps_origen: form.mapsOrigen, maps_destino: form.mapsDestino,
+    })
+
+    await supabase.from('firmas').insert([
+      { albaran_id: id, rol: 'oficina',     actor: 'Marc Marin',      firmado: true,  fecha },
+      { albaran_id: id, rol: 'astilladora', actor: form.astilladora,  firmado: false, fecha: null },
+      { albaran_id: id, rol: 'camionero',   actor: form.transportista,firmado: false, fecha: null },
+      { albaran_id: id, rol: 'instalacion', actor: form.instalacion,  firmado: false, fecha: null },
+    ])
+
+    await supabase.from('pesada').insert({ albaran_id: id })
+    await supabase.from('docs').insert(docs.map(d => ({ albaran_id: id, nombre: d, adjunto: false })))
+    await supabase.from('actividad').insert([
+      { albaran_id: id, ts: fecha, texto: 'Albarán creado', actor: 'Marc Marin' },
+      { albaran_id: id, ts: fecha, texto: 'Enlace generado para campo', actor: 'Sistema' },
+    ])
+
+    const albaranData = {
+      id, fecha: form.fecha, astilladora: form.astilladora,
+      instalacion: form.instalacion, especie: form.especie, origen: form.origen,
+      observaciones: form.observaciones,
+    }
+    await notificarNuevoAlbaran(albaranData, 'marc.serrano@comsa.com', 'Marc Serrano')
+
+    await refetch()
+    return id
+  }
+
+  const updateFirma = async (albaranId, rol, actor, pesadaData = null, firmaImagen = null) => {
+    const fecha = new Date().toLocaleString('es-ES')
+
+    await supabase.from('firmas')
+      .update({ firmado: true, fecha, actor, firma_imagen: firmaImagen })
+      .eq('albaran_id', albaranId).eq('rol', rol)
+
+    await supabase.from('actividad').insert({
+      albaran_id: albaranId, ts: fecha,
+      texto: `${rol.charAt(0).toUpperCase() + rol.slice(1)} confirmó y firmó`, actor,
+    })
+
+    if (pesadaData) {
+      await supabase.from('pesada')
+        .update({
+          entrada: pesadaData.entrada || null,
+          salida:  pesadaData.salida  || null,
+          humedad: pesadaData.humedad || null,
+        })
+        .eq('albaran_id', albaranId)
+    }
+
+    const { data: firmas } = await supabase.from('firmas').select('*').eq('albaran_id', albaranId)
+    const todasFirmadas = firmas?.every(f => f.firmado)
+
+    const { data: albaranData } = await supabase.from('albaranes').select('*').eq('id', albaranId).single()
+
+    await notificarFirmaCompletada({ ...albaranData, id: albaranId }, actor)
+
+    if (todasFirmadas) {
+      await supabase.from('albaranes').update({ estado: 'cerrado' }).eq('id', albaranId)
+      await supabase.from('actividad').insert({
+        albaran_id: albaranId, ts: fecha,
+        texto: 'Albarán cerrado automáticamente', actor: 'Sistema',
+      })
+
+      const { data: pesadaFinal } = await supabase.from('pesada').select('*').eq('albaran_id', albaranId).single()
+      await notificarAlbaranCerrado({ ...albaranData, id: albaranId, pesada: pesadaFinal })
+    }
+
+    await refetch()
+  }
+
+  const simularFirmaOficina = async (albaranId, rol) => {
+    await updateFirma(albaranId, rol, 'Marc Marin')
+  }
+
+  const subirDocumento = async (albaranId, docNombre, fichero) => {
+    const ext          = fichero.name.split('.').pop()
+    const nombreLimpio = limpiarNombre(docNombre)
+    const path         = `${albaranId}/${nombreLimpio}_${Date.now()}.${ext}`
+
+    const { error } = await supabase.storage.from('documentos').upload(path, fichero, {
+      cacheControl: '3600', upsert: true,
+    })
+    if (error) throw error
+
+    const { data: { publicUrl } } = supabase.storage.from('documentos').getPublicUrl(path)
+
+    await supabase.from('docs')
+      .update({
+        adjunto:        true,
+        url:            publicUrl,
+        nombre_fichero: fichero.name,
+        tipo_fichero:   fichero.type,
+        tamanyo:        fichero.size,
+      })
+      .eq('albaran_id', albaranId)
+      .eq('nombre', docNombre)
+
+    const fecha = new Date().toLocaleString('es-ES')
+    await supabase.from('actividad').insert({
+      albaran_id: albaranId, ts: fecha,
+      texto: `Documento adjuntado: ${docNombre}`, actor: 'Marc Marin',
+    })
+
+    await refetch()
+  }
+
+  const subirTicketPesada = async (albaranId, fichero) => {
+    const ext  = fichero.name.split('.').pop()
+    const path = `${albaranId}/ticket_pesada_${Date.now()}.${ext}`
+
+    const { error } = await supabase.storage.from('documentos').upload(path, fichero, {
+      cacheControl: '3600', upsert: true,
+    })
+    if (error) throw error
+
+    const { data: { publicUrl } } = supabase.storage.from('documentos').getPublicUrl(path)
+
+    await supabase.from('pesada')
+      .update({ ticket_adjunto: true, ticket_url: publicUrl })
+      .eq('albaran_id', albaranId)
+
+    const fecha = new Date().toLocaleString('es-ES')
+    await supabase.from('actividad').insert({
+      albaran_id: albaranId, ts: fecha,
+      texto: 'Ticket de pesada adjuntado', actor: 'Sistema',
+    })
+
+    await refetch()
+  }
+
+  return { addAlbaran, updateFirma, simularFirmaOficina, subirDocumento, subirTicketPesada }
+}

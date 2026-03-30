@@ -1,0 +1,28 @@
+.badge { display:inline-block; padding:3px 9px; border-radius:20px; font-size:11px; font-weight:500; white-space:nowrap; }
+.badge-green  { background:var(--green-100); color:var(--green-600); }
+.badge-amber  { background:var(--amber-100); color:var(--amber-700); }
+.badge-red    { background:var(--red-100);   color:var(--red-700);   }
+.badge-blue   { background:var(--blue-100);  color:var(--blue-700);  }
+.badge-gray   { background:var(--gray-100);  color:var(--gray-600);  }
+.firma-steps  { display:flex; align-items:center; }
+.firma-step-wrap { display:flex; align-items:center; }
+.firma-dot { width:20px; height:20px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:10px; font-weight:600; flex-shrink:0; }
+.firma-dot.done    { background:var(--green-100); color:var(--green-600); }
+.firma-dot.active  { background:var(--blue-100);  color:var(--blue-700); border:2px solid var(--blue-400); }
+.firma-dot.pending { background:var(--gray-100);  color:var(--gray-400); }
+.firma-line { width:16px; height:1px; background:var(--gray-200); }
+.card { background:#fff; border:var(--border); border-radius:var(--radius-lg); padding:18px 20px; }
+.page-header { padding:24px 28px 0; margin-bottom:24px; }
+.page-title { font-size:20px; font-weight:600; letter-spacing:-0.3px; }
+.page-sub { font-size:13px; color:var(--gray-400); margin-top:3px; }
+.btn { display:inline-flex; align-items:center; gap:6px; padding:7px 14px; border-radius:var(--radius-sm); font-size:13px; font-weight:500; border:var(--border); background:#fff; color:var(--gray-800); transition:all 0.15s; cursor:pointer; }
+.btn:hover { background:var(--gray-50); }
+.btn:active { transform:scale(0.98); }
+.btn-primary { background:var(--green-400); color:#fff; border-color:var(--green-400); }
+.btn-primary:hover { background:var(--green-600); border-color:var(--green-600); }
+.btn-ghost { border-color:transparent; background:transparent; }
+.btn-ghost:hover { background:var(--gray-100); }
+.section-label { font-size:11px; font-weight:600; text-transform:uppercase; letter-spacing:0.6px; color:var(--gray-400); margin-bottom:10px; }
+.doc-chip { display:inline-flex; align-items:center; gap:5px; padding:4px 10px; border-radius:var(--radius-sm); font-size:11px; font-weight:500; border:var(--border); background:var(--gray-50); color:var(--gray-600); }
+.doc-chip.ok      { background:var(--green-50); border-color:var(--green-100); color:var(--green-600); }
+.doc-chip.missing { background:var(--red-50);   border-color:var(--red-100);   color:var(--red-700);  }

@@ -1,0 +1,30 @@
+.admin-page { min-height:100vh; }
+.admin-content { padding:0 28px 40px; }
+.admin-tabs { display:flex; gap:4px; margin-bottom:20px; background:var(--gray-100); padding:4px; border-radius:var(--radius-md); width:fit-content; }
+.admin-tab { padding:7px 16px; border-radius:var(--radius-sm); font-size:13px; font-weight:500; border:none; background:none; cursor:pointer; color:var(--gray-600); transition:all 0.15s; }
+.admin-tab.active { background:#fff; color:var(--gray-900); box-shadow:0 1px 3px rgba(0,0,0,0.08); }
+.admin-toolbar { display:flex; align-items:center; justify-content:space-between; margin-bottom:14px; }
+.admin-search { position:relative; display:flex; align-items:center; }
+.admin-search input { padding-left:30px; width:260px; }
+.admin-search-icon { position:absolute; left:9px; color:var(--gray-400); pointer-events:none; }
+.proveedor-table { width:100%; border-collapse:collapse; font-size:13px; }
+.proveedor-table th { text-align:left; padding:10px 14px; font-size:11px; font-weight:600; text-transform:uppercase; letter-spacing:0.5px; color:var(--gray-400); border-bottom:var(--border); background:var(--gray-50); }
+.proveedor-table td { padding:11px 14px; border-bottom:var(--border-light); color:var(--gray-800); vertical-align:middle; }
+.proveedor-table tr:last-child td { border-bottom:none; }
+.proveedor-table tbody tr:hover td { background:var(--gray-50); }
+.activo-dot { width:8px; height:8px; border-radius:50%; display:inline-block; margin-right:6px; }
+.activo-dot.si { background:var(--green-400); }
+.activo-dot.no { background:var(--gray-300); }
+.modal-overlay { position:fixed; inset:0; background:rgba(0,0,0,0.4); display:flex; align-items:center; justify-content:center; z-index:100; padding:20px; }
+.modal { background:#fff; border-radius:var(--radius-xl); padding:24px; width:100%; max-width:480px; box-shadow:0 20px 60px rgba(0,0,0,0.15); }
+.modal-title { font-size:16px; font-weight:600; margin-bottom:18px; }
+.modal-grid { display:grid; grid-template-columns:1fr 1fr; gap:12px; }
+.modal-field { display:flex; flex-direction:column; gap:5px; }
+.modal-field label { font-size:12px; font-weight:500; color:var(--gray-600); }
+.modal-field.full { grid-column:1/-1; }
+.modal-actions { display:flex; justify-content:flex-end; gap:8px; margin-top:18px; padding-top:16px; border-top:var(--border); }
+.tipo-badge { display:inline-block; padding:2px 8px; border-radius:20px; font-size:11px; font-weight:500; }
+.tipo-badge.astilladora  { background:#E1F5EE; color:#085041; }
+.tipo-badge.transportista { background:#E6F1FB; color:#0C447C; }
+.tipo-badge.instalacion  { background:#FAEEDA; color:#633806; }
+.empty-row { text-align:center; padding:32px; color:var(--gray-400); font-size:13px; }
