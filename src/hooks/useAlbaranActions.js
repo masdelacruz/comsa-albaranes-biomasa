@@ -13,7 +13,7 @@ function limpiarNombre(str) {
 export function useAlbaranActions(refetch) {
 
   const addAlbaran = async (form) => {
-    const id = generarId()
+    const id = await generarId()
     const fecha = new Date().toLocaleString('es-ES')
     const esOp1 = form.tipo.includes('1')
     const docs = esOp1
@@ -34,13 +34,15 @@ export function useAlbaranActions(refetch) {
     const firmasBase = [
       { albaran_id: id, rol: 'oficina', actor: 'Marc Marin', firmado: true, fecha },
     ]
-    if (esOp1 && form.proveedor) {
+    if (form.proveedor) {
       firmasBase.push({ albaran_id: id, rol: 'proveedor', actor: form.proveedor, firmado: false, fecha: null })
     }
     if (esOp1 && form.astilladora) {
       firmasBase.push({ albaran_id: id, rol: 'astilladora', actor: form.astilladora, firmado: false, fecha: null })
     }
-    firmasBase.push({ albaran_id: id, rol: 'camionero', actor: form.transportista, firmado: false, fecha: null })
+    if (esOp1 && form.transportista) {
+      firmasBase.push({ albaran_id: id, rol: 'camionero', actor: form.transportista, firmado: false, fecha: null })
+    }
     firmasBase.push({ albaran_id: id, rol: 'instalacion', actor: form.instalacion, firmado: false, fecha: null })
 
     await supabase.from('firmas').insert(firmasBase)
@@ -51,7 +53,10 @@ export function useAlbaranActions(refetch) {
       { albaran_id: id, ts: fecha, texto: 'Enlace generado para campo', actor: 'Sistema' },
     ])
 
-    await notificarNuevoAlbaran({ id, fecha: form.fecha, astilladora: form.astilladora, instalacion: form.instalacion, especie: form.especie, origen: form.origen, observaciones: form.observaciones }, 'mserranodelacruzfernandez@gmail.com', 'Marc Serrano')
+    await notificarNuevoAlbaran(
+      { id, fecha: form.fecha, astilladora: form.astilladora, instalacion: form.instalacion, especie: form.especie, origen: form.origen, observaciones: form.observaciones },
+      'mserranodelacruzfernandez@gmail.com', 'Marc Serrano'
+    )
     await refetch()
     return id
   }
