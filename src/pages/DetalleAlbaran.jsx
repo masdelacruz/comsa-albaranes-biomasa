@@ -8,9 +8,9 @@ import './DetalleAlbaran.css'
 
 const ORDEN_FIRMAS = ['oficina', 'astilladora', 'camionero', 'instalacion']
 const FIRMA_LABELS = {
-  oficina:     'Oficina (Marc Marin)',
+  oficina:     'Oficina',
   astilladora: 'Astilladora',
-  camionero:   'Camionero / Transportista',
+  camionero:   'Transportista',
   instalacion: 'Receptor — Instalación destino',
 }
 
