@@ -1,9 +1,20 @@
 import { supabase } from '../supabase'
 import { notificarNuevoAlbaran, notificarFirmaCompletada, notificarAlbaranCerrado } from '../utils/notificaciones'
 
+let contadorId = 19999;
+
 function generarId() {
-  const num = 20000 + Math.floor(Math.random() * 9000)
-  return `ALB-${num}`
+  let contadorId = localStorage.getItem("contadorId");
+
+  if (!contadorId) {
+    contadorId = 20000;
+  } else {
+    contadorId = parseInt(contadorId) + 1;
+  }
+
+  localStorage.setItem("contadorId", contadorId);
+
+  return `${contadorId}`;
 }
 
 function limpiarNombre(str) {

@@ -20,33 +20,41 @@ export async function generarPDF(a) {
   try { logoPefc  = await toBase64('/logo-pefc.png')  } catch {}
   try { logoSure  = await toBase64('/logo-sure.jpg')  } catch {}
 
-// CABECERA
+  // CABECERA
   doc.setFillColor(...verde)
   doc.rect(0, 0, W, 28, 'F')
 
-  if (logoComsa) {
-    doc.addImage(logoComsa, 'PNG', 4, 2, 24, 24)
-  }
-
-  doc.setTextColor(255, 255, 255)
+  // Logo Comsa recreado con formas
+  doc.setFillColor(255, 255, 255)
+  doc.circle(8, 10, 4, 'F')
+  doc.rect(13, 6, 7, 7, 'F')
   doc.setFont('helvetica', 'bold')
-  doc.setFontSize(13)
-  doc.text('COMSA SERVICE', 30, 11)
+  doc.setFontSize(11)
+  doc.setTextColor(255, 255, 255)
+  doc.text('COMSA', 6, 20)
+  doc.setFontSize(7)
+  doc.setFont('helvetica', 'normal')
+  doc.text('SERVICE', 7, 25)
+
+  // Texto cabecera
+  doc.setFont('helvetica', 'bold')
+  doc.setFontSize(12)
+  doc.text('COMSA SERVICE', 28, 11)
   doc.setFontSize(8)
   doc.setFont('helvetica', 'normal')
-  doc.text('FACILITY MANAGEMENT SAU', 30, 16)
-  doc.text('C/ Vallès, 2 · Pol. Ind. Almeda · 08940 Cornellà de Llobregat', 30, 21)
+  doc.text('FACILITY MANAGEMENT SAU', 28, 16)
+  doc.text('C/ Vallès, 2 · Pol. Ind. Almeda · 08940 Cornellà de Llobregat', 28, 21)
 
-  // Logos certificación — proporciones fijas
+  // Logos certificación con proporciones correctas
   const cert = a.certificacion || 'PEFC'
-  if ((cert === 'PEFC' || cert === 'Ambas') && logoPefc) {
-    doc.addImage(logoPefc, 'PNG', 148, 1, 26, 26)
+  if (cert === 'PEFC' || cert === 'Ambas') {
+    if (logoPefc) doc.addImage(logoPefc, 'PNG', 148, 2, 20, 24)
   }
-  if ((cert === 'SURE' || cert === 'Ambas') && logoSure) {
-    doc.addImage(logoSure, 'JPG', 178, 4, 18, 18)
+  if (cert === 'SURE') {
+    if (logoSure) doc.addImage(logoSure, 'JPG', 158, 5, 22, 18)
   }
-  if (cert === 'SURE' && logoSure) {
-    doc.addImage(logoSure, 'JPG', 160, 4, 18, 18)
+  if (cert === 'Ambas') {
+    if (logoSure) doc.addImage(logoSure, 'JPG', 172, 5, 22, 18)
   }
 
   // Título albarán
