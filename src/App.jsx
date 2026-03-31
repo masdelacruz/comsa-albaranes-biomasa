@@ -7,14 +7,26 @@ import VistaCampo from './pages/VistaCampo'
 import Historial from './pages/Historial'
 import Estadisticas from './pages/Estadisticas'
 import Administracion from './pages/Administracion'
+import Login from './pages/Login'
 import { useAlbaranes } from './hooks/useAlbaranes'
 import { useAlbaranActions } from './hooks/useAlbaranActions'
+import { useAuth } from './hooks/useAuth'
 
 function AppInner() {
-  const { albaranes, loading, refetch } = useAlbaranes()
+  const { session, usuario, loading: authLoading, logout } = useAuth()
+  const { albaranes, loading: dataLoading, refetch } = useAlbaranes()
   const { addAlbaran, updateFirma, simularFirmaOficina, subirDocumento, subirTicketPesada } = useAlbaranActions(refetch)
 
-  if (loading) return (
+  if (authLoading) return (
+    <div style={{display:'flex',alignItems:'center',justifyContent:'center',minHeight:'100vh',flexDirection:'column',gap:12}}>
+      <div style={{width:32,height:32,border:'3px solid #e0deda',borderTop:'3px solid #1D9E75',borderRadius:'50%',animation:'spin 0.8s linear infinite'}}/>
+      <style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style>
+    </div>
+  )
+
+  if (!session) return <Login />
+
+  if (dataLoading) return (
     <div style={{display:'flex',alignItems:'center',justifyContent:'center',minHeight:'100vh',flexDirection:'column',gap:12}}>
       <div style={{width:32,height:32,border:'3px solid #e0deda',borderTop:'3px solid #1D9E75',borderRadius:'50%',animation:'spin 0.8s linear infinite'}}/>
       <span style={{fontSize:13,color:'#9e9b94'}}>Cargando albaranes...</span>
@@ -25,12 +37,12 @@ function AppInner() {
   return (
     <Routes>
       <Route path="/campo/:id" element={<VistaCampo albaranes={albaranes} updateFirma={updateFirma} subirTicketPesada={subirTicketPesada} />} />
-      <Route path="/" element={<Layout />}>
+      <Route path="/" element={<Layout usuario={usuario} logout={logout} />}>
         <Route index element={<Navigate to="/dashboard" replace />} />
-        <Route path="dashboard"      element={<Dashboard    albaranes={albaranes} />} />
-        <Route path="nuevo"          element={<NuevoAlbaran addAlbaran={addAlbaran} />} />
-        <Route path="albaran/:id"    element={<DetalleAlbaran albaranes={albaranes} simularFirma={simularFirmaOficina} subirDocumento={subirDocumento} />} />
-        <Route path="historial"      element={<Historial    albaranes={albaranes} />} />
+        <Route path="dashboard"      element={<Dashboard albaranes={albaranes} usuario={usuario} />} />
+        <Route path="nuevo"          element={<NuevoAlbaran addAlbaran={addAlbaran} usuario={usuario} />} />
+        <Route path="albaran/:id"    element={<DetalleAlbaran albaranes={albaranes} simularFirma={simularFirmaOficina} subirDocumento={subirDocumento} usuario={usuario} />} />
+        <Route path="historial"      element={<Historial albaranes={albaranes} />} />
         <Route path="estadisticas"   element={<Estadisticas albaranes={albaranes} />} />
         <Route path="administracion" element={<Administracion />} />
       </Route>

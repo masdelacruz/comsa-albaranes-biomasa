@@ -10,12 +10,13 @@ function limpiarNombre(str) {
   return str.normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-zA-Z0-9._-]/g, '_')
 }
 
-export function useAlbaranActions(refetch) {
+export function useAlbaranActions(refetch, usuario) {
 
   const addAlbaran = async (form) => {
     const id = await generarId()
     const fecha = new Date().toLocaleString('es-ES')
     const esOp1 = form.tipo.includes('1')
+    const actorNombre = usuario?.nombre || 'Oficina'
     const docs = esOp1
       ? ['Autodeclaración', 'Acuerdo de cesión', 'Contrato prestación servicios', 'Permiso de corta']
       : ['Certificado SURE', 'Permiso de obra', 'Contrato prestación servicios']
@@ -32,7 +33,7 @@ export function useAlbaranActions(refetch) {
     })
 
     const firmasBase = [
-      { albaran_id: id, rol: 'oficina', actor: 'Marc Marin', firmado: true, fecha },
+      { albaran_id: id, rol: 'oficina', actor: actorNombre, firmado: true, fecha },
     ]
     if (form.proveedor) {
       firmasBase.push({ albaran_id: id, rol: 'proveedor', actor: form.proveedor, firmado: false, fecha: null })
@@ -49,7 +50,7 @@ export function useAlbaranActions(refetch) {
     await supabase.from('pesada').insert({ albaran_id: id })
     await supabase.from('docs').insert(docs.map(d => ({ albaran_id: id, nombre: d, adjunto: false })))
     await supabase.from('actividad').insert([
-      { albaran_id: id, ts: fecha, texto: 'Albarán creado', actor: 'Marc Marin' },
+      { albaran_id: id, ts: fecha, texto: 'Albarán creado', actor: actorNombre },
       { albaran_id: id, ts: fecha, texto: 'Enlace generado para campo', actor: 'Sistema' },
     ])
 
@@ -89,7 +90,7 @@ export function useAlbaranActions(refetch) {
   }
 
   const simularFirmaOficina = async (albaranId, rol) => {
-    await updateFirma(albaranId, rol, 'Marc Marin')
+    await updateFirma(albaranId, rol, usuario?.nombre || 'Oficina')
   }
 
   const subirDocumento = async (albaranId, docNombre, fichero) => {
@@ -100,7 +101,12 @@ export function useAlbaranActions(refetch) {
     const { data: { publicUrl } } = supabase.storage.from('documentos').getPublicUrl(path)
     await supabase.from('docs').update({ adjunto: true, url: publicUrl, nombre_fichero: fichero.name, tipo_fichero: fichero.type, tamanyo: fichero.size })
       .eq('albaran_id', albaranId).eq('nombre', docNombre)
-    await supabase.from('actividad').insert({ albaran_id: albaranId, ts: new Date().toLocaleString('es-ES'), texto: `Documento adjuntado: ${docNombre}`, actor: 'Marc Marin' })
+    await supabase.from('actividad').insert({
+      albaran_id: albaranId,
+      ts: new Date().toLocaleString('es-ES'),
+      texto: `Documento adjuntado: ${docNombre}`,
+      actor: usuario?.nombre || 'Oficina',
+    })
     await refetch()
   }
 
@@ -111,7 +117,12 @@ export function useAlbaranActions(refetch) {
     if (error) throw error
     const { data: { publicUrl } } = supabase.storage.from('documentos').getPublicUrl(path)
     await supabase.from('pesada').update({ ticket_adjunto: true, ticket_url: publicUrl }).eq('albaran_id', albaranId)
-    await supabase.from('actividad').insert({ albaran_id: albaranId, ts: new Date().toLocaleString('es-ES'), texto: 'Ticket de pesada adjuntado', actor: 'Sistema' })
+    await supabase.from('actividad').insert({
+      albaran_id: albaranId,
+      ts: new Date().toLocaleString('es-ES'),
+      texto: 'Ticket de pesada adjuntado',
+      actor: usuario?.nombre || 'Sistema',
+    })
     await refetch()
   }
 

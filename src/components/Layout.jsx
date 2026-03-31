@@ -1,8 +1,12 @@
 import { Outlet, NavLink } from 'react-router-dom'
-import { LayoutDashboard, PlusCircle, Leaf, Clock, BarChart2, Settings } from 'lucide-react'
+import { LayoutDashboard, PlusCircle, Leaf, Clock, BarChart2, Settings, LogOut } from 'lucide-react'
 import './Layout.css'
 
-export default function Layout() {
+export default function Layout({ usuario, logout }) {
+  const iniciales = usuario?.nombre
+    ? usuario.nombre.split(' ').map(n => n[0]).slice(0, 2).join('').toUpperCase()
+    : '?'
+
   return (
     <div className="layout">
       <aside className="sidebar">
@@ -32,12 +36,20 @@ export default function Layout() {
         </nav>
         <div className="sidebar-footer">
           <div className="user-chip">
-            <div className="user-avatar">MS</div>
-            <div><div className="user-name">Marc Serrano</div><div className="user-role">Transformación digital</div></div>
-          </div>
-          <div className="user-chip">
-            <div className="user-avatar" style={{background:'var(--green-100)',color:'var(--green-600)'}}>MM</div>
-            <div><div className="user-name">Marc Marin</div><div className="user-role">Resp. Operaciones Biomasa</div></div>
+            <div className="user-avatar" style={{background:'var(--green-100)',color:'var(--green-600)'}}>
+              {iniciales}
+            </div>
+            <div style={{flex:1,minWidth:0}}>
+              <div className="user-name">{usuario?.nombre || '—'}</div>
+              <div className="user-role">{usuario?.rol || '—'}</div>
+            </div>
+            <button
+              onClick={logout}
+              style={{background:'none',border:'none',cursor:'pointer',color:'var(--gray-400)',padding:4,flexShrink:0,display:'flex',alignItems:'center'}}
+              title="Cerrar sesión"
+            >
+              <LogOut size={14} />
+            </button>
           </div>
         </div>
       </aside>
