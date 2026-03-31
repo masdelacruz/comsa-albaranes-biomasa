@@ -30,7 +30,7 @@ export default function NuevoAlbaran({ addAlbaran }) {
     fecha: new Date().toISOString().split('T')[0],
     hora: '08:00', numCamiones: 1,
     tipo: 'Opció 1 — Compra en monte / plataforma',
-    certificacion: 'PEFC',
+    certificacion: '',
     proveedor: '', astilladora: '', transportista: '', instalacion: '',
     especie: ESPECIES[0], tipoBiomasa: TIPOS_BIOMASA[0],
     origen: '', mapsOrigen: '', mapsDestino: '',
