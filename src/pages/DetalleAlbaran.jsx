@@ -72,13 +72,16 @@ export default function DetalleAlbaran({ albaranes, simularFirma, subirDocumento
               <div className="section-label">Datos del albarán</div>
               {[
                 ['Tipo operación',      a.tipo],
-                ['Fecha / Hora',        `${a.fecha.split('-').reverse().join('/')} · ${a.hora}h`],
-                ['Astilladora',         a.astilladora],
+                ['Proveedor',           a.proveedor || '—'],
+                ['Astilladora',         a.astilladora || '—'],
                 ['Transportista',       a.transportista],
                 ['Instalación destino', a.instalacion],
                 ['Especie',             `${a.especie} · ${a.tipoBiomasa}`],
                 ['Origen',              a.origen || '—'],
                 ['Permiso / Ref.',      a.permiso || '—'],
+                ['Chófer',              a.chofer || '—'],
+                ['Matrícula tractora',  a.matriculaTractora || '—'],
+                ['Matrícula remolque',  a.matriculaRemolque || '—'],
                 ['Nº camiones',         a.numCamiones],
                 ['Observaciones',       a.observaciones || '—'],
               ].map(([k, v]) => (

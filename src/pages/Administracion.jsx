@@ -4,8 +4,8 @@ import { supabase } from '../supabase'
 import '../components/shared.css'
 import './Administracion.css'
 
-const TIPOS = ['astilladora', 'transportista', 'instalacion']
-const TIPO_LABELS = { astilladora: 'Astilladora', transportista: 'Transportista', instalacion: 'Instalación' }
+const TIPOS = ['proveedor', 'astilladora', 'transportista', 'instalacion']
+const TIPO_LABELS = { proveedor: 'Proveedor', astilladora: 'Astilladora', transportista: 'Transportista', instalacion: 'Instalación' }
 
 const EMPTY_FORM = { nombre: '', tipo: 'astilladora', contacto: '', email: '', telefono: '', notas: '', activo: true }
 

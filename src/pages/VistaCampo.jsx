@@ -6,9 +6,10 @@ import '../components/shared.css'
 import './VistaCampo.css'
 
 const ROLES = [
-  { key: 'astilladora', label: 'Astilladora',  sub: 'Confirma carga y firma', icon: <Factory size={18} color="#1D9E75" />, color: '#1D9E75', bg: '#f0faf5' },
-  { key: 'camionero',   label: 'Camionero',    sub: 'Confirma transporte y firma', icon: <Truck size={18} color="#3b82f6" />,    color: '#3b82f6', bg: '#eff6ff' },
-  { key: 'instalacion', label: 'Instalación',  sub: 'Confirma recepción y firma',  icon: <Building2 size={18} color="#f5a623" />, color: '#f5a623', bg: '#fffbf0' },
+  { key: 'proveedor',   label: 'Proveedor',   sub: 'Confirma suministro y firma',   icon: <Leaf size={18} color="#8b5cf6" />,    color: '#8b5cf6', bg: '#f5f3ff' },
+  { key: 'astilladora', label: 'Astilladora',  sub: 'Confirma carga y firma',        icon: <Factory size={18} color="#1D9E75" />, color: '#1D9E75', bg: '#f0faf5' },
+  { key: 'camionero',   label: 'Camionero',    sub: 'Confirma transporte y firma',   icon: <Truck size={18} color="#3b82f6" />,   color: '#3b82f6', bg: '#eff6ff' },
+  { key: 'instalacion', label: 'Instalación',  sub: 'Confirma recepción y firma',    icon: <Building2 size={18} color="#f5a623" />, color: '#f5a623', bg: '#fffbf0' },
 ]
 
 const PASOS = ['Datos', 'Firma']
