@@ -6,12 +6,12 @@ import { generarPDF } from '../utils/generarPDF'
 import '../components/shared.css'
 import './DetalleAlbaran.css'
 
-const ORDEN_FIRMAS = ['oficina', 'proveedor', 'astilladora', 'camionero', 'instalacion']
+const ORDEN_FIRMAS = ['oficina', 'astilladora', 'camionero', 'instalacion']
+
 const FIRMA_LABELS = {
   oficina:     'Oficina',
-  proveedor:   'Proveedor',
   astilladora: 'Astilladora',
-  camionero:   'Camionero / Transportista',
+  camionero:   'Transportista',
   instalacion: 'Receptor — Instalación destino',
 }
 
@@ -25,18 +25,19 @@ export default function DetalleAlbaran({ albaranes, simularFirma, subirDocumento
   const a = albaranes.find(x => x.id === id)
   if (!a) return <div style={{padding:40,color:'var(--gray-400)'}}>Albarán no encontrado.</div>
 
-  const campoUrl  = `${window.location.origin}/campo/${a.id}`
-  const pesoNeto  = a.pesada.entrada && a.pesada.salida
+  const campoUrl = `${window.location.origin}/campo/${a.id}`
+  const pesoNeto = a.pesada.entrada && a.pesada.salida
     ? (a.pesada.entrada - a.pesada.salida).toLocaleString('es-ES') + ' kg' : '—'
 
   const firmasOrdenadas = ORDEN_FIRMAS.filter(k => a.firmas[k])
 
-  const handleSimularFirma = async (rol) => {
+  const getFirmasASimular = (rol) => {
     const idx = firmasOrdenadas.indexOf(rol)
-    const pendientesAnteriores = firmasOrdenadas
-      .slice(0, idx)
-      .filter(k => !a.firmas[k]?.firmado)
+    return firmasOrdenadas.slice(0, idx).filter(k => !a.firmas[k]?.firmado)
+  }
 
+  const handleSimularFirma = async (rol) => {
+    const pendientesAnteriores = getFirmasASimular(rol)
     const todasAFirmar = [...pendientesAnteriores, rol]
     for (const r of todasAFirmar) {
       await simularFirma(a.id, r)
@@ -61,11 +62,6 @@ export default function DetalleAlbaran({ albaranes, simularFirma, subirDocumento
     if (bytes < 1024) return bytes + ' B'
     if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB'
     return (bytes / (1024 * 1024)).toFixed(1) + ' MB'
-  }
-
-  const getFirmasASimular = (rol) => {
-    const idx = firmasOrdenadas.indexOf(rol)
-    return firmasOrdenadas.slice(0, idx).filter(k => !a.firmas[k]?.firmado)
   }
 
   return (
