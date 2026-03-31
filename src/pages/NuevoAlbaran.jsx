@@ -81,15 +81,19 @@ export default function NuevoAlbaran({ addAlbaran }) {
         <div className="form-section card">
           <div className="section-label">Certificación</div>
           <div style={{display:'flex',gap:24}}>
-            {['PEFC','SURE','Ambas','Ninguna'].map(cert => (
-              <label key={cert} style={{display:'flex',alignItems:'center',gap:8,cursor:'pointer',fontSize:13,fontWeight:form.certificacion===cert?500:400,color:form.certificacion===cert?'var(--green-600)':'var(--gray-600)'}}>
+            {['SURE','PEFC'].map(cert => (
+              <label key={cert} style={{display:'flex',alignItems:'center',gap:8,cursor:'pointer',fontSize:13,fontWeight:500,color:'var(--gray-700)'}}>
                 <input
-                  type="radio"
-                  name="certificacion"
-                  value={cert}
-                  checked={form.certificacion === cert}
-                  onChange={() => set('certificacion', cert)}
-                  style={{width:'auto',accentColor:'var(--green-400)'}}
+                  type="checkbox"
+                  checked={form.certificacion?.includes(cert)}
+                  onChange={(e) => {
+                    const actual = form.certificacion ? form.certificacion.split(',').filter(Boolean) : []
+                    const nueva = e.target.checked
+                      ? [...actual, cert]
+                      : actual.filter(c => c !== cert)
+                    set('certificacion', nueva.join(','))
+                  }}
+                  style={{width:16,height:16,accentColor:'var(--green-400)',cursor:'pointer'}}
                 />
                 {cert}
               </label>

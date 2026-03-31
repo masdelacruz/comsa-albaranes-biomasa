@@ -15,70 +15,91 @@ export async function generarPDF(a) {
     reader.readAsDataURL(b)
   }))
 
-  let logoComsa, logoPefc, logoSure
-  try { logoComsa = await toBase64('/logo-comsa.png') } catch {}
-  try { logoPefc  = await toBase64('/logo-pefc.png')  } catch {}
-  try { logoSure  = await toBase64('/logo-sure.jpg')  } catch {}
+  let logoPefc, logoSure
+  try { logoPefc = await toBase64('/logo-pefc.png') } catch {}
+  try { logoSure  = await toBase64('/logo-sure.jpg') } catch {}
 
-  // CABECERA
+  // Calcular altura cabecera según logos disponibles
+  const altCab = 32
+
+  // CABECERA fondo verde
   doc.setFillColor(...verde)
-  doc.rect(0, 0, W, 28, 'F')
+  doc.rect(0, 0, W, altCab, 'F')
 
-  // Logo Comsa recreado con formas
+  // Logo Comsa con formas geométricas (proporciones reales)
   doc.setFillColor(255, 255, 255)
-  doc.circle(8, 10, 4, 'F')
-  doc.rect(13, 6, 7, 7, 'F')
-  doc.setFont('helvetica', 'bold')
-  doc.setFontSize(11)
-  doc.setTextColor(255, 255, 255)
-  doc.text('COMSA', 6, 20)
-  doc.setFontSize(7)
-  doc.setFont('helvetica', 'normal')
-  doc.text('SERVICE', 7, 25)
-
-  // Texto cabecera
+  doc.circle(8, 9, 4.5, 'F')
+  doc.rect(14, 4.5, 8, 8, 'F')
   doc.setFont('helvetica', 'bold')
   doc.setFontSize(12)
-  doc.text('COMSA SERVICE', 28, 11)
+  doc.setTextColor(255, 255, 255)
+  doc.text('COMSA', 5, 22)
+  doc.setFontSize(7)
+  doc.setFont('helvetica', 'normal')
+  doc.text('SERVICE', 6.5, 27)
+
+  // Texto empresa
+  doc.setFont('helvetica', 'bold')
+  doc.setFontSize(13)
+  doc.setTextColor(255, 255, 255)
+  doc.text('COMSA SERVICE', 30, 12)
   doc.setFontSize(8)
   doc.setFont('helvetica', 'normal')
-  doc.text('FACILITY MANAGEMENT SAU', 28, 16)
-  doc.text('C/ Vallès, 2 · Pol. Ind. Almeda · 08940 Cornellà de Llobregat', 28, 21)
+  doc.text('FACILITY MANAGEMENT SAU', 30, 18)
+  doc.text('C/ Vallès, 2 · Pol. Ind. Almeda · 08940 Cornellà de Llobregat', 30, 24)
 
-  // Logos certificación con proporciones correctas
-  const cert = a.certificacion || 'PEFC'
-  if (cert === 'PEFC' || cert === 'Ambas') {
-    if (logoPefc) doc.addImage(logoPefc, 'PNG', 148, 2, 20, 24)
-  }
-  if (cert === 'SURE') {
-    if (logoSure) doc.addImage(logoSure, 'JPG', 158, 5, 22, 18)
-  }
-  if (cert === 'Ambas') {
-    if (logoSure) doc.addImage(logoSure, 'JPG', 172, 5, 22, 18)
-  }
+  // Logos certificación — siempre ambos, tamaño natural proporcional
+  // PEFC: ratio original ~1.3:1 (ancho:alto) → 28x22mm
+  if (logoPefc) doc.addImage(logoPefc, 'PNG', 140, 1, 28, 30)
+  // SURE: ratio original ~1.4:1 → 26x18mm
+  if (logoSure) doc.addImage(logoSure, 'JPG', 170, 5, 26, 19)
 
-  // Título albarán
+  // TÍTULO
   doc.setFillColor(...grisClaro)
-  doc.rect(0, 28, W, 10, 'F')
+  doc.rect(0, altCab, W, 10, 'F')
   doc.setTextColor(...negro)
   doc.setFont('helvetica', 'bold')
   doc.setFontSize(12)
-  doc.text('ALBARÁN DE TRANSPORTE', W / 2, 35, { align: 'center' })
+  doc.text('ALBARÁN DE TRANSPORTE', W / 2, altCab + 7, { align: 'center' })
 
+  let y = altCab + 14
+
+  // Nº albarán y fecha
   doc.setFontSize(10)
-  doc.text(`Nº albarán: ${a.id}`, 14, 43)
-  doc.text(`Fecha: ${a.fecha ? a.fecha.split('-').reverse().join('/') : '___/___/______'}`, 120, 43)
+  doc.setFont('helvetica', 'bold')
+  doc.text(`Nº albarán: ${a.id}`, 14, y)
+  doc.text(`Fecha: ${a.fecha ? a.fecha.split('-').reverse().join('/') : '___/___/______'}`, 130, y)
 
-  // Tipo operación + certificación
+  y += 6
   doc.setFont('helvetica', 'normal')
   doc.setFontSize(8)
   doc.setTextColor(...grisOsc)
-  const certTexto = cert === 'Ninguna' ? '' : `Certificación: ${cert}`
-  doc.text(`${a.tipo || ''}   ${certTexto}`, 14, 49)
+
+  // Tipo + certificación como checkboxes visuales
+  const cert = a.certificacion || ''
+  const tienePEFC = cert.includes('PEFC')
+  const tieneSURE = cert.includes('SURE')
+
+  doc.text(`${a.tipo || ''}`, 14, y)
+
+  // Checkboxes visuales PEFC y SURE
+  let xCheck = 120
+  doc.rect(xCheck, y - 3.5, 3.5, 3.5)
+  if (tienePEFC) { doc.setFont('helvetica', 'bold'); doc.text('✓', xCheck + 0.3, y - 0.3) }
+  doc.setFont('helvetica', 'normal')
+  doc.text('PEFC', xCheck + 4.5, y)
+
+  xCheck += 20
+  doc.rect(xCheck, y - 3.5, 3.5, 3.5)
+  if (tieneSURE) { doc.setFont('helvetica', 'bold'); doc.text('✓', xCheck + 0.3, y - 0.3) }
+  doc.setFont('helvetica', 'normal')
+  doc.text('SURE', xCheck + 4.5, y)
+
+  y += 6
 
   // TABLA PRINCIPAL
   autoTable(doc, {
-    startY: 52,
+    startY: y,
     head: [],
     body: [
       ['Transportista', a.transportista || '', 'Proveedor', a.proveedor || ''],
@@ -97,29 +118,29 @@ export async function generarPDF(a) {
     margin: { left: 14, right: 14 },
   })
 
-  let y = doc.lastAutoTable.finalY + 6
+  y = doc.lastAutoTable.finalY + 6
 
-  // Pesos
+  // Línea separadora
   doc.setDrawColor(200, 200, 200)
   doc.setLineWidth(0.3)
   doc.line(14, y, W - 14, y)
   y += 6
 
+  // Pesos
   doc.setFont('helvetica', 'bold')
   doc.setFontSize(9)
   doc.setTextColor(...grisOsc)
   doc.text('Peso Bruto', 14, y)
   doc.text('Tara', 85, y)
   doc.text('Peso Neto', 155, y)
-
   doc.setFont('helvetica', 'normal')
   doc.setTextColor(...negro)
-  const pb = a.pesada?.entrada ? a.pesada.entrada.toLocaleString('es-ES') + ' kg' : '_______________'
-  const tara = a.pesada?.salida ? a.pesada.salida.toLocaleString('es-ES') + ' kg' : '_______________'
-  const pn = a.pesada?.entrada && a.pesada?.salida
+  const pb   = a.pesada?.entrada ? a.pesada.entrada.toLocaleString('es-ES') + ' kg' : '_______________'
+  const tara = a.pesada?.salida  ? a.pesada.salida.toLocaleString('es-ES')  + ' kg' : '_______________'
+  const pn   = a.pesada?.entrada && a.pesada?.salida
     ? (a.pesada.entrada - a.pesada.salida).toLocaleString('es-ES') + ' kg' : '_______________'
-  doc.text(pb,   40, y)
-  doc.text(tara, 105, y)
+  doc.text(pb,   38, y)
+  doc.text(tara, 100, y)
   doc.text(pn,   172, y)
 
   y += 8
@@ -176,19 +197,19 @@ export async function generarPDF(a) {
   const esOp1 = a.tipo?.includes('1')
   const bloquesFirma = esOp1
     ? [
-        { label: 'Firma Proveedor', key: 'proveedor', actor: a.proveedor },
-        { label: 'Firma Astilladora (Origen)', key: 'astilladora', actor: a.astilladora },
-        { label: 'Firma Transportista', key: 'camionero', actor: a.transportista },
-        { label: 'Firma Instalación (Destino)', key: 'instalacion', actor: a.instalacion },
+        { label: 'Firma Proveedor',             key: 'proveedor',   actor: a.proveedor },
+        { label: 'Firma Astilladora (Origen)',   key: 'astilladora', actor: a.astilladora },
+        { label: 'Firma Transportista',          key: 'camionero',   actor: a.transportista },
+        { label: 'Firma Instalación (Destino)',  key: 'instalacion', actor: a.instalacion },
       ]
     : [
-        { label: 'Firma Proveedor (Origen)', key: 'proveedor', actor: a.proveedor },
-        { label: 'Firma Instalación (Destino)', key: 'instalacion', actor: a.instalacion },
+        { label: 'Firma Proveedor (Origen)',     key: 'proveedor',   actor: a.proveedor },
+        { label: 'Firma Instalación (Destino)',  key: 'instalacion', actor: a.instalacion },
       ]
 
-  const numBloques = bloquesFirma.length
+  const numBloques  = bloquesFirma.length
   const anchoBloque = (W - 28) / numBloques
-  const alturaFirma = 36
+  const alturaFirma = 40
 
   doc.setDrawColor(200, 200, 200)
   doc.setLineWidth(0.3)
@@ -209,30 +230,30 @@ export async function generarPDF(a) {
 
     const firma = a.firmas?.[bloque.key]
     if (firma?.firmado) {
+      if (firma.firmaImagen) {
+        try { doc.addImage(firma.firmaImagen, 'PNG', x + 4, y + 13, anchoBloque - 8, 18) } catch {}
+      }
       doc.setTextColor(29, 158, 117)
       doc.setFont('helvetica', 'bold')
-      doc.setFontSize(7)
-      doc.text('✓ FIRMADO', x + anchoBloque / 2, y + 20, { align: 'center' })
+      doc.setFontSize(6)
+      doc.text('✓ FIRMADO', x + anchoBloque / 2, y + 34, { align: 'center' })
       doc.setFont('helvetica', 'normal')
       doc.setFontSize(6)
       doc.setTextColor(130, 130, 130)
-      doc.text(firma.fecha || '', x + anchoBloque / 2, y + 25, { align: 'center' })
-
-      if (firma.firmaImagen) {
-        try {
-          doc.addImage(firma.firmaImagen, 'PNG', x + 4, y + 14, anchoBloque - 8, 16)
-        } catch {}
-      }
+      doc.text(firma.fecha || '', x + anchoBloque / 2, y + 38, { align: 'center' })
     }
   })
 
   y += alturaFirma + 8
 
-  // Pie
+  // PIE
   doc.setFontSize(7)
   doc.setTextColor(150, 150, 150)
   doc.setFont('helvetica', 'normal')
-  doc.text(`Documento generado el ${new Date().toLocaleString('es-ES')} · COMSA SERVICE FACILITY MANAGEMENT SAU · PEFC/14-31-00318`, W / 2, y + 4, { align: 'center' })
+  doc.text(
+    `Documento generado el ${new Date().toLocaleString('es-ES')} · COMSA SERVICE FACILITY MANAGEMENT SAU · PEFC/14-31-00318`,
+    W / 2, y + 4, { align: 'center' }
+  )
 
   doc.save(`${a.id}_albaran_comsa.pdf`)
 }
