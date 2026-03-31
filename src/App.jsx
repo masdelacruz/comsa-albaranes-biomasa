@@ -7,6 +7,7 @@ import VistaCampo from './pages/VistaCampo'
 import Historial from './pages/Historial'
 import Estadisticas from './pages/Estadisticas'
 import Administracion from './pages/Administracion'
+import Usuarios from './pages/Usuarios'
 import Login from './pages/Login'
 import { useAlbaranes } from './hooks/useAlbaranes'
 import { useAlbaranActions } from './hooks/useAlbaranActions'
@@ -15,7 +16,7 @@ import { useAuth } from './hooks/useAuth'
 function AppInner() {
   const { session, usuario, loading: authLoading, logout } = useAuth()
   const { albaranes, loading: dataLoading, refetch } = useAlbaranes()
-  const { addAlbaran, updateFirma, simularFirmaOficina, subirDocumento, subirTicketPesada } = useAlbaranActions(refetch)
+  const { addAlbaran, updateFirma, simularFirmaOficina, subirDocumento, subirTicketPesada } = useAlbaranActions(refetch, usuario)
 
   if (authLoading) return (
     <div style={{display:'flex',alignItems:'center',justifyContent:'center',minHeight:'100vh',flexDirection:'column',gap:12}}>
@@ -45,6 +46,7 @@ function AppInner() {
         <Route path="historial"      element={<Historial albaranes={albaranes} />} />
         <Route path="estadisticas"   element={<Estadisticas albaranes={albaranes} />} />
         <Route path="administracion" element={<Administracion />} />
+        <Route path="usuarios"       element={<Usuarios usuario={usuario} />} />
       </Route>
     </Routes>
   )

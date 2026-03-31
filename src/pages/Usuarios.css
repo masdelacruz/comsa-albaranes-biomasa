@@ -1,0 +1,9 @@
+.usuarios-page { min-height:100vh; }
+.usuarios-content { padding:0 28px 40px; }
+.usuarios-table { width:100%; border-collapse:collapse; font-size:13px; }
+.usuarios-table th { text-align:left; padding:10px 14px; font-size:11px; font-weight:600; text-transform:uppercase; letter-spacing:0.5px; color:var(--gray-400); border-bottom:var(--border); background:var(--gray-50); }
+.usuarios-table td { padding:11px 14px; border-bottom:var(--border-light); color:var(--gray-800); vertical-align:middle; }
+.usuarios-table tr:last-child td { border-bottom:none; }
+.nivel-badge { display:inline-block; padding:2px 8px; border-radius:20px; font-size:11px; font-weight:600; }
+.nivel-superadmin { background:#fef3c7; color:#92400e; }
+.nivel-usuario    { background:var(--gray-100); color:var(--gray-600); }
