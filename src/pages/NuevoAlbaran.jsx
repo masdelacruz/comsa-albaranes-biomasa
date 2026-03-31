@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { ArrowLeft, CheckCircle, Upload } from 'lucide-react'
+import { ArrowLeft, CheckCircle } from 'lucide-react'
 import { supabase } from '../supabase'
 import { ESPECIES, TIPOS_BIOMASA } from '../data/mockData'
 import '../components/shared.css'
@@ -27,28 +27,26 @@ export default function NuevoAlbaran({ addAlbaran }) {
   }, [])
 
   const [form, setForm] = useState({
-    fecha: new Date().toISOString().split('T')[0],
-    hora: '08:00', numCamiones: 1,
     tipo: 'Opció 1 — Compra en monte / plataforma',
-    certificacion: '',
     proveedor: '', astilladora: '', transportista: '', instalacion: '',
     especie: ESPECIES[0], tipoBiomasa: TIPOS_BIOMASA[0],
-    origen: '', mapsOrigen: '', mapsDestino: '',
-    permiso: '', observaciones: '',
-    matriculaTractora: '', matriculaRemolque: '', chofer: '',
+    origen: '', mapsOrigen: '', mapsDestino: '', permiso: '', observaciones: '',
+    fecha: new Date().toISOString().split('T')[0],
+    hora: '08:00', numCamiones: 1,
+    chofer: '', matriculaTractora: '', matriculaRemolque: '',
+    certificacion: '',
   })
 
   const esOp1 = form.tipo.includes('1')
-  const docs  = esOp1 ? DOCS_OP1 : DOCS_OP2
   const set   = (k, v) => setForm(f => ({ ...f, [k]: v }))
+
+  const camposObligatorios = form.proveedor && form.instalacion && (!esOp1 || (form.astilladora && form.transportista))
 
   const handleGuardar = async () => {
     setGuardado(true)
     const id = await addAlbaran(form)
     setTimeout(() => navigate(`/albaran/${id}`), 1200)
   }
-
-  const camposObligatorios = form.proveedor && form.instalacion && (!esOp1 || (form.astilladora && form.transportista))
 
   if (guardado) return (
     <div className="nuevo-saved">
@@ -67,6 +65,7 @@ export default function NuevoAlbaran({ addAlbaran }) {
         <div className="page-title">Nuevo albarán</div>
         <div className="page-sub">El enlace de campo se genera automáticamente al guardar</div>
       </div>
+
       <div className="nuevo-content">
 
         <div className="form-section card">
@@ -74,29 +73,6 @@ export default function NuevoAlbaran({ addAlbaran }) {
           <div className="tipo-btns">
             {['Opció 1 — Compra en monte / plataforma','Opció 2 — Proveedor directo'].map(t => (
               <button key={t} className={`tipo-btn ${form.tipo === t ? 'active' : ''}`} onClick={() => set('tipo', t)}>{t}</button>
-            ))}
-          </div>
-        </div>
-
-        <div className="form-section card">
-          <div className="section-label">Certificación</div>
-          <div style={{display:'flex',gap:24}}>
-            {['SURE','PEFC'].map(cert => (
-              <label key={cert} style={{display:'flex',alignItems:'center',gap:8,cursor:'pointer',fontSize:13,fontWeight:500,color:'var(--gray-700)'}}>
-                <input
-                  type="checkbox"
-                  checked={form.certificacion?.includes(cert)}
-                  onChange={(e) => {
-                    const actual = form.certificacion ? form.certificacion.split(',').filter(Boolean) : []
-                    const nueva = e.target.checked
-                      ? [...actual, cert]
-                      : actual.filter(c => c !== cert)
-                    set('certificacion', nueva.join(','))
-                  }}
-                  style={{width:16,height:16,accentColor:'var(--green-400)',cursor:'pointer'}}
-                />
-                {cert}
-              </label>
             ))}
           </div>
         </div>
@@ -138,30 +114,6 @@ export default function NuevoAlbaran({ addAlbaran }) {
             </div>
           </div>
         </div>
-
-        {esOp1 && (
-          <div className="form-section card">
-            <div className="section-label">Datos del transporte</div>
-            <div className="form-grid">
-              <div className="form-field">
-                <label>Chófer</label>
-                <input type="text" placeholder="Nombre del chófer" value={form.chofer} onChange={e => set('chofer', e.target.value)} />
-              </div>
-              <div className="form-field">
-                <label>Matrícula tractora</label>
-                <input type="text" placeholder="Ej: 1234 ABC" value={form.matriculaTractora} onChange={e => set('matriculaTractora', e.target.value)} />
-              </div>
-              <div className="form-field">
-                <label>Matrícula remolque</label>
-                <input type="text" placeholder="Ej: R-1234-ABC" value={form.matriculaRemolque} onChange={e => set('matriculaRemolque', e.target.value)} />
-              </div>
-              <div className="form-field">
-                <label>Nº aprox. camiones</label>
-                <input type="number" min="1" value={form.numCamiones} onChange={e => set('numCamiones', e.target.value)} />
-              </div>
-            </div>
-          </div>
-        )}
 
         <div className="form-section card">
           <div className="section-label">Biomasa y logística</div>
@@ -209,10 +161,49 @@ export default function NuevoAlbaran({ addAlbaran }) {
           </div>
         </div>
 
+        {esOp1 && (
+          <div className="form-section card">
+            <div className="section-label">Datos del transporte</div>
+            <div className="form-grid">
+              <div className="form-field">
+                <label>Chófer</label>
+                <input type="text" placeholder="Nombre del chófer" value={form.chofer} onChange={e => set('chofer', e.target.value)} />
+              </div>
+              <div className="form-field">
+                <label>Matrícula tractora</label>
+                <input type="text" placeholder="Ej: 1234 ABC" value={form.matriculaTractora} onChange={e => set('matriculaTractora', e.target.value)} />
+              </div>
+              <div className="form-field">
+                <label>Matrícula remolque</label>
+                <input type="text" placeholder="Ej: R-1234-ABC" value={form.matriculaRemolque} onChange={e => set('matriculaRemolque', e.target.value)} />
+              </div>
+              <div className="form-field">
+                <label>Nº aprox. camiones</label>
+                <input type="number" min="1" value={form.numCamiones} onChange={e => set('numCamiones', e.target.value)} />
+              </div>
+            </div>
+          </div>
+        )}
+
         <div className="form-section card">
-          <div className="section-label">Documentación — {esOp1 ? 'Opción 1' : 'Opción 2'}</div>
-          <div className="docs-chips">{docs.map(d => <span key={d} className="doc-chip missing"><Upload size={11} /> {d}</span>)}</div>
-          <div className="upload-zone"><Upload size={18} /><span>Arrastra documentos aquí o haz clic para adjuntar</span></div>
+          <div className="section-label">Certificación</div>
+          <div style={{display:'flex',gap:24}}>
+            {['SURE','PEFC'].map(cert => (
+              <label key={cert} style={{display:'flex',alignItems:'center',gap:8,cursor:'pointer',fontSize:13,fontWeight:500,color:'var(--gray-700)'}}>
+                <input
+                  type="checkbox"
+                  checked={form.certificacion?.includes(cert)}
+                  onChange={(e) => {
+                    const actual = form.certificacion ? form.certificacion.split(',').filter(Boolean) : []
+                    const nueva = e.target.checked ? [...actual, cert] : actual.filter(c => c !== cert)
+                    set('certificacion', nueva.join(','))
+                  }}
+                  style={{width:16,height:16,accentColor:'var(--green-400)',cursor:'pointer'}}
+                />
+                {cert}
+              </label>
+            ))}
+          </div>
         </div>
 
         <div className="form-actions">
@@ -221,6 +212,7 @@ export default function NuevoAlbaran({ addAlbaran }) {
             <CheckCircle size={15} /> Guardar y generar enlace de campo
           </button>
         </div>
+
       </div>
     </div>
   )
