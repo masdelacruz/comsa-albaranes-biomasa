@@ -14,15 +14,15 @@ import { useAlbaranActions } from './hooks/useAlbaranActions'
 import { useAuth } from './hooks/useAuth'
 
 function AppInner() {
-  const { session, usuario, loading: authLoading, bloqueado, logout } = useAuth()
+  const { session, usuario, loading: authLoading, bloqueado, verificado, logout } = useAuth()
   const { albaranes, loading: dataLoading, refetch } = useAlbaranes()
   const { addAlbaran, updateFirma, simularFirmaOficina, subirDocumento, subirTicketPesada } = useAlbaranActions(refetch, usuario)
 
-  if (authLoading) return (
-    <div style={{display:'flex',alignItems:'center',justifyContent:'center',minHeight:'100vh',flexDirection:'column',gap:12}}>
-      <div style={{width:32,height:32,border:'3px solid #e0deda',borderTop:'3px solid #1D9E75',borderRadius:'50%',animation:'spin 0.8s linear infinite'}}/>
-      <style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style>
-    </div>
+  if (!verificado || authLoading) return (
+  <div style={{display:'flex',alignItems:'center',justifyContent:'center',minHeight:'100vh',flexDirection:'column',gap:12}}>
+    <div style={{width:32,height:32,border:'3px solid #e0deda',borderTop:'3px solid #1D9E75',borderRadius:'50%',animation:'spin 0.8s linear infinite'}}/>
+    <style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style>
+  </div>
   )
 
   if (bloqueado) return (
