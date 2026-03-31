@@ -30,6 +30,7 @@ export default function NuevoAlbaran({ addAlbaran }) {
     fecha: new Date().toISOString().split('T')[0],
     hora: '08:00', numCamiones: 1,
     tipo: 'Opció 1 — Compra en monte / plataforma',
+    certificacion: 'PEFC',
     proveedor: '', astilladora: '', transportista: '', instalacion: '',
     especie: ESPECIES[0], tipoBiomasa: TIPOS_BIOMASA[0],
     origen: '', mapsOrigen: '', mapsDestino: '',
@@ -47,7 +48,7 @@ export default function NuevoAlbaran({ addAlbaran }) {
     setTimeout(() => navigate(`/albaran/${id}`), 1200)
   }
 
-  const camposObligatorios = form.proveedor && form.transportista && form.instalacion && (!esOp1 || form.astilladora)
+  const camposObligatorios = form.proveedor && form.instalacion && (!esOp1 || (form.astilladora && form.transportista))
 
   if (guardado) return (
     <div className="nuevo-saved">
@@ -67,11 +68,31 @@ export default function NuevoAlbaran({ addAlbaran }) {
         <div className="page-sub">El enlace de campo se genera automáticamente al guardar</div>
       </div>
       <div className="nuevo-content">
+
         <div className="form-section card">
           <div className="section-label">Tipo de operación</div>
           <div className="tipo-btns">
             {['Opció 1 — Compra en monte / plataforma','Opció 2 — Proveedor directo'].map(t => (
               <button key={t} className={`tipo-btn ${form.tipo === t ? 'active' : ''}`} onClick={() => set('tipo', t)}>{t}</button>
+            ))}
+          </div>
+        </div>
+
+        <div className="form-section card">
+          <div className="section-label">Certificación</div>
+          <div style={{display:'flex',gap:24}}>
+            {['PEFC','SURE','Ambas','Ninguna'].map(cert => (
+              <label key={cert} style={{display:'flex',alignItems:'center',gap:8,cursor:'pointer',fontSize:13,fontWeight:form.certificacion===cert?500:400,color:form.certificacion===cert?'var(--green-600)':'var(--gray-600)'}}>
+                <input
+                  type="radio"
+                  name="certificacion"
+                  value={cert}
+                  checked={form.certificacion === cert}
+                  onChange={() => set('certificacion', cert)}
+                  style={{width:'auto',accentColor:'var(--green-400)'}}
+                />
+                {cert}
+              </label>
             ))}
           </div>
         </div>
@@ -95,13 +116,15 @@ export default function NuevoAlbaran({ addAlbaran }) {
                 </select>
               </div>
             )}
-            <div className="form-field">
-              <label>Transportista *</label>
-              <select value={form.transportista} onChange={e => set('transportista', e.target.value)}>
-                <option value="">Selecciona transportista...</option>
-                {transportistas.map(t => <option key={t}>{t}</option>)}
-              </select>
-            </div>
+            {esOp1 && (
+              <div className="form-field">
+                <label>Transportista *</label>
+                <select value={form.transportista} onChange={e => set('transportista', e.target.value)}>
+                  <option value="">Selecciona transportista...</option>
+                  {transportistas.map(t => <option key={t}>{t}</option>)}
+                </select>
+              </div>
+            )}
             <div className="form-field">
               <label>Instalación destino *</label>
               <select value={form.instalacion} onChange={e => set('instalacion', e.target.value)}>
@@ -112,27 +135,29 @@ export default function NuevoAlbaran({ addAlbaran }) {
           </div>
         </div>
 
-        <div className="form-section card">
-          <div className="section-label">Datos del transporte</div>
-          <div className="form-grid">
-            <div className="form-field">
-              <label>Chófer</label>
-              <input type="text" placeholder="Nombre del chófer" value={form.chofer} onChange={e => set('chofer', e.target.value)} />
-            </div>
-            <div className="form-field">
-              <label>Matrícula tractora</label>
-              <input type="text" placeholder="Ej: 1234 ABC" value={form.matriculaTractora} onChange={e => set('matriculaTractora', e.target.value)} />
-            </div>
-            <div className="form-field">
-              <label>Matrícula remolque</label>
-              <input type="text" placeholder="Ej: R-1234-ABC" value={form.matriculaRemolque} onChange={e => set('matriculaRemolque', e.target.value)} />
-            </div>
-            <div className="form-field">
-              <label>Nº aprox. camiones</label>
-              <input type="number" min="1" value={form.numCamiones} onChange={e => set('numCamiones', e.target.value)} />
+        {esOp1 && (
+          <div className="form-section card">
+            <div className="section-label">Datos del transporte</div>
+            <div className="form-grid">
+              <div className="form-field">
+                <label>Chófer</label>
+                <input type="text" placeholder="Nombre del chófer" value={form.chofer} onChange={e => set('chofer', e.target.value)} />
+              </div>
+              <div className="form-field">
+                <label>Matrícula tractora</label>
+                <input type="text" placeholder="Ej: 1234 ABC" value={form.matriculaTractora} onChange={e => set('matriculaTractora', e.target.value)} />
+              </div>
+              <div className="form-field">
+                <label>Matrícula remolque</label>
+                <input type="text" placeholder="Ej: R-1234-ABC" value={form.matriculaRemolque} onChange={e => set('matriculaRemolque', e.target.value)} />
+              </div>
+              <div className="form-field">
+                <label>Nº aprox. camiones</label>
+                <input type="number" min="1" value={form.numCamiones} onChange={e => set('numCamiones', e.target.value)} />
+              </div>
             </div>
           </div>
-        </div>
+        )}
 
         <div className="form-section card">
           <div className="section-label">Biomasa y logística</div>

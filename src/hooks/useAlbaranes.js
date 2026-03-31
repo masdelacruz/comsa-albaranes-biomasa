@@ -53,7 +53,7 @@ export function useAlbaranes() {
         transportista: a.transportista, instalacion: a.instalacion,
         especie: a.especie, tipoBiomasa: a.tipo_biomasa,
         origen: a.origen, permiso: a.permiso, observaciones: a.observaciones,
-        estado: a.estado, mapsOrigen: a.maps_origen, mapsDestino: a.maps_destino,
+        estado: a.estado, certificacion: a.certificacion || 'PEFC', mapsOrigen: a.maps_origen,
         matriculaTractora: a.matricula_tractora, matriculaRemolque: a.matricula_remolque,
         chofer: a.chofer,
         firmas: firmasObj,

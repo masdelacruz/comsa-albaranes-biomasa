@@ -28,7 +28,7 @@ export function useAlbaranActions(refetch) {
       origen: form.origen, permiso: form.permiso, observaciones: form.observaciones,
       estado: 'pendiente_campo', maps_origen: form.mapsOrigen, maps_destino: form.mapsDestino,
       matricula_tractora: form.matriculaTractora, matricula_remolque: form.matriculaRemolque,
-      chofer: form.chofer,
+      chofer: form.chofer, certificacion: form.certificacion,
     })
 
     const firmasBase = [

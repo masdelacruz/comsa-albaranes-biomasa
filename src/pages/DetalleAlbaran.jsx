@@ -71,25 +71,26 @@ export default function DetalleAlbaran({ albaranes, simularFirma, subirDocumento
             <div className="card" style={{marginBottom:14}}>
               <div className="section-label">Datos del albarán</div>
               {[
-                ['Tipo operación',      a.tipo],
-                ['Proveedor',           a.proveedor || '—'],
-                ['Astilladora',         a.astilladora || '—'],
-                ['Transportista',       a.transportista],
-                ['Instalación destino', a.instalacion],
-                ['Especie',             `${a.especie} · ${a.tipoBiomasa}`],
-                ['Origen',              a.origen || '—'],
-                ['Permiso / Ref.',      a.permiso || '—'],
-                ['Chófer',              a.chofer || '—'],
-                ['Matrícula tractora',  a.matriculaTractora || '—'],
-                ['Matrícula remolque',  a.matriculaRemolque || '—'],
-                ['Nº camiones',         a.numCamiones],
-                ['Observaciones',       a.observaciones || '—'],
-              ].map(([k, v]) => (
-                <div key={k} className="detalle-row">
-                  <span className="detalle-key">{k}</span>
-                  <span className="detalle-val">{v}</span>
-                </div>
-              ))}
+                  ['Tipo operación',      a.tipo],
+                  ['Certificación',       a.certificacion || 'PEFC'],
+                  ['Proveedor',           a.proveedor || '—'],
+                  ['Astilladora',         a.astilladora || '—'],
+                  ['Transportista',       a.transportista || '—'],
+                  ['Instalación destino', a.instalacion],
+                  ['Especie',             `${a.especie} · ${a.tipoBiomasa}`],
+                  ['Origen',              a.origen || '—'],
+                  ['Permiso / Ref.',      a.permiso || '—'],
+                  ['Chófer',              a.chofer || '—'],
+                  ['Matrícula tractora',  a.matriculaTractora || '—'],
+                  ['Matrícula remolque',  a.matriculaRemolque || '—'],
+                  ['Nº camiones',         a.numCamiones],
+                  ['Observaciones',       a.observaciones || '—'],
+                ].map(([k, v]) => (
+                  <div key={k} className="detalle-row">
+                    <span className="detalle-key">{k}</span>
+                    <span className="detalle-val">{v}</span>
+                  </div>
+                ))}
             </div>
 
             <div className="card" style={{marginBottom:14}}>

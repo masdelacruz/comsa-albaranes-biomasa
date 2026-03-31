@@ -1,171 +1,457 @@
 import jsPDF from 'jspdf'
 import autoTable from 'jspdf-autotable'
 
-export function generarPDF(a) {
-  const doc = new jsPDF()
+export async function generarPDF(a) {
+  const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' })
+  const W = 210
   const verde = [29, 158, 117]
-  const gris  = [90, 88, 82]
-  const negro = [26, 25, 23]
+  const grisOsc = [60, 60, 60]
+  const grisClaro = [240, 240, 240]
+  const negro = [20, 20, 20]
 
+  const toBase64 = (url) => fetch(url).then(r => r.blob()).then(b => new Promise(res => {
+    const reader = new FileReader()
+    reader.onloadend = () => res(reader.result)
+    reader.readAsDataURL(b)
+  }))
+
+  let logoComsa, logoPefc, logoSure
+  try { logoComsa = await toBase64('/logo-comsa.png') } catch {}
+  try { logoPefc  = await toBase64('/logo-pefc.png')  } catch {}
+  try { logoSure  = await toBase64('/logo-sure.jpg')  } catch {}
+
+  // CABECERA
   doc.setFillColor(...verde)
-  doc.rect(0, 0, 210, 18, 'F')
+  doc.rect(0, 0, W, 28, 'F')
+
+  if (logoComsa) {
+    doc.addImage(logoComsa, 'PNG', 6, 3, 22, 22)
+  }
+
   doc.setTextColor(255, 255, 255)
-  doc.setFontSize(11)
   doc.setFont('helvetica', 'bold')
-  doc.text('COMSA SERVICE — Albarán de biomasa', 14, 11)
-  doc.setFontSize(9)
+  doc.setFontSize(13)
+  doc.text('COMSA SERVICE', 32, 11)
+  doc.setFontSize(8)
   doc.setFont('helvetica', 'normal')
-  doc.text(`${a.id}`, 196, 11, { align: 'right' })
+  doc.text('FACILITY MANAGEMENT SAU', 32, 16)
+  doc.text('C/ Vallès, 2 · Pol. Ind. Almeda · 08940 Cornellà de Llobregat', 32, 21)
 
+  // Logos certificación
+  let xLogo = 130
+  const cert = a.certificacion || 'PEFC'
+  if ((cert === 'PEFC' || cert === 'Ambas') && logoPefc) {
+    doc.addImage(logoPefc, 'PNG', xLogo, 2, 30, 24)
+    xLogo += 34
+  }
+  if ((cert === 'SURE' || cert === 'Ambas') && logoSure) {
+    doc.addImage(logoSure, 'JPG', xLogo, 4, 22, 20)
+  }
+
+  // Título albarán
+  doc.setFillColor(...grisClaro)
+  doc.rect(0, 28, W, 10, 'F')
   doc.setTextColor(...negro)
-  doc.setFontSize(9)
   doc.setFont('helvetica', 'bold')
-  doc.text(`Albarán: ${a.id}`, 14, 28)
+  doc.setFontSize(12)
+  doc.text('ALBARÁN DE TRANSPORTE', W / 2, 35, { align: 'center' })
+
+  doc.setFontSize(10)
+  doc.text(`Nº albarán: ${a.id}`, 14, 43)
+  doc.text(`Fecha: ${a.fecha ? a.fecha.split('-').reverse().join('/') : '___/___/______'}`, 120, 43)
+
+  // Tipo operación + certificación
   doc.setFont('helvetica', 'normal')
-  doc.setTextColor(...gris)
-  doc.text(`Fecha: ${a.fecha.split('-').reverse().join('/')} · ${a.hora}h`, 14, 34)
-  doc.text(`Tipo operación: ${a.tipo}`, 14, 40)
-  doc.text(`Nº camiones aprox.: ${a.numCamiones}`, 14, 46)
+  doc.setFontSize(8)
+  doc.setTextColor(...grisOsc)
+  const certTexto = cert === 'Ninguna' ? '' : `Certificación: ${cert}`
+  doc.text(`${a.tipo || ''}   ${certTexto}`, 14, 49)
 
-  doc.setDrawColor(220, 222, 218)
-  doc.line(14, 52, 196, 52)
-
+  // TABLA PRINCIPAL
   autoTable(doc, {
-    startY: 56,
-    head: [['Campo', 'Valor']],
+    startY: 52,
+    head: [],
     body: [
-      ['Astilladora',         a.astilladora],
-      ['Transportista',       a.transportista],
-      ['Instalación destino', a.instalacion],
-      ['Especie',             a.especie],
-      ['Tipo biomasa',        a.tipoBiomasa],
-      ['Origen biomasa',      a.origen || '—'],
-      ['Permiso / Ref.',      a.permiso || '—'],
-      ['Observaciones',       a.observaciones || '—'],
+      ['Transportista', a.transportista || '', 'Proveedor', a.proveedor || ''],
+      ['Matrícula tractora', a.matriculaTractora || '', 'Tipos de madera', a.tipoBiomasa || ''],
+      ['Matrícula remolque', a.matriculaRemolque || '', 'Especie', a.especie || ''],
+      ['Chófer', a.chofer || '', 'Astilladora', a.astilladora || ''],
     ],
-    headStyles: { fillColor: verde, textColor: 255, fontSize: 8, fontStyle: 'bold' },
-    bodyStyles: { fontSize: 8, textColor: negro },
-    alternateRowStyles: { fillColor: [248, 248, 246] },
-    columnStyles: { 0: { cellWidth: 50, fontStyle: 'bold', textColor: gris }, 1: { cellWidth: 130 } },
-    margin: { left: 14, right: 14 },
-  })
-
-  const y1 = doc.lastAutoTable.finalY + 8
-
-  doc.setFont('helvetica', 'bold')
-  doc.setTextColor(...negro)
-  doc.setFontSize(9)
-  doc.text('Datos de recepción y pesada', 14, y1)
-
-  autoTable(doc, {
-    startY: y1 + 4,
-    head: [['Peso entrada', 'Peso salida (tara)', 'Peso neto', 'Humedad (%)', 'Ticket adjunto']],
-    body: [[
-      a.pesada.entrada ? a.pesada.entrada.toLocaleString('es-ES') + ' kg' : '—',
-      a.pesada.salida  ? a.pesada.salida.toLocaleString('es-ES')  + ' kg' : '—',
-      a.pesada.entrada && a.pesada.salida
-        ? (a.pesada.entrada - a.pesada.salida).toLocaleString('es-ES') + ' kg' : '—',
-      a.pesada.humedad != null ? `${a.pesada.humedad}%` : 'Pendiente',
-      a.pesada.ticketAdjunto ? 'Sí' : 'No',
-    ]],
-    headStyles: { fillColor: verde, textColor: 255, fontSize: 8, fontStyle: 'bold' },
-    bodyStyles: { fontSize: 8, textColor: negro },
-    margin: { left: 14, right: 14 },
-  })
-
-  const y2 = doc.lastAutoTable.finalY + 8
-
-  doc.setFont('helvetica', 'bold')
-  doc.setTextColor(...negro)
-  doc.setFontSize(9)
-  doc.text('Estado de firmas', 14, y2)
-
-  const firmasData = [
-    ['Oficina',     a.firmas.oficina?.actor     || '—', a.firmas.oficina?.firmado     ? 'FIRMADO' : 'PENDIENTE', a.firmas.oficina?.fecha     || '—'],
-    ['Astilladora', a.firmas.astilladora?.actor || '—', a.firmas.astilladora?.firmado ? 'FIRMADO' : 'PENDIENTE', a.firmas.astilladora?.fecha || '—'],
-    ['Camionero',   a.firmas.camionero?.actor   || '—', a.firmas.camionero?.firmado   ? 'FIRMADO' : 'PENDIENTE', a.firmas.camionero?.fecha   || '—'],
-    ['Instalación', a.firmas.instalacion?.actor || '—', a.firmas.instalacion?.firmado ? 'FIRMADO' : 'PENDIENTE', a.firmas.instalacion?.fecha || '—'],
-  ]
-
-  autoTable(doc, {
-    startY: y2 + 4,
-    head: [['Rol', 'Actor', 'Estado', 'Fecha firma']],
-    body: firmasData,
-    headStyles: { fillColor: verde, textColor: 255, fontSize: 8, fontStyle: 'bold' },
-    bodyStyles: { fontSize: 8, textColor: negro },
-    alternateRowStyles: { fillColor: [248, 248, 246] },
+    theme: 'grid',
+    styles: { fontSize: 9, cellPadding: 3, textColor: negro },
     columnStyles: {
-      0: { cellWidth: 28, fontStyle: 'bold', textColor: gris },
+      0: { fontStyle: 'bold', fillColor: grisClaro, textColor: grisOsc, cellWidth: 38 },
       1: { cellWidth: 60 },
-      2: { cellWidth: 28, fontStyle: 'bold' },
-      3: { cellWidth: 64 },
-    },
-    didParseCell: (data) => {
-      if (data.column.index === 2 && data.section === 'body') {
-        data.cell.styles.textColor = data.cell.raw === 'FIRMADO' ? verde : [181, 122, 16]
-      }
+      2: { fontStyle: 'bold', fillColor: grisClaro, textColor: grisOsc, cellWidth: 38 },
+      3: { cellWidth: 56 },
     },
     margin: { left: 14, right: 14 },
   })
 
-  const y3 = doc.lastAutoTable.finalY + 8
+  let y = doc.lastAutoTable.finalY + 6
+
+  // Pesos
+  doc.setDrawColor(200, 200, 200)
+  doc.setLineWidth(0.3)
+  doc.line(14, y, W - 14, y)
+  y += 6
 
   doc.setFont('helvetica', 'bold')
-  doc.setTextColor(...negro)
   doc.setFontSize(9)
-  doc.text('Documentación adjunta', 14, y3)
+  doc.setTextColor(...grisOsc)
+  doc.text('Peso Bruto', 14, y)
+  doc.text('Tara', 85, y)
+  doc.text('Peso Neto', 155, y)
 
-  const docsData = Object.entries(a.docs).map(([k, v]) => [k, v ? 'Adjunto ✓' : 'Pendiente'])
-
-  autoTable(doc, {
-    startY: y3 + 4,
-    head: [['Documento', 'Estado']],
-    body: docsData,
-    headStyles: { fillColor: verde, textColor: 255, fontSize: 8, fontStyle: 'bold' },
-    bodyStyles: { fontSize: 8, textColor: negro },
-    alternateRowStyles: { fillColor: [248, 248, 246] },
-    columnStyles: {
-      0: { cellWidth: 120 },
-      1: { cellWidth: 60, fontStyle: 'bold' },
-    },
-    didParseCell: (data) => {
-      if (data.column.index === 1 && data.section === 'body') {
-        data.cell.styles.textColor = data.cell.raw?.includes('✓') ? verde : [181, 122, 16]
-      }
-    },
-    margin: { left: 14, right: 14 },
-  })
-
-  const y4 = doc.lastAutoTable.finalY + 8
-
-  doc.setFont('helvetica', 'bold')
-  doc.setTextColor(...negro)
-  doc.setFontSize(9)
-  doc.text('Actividad y trazabilidad', 14, y4)
-
-  autoTable(doc, {
-    startY: y4 + 4,
-    head: [['Fecha / Hora', 'Evento', 'Actor']],
-    body: a.actividad.map(ev => [ev.ts, ev.texto, ev.actor]),
-    headStyles: { fillColor: verde, textColor: 255, fontSize: 8, fontStyle: 'bold' },
-    bodyStyles: { fontSize: 8, textColor: negro },
-    alternateRowStyles: { fillColor: [248, 248, 246] },
-    columnStyles: {
-      0: { cellWidth: 40 },
-      1: { cellWidth: 96 },
-      2: { cellWidth: 46 },
-    },
-    margin: { left: 14, right: 14 },
-  })
-
-  const pageHeight = doc.internal.pageSize.height
-  doc.setFontSize(7)
-  doc.setTextColor(...gris)
   doc.setFont('helvetica', 'normal')
-  doc.text(
-    `Documento generado el ${new Date().toLocaleString('es-ES')} · Comsa Service · Gestión de albaranes de biomasa`,
-    105, pageHeight - 8, { align: 'center' }
-  )
+  doc.setTextColor(...negro)
+  const pb = a.pesada?.entrada ? a.pesada.entrada.toLocaleString('es-ES') + ' kg' : '_______________'
+  const tara = a.pesada?.salida ? a.pesada.salida.toLocaleString('es-ES') + ' kg' : '_______________'
+  const pn = a.pesada?.entrada && a.pesada?.salida
+    ? (a.pesada.entrada - a.pesada.salida).toLocaleString('es-ES') + ' kg' : '_______________'
+  doc.text(pb,   40, y)
+  doc.text(tara, 105, y)
+  doc.text(pn,   172, y)
+
+  y += 8
+  doc.line(14, y, W - 14, y)
+  y += 6
+
+  // Origen / Destino
+  doc.setFont('helvetica', 'bold')
+  doc.setFontSize(9)
+  doc.setTextColor(...grisOsc)
+  doc.text('Origen:', 14, y)
+  doc.text('Destino:', 110, y)
+  doc.setFont('helvetica', 'normal')
+  doc.setTextColor(...negro)
+  doc.text(a.origen || '___________________________', 30, y)
+  doc.text(a.instalacion || '___________________________', 126, y)
+
+  y += 8
+  doc.line(14, y, W - 14, y)
+  y += 6
+
+  // Permiso / Humedad
+  doc.setFont('helvetica', 'bold')
+  doc.setFontSize(9)
+  doc.setTextColor(...grisOsc)
+  doc.text('Permiso / Ref.:', 14, y)
+  doc.text('Humedad (%):', 110, y)
+  doc.setFont('helvetica', 'normal')
+  doc.setTextColor(...negro)
+  doc.text(a.permiso || '___________________________', 46, y)
+  doc.text(a.pesada?.humedad != null ? `${a.pesada.humedad}%` : '___________', 140, y)
+
+  y += 8
+  doc.line(14, y, W - 14, y)
+  y += 6
+
+  // Observaciones
+  doc.setFont('helvetica', 'bold')
+  doc.setFontSize(9)
+  doc.setTextColor(...grisOsc)
+  doc.text('Observaciones:', 14, y)
+  y += 5
+  doc.setDrawColor(200, 200, 200)
+  doc.setFillColor(250, 250, 250)
+  doc.rect(14, y, W - 28, 18, 'FD')
+  doc.setFont('helvetica', 'normal')
+  doc.setTextColor(...negro)
+  doc.setFontSize(8)
+  if (a.observaciones) doc.text(a.observaciones, 16, y + 5, { maxWidth: W - 32 })
+
+  y += 24
+
+  // FIRMAS
+  const esOp1 = a.tipo?.includes('1')
+  const bloquesFirma = esOp1
+    ? [
+        { label: 'Firma Proveedor', key: 'proveedor', actor: a.proveedor },
+        { label: 'Firma Astilladora (Origen)', key: 'astilladora', actor: a.astilladora },
+        { label: 'Firma Transportista', key: 'camionero', actor: a.transportista },
+        { label: 'Firma Instalación (Destino)', key: 'instalacion', actor: a.instalacion },
+      ]
+    : [
+        { label: 'Firma Proveedor (Origen)', key: 'proveedor', actor: a.proveedor },
+        { label: 'Firma Instalación (Destino)', key: 'instalacion', actor: a.instalacion },
+      ]
+
+  const numBloques = bloquesFirma.length
+  const anchoBloque = (W - 28) / numBloques
+  const alturaFirma = 36
+
+  doc.setDrawColor(200, 200, 200)
+  doc.setLineWidth(0.3)
+
+  bloquesFirma.forEach((bloque, i) => {
+    const x = 14 + i * anchoBloque
+    doc.rect(x, y, anchoBloque, alturaFirma)
+
+    doc.setFont('helvetica', 'bold')
+    doc.setFontSize(7)
+    doc.setTextColor(...grisOsc)
+    doc.text(bloque.label, x + anchoBloque / 2, y + 5, { align: 'center' })
+
+    doc.setFont('helvetica', 'normal')
+    doc.setFontSize(7)
+    doc.setTextColor(130, 130, 130)
+    doc.text(bloque.actor || '', x + anchoBloque / 2, y + 10, { align: 'center' })
+
+    const firma = a.firmas?.[bloque.key]
+    if (firma?.firmado) {
+      doc.setTextColor(29, 158, 117)
+      doc.setFont('helvetica', 'bold')
+      doc.setFontSize(7)
+      doc.text('✓ FIRMADO', x + anchoBloque / 2, y + 20, { align: 'center' })
+      doc.setFont('helvetica', 'normal')
+      doc.setFontSize(6)
+      doc.setTextColor(130, 130, 130)
+      doc.text(firma.fecha || '', x + anchoBloque / 2, y + 25, { align: 'center' })
+
+      if (firma.firmaImagen) {
+        try {
+          doc.addImage(firma.firmaImagen, 'PNG', x + 4, y + 14, anchoBloque - 8, 16)
+        } catch {}
+      }
+    }
+  })
+
+  y += alturaFirma + 8
+
+  // Pie
+  doc.setFontSize(7)
+  doc.setTextColor(150, 150, 150)
+  doc.setFont('helvetica', 'normal')
+  doc.text(`Documento generado el ${new Date().toLocaleString('es-ES')} · COMSA SERVICE FACILITY MANAGEMENT SAU · PEFC/14-31-00318`, W / 2, y + 4, { align: 'center' })
+
+  doc.save(`${a.id}_albaran_comsa.pdf`)
+}import jsPDF from 'jspdf'
+import autoTable from 'jspdf-autotable'
+
+export async function generarPDF(a) {
+  const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' })
+  const W = 210
+  const verde = [29, 158, 117]
+  const grisOsc = [60, 60, 60]
+  const grisClaro = [240, 240, 240]
+  const negro = [20, 20, 20]
+
+  const toBase64 = (url) => fetch(url).then(r => r.blob()).then(b => new Promise(res => {
+    const reader = new FileReader()
+    reader.onloadend = () => res(reader.result)
+    reader.readAsDataURL(b)
+  }))
+
+  let logoComsa, logoPefc, logoSure
+  try { logoComsa = await toBase64('/logo-comsa.png') } catch {}
+  try { logoPefc  = await toBase64('/logo-pefc.png')  } catch {}
+  try { logoSure  = await toBase64('/logo-sure.jpg')  } catch {}
+
+  // CABECERA
+  doc.setFillColor(...verde)
+  doc.rect(0, 0, W, 28, 'F')
+
+  if (logoComsa) {
+    doc.addImage(logoComsa, 'PNG', 6, 3, 22, 22)
+  }
+
+  doc.setTextColor(255, 255, 255)
+  doc.setFont('helvetica', 'bold')
+  doc.setFontSize(13)
+  doc.text('COMSA SERVICE', 32, 11)
+  doc.setFontSize(8)
+  doc.setFont('helvetica', 'normal')
+  doc.text('FACILITY MANAGEMENT SAU', 32, 16)
+  doc.text('C/ Vallès, 2 · Pol. Ind. Almeda · 08940 Cornellà de Llobregat', 32, 21)
+
+  // Logos certificación
+  let xLogo = 130
+  const cert = a.certificacion || 'PEFC'
+  if ((cert === 'PEFC' || cert === 'Ambas') && logoPefc) {
+    doc.addImage(logoPefc, 'PNG', xLogo, 2, 30, 24)
+    xLogo += 34
+  }
+  if ((cert === 'SURE' || cert === 'Ambas') && logoSure) {
+    doc.addImage(logoSure, 'JPG', xLogo, 4, 22, 20)
+  }
+
+  // Título albarán
+  doc.setFillColor(...grisClaro)
+  doc.rect(0, 28, W, 10, 'F')
+  doc.setTextColor(...negro)
+  doc.setFont('helvetica', 'bold')
+  doc.setFontSize(12)
+  doc.text('ALBARÁN DE TRANSPORTE', W / 2, 35, { align: 'center' })
+
+  doc.setFontSize(10)
+  doc.text(`Nº albarán: ${a.id}`, 14, 43)
+  doc.text(`Fecha: ${a.fecha ? a.fecha.split('-').reverse().join('/') : '___/___/______'}`, 120, 43)
+
+  // Tipo operación + certificación
+  doc.setFont('helvetica', 'normal')
+  doc.setFontSize(8)
+  doc.setTextColor(...grisOsc)
+  const certTexto = cert === 'Ninguna' ? '' : `Certificación: ${cert}`
+  doc.text(`${a.tipo || ''}   ${certTexto}`, 14, 49)
+
+  // TABLA PRINCIPAL
+  autoTable(doc, {
+    startY: 52,
+    head: [],
+    body: [
+      ['Transportista', a.transportista || '', 'Proveedor', a.proveedor || ''],
+      ['Matrícula tractora', a.matriculaTractora || '', 'Tipos de madera', a.tipoBiomasa || ''],
+      ['Matrícula remolque', a.matriculaRemolque || '', 'Especie', a.especie || ''],
+      ['Chófer', a.chofer || '', 'Astilladora', a.astilladora || ''],
+    ],
+    theme: 'grid',
+    styles: { fontSize: 9, cellPadding: 3, textColor: negro },
+    columnStyles: {
+      0: { fontStyle: 'bold', fillColor: grisClaro, textColor: grisOsc, cellWidth: 38 },
+      1: { cellWidth: 60 },
+      2: { fontStyle: 'bold', fillColor: grisClaro, textColor: grisOsc, cellWidth: 38 },
+      3: { cellWidth: 56 },
+    },
+    margin: { left: 14, right: 14 },
+  })
+
+  let y = doc.lastAutoTable.finalY + 6
+
+  // Pesos
+  doc.setDrawColor(200, 200, 200)
+  doc.setLineWidth(0.3)
+  doc.line(14, y, W - 14, y)
+  y += 6
+
+  doc.setFont('helvetica', 'bold')
+  doc.setFontSize(9)
+  doc.setTextColor(...grisOsc)
+  doc.text('Peso Bruto', 14, y)
+  doc.text('Tara', 85, y)
+  doc.text('Peso Neto', 155, y)
+
+  doc.setFont('helvetica', 'normal')
+  doc.setTextColor(...negro)
+  const pb = a.pesada?.entrada ? a.pesada.entrada.toLocaleString('es-ES') + ' kg' : '_______________'
+  const tara = a.pesada?.salida ? a.pesada.salida.toLocaleString('es-ES') + ' kg' : '_______________'
+  const pn = a.pesada?.entrada && a.pesada?.salida
+    ? (a.pesada.entrada - a.pesada.salida).toLocaleString('es-ES') + ' kg' : '_______________'
+  doc.text(pb,   40, y)
+  doc.text(tara, 105, y)
+  doc.text(pn,   172, y)
+
+  y += 8
+  doc.line(14, y, W - 14, y)
+  y += 6
+
+  // Origen / Destino
+  doc.setFont('helvetica', 'bold')
+  doc.setFontSize(9)
+  doc.setTextColor(...grisOsc)
+  doc.text('Origen:', 14, y)
+  doc.text('Destino:', 110, y)
+  doc.setFont('helvetica', 'normal')
+  doc.setTextColor(...negro)
+  doc.text(a.origen || '___________________________', 30, y)
+  doc.text(a.instalacion || '___________________________', 126, y)
+
+  y += 8
+  doc.line(14, y, W - 14, y)
+  y += 6
+
+  // Permiso / Humedad
+  doc.setFont('helvetica', 'bold')
+  doc.setFontSize(9)
+  doc.setTextColor(...grisOsc)
+  doc.text('Permiso / Ref.:', 14, y)
+  doc.text('Humedad (%):', 110, y)
+  doc.setFont('helvetica', 'normal')
+  doc.setTextColor(...negro)
+  doc.text(a.permiso || '___________________________', 46, y)
+  doc.text(a.pesada?.humedad != null ? `${a.pesada.humedad}%` : '___________', 140, y)
+
+  y += 8
+  doc.line(14, y, W - 14, y)
+  y += 6
+
+  // Observaciones
+  doc.setFont('helvetica', 'bold')
+  doc.setFontSize(9)
+  doc.setTextColor(...grisOsc)
+  doc.text('Observaciones:', 14, y)
+  y += 5
+  doc.setDrawColor(200, 200, 200)
+  doc.setFillColor(250, 250, 250)
+  doc.rect(14, y, W - 28, 18, 'FD')
+  doc.setFont('helvetica', 'normal')
+  doc.setTextColor(...negro)
+  doc.setFontSize(8)
+  if (a.observaciones) doc.text(a.observaciones, 16, y + 5, { maxWidth: W - 32 })
+
+  y += 24
+
+  // FIRMAS
+  const esOp1 = a.tipo?.includes('1')
+  const bloquesFirma = esOp1
+    ? [
+        { label: 'Firma Proveedor', key: 'proveedor', actor: a.proveedor },
+        { label: 'Firma Astilladora (Origen)', key: 'astilladora', actor: a.astilladora },
+        { label: 'Firma Transportista', key: 'camionero', actor: a.transportista },
+        { label: 'Firma Instalación (Destino)', key: 'instalacion', actor: a.instalacion },
+      ]
+    : [
+        { label: 'Firma Proveedor (Origen)', key: 'proveedor', actor: a.proveedor },
+        { label: 'Firma Instalación (Destino)', key: 'instalacion', actor: a.instalacion },
+      ]
+
+  const numBloques = bloquesFirma.length
+  const anchoBloque = (W - 28) / numBloques
+  const alturaFirma = 36
+
+  doc.setDrawColor(200, 200, 200)
+  doc.setLineWidth(0.3)
+
+  bloquesFirma.forEach((bloque, i) => {
+    const x = 14 + i * anchoBloque
+    doc.rect(x, y, anchoBloque, alturaFirma)
+
+    doc.setFont('helvetica', 'bold')
+    doc.setFontSize(7)
+    doc.setTextColor(...grisOsc)
+    doc.text(bloque.label, x + anchoBloque / 2, y + 5, { align: 'center' })
+
+    doc.setFont('helvetica', 'normal')
+    doc.setFontSize(7)
+    doc.setTextColor(130, 130, 130)
+    doc.text(bloque.actor || '', x + anchoBloque / 2, y + 10, { align: 'center' })
+
+    const firma = a.firmas?.[bloque.key]
+    if (firma?.firmado) {
+      doc.setTextColor(29, 158, 117)
+      doc.setFont('helvetica', 'bold')
+      doc.setFontSize(7)
+      doc.text('✓ FIRMADO', x + anchoBloque / 2, y + 20, { align: 'center' })
+      doc.setFont('helvetica', 'normal')
+      doc.setFontSize(6)
+      doc.setTextColor(130, 130, 130)
+      doc.text(firma.fecha || '', x + anchoBloque / 2, y + 25, { align: 'center' })
+
+      if (firma.firmaImagen) {
+        try {
+          doc.addImage(firma.firmaImagen, 'PNG', x + 4, y + 14, anchoBloque - 8, 16)
+        } catch {}
+      }
+    }
+  })
+
+  y += alturaFirma + 8
+
+  // Pie
+  doc.setFontSize(7)
+  doc.setTextColor(150, 150, 150)
+  doc.setFont('helvetica', 'normal')
+  doc.text(`Documento generado el ${new Date().toLocaleString('es-ES')} · COMSA SERVICE FACILITY MANAGEMENT SAU · PEFC/14-31-00318`, W / 2, y + 4, { align: 'center' })
 
   doc.save(`${a.id}_albaran_comsa.pdf`)
 }
