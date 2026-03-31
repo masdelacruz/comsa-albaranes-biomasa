@@ -1,32 +1,48 @@
 import { useRef, useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
-import { ArrowLeft, ExternalLink, CheckCircle, Clock, FileDown, Upload, Eye, FileText } from 'lucide-react'
+import { ArrowLeft, ExternalLink, CheckCircle, Clock, FileDown, Upload, Eye, FileText, AlertTriangle } from 'lucide-react'
 import { Badge } from '../components/Badge'
 import { generarPDF } from '../utils/generarPDF'
 import '../components/shared.css'
 import './DetalleAlbaran.css'
 
-const ORDEN_FIRMAS = ['oficina', 'astilladora', 'camionero', 'instalacion']
+const ORDEN_FIRMAS = ['oficina', 'proveedor', 'astilladora', 'camionero', 'instalacion']
 const FIRMA_LABELS = {
   oficina:     'Oficina',
+  proveedor:   'Proveedor',
   astilladora: 'Astilladora',
-  camionero:   'Transportista',
+  camionero:   'Camionero / Transportista',
   instalacion: 'Receptor — Instalación destino',
 }
 
-export default function DetalleAlbaran({ albaranes, simularFirma, subirDocumento }) {
+export default function DetalleAlbaran({ albaranes, simularFirma, subirDocumento, usuario }) {
   const { id } = useParams()
   const navigate = useNavigate()
   const fileRefs = useRef({})
-  const [subiendo, setSubiendo] = useState({})
+  const [subiendo, setSubiendo]         = useState({})
+  const [confirmModal, setConfirmModal] = useState(null)
+
   const a = albaranes.find(x => x.id === id)
   if (!a) return <div style={{padding:40,color:'var(--gray-400)'}}>Albarán no encontrado.</div>
 
-  const campoUrl = `${window.location.origin}/campo/${a.id}`
-  const pesoNeto = a.pesada.entrada && a.pesada.salida
+  const campoUrl  = `${window.location.origin}/campo/${a.id}`
+  const pesoNeto  = a.pesada.entrada && a.pesada.salida
     ? (a.pesada.entrada - a.pesada.salida).toLocaleString('es-ES') + ' kg' : '—'
 
-  const handleSimularFirma = async (rol) => await simularFirma(a.id, rol)
+  const firmasOrdenadas = ORDEN_FIRMAS.filter(k => a.firmas[k])
+
+  const handleSimularFirma = async (rol) => {
+    const idx = firmasOrdenadas.indexOf(rol)
+    const pendientesAnteriores = firmasOrdenadas
+      .slice(0, idx)
+      .filter(k => !a.firmas[k]?.firmado)
+
+    const todasAFirmar = [...pendientesAnteriores, rol]
+    for (const r of todasAFirmar) {
+      await simularFirma(a.id, r)
+    }
+    setConfirmModal(null)
+  }
 
   const handleSubirDoc = async (docNombre, e) => {
     const fichero = e.target.files[0]
@@ -47,8 +63,39 @@ export default function DetalleAlbaran({ albaranes, simularFirma, subirDocumento
     return (bytes / (1024 * 1024)).toFixed(1) + ' MB'
   }
 
+  const getFirmasASimular = (rol) => {
+    const idx = firmasOrdenadas.indexOf(rol)
+    return firmasOrdenadas.slice(0, idx).filter(k => !a.firmas[k]?.firmado)
+  }
+
   return (
     <div className="detalle-page">
+      {confirmModal && (
+        <div style={{position:'fixed',inset:0,background:'rgba(0,0,0,0.4)',display:'flex',alignItems:'center',justifyContent:'center',zIndex:100,padding:20}}>
+          <div style={{background:'#fff',borderRadius:'var(--radius-xl)',padding:28,maxWidth:400,width:'100%',boxShadow:'0 20px 60px rgba(0,0,0,0.15)'}}>
+            <div style={{display:'flex',alignItems:'center',gap:10,marginBottom:14}}>
+              <AlertTriangle size={20} color="var(--amber-400)" />
+              <div style={{fontSize:15,fontWeight:600}}>Confirmar firma simulada</div>
+            </div>
+            {getFirmasASimular(confirmModal).length > 0 && (
+              <div style={{background:'var(--amber-50)',border:'1px solid var(--amber-100)',borderRadius:'var(--radius-md)',padding:'10px 12px',marginBottom:14,fontSize:13,color:'var(--amber-700)'}}>
+                Se firmarán automáticamente las etapas anteriores pendientes:
+                <strong> {getFirmasASimular(confirmModal).map(k => FIRMA_LABELS[k]).join(', ')}</strong>
+              </div>
+            )}
+            <p style={{fontSize:13,color:'var(--gray-600)',marginBottom:20}}>
+              ¿Confirmas la firma de <strong>{FIRMA_LABELS[confirmModal]}</strong> como <strong>{usuario?.nombre || 'Oficina'}</strong>?
+            </p>
+            <div style={{display:'flex',gap:8,justifyContent:'flex-end'}}>
+              <button className="btn" onClick={() => setConfirmModal(null)}>Cancelar</button>
+              <button className="btn btn-primary" onClick={() => handleSimularFirma(confirmModal)}>
+                <CheckCircle size={14} /> Confirmar y firmar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       <div className="page-header">
         <button className="btn btn-ghost" onClick={() => navigate('/dashboard')} style={{marginBottom:12}}>
           <ArrowLeft size={14} /> Volver
@@ -62,7 +109,7 @@ export default function DetalleAlbaran({ albaranes, simularFirma, subirDocumento
             <FileDown size={15} /> Descargar PDF
           </button>
         </div>
-        <div className="page-sub">{a.astilladora} → {a.instalacion} · {a.fecha.split('-').reverse().join('/')}</div>
+        <div className="page-sub">{a.astilladora || a.proveedor} → {a.instalacion} · {a.fecha.split('-').reverse().join('/')}</div>
       </div>
 
       <div className="detalle-content">
@@ -71,26 +118,26 @@ export default function DetalleAlbaran({ albaranes, simularFirma, subirDocumento
             <div className="card" style={{marginBottom:14}}>
               <div className="section-label">Datos del albarán</div>
               {[
-                  ['Tipo operación',      a.tipo],
-                  ['Certificación',       a.certificacion || 'PEFC'],
-                  ['Proveedor',           a.proveedor || '—'],
-                  ['Astilladora',         a.astilladora || '—'],
-                  ['Transportista',       a.transportista || '—'],
-                  ['Instalación destino', a.instalacion],
-                  ['Especie',             `${a.especie} · ${a.tipoBiomasa}`],
-                  ['Origen',              a.origen || '—'],
-                  ['Permiso / Ref.',      a.permiso || '—'],
-                  ['Chófer',              a.chofer || '—'],
-                  ['Matrícula tractora',  a.matriculaTractora || '—'],
-                  ['Matrícula remolque',  a.matriculaRemolque || '—'],
-                  ['Nº camiones',         a.numCamiones],
-                  ['Observaciones',       a.observaciones || '—'],
-                ].map(([k, v]) => (
-                  <div key={k} className="detalle-row">
-                    <span className="detalle-key">{k}</span>
-                    <span className="detalle-val">{v}</span>
-                  </div>
-                ))}
+                ['Tipo operación',      a.tipo],
+                ['Certificación',       a.certificacion || '—'],
+                ['Proveedor',           a.proveedor || '—'],
+                ['Astilladora',         a.astilladora || '—'],
+                ['Transportista',       a.transportista || '—'],
+                ['Instalación destino', a.instalacion],
+                ['Especie',             `${a.especie} · ${a.tipoBiomasa}`],
+                ['Origen',              a.origen || '—'],
+                ['Permiso / Ref.',      a.permiso || '—'],
+                ['Chófer',              a.chofer || '—'],
+                ['Matrícula tractora',  a.matriculaTractora || '—'],
+                ['Matrícula remolque',  a.matriculaRemolque || '—'],
+                ['Nº camiones',         a.numCamiones],
+                ['Observaciones',       a.observaciones || '—'],
+              ].map(([k, v]) => (
+                <div key={k} className="detalle-row">
+                  <span className="detalle-key">{k}</span>
+                  <span className="detalle-val">{v}</span>
+                </div>
+              ))}
             </div>
 
             <div className="card" style={{marginBottom:14}}>
@@ -171,7 +218,7 @@ export default function DetalleAlbaran({ albaranes, simularFirma, subirDocumento
           <div className="detalle-right">
             <div className="card" style={{marginBottom:14}}>
               <div className="section-label">Estado de firmas</div>
-              {ORDEN_FIRMAS.map((key) => {
+              {firmasOrdenadas.map((key) => {
                 const firma = a.firmas[key]
                 if (!firma) return null
                 return (
@@ -188,15 +235,14 @@ export default function DetalleAlbaran({ albaranes, simularFirma, subirDocumento
                     </div>
                     {firma.firmado && <div className="firma-fecha">{firma.fecha}</div>}
                     {firma.firmado && firma.firmaImagen && (
-                      <img
-                        src={firma.firmaImagen}
-                        alt="Firma"
+                      <img src={firma.firmaImagen} alt="Firma"
                         style={{marginTop:8,width:'100%',maxHeight:70,objectFit:'contain',
                           background:'#fafaf9',borderRadius:'var(--radius-sm)',border:'var(--border)'}}
                       />
                     )}
                     {!firma.firmado && a.estado !== 'cerrado' && key !== 'oficina' && (
-                      <button className="btn" style={{fontSize:12,marginTop:8,width:'100%'}} onClick={() => handleSimularFirma(key)}>
+                      <button className="btn" style={{fontSize:12,marginTop:8,width:'100%'}}
+                        onClick={() => setConfirmModal(key)}>
                         Simular firma →
                       </button>
                     )}
