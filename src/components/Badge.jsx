@@ -10,14 +10,16 @@ export function Badge({ estado }) {
   return <span className={`badge badge-${e.color}`}>{e.label}</span>
 }
 
+const LINE_W = 16
+
 export function FirmaSteps({ firmas }) {
   const keys = Object.keys(firmas)
   const esOp2 = !keys.includes('astilladora') && !keys.includes('camionero')
 
   if (esOp2) {
     const pasos = [
-      { key: 'oficina',     num: 1 },
-      { key: 'instalacion', num: 2 },
+      { key: 'oficina' },
+      { key: 'instalacion' },
     ]
     return (
       <div className="firma-steps">
@@ -26,9 +28,9 @@ export function FirmaSteps({ firmas }) {
           const estado = firma?.firmado ? 'done' : 'pending'
           return (
             <div key={s.key} className="firma-step-wrap">
-              <div className={`firma-dot ${estado}`}>{firma?.firmado ? '✓' : s.num}</div>
+              <div className={`firma-dot ${estado}`}>{firma?.firmado ? '✓' : i + 1}</div>
               {i < pasos.length - 1 && (
-                <div className="firma-line" style={{width: 64}} />
+                <div className="firma-line" style={{width: LINE_W * 3 + 20 * 2}} />
               )}
             </div>
           )
@@ -39,7 +41,6 @@ export function FirmaSteps({ firmas }) {
 
   const pasos = [
     { key: 'oficina' },
-    { key: 'proveedor' },
     { key: 'astilladora' },
     { key: 'camionero' },
     { key: 'instalacion' },
@@ -55,7 +56,7 @@ export function FirmaSteps({ firmas }) {
         return (
           <div key={s.key} className="firma-step-wrap">
             <div className={`firma-dot ${estado}`}>{firma?.firmado ? '✓' : i + 1}</div>
-            {i < pasos.length - 1 && <div className="firma-line" />}
+            {i < pasos.length - 1 && <div className="firma-line" style={{width: LINE_W}} />}
           </div>
         )
       })}
