@@ -9,6 +9,8 @@ const ROL_LABEL = {
   proveedor:   'Proveedor',
 }
 
+const ROLES_FIRMA = ['oficina', 'astilladora', 'camionero', 'instalacion']
+
 async function generarId() {
   const { data } = await supabase.rpc('next_albaran_id')
   return `${data}`
@@ -81,8 +83,11 @@ export function useAlbaranActions(refetch, usuario) {
         .update({ entrada: pesadaData.entrada || null, salida: pesadaData.salida || null, humedad: pesadaData.humedad || null })
         .eq('albaran_id', albaranId)
     }
+
     const { data: firmas } = await supabase.from('firmas').select('*').eq('albaran_id', albaranId)
-    const todasFirmadas = firmas?.every(f => f.firmado)
+    const firmasRelevantes = firmas?.filter(f => ROLES_FIRMA.includes(f.rol))
+    const todasFirmadas = firmasRelevantes?.every(f => f.firmado)
+
     const { data: albaranData } = await supabase.from('albaranes').select('*').eq('id', albaranId).single()
     await notificarFirmaCompletada({ ...albaranData, id: albaranId }, actor)
     if (todasFirmadas) {
