@@ -3,7 +3,7 @@ import { supabase } from '../supabase'
 const FUNCTION_URL = 'https://edxlcvqrddnvwzuxfjni.supabase.co/functions/v1/enviar-email'
 const ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVkeGxjdnFyZGRudnd6dXhmam5pIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQ4MTAyNTcsImV4cCI6MjA5MDM4NjI1N30.-ZN5zHsZ0Ood-zJC3Tm8i2fk7aPGaXhCxZsbC0mfJ30'
 
-const EMAIL_PRUEBA = 'mserranodelacruzfernandez@gmail.com'
+const EMAIL_PRUEBA = 'marc.serrano@comsa.com'
 
 async function enviarEmail(tipo, albaran, destinatario, nombreDestinatario) {
   try {
