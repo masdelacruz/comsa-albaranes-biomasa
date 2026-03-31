@@ -20,32 +20,33 @@ export async function generarPDF(a) {
   try { logoPefc  = await toBase64('/logo-pefc.png')  } catch {}
   try { logoSure  = await toBase64('/logo-sure.jpg')  } catch {}
 
-  // CABECERA
+// CABECERA
   doc.setFillColor(...verde)
   doc.rect(0, 0, W, 28, 'F')
 
   if (logoComsa) {
-    doc.addImage(logoComsa, 'PNG', 6, 3, 22, 22)
+    doc.addImage(logoComsa, 'PNG', 4, 2, 24, 24)
   }
 
   doc.setTextColor(255, 255, 255)
   doc.setFont('helvetica', 'bold')
   doc.setFontSize(13)
-  doc.text('COMSA SERVICE', 32, 11)
+  doc.text('COMSA SERVICE', 30, 11)
   doc.setFontSize(8)
   doc.setFont('helvetica', 'normal')
-  doc.text('FACILITY MANAGEMENT SAU', 32, 16)
-  doc.text('C/ Vallès, 2 · Pol. Ind. Almeda · 08940 Cornellà de Llobregat', 32, 21)
+  doc.text('FACILITY MANAGEMENT SAU', 30, 16)
+  doc.text('C/ Vallès, 2 · Pol. Ind. Almeda · 08940 Cornellà de Llobregat', 30, 21)
 
-  // Logos certificación
-  let xLogo = 130
+  // Logos certificación — proporciones fijas
   const cert = a.certificacion || 'PEFC'
   if ((cert === 'PEFC' || cert === 'Ambas') && logoPefc) {
-    doc.addImage(logoPefc, 'PNG', xLogo, 2, 30, 24)
-    xLogo += 34
+    doc.addImage(logoPefc, 'PNG', 148, 1, 26, 26)
   }
   if ((cert === 'SURE' || cert === 'Ambas') && logoSure) {
-    doc.addImage(logoSure, 'JPG', xLogo, 4, 22, 20)
+    doc.addImage(logoSure, 'JPG', 178, 4, 18, 18)
+  }
+  if (cert === 'SURE' && logoSure) {
+    doc.addImage(logoSure, 'JPG', 160, 4, 18, 18)
   }
 
   // Título albarán
