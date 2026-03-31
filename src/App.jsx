@@ -13,37 +13,28 @@ import { useAlbaranes } from './hooks/useAlbaranes'
 import { useAlbaranActions } from './hooks/useAlbaranActions'
 import { useAuth } from './hooks/useAuth'
 
-function AppInner() {
-  const { session, usuario, loading: authLoading, bloqueado, verificado, logout } = useAuth()
-  const { albaranes, loading: dataLoading, refetch } = useAlbaranes()
-  const { addAlbaran, updateFirma, simularFirmaOficina, subirDocumento, subirTicketPesada } = useAlbaranActions(refetch, usuario)
-
-  if (!verificado || authLoading) return (
+const Spinner = () => (
   <div style={{display:'flex',alignItems:'center',justifyContent:'center',minHeight:'100vh',flexDirection:'column',gap:12}}>
     <div style={{width:32,height:32,border:'3px solid #e0deda',borderTop:'3px solid #1D9E75',borderRadius:'50%',animation:'spin 0.8s linear infinite'}}/>
     <style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style>
   </div>
-  )
+)
 
-  if (bloqueado) return (
-    <div style={{display:'flex',alignItems:'center',justifyContent:'center',minHeight:'100vh',flexDirection:'column',gap:16,padding:20}}>
-      <div style={{width:56,height:56,borderRadius:'50%',background:'var(--red-100)',display:'flex',alignItems:'center',justifyContent:'center',fontSize:24}}>🔒</div>
-      <div style={{fontSize:18,fontWeight:600,color:'var(--gray-900)'}}>Acceso desactivado</div>
-      <div style={{fontSize:13,color:'var(--gray-400)',textAlign:'center',maxWidth:320}}>
-        Tu cuenta ha sido desactivada. Contacta con Marc Serrano para recuperar el acceso.
-      </div>
+const Bloqueado = () => (
+  <div style={{display:'flex',alignItems:'center',justifyContent:'center',minHeight:'100vh',flexDirection:'column',gap:16,padding:20,background:'#f8f8f6'}}>
+    <div style={{width:56,height:56,borderRadius:'50%',background:'#fde8e8',display:'flex',alignItems:'center',justifyContent:'center',fontSize:24}}>🔒</div>
+    <div style={{fontSize:18,fontWeight:600,color:'#1a1917'}}>Acceso desactivado</div>
+    <div style={{fontSize:13,color:'#9e9b94',textAlign:'center',maxWidth:320}}>
+      Tu cuenta ha sido desactivada. Contacta con Marc Serrano para recuperar el acceso.
     </div>
-  )
+  </div>
+)
 
-  if (!session) return <Login />
+function AppConDatos({ usuario, logout }) {
+  const { albaranes, loading: dataLoading, refetch } = useAlbaranes()
+  const { addAlbaran, updateFirma, simularFirmaOficina, subirDocumento, subirTicketPesada } = useAlbaranActions(refetch, usuario)
 
-  if (dataLoading) return (
-    <div style={{display:'flex',alignItems:'center',justifyContent:'center',minHeight:'100vh',flexDirection:'column',gap:12}}>
-      <div style={{width:32,height:32,border:'3px solid #e0deda',borderTop:'3px solid #1D9E75',borderRadius:'50%',animation:'spin 0.8s linear infinite'}}/>
-      <span style={{fontSize:13,color:'#9e9b94'}}>Cargando albaranes...</span>
-      <style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style>
-    </div>
-  )
+  if (dataLoading) return <Spinner />
 
   return (
     <Routes>
@@ -60,6 +51,16 @@ function AppInner() {
       </Route>
     </Routes>
   )
+}
+
+function AppInner() {
+  const { session, usuario, loading: authLoading, bloqueado, verificado, logout } = useAuth()
+
+  if (!verificado || authLoading) return <Spinner />
+  if (bloqueado) return <Bloqueado />
+  if (!session) return <Login />
+
+  return <AppConDatos usuario={usuario} logout={logout} />
 }
 
 export default function App() {
