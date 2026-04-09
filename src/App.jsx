@@ -38,7 +38,7 @@ function AppConDatos({ usuario, logout }) {
 
   return (
     <Routes>
-      <Route path="/campo/:id" element={<VistaCampo albaranes={albaranes} updateFirma={updateFirma} subirTicketPesada={subirTicketPesada} />} />
+      <Route path="/campo/:id/:roles?" element={<VistaCampo albaranes={albaranes} updateFirma={updateFirma} subirTicketPesada={subirTicketPesada} />} />
       <Route path="/" element={<Layout usuario={usuario} logout={logout} />}>
         <Route index element={<Navigate to="/dashboard" replace />} />
         <Route path="dashboard"      element={<Dashboard albaranes={albaranes} usuario={usuario} />} />

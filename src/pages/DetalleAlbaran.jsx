@@ -1,6 +1,6 @@
 import { useRef, useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
-import { ArrowLeft, ExternalLink, CheckCircle, Clock, FileDown, Upload, Eye, FileText, AlertTriangle } from 'lucide-react'
+import { ArrowLeft, ExternalLink, CheckCircle, Clock, FileDown, Upload, Eye, FileText, AlertTriangle, Copy, Link } from 'lucide-react'
 import { Badge } from '../components/Badge'
 import { generarPDF } from '../utils/generarPDF'
 import '../components/shared.css'
@@ -19,8 +19,9 @@ export default function DetalleAlbaran({ albaranes, simularFirma, subirDocumento
   const { id } = useParams()
   const navigate = useNavigate()
   const fileRefs = useRef({})
-  const [subiendo, setSubiendo]         = useState({})
-  const [confirmModal, setConfirmModal] = useState(null)
+  const [subiendo, setSubiendo]           = useState({})
+  const [confirmModal, setConfirmModal]   = useState(null)
+  const [copiado, setCopiado]             = useState('')
 
   const a = albaranes.find(x => x.id === id)
   if (!a) return <div style={{padding:40,color:'var(--gray-400)'}}>Albarán no encontrado.</div>
@@ -30,6 +31,43 @@ export default function DetalleAlbaran({ albaranes, simularFirma, subirDocumento
     ? (a.pesada.entrada - a.pesada.salida).toLocaleString('es-ES') + ' kg' : '—'
 
   const firmasOrdenadas = ORDEN_FIRMAS.filter(k => a.firmas[k])
+
+  // Calcular siguiente paso — detecta roles pendientes consecutivos de la misma empresa
+  const getSiguientePaso = () => {
+    const pendientes = firmasOrdenadas.filter(k => k !== 'oficina' && !a.firmas[k]?.firmado)
+    if (pendientes.length === 0) return null
+
+    const primero = pendientes[0]
+    const actorPrimero = a.firmas[primero]?.actor
+
+    // Busca roles consecutivos pendientes con el mismo actor
+    const rolesGrupo = [primero]
+    for (let i = 1; i < pendientes.length; i++) {
+      const rol = pendientes[i]
+      const esConsecutivo = firmasOrdenadas.indexOf(rol) === firmasOrdenadas.indexOf(pendientes[i - 1]) + 1
+      if (esConsecutivo && a.firmas[rol]?.actor === actorPrimero) {
+        rolesGrupo.push(rol)
+      } else {
+        break
+      }
+    }
+
+    return rolesGrupo.join(',')
+  }
+
+  const siguientePaso = getSiguientePaso()
+  const urlSiguientePaso = siguientePaso ? `${window.location.origin}/campo/${a.id}/${siguientePaso}` : null
+
+  const getRolLabel = (roles) => {
+    if (!roles) return ''
+    return roles.split(',').map(r => FIRMA_LABELS[r] || r).join(' + ')
+  }
+
+  const copiar = (texto, clave) => {
+    navigator.clipboard.writeText(texto)
+    setCopiado(clave)
+    setTimeout(() => setCopiado(''), 2000)
+  }
 
   const getFirmasASimular = (rol) => {
     const idx = firmasOrdenadas.indexOf(rol)
@@ -198,9 +236,7 @@ export default function DetalleAlbaran({ albaranes, simularFirma, subirDocumento
                         }
                       </button>
                       <input
-                        type="file"
-                        accept=".pdf,.jpg,.jpeg,.png"
-                        style={{display:'none'}}
+                        type="file" accept=".pdf,.jpg,.jpeg,.png" style={{display:'none'}}
                         ref={el => fileRefs.current[nombre] = el}
                         onChange={e => handleSubirDoc(nombre, e)}
                       />
@@ -249,13 +285,42 @@ export default function DetalleAlbaran({ albaranes, simularFirma, subirDocumento
 
             <div className="card" style={{marginBottom:14}}>
               <div className="section-label">Enlace de campo</div>
+
+              {urlSiguientePaso && (
+                <div style={{background:'var(--green-50)',border:'1px solid var(--green-100)',borderRadius:'var(--radius-md)',padding:'10px 12px',marginBottom:10}}>
+                  <div style={{fontSize:11,fontWeight:600,color:'var(--green-600)',marginBottom:4}}>
+                    Siguiente paso — {getRolLabel(siguientePaso)}
+                  </div>
+                  <code style={{fontSize:11,color:'var(--green-600)',wordBreak:'break-all',display:'block',marginBottom:8}}>
+                    {urlSiguientePaso}
+                  </code>
+                  <div style={{display:'flex',gap:6}}>
+                    <button
+                      className="btn btn-primary"
+                      style={{flex:1,fontSize:11,padding:'5px 8px'}}
+                      onClick={() => copiar(urlSiguientePaso, 'siguiente')}
+                    >
+                      {copiado === 'siguiente' ? <><CheckCircle size={11} /> Copiado</> : <><Copy size={11} /> Copiar enlace siguiente paso</>}
+                    </button>
+                    <button
+                      className="btn"
+                      style={{fontSize:11,padding:'5px 8px'}}
+                      onClick={() => window.open(urlSiguientePaso, '_blank')}
+                    >
+                      <ExternalLink size={11} />
+                    </button>
+                  </div>
+                </div>
+              )}
+
               <div className="campo-link-box">
+                <div style={{fontSize:11,color:'var(--gray-400)',marginBottom:4}}>Enlace general</div>
                 <code className="campo-url">{campoUrl}</code>
-                <div style={{display:'flex',gap:6,marginTop:10}}>
-                  <button className="btn" style={{flex:1,fontSize:12}} onClick={() => navigator.clipboard.writeText(campoUrl)}>
-                    Copiar enlace
+                <div style={{display:'flex',gap:6,marginTop:8}}>
+                  <button className="btn" style={{flex:1,fontSize:11}} onClick={() => copiar(campoUrl, 'general')}>
+                    {copiado === 'general' ? <><CheckCircle size={11} /> Copiado</> : <><Copy size={11} /> Copiar enlace general</>}
                   </button>
-                  <button className="btn btn-primary" style={{flex:1,fontSize:12}} onClick={() => navigate(`/campo/${a.id}`)}>
+                  <button className="btn" style={{fontSize:11,padding:'5px 8px'}} onClick={() => navigate(`/campo/${a.id}`)}>
                     <ExternalLink size={13} /> Ver vista campo
                   </button>
                 </div>
