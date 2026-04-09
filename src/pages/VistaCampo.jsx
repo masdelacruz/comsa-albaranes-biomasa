@@ -24,11 +24,12 @@ function PasoFirma({ rol, a, updateFirma, subirTicketPesada, onCompletado, total
   const [humedad, setHumedad]                     = useState(a.pesada?.humedad ? String(a.pesada.humedad) : '')
   const [ticketNombre, setTicketNombre]           = useState('')
   const [hasFirma, setHasFirma]                   = useState(false)
+  const [firmando, setFirmando]                   = useState(false)
   const [firmado, setFirmado]                     = useState(false)
   const canvasRef = useRef(null)
   const sigPadRef = useRef(null)
 
-  const config   = ROLES_CONFIG[rol]
+  const config    = ROLES_CONFIG[rol]
   const yaFirmado = a.firmas?.[rol]?.firmado
 
   const pesoNeto = pesoBruto && tara
@@ -57,6 +58,7 @@ function PasoFirma({ rol, a, updateFirma, subirTicketPesada, onCompletado, total
   }, [])
 
   const handleFirmar = async () => {
+    setFirmando(true)
     const firmaImagen = sigPadRef.current && !sigPadRef.current.isEmpty()
       ? sigPadRef.current.toDataURL() : null
 
@@ -67,32 +69,36 @@ function PasoFirma({ rol, a, updateFirma, subirTicketPesada, onCompletado, total
     } : null
 
     const campoData = (rol === 'astilladora' || rol === 'transportista') ? {
-      matriculaTractora, matriculaRemolque, chofer,
-      origen: origen || null,
+      matriculaTractora, matriculaRemolque, chofer, origen: origen || null,
     } : null
 
     await updateFirma(a.id, rol, a.firmas[rol]?.actor, pesadaData, firmaImagen, campoData)
     setFirmado(true)
-    setTimeout(() => onCompletado(), 1000)
+    setFirmando(false)
+    setTimeout(() => onCompletado(), 1200)
   }
 
   const limpiarFirma = () => { sigPadRef.current?.clear(); setHasFirma(false) }
 
-  if (yaFirmado) return (
-    <div className="campo-card" style={{textAlign:'center',padding:'20px 16px'}}>
-      <CheckCircle size={28} color="var(--green-400)" style={{marginBottom:8}} />
-      <div style={{fontSize:14,fontWeight:600,color:'var(--green-600)'}}>Ya firmado</div>
-      <div style={{fontSize:12,color:'var(--gray-400)',marginTop:4}}>{a.firmas[rol]?.fecha}</div>
-    </div>
-  )
-
-  if (firmado) return (
-    <div className="campo-card" style={{textAlign:'center',padding:'20px 16px'}}>
-      <CheckCircle size={28} color="var(--green-400)" style={{marginBottom:8}} />
-      <div style={{fontSize:14,fontWeight:600,color:'var(--green-600)'}}>¡Firmado!</div>
-      <div style={{fontSize:12,color:'var(--gray-400)',marginTop:4}}>
-        {pasoActual < totalPasos ? 'Continuando...' : 'Completado'}
+  if (yaFirmado || firmado) return (
+    <div className="campo-card" style={{textAlign:'center',padding:'24px 16px'}}>
+      <CheckCircle size={32} color="var(--green-400)" style={{marginBottom:10}} />
+      <div style={{fontSize:15,fontWeight:600,color:'var(--green-600)'}}>
+        {firmado ? '¡Firmado!' : 'Ya firmado'}
       </div>
+      <div style={{fontSize:12,color:'var(--gray-400)',marginTop:4}}>
+        {firmado
+          ? (pasoActual < totalPasos ? 'Pasando al siguiente paso...' : 'Completado')
+          : a.firmas[rol]?.fecha
+        }
+      </div>
+      {firmado && pasoActual < totalPasos && (
+        <div style={{marginTop:14,display:'flex',alignItems:'center',justifyContent:'center',gap:6,fontSize:13,color:'var(--green-600)'}}>
+          <div style={{width:14,height:14,border:'2px solid var(--green-400)',borderTop:'2px solid transparent',borderRadius:'50%',animation:'spin 0.6s linear infinite'}} />
+          Cargando siguiente paso...
+          <style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style>
+        </div>
+      )}
     </div>
   )
 
@@ -166,13 +172,13 @@ function PasoFirma({ rol, a, updateFirma, subirTicketPesada, onCompletado, total
             Origen
           </div>
           <div className="campo-field">
-            <label>{a.origen ? 'Origen (ya introducido, puedes corregirlo)' : 'Origen biomasa *'}</label>
+            <label>{a.origen ? 'Origen (puedes corregirlo)' : 'Origen biomasa *'}</label>
             <input
               type="text"
               placeholder="Ej: Mas de les Guilles, Arbúcies (Selva)"
               value={origen}
               onChange={e => setOrigen(e.target.value)}
-              style={a.origen ? {} : {borderColor:'var(--amber-300)',background:'var(--amber-50)'}}
+              style={!a.origen ? {borderColor:'var(--amber-300)',background:'var(--amber-50)'} : {}}
             />
           </div>
         </>
@@ -197,9 +203,11 @@ function PasoFirma({ rol, a, updateFirma, subirTicketPesada, onCompletado, total
       </div>
       {hasFirma && <button className="firma-clear" onClick={limpiarFirma}>Borrar y repetir ×</button>}
 
-      <button className="campo-btn-primary" disabled={!hasFirma} onClick={handleFirmar}>
-        <CheckCircle size={16} />
-        {rol === 'instalacion' ? 'Confirmar recepción y firmar' : 'Confirmar y firmar'}
+      <button className="campo-btn-primary" disabled={!hasFirma || firmando} onClick={handleFirmar}>
+        {firmando
+          ? <><div style={{width:14,height:14,border:'2px solid #fff',borderTop:'2px solid transparent',borderRadius:'50%',animation:'spin 0.6s linear infinite'}} /> Guardando...</>
+          : <><CheckCircle size={16} /> {rol === 'instalacion' ? 'Confirmar recepción y firmar' : 'Confirmar y firmar'}</>
+        }
       </button>
     </div>
   )
@@ -208,12 +216,13 @@ function PasoFirma({ rol, a, updateFirma, subirTicketPesada, onCompletado, total
 export default function VistaCampo({ albaranes, updateFirma, subirTicketPesada }) {
   const { id, roles: rolesParam } = useParams()
   const navigate = useNavigate()
-  const a = albaranes.find(x => x.id === id)
 
   const [rolSeleccionado, setRolSeleccionado] = useState(null)
   const [pasoActual, setPasoActual]           = useState(0)
+  const [pasosCompletados, setPasosCompletados] = useState([])
   const [todoCompletado, setTodoCompletado]   = useState(false)
 
+  const a = albaranes.find(x => x.id === id)
   if (!a) return <div style={{padding:40,textAlign:'center',color:'#999'}}>Albarán no encontrado.</div>
 
   const rolesDirectos = rolesParam
@@ -222,11 +231,12 @@ export default function VistaCampo({ albaranes, updateFirma, subirTicketPesada }
 
   const ROLES_SELECTOR = ROLES_ORDEN.filter(r => a.firmas?.[r] !== undefined)
 
-  const handleCompletadoPaso = () => {
+  const handleCompletadoPaso = (rolCompletado) => {
+    setPasosCompletados(prev => [...prev, rolCompletado])
     if (rolesDirectos && pasoActual < rolesDirectos.length - 1) {
-      setPasoActual(prev => prev + 1)
+      setTimeout(() => setPasoActual(prev => prev + 1), 1400)
     } else {
-      setTodoCompletado(true)
+      setTimeout(() => setTodoCompletado(true), 1400)
     }
   }
 
@@ -275,29 +285,59 @@ export default function VistaCampo({ albaranes, updateFirma, subirTicketPesada }
     </div>
   )
 
+  // Flujo directo con roles en la URL
   if (rolesDirectos && rolesDirectos.length > 0) {
-    const rolActual = rolesDirectos[pasoActual]
     return (
       <div className="campo-page">
         <Topbar />
+
         {rolesDirectos.length > 1 && (
           <div style={{display:'flex',gap:6,marginBottom:14}}>
-            {rolesDirectos.map((r, i) => (
-              <div key={r} style={{flex:1,height:4,borderRadius:99,background: i <= pasoActual ? 'var(--green-400)' : 'var(--gray-200)',transition:'background 0.3s'}} />
-            ))}
+            {rolesDirectos.map((r, i) => {
+              const completado = pasosCompletados.includes(r)
+              const activo     = i === pasoActual
+              return (
+                <div key={r} style={{flex:1,position:'relative'}}>
+                  <div style={{
+                    height:4, borderRadius:99,
+                    background: completado ? 'var(--green-400)' : activo ? 'var(--green-200)' : 'var(--gray-200)',
+                    transition:'background 0.3s',marginBottom:4
+                  }} />
+                  <div style={{fontSize:10,color: completado ? 'var(--green-600)' : activo ? 'var(--green-400)' : 'var(--gray-400)',textAlign:'center',fontWeight: activo ? 600 : 400}}>
+                    {completado ? '✓ ' : ''}{ROLES_CONFIG[r]?.label}
+                  </div>
+                </div>
+              )
+            })}
           </div>
         )}
+
         <DatosAlbaran />
-        <PasoFirma
-          rol={rolActual} a={a}
-          updateFirma={updateFirma} subirTicketPesada={subirTicketPesada}
-          onCompletado={handleCompletadoPaso}
-          totalPasos={rolesDirectos.length} pasoActual={pasoActual + 1}
-        />
+
+        {rolesDirectos.map((r, i) => (
+          i === pasoActual ? (
+            <PasoFirma
+              key={r}
+              rol={r} a={a}
+              updateFirma={updateFirma} subirTicketPesada={subirTicketPesada}
+              onCompletado={() => handleCompletadoPaso(r)}
+              totalPasos={rolesDirectos.length} pasoActual={i + 1}
+            />
+          ) : pasosCompletados.includes(r) ? (
+            <div key={r} className="campo-card" style={{display:'flex',alignItems:'center',gap:10,padding:'14px 16px'}}>
+              <CheckCircle size={20} color="var(--green-400)" />
+              <div>
+                <div style={{fontSize:13,fontWeight:600,color:'var(--green-600)'}}>{ROLES_CONFIG[r]?.label} — Firmado</div>
+                <div style={{fontSize:11,color:'var(--gray-400)'}}>Completado correctamente</div>
+              </div>
+            </div>
+          ) : null
+        ))}
       </div>
     )
   }
 
+  // Flujo genérico — selector de rol
   if (!rolSeleccionado) return (
     <div className="campo-page">
       <Topbar />
@@ -335,6 +375,7 @@ export default function VistaCampo({ albaranes, updateFirma, subirTicketPesada }
     </div>
   )
 
+  // Flujo genérico — formulario de rol seleccionado
   return (
     <div className="campo-page">
       <Topbar onBack={() => setRolSeleccionado(null)} />

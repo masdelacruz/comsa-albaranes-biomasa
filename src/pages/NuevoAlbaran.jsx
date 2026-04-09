@@ -32,8 +32,7 @@ export default function NuevoAlbaran({ addAlbaran }) {
     especie: ESPECIES[0], tipoBiomasa: TIPOS_BIOMASA[0],
     origen: '', mapsOrigen: '', mapsDestino: '', permiso: '', observaciones: '',
     fecha: new Date().toISOString().split('T')[0],
-    hora: '08:00', numCamiones: 1,
-    chofer: '', matriculaTractora: '', matriculaRemolque: '',
+    hora: '08:00',
     certificacion: '',
   })
 
@@ -160,30 +159,6 @@ export default function NuevoAlbaran({ addAlbaran }) {
             </div>
           </div>
         </div>
-
-        {esOp1 && (
-          <div className="form-section card">
-            <div className="section-label">Datos del transporte</div>
-            <div className="form-grid">
-              <div className="form-field">
-                <label>Chófer</label>
-                <input type="text" placeholder="Nombre del chófer" value={form.chofer} onChange={e => set('chofer', e.target.value)} />
-              </div>
-              <div className="form-field">
-                <label>Matrícula tractora</label>
-                <input type="text" placeholder="Ej: 1234 ABC" value={form.matriculaTractora} onChange={e => set('matriculaTractora', e.target.value)} />
-              </div>
-              <div className="form-field">
-                <label>Matrícula remolque</label>
-                <input type="text" placeholder="Ej: R-1234-ABC" value={form.matriculaRemolque} onChange={e => set('matriculaRemolque', e.target.value)} />
-              </div>
-              <div className="form-field">
-                <label>Nº aprox. camiones</label>
-                <input type="number" min="1" value={form.numCamiones} onChange={e => set('numCamiones', e.target.value)} />
-              </div>
-            </div>
-          </div>
-        )}
 
         <div className="form-section card">
           <div className="section-label">Certificación</div>
