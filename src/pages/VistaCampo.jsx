@@ -17,17 +17,18 @@ function PasoFirma({ rol, a, updateFirma, subirTicketPesada, onCompletado, total
   const [matriculaTractora, setMatriculaTractora] = useState(a.matriculaTractora || '')
   const [matriculaRemolque, setMatriculaRemolque] = useState(a.matriculaRemolque || '')
   const [chofer, setChofer]                       = useState(a.chofer || '')
+  const [origen, setOrigen]                       = useState(a.origen || '')
   const [obs, setObs]                             = useState('')
-  const [pesoBruto, setPesoBruto]                 = useState('')
-  const [tara, setTara]                           = useState('')
-  const [humedad, setHumedad]                     = useState('')
+  const [pesoBruto, setPesoBruto]                 = useState(a.pesada?.entrada ? String(a.pesada.entrada) : '')
+  const [tara, setTara]                           = useState(a.pesada?.salida  ? String(a.pesada.salida)  : '')
+  const [humedad, setHumedad]                     = useState(a.pesada?.humedad ? String(a.pesada.humedad) : '')
   const [ticketNombre, setTicketNombre]           = useState('')
   const [hasFirma, setHasFirma]                   = useState(false)
   const [firmado, setFirmado]                     = useState(false)
   const canvasRef = useRef(null)
   const sigPadRef = useRef(null)
 
-  const config = ROLES_CONFIG[rol]
+  const config   = ROLES_CONFIG[rol]
   const yaFirmado = a.firmas?.[rol]?.firmado
 
   const pesoNeto = pesoBruto && tara
@@ -65,11 +66,12 @@ function PasoFirma({ rol, a, updateFirma, subirTicketPesada, onCompletado, total
       humedad: parseFloat(humedad)   || null,
     } : null
 
-    const transporteData = (rol === 'astilladora' || rol === 'transportista') ? {
+    const campoData = (rol === 'astilladora' || rol === 'transportista') ? {
       matriculaTractora, matriculaRemolque, chofer,
+      origen: origen || null,
     } : null
 
-    await updateFirma(a.id, rol, a.firmas[rol]?.actor, pesadaData, firmaImagen, transporteData)
+    await updateFirma(a.id, rol, a.firmas[rol]?.actor, pesadaData, firmaImagen, campoData)
     setFirmado(true)
     setTimeout(() => onCompletado(), 1000)
   }
@@ -159,6 +161,20 @@ function PasoFirma({ rol, a, updateFirma, subirTicketPesada, onCompletado, total
               }}
             />
           </label>
+
+          <div style={{fontSize:12,fontWeight:600,color:'var(--gray-500)',textTransform:'uppercase',letterSpacing:'0.5px',margin:'14px 0 10px'}}>
+            Origen
+          </div>
+          <div className="campo-field">
+            <label>{a.origen ? 'Origen (ya introducido, puedes corregirlo)' : 'Origen biomasa *'}</label>
+            <input
+              type="text"
+              placeholder="Ej: Mas de les Guilles, Arbúcies (Selva)"
+              value={origen}
+              onChange={e => setOrigen(e.target.value)}
+              style={a.origen ? {} : {borderColor:'var(--amber-300)',background:'var(--amber-50)'}}
+            />
+          </div>
         </>
       )}
 
@@ -218,14 +234,14 @@ export default function VistaCampo({ albaranes, updateFirma, subirTicketPesada }
     <div className="campo-card">
       <div className="campo-card-title">Datos del albarán</div>
       {[
-        ['Proveedor',      a.proveedor    || '—'],
-        ['Astilladora',    a.astilladora  || '—'],
+        ['Proveedor',      a.proveedor     || '—'],
+        ['Astilladora',    a.astilladora   || '—'],
         ['Transportista',  a.transportista || '—'],
-        ['Tipo de madera', a.tipoBiomasa  || '—'],
-        ['Especie',        a.especie      || '—'],
-        ['Origen',         a.origen       || '—'],
-        ['Destino',        a.instalacion  || '—'],
-        ['Permiso',        a.permiso      || '—'],
+        ['Tipo de madera', a.tipoBiomasa   || '—'],
+        ['Especie',        a.especie       || '—'],
+        ['Origen',         a.origen        || '—'],
+        ['Destino',        a.instalacion   || '—'],
+        ['Permiso',        a.permiso       || '—'],
         ['Observaciones',  a.observaciones || '—'],
       ].filter(([, v]) => v !== '—').map(([k, v]) => (
         <div key={k} className="campo-row">
@@ -290,7 +306,7 @@ export default function VistaCampo({ albaranes, updateFirma, subirTicketPesada }
         <div className="campo-card-title">¿Quién eres?</div>
         <div className="rol-selector">
           {ROLES_SELECTOR.map(r => {
-            const config = ROLES_CONFIG[r]
+            const config    = ROLES_CONFIG[r]
             const yaFirmado = a.firmas[r]?.firmado
             return (
               <button key={r} className={`rol-btn ${yaFirmado ? 'done' : ''}`}
