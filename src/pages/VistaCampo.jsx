@@ -6,28 +6,32 @@ import '../components/shared.css'
 import './VistaCampo.css'
 
 const ROLES_CONFIG = {
-  astilladora: { label: 'Astilladora',   sub: 'Confirma carga y firma',      icon: <Factory size={18} color="#1D9E75" />,   color: '#1D9E75', bg: '#f0faf5' },
-  camionero:   { label: 'Transportista', sub: 'Confirma transporte y firma',  icon: <Truck size={18} color="#3b82f6" />,     color: '#3b82f6', bg: '#eff6ff' },
-  instalacion: { label: 'Instalación',   sub: 'Confirma recepción y firma',   icon: <Building2 size={18} color="#f5a623" />, color: '#f5a623', bg: '#fffbf0' },
+  astilladora:   { label: 'Astilladora',   sub: 'Confirma carga y firma',     icon: <Factory size={18} color="#1D9E75" />,   color: '#1D9E75', bg: '#f0faf5' },
+  transportista: { label: 'Transportista', sub: 'Confirma transporte y firma', icon: <Truck size={18} color="#3b82f6" />,     color: '#3b82f6', bg: '#eff6ff' },
+  instalacion:   { label: 'Instalación',   sub: 'Confirma recepción y firma',  icon: <Building2 size={18} color="#f5a623" />, color: '#f5a623', bg: '#fffbf0' },
 }
 
-const ROLES_ORDEN = ['astilladora', 'camionero', 'instalacion']
+const ROLES_ORDEN = ['astilladora', 'transportista', 'instalacion']
 
 function PasoFirma({ rol, a, updateFirma, subirTicketPesada, onCompletado, totalPasos, pasoActual }) {
-  const [nombre, setNombre]         = useState('')
-  const [matricula, setMatricula]   = useState('')
-  const [obs, setObs]               = useState('')
-  const [pesoEntrada, setPesoEntrada] = useState('')
-  const [pesoSalida, setPesoSalida]   = useState('')
-  const [humedad, setHumedad]         = useState('')
-  const [ticketNombre, setTicketNombre] = useState('')
-  const [hasFirma, setHasFirma]     = useState(false)
-  const [firmado, setFirmado]       = useState(false)
+  const [matriculaTractora, setMatriculaTractora] = useState(a.matriculaTractora || '')
+  const [matriculaRemolque, setMatriculaRemolque] = useState(a.matriculaRemolque || '')
+  const [chofer, setChofer]                       = useState(a.chofer || '')
+  const [obs, setObs]                             = useState('')
+  const [pesoBruto, setPesoBruto]                 = useState('')
+  const [tara, setTara]                           = useState('')
+  const [humedad, setHumedad]                     = useState('')
+  const [ticketNombre, setTicketNombre]           = useState('')
+  const [hasFirma, setHasFirma]                   = useState(false)
+  const [firmado, setFirmado]                     = useState(false)
   const canvasRef = useRef(null)
   const sigPadRef = useRef(null)
 
   const config = ROLES_CONFIG[rol]
   const yaFirmado = a.firmas?.[rol]?.firmado
+
+  const pesoNeto = pesoBruto && tara
+    ? (parseFloat(pesoBruto) - parseFloat(tara)).toLocaleString('es-ES') + ' kg' : null
 
   useEffect(() => {
     if (canvasRef.current && !sigPadRef.current) {
@@ -51,45 +55,44 @@ function PasoFirma({ rol, a, updateFirma, subirTicketPesada, onCompletado, total
     }
   }, [])
 
-  const pesoNeto = pesoEntrada && pesoSalida
-    ? ((parseFloat(pesoEntrada) - parseFloat(pesoSalida)) / 1000).toFixed(2) + ' t' : null
-
   const handleFirmar = async () => {
     const firmaImagen = sigPadRef.current && !sigPadRef.current.isEmpty()
       ? sigPadRef.current.toDataURL() : null
 
-    const pesadaData = rol === 'instalacion' ? {
-      entrada: parseFloat(pesoEntrada) || null,
-      salida:  parseFloat(pesoSalida)  || null,
-      humedad: parseFloat(humedad)     || null,
+    const pesadaData = (rol === 'astilladora' || rol === 'transportista') && (pesoBruto || tara) ? {
+      entrada: parseFloat(pesoBruto) || null,
+      salida:  parseFloat(tara)      || null,
+      humedad: parseFloat(humedad)   || null,
     } : null
 
-    await updateFirma(a.id, rol, nombre || a.firmas[rol]?.actor, pesadaData, firmaImagen)
+    const transporteData = (rol === 'astilladora' || rol === 'transportista') ? {
+      matriculaTractora, matriculaRemolque, chofer,
+    } : null
+
+    await updateFirma(a.id, rol, a.firmas[rol]?.actor, pesadaData, firmaImagen, transporteData)
     setFirmado(true)
-    setTimeout(() => onCompletado(), 1200)
+    setTimeout(() => onCompletado(), 1000)
   }
 
   const limpiarFirma = () => { sigPadRef.current?.clear(); setHasFirma(false) }
 
-  if (yaFirmado) {
-    return (
-      <div className="campo-card" style={{textAlign:'center',padding:'20px 16px'}}>
-        <CheckCircle size={28} color="var(--green-400)" style={{marginBottom:8}} />
-        <div style={{fontSize:14,fontWeight:600,color:'var(--green-600)'}}>Ya firmado</div>
-        <div style={{fontSize:12,color:'var(--gray-400)',marginTop:4}}>{a.firmas[rol]?.fecha}</div>
-      </div>
-    )
-  }
+  if (yaFirmado) return (
+    <div className="campo-card" style={{textAlign:'center',padding:'20px 16px'}}>
+      <CheckCircle size={28} color="var(--green-400)" style={{marginBottom:8}} />
+      <div style={{fontSize:14,fontWeight:600,color:'var(--green-600)'}}>Ya firmado</div>
+      <div style={{fontSize:12,color:'var(--gray-400)',marginTop:4}}>{a.firmas[rol]?.fecha}</div>
+    </div>
+  )
 
-  if (firmado) {
-    return (
-      <div className="campo-card" style={{textAlign:'center',padding:'20px 16px'}}>
-        <CheckCircle size={28} color="var(--green-400)" style={{marginBottom:8}} />
-        <div style={{fontSize:14,fontWeight:600,color:'var(--green-600)'}}>¡Firmado!</div>
-        <div style={{fontSize:12,color:'var(--gray-400)',marginTop:4}}>Continuando...</div>
+  if (firmado) return (
+    <div className="campo-card" style={{textAlign:'center',padding:'20px 16px'}}>
+      <CheckCircle size={28} color="var(--green-400)" style={{marginBottom:8}} />
+      <div style={{fontSize:14,fontWeight:600,color:'var(--green-600)'}}>¡Firmado!</div>
+      <div style={{fontSize:12,color:'var(--gray-400)',marginTop:4}}>
+        {pasoActual < totalPasos ? 'Continuando...' : 'Completado'}
       </div>
-    )
-  }
+    </div>
+  )
 
   return (
     <div className="campo-card">
@@ -99,40 +102,44 @@ function PasoFirma({ rol, a, updateFirma, subirTicketPesada, onCompletado, total
         </div>
         <div>
           <div style={{fontSize:14,fontWeight:600,color:config.color}}>{config.label}</div>
-          <div style={{fontSize:11,color:'var(--gray-400)'}}>Paso {pasoActual} de {totalPasos}</div>
+          {totalPasos > 1 && <div style={{fontSize:11,color:'var(--gray-400)'}}>Paso {pasoActual} de {totalPasos}</div>}
         </div>
       </div>
 
-      <div className="campo-field">
-        <label>Nombre y empresa *</label>
-        <input type="text" placeholder={a.firmas[rol]?.actor} value={nombre} onChange={e => setNombre(e.target.value)} />
-      </div>
-
-      {rol === 'camionero' && (
-        <div className="campo-field">
-          <label>Matrícula del camión</label>
-          <input type="text" placeholder="Ej: 1234 ABC" value={matricula} onChange={e => setMatricula(e.target.value)} />
-        </div>
-      )}
-
-      {rol === 'instalacion' && (
+      {(rol === 'astilladora' || rol === 'transportista') && (
         <>
-          <div style={{background:'var(--blue-50)',border:'1px solid var(--blue-100)',borderRadius:'var(--radius-md)',padding:'8px 12px',fontSize:12,color:'var(--blue-700)',marginBottom:10}}>
-            Introduce los datos de pesada de la báscula.
+          <div style={{fontSize:12,fontWeight:600,color:'var(--gray-500)',textTransform:'uppercase',letterSpacing:'0.5px',marginBottom:10}}>
+            Datos del transporte
+          </div>
+          <div className="campo-field">
+            <label>Matrícula tractora</label>
+            <input type="text" placeholder="Ej: 1234 ABC" value={matriculaTractora} onChange={e => setMatriculaTractora(e.target.value)} />
+          </div>
+          <div className="campo-field">
+            <label>Matrícula remolque</label>
+            <input type="text" placeholder="Ej: R-1234-ABC" value={matriculaRemolque} onChange={e => setMatriculaRemolque(e.target.value)} />
+          </div>
+          <div className="campo-field">
+            <label>Chófer</label>
+            <input type="text" placeholder="Nombre del conductor" value={chofer} onChange={e => setChofer(e.target.value)} />
+          </div>
+
+          <div style={{fontSize:12,fontWeight:600,color:'var(--gray-500)',textTransform:'uppercase',letterSpacing:'0.5px',margin:'14px 0 10px'}}>
+            Datos de pesada
           </div>
           <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:10}}>
             <div className="campo-field">
-              <label>Peso entrada (kg)</label>
-              <input type="number" placeholder="Ej: 28400" value={pesoEntrada} onChange={e => setPesoEntrada(e.target.value)} />
+              <label>Peso bruto (kg)</label>
+              <input type="number" placeholder="Ej: 28400" value={pesoBruto} onChange={e => setPesoBruto(e.target.value)} />
             </div>
             <div className="campo-field">
-              <label>Peso salida / tara (kg)</label>
-              <input type="number" placeholder="Ej: 14200" value={pesoSalida} onChange={e => setPesoSalida(e.target.value)} />
+              <label>Tara (kg)</label>
+              <input type="number" placeholder="Ej: 14200" value={tara} onChange={e => setTara(e.target.value)} />
             </div>
           </div>
           {pesoNeto && (
             <div style={{background:'var(--green-50)',border:'1px solid var(--green-100)',borderRadius:'var(--radius-md)',padding:'8px 12px',textAlign:'center',marginBottom:10}}>
-              <div style={{fontSize:11,color:'var(--green-600)'}}>Peso neto</div>
+              <div style={{fontSize:11,color:'var(--green-600)'}}>Peso neto calculado</div>
               <div style={{fontSize:18,fontWeight:600,color:'var(--green-600)'}}>{pesoNeto}</div>
             </div>
           )}
@@ -140,7 +147,7 @@ function PasoFirma({ rol, a, updateFirma, subirTicketPesada, onCompletado, total
             <label>Humedad (%) — opcional</label>
             <input type="number" step="0.1" placeholder="Ej: 28.4" value={humedad} onChange={e => setHumedad(e.target.value)} />
           </div>
-          <label className="upload-zona" style={{cursor:'pointer'}}>
+          <label className="upload-zona" style={{cursor:'pointer',marginBottom:10}}>
             <Upload size={16} />
             <span>{ticketNombre || 'Adjuntar ticket de pesada'}</span>
             <input type="file" accept=".pdf,.jpg,.jpeg,.png" style={{display:'none'}}
@@ -155,23 +162,28 @@ function PasoFirma({ rol, a, updateFirma, subirTicketPesada, onCompletado, total
         </>
       )}
 
+      {rol === 'instalacion' && (
+        <div style={{background:'var(--blue-50)',border:'1px solid var(--blue-100)',borderRadius:'var(--radius-md)',padding:'10px 12px',fontSize:13,color:'var(--blue-700)',marginBottom:12}}>
+          Revisa los datos del albarán y firma para confirmar la recepción.
+        </div>
+      )}
+
       <div className="campo-field">
         <label>Incidencias u observaciones (opcional)</label>
-        <textarea placeholder="Carga incompleta, retraso..." value={obs} onChange={e => setObs(e.target.value)} />
+        <textarea placeholder="Carga incompleta, retraso, discrepancias..." value={obs} onChange={e => setObs(e.target.value)} />
       </div>
 
       <div className={`firma-canvas-wrap ${hasFirma ? 'signed' : ''}`} style={{height:140,marginBottom:8}}>
         <canvas ref={canvasRef} style={{width:'100%',height:'100%',display:'block'}} />
         {!hasFirma && (
-          <div className="firma-canvas-label">
-            <Pen size={16} /><br />Firma con el dedo
-          </div>
+          <div className="firma-canvas-label"><Pen size={16} /><br />Firma con el dedo</div>
         )}
       </div>
       {hasFirma && <button className="firma-clear" onClick={limpiarFirma}>Borrar y repetir ×</button>}
 
       <button className="campo-btn-primary" disabled={!hasFirma} onClick={handleFirmar}>
-        <CheckCircle size={16} /> Confirmar y firmar
+        <CheckCircle size={16} />
+        {rol === 'instalacion' ? 'Confirmar recepción y firmar' : 'Confirmar y firmar'}
       </button>
     </div>
   )
@@ -188,12 +200,11 @@ export default function VistaCampo({ albaranes, updateFirma, subirTicketPesada }
 
   if (!a) return <div style={{padding:40,textAlign:'center',color:'#999'}}>Albarán no encontrado.</div>
 
-  // Determinar roles a mostrar
   const rolesDirectos = rolesParam
     ? rolesParam.split(',').filter(r => ROLES_CONFIG[r])
     : null
 
-  const ROLES_SELECTOR = ROLES_ORDEN.filter(r => ROLES_CONFIG[r] && a.firmas?.[r] !== undefined)
+  const ROLES_SELECTOR = ROLES_ORDEN.filter(r => a.firmas?.[r] !== undefined)
 
   const handleCompletadoPaso = () => {
     if (rolesDirectos && pasoActual < rolesDirectos.length - 1) {
@@ -203,93 +214,78 @@ export default function VistaCampo({ albaranes, updateFirma, subirTicketPesada }
     }
   }
 
+  const DatosAlbaran = () => (
+    <div className="campo-card">
+      <div className="campo-card-title">Datos del albarán</div>
+      {[
+        ['Proveedor',      a.proveedor    || '—'],
+        ['Astilladora',    a.astilladora  || '—'],
+        ['Transportista',  a.transportista || '—'],
+        ['Tipo de madera', a.tipoBiomasa  || '—'],
+        ['Especie',        a.especie      || '—'],
+        ['Origen',         a.origen       || '—'],
+        ['Destino',        a.instalacion  || '—'],
+        ['Permiso',        a.permiso      || '—'],
+        ['Observaciones',  a.observaciones || '—'],
+      ].filter(([, v]) => v !== '—').map(([k, v]) => (
+        <div key={k} className="campo-row">
+          <span className="campo-row-key">{k}</span>
+          <span className="campo-row-val">{v}</span>
+        </div>
+      ))}
+    </div>
+  )
+
+  const Topbar = ({ onBack }) => (
+    <div className="campo-topbar">
+      {onBack
+        ? <button onClick={onBack} style={{background:'none',border:'none',cursor:'pointer',color:'var(--gray-600)'}}><ArrowLeft size={18} /></button>
+        : <div className="campo-topbar-logo"><Leaf size={14} color="#fff" /></div>
+      }
+      <div>
+        <div className="campo-title">Albarán {a.id}</div>
+        <div className="campo-sub">{a.astilladora || a.proveedor} → {a.instalacion} · {a.fecha?.split('-').reverse().join('/')}</div>
+      </div>
+    </div>
+  )
+
   if (todoCompletado) return (
     <div className="campo-page">
       <div className="campo-success">
         <div className="campo-success-icon"><CheckCircle size={36} color="var(--green-400)" /></div>
         <div className="campo-success-title">¡Todo completado!</div>
-        <div className="campo-success-sub">El equipo de Comsa Service ha sido notificado. Gracias por tu confirmación.</div>
+        <div className="campo-success-sub">El equipo de Comsa Service ha sido notificado. Gracias.</div>
       </div>
     </div>
   )
 
-  // Flujo directo con roles en la URL
   if (rolesDirectos && rolesDirectos.length > 0) {
     const rolActual = rolesDirectos[pasoActual]
     return (
       <div className="campo-page">
-        <div className="campo-topbar">
-          <div className="campo-topbar-logo"><Leaf size={14} color="#fff" /></div>
-          <div>
-            <div className="campo-title">Albarán {a.id}</div>
-            <div className="campo-sub">{a.astilladora || a.proveedor} → {a.instalacion} · {a.fecha?.split('-').reverse().join('/')}</div>
-          </div>
-        </div>
-
+        <Topbar />
         {rolesDirectos.length > 1 && (
-          <div style={{display:'flex',gap:6,marginBottom:14,padding:'0 2px'}}>
+          <div style={{display:'flex',gap:6,marginBottom:14}}>
             {rolesDirectos.map((r, i) => (
               <div key={r} style={{flex:1,height:4,borderRadius:99,background: i <= pasoActual ? 'var(--green-400)' : 'var(--gray-200)',transition:'background 0.3s'}} />
             ))}
           </div>
         )}
-
-        <div className="campo-card">
-          <div className="campo-card-title">Datos del albarán</div>
-          {[
-            ['Especie',       `${a.especie} · ${a.tipoBiomasa}`],
-            ['Origen',        a.origen || '—'],
-            ['Destino',       a.instalacion],
-            ['Transportista', a.transportista || '—'],
-            ['Observaciones', a.observaciones || '—'],
-          ].map(([k, v]) => (
-            <div key={k} className="campo-row">
-              <span className="campo-row-key">{k}</span>
-              <span className="campo-row-val">{v}</span>
-            </div>
-          ))}
-        </div>
-
+        <DatosAlbaran />
         <PasoFirma
-          rol={rolActual}
-          a={a}
-          updateFirma={updateFirma}
-          subirTicketPesada={subirTicketPesada}
+          rol={rolActual} a={a}
+          updateFirma={updateFirma} subirTicketPesada={subirTicketPesada}
           onCompletado={handleCompletadoPaso}
-          totalPasos={rolesDirectos.length}
-          pasoActual={pasoActual + 1}
+          totalPasos={rolesDirectos.length} pasoActual={pasoActual + 1}
         />
       </div>
     )
   }
 
-  // Flujo genérico — selector de rol
   if (!rolSeleccionado) return (
     <div className="campo-page">
-      <div className="campo-topbar">
-        <div className="campo-topbar-logo"><Leaf size={14} color="#fff" /></div>
-        <div>
-          <div className="campo-title">Albarán {a.id}</div>
-          <div className="campo-sub">{a.astilladora || a.proveedor} → {a.instalacion} · {a.fecha?.split('-').reverse().join('/')}</div>
-        </div>
-      </div>
-
-      <div className="campo-card">
-        <div className="campo-card-title">Datos del albarán</div>
-        {[
-          ['Especie',       `${a.especie} · ${a.tipoBiomasa}`],
-          ['Origen',        a.origen || '—'],
-          ['Destino',       a.instalacion],
-          ['Transportista', a.transportista || '—'],
-          ['Observaciones', a.observaciones || '—'],
-        ].map(([k, v]) => (
-          <div key={k} className="campo-row">
-            <span className="campo-row-key">{k}</span>
-            <span className="campo-row-val">{v}</span>
-          </div>
-        ))}
-      </div>
-
+      <Topbar />
+      <DatosAlbaran />
       <div className="campo-card">
         <div className="campo-card-title">¿Quién eres?</div>
         <div className="rol-selector">
@@ -315,7 +311,6 @@ export default function VistaCampo({ albaranes, updateFirma, subirTicketPesada }
           })}
         </div>
       </div>
-
       <div style={{textAlign:'center'}}>
         <button onClick={() => navigate('/dashboard')} style={{background:'none',border:'none',color:'var(--gray-400)',fontSize:13,cursor:'pointer',padding:'8px 0'}}>
           ← Volver al panel interno
@@ -324,43 +319,15 @@ export default function VistaCampo({ albaranes, updateFirma, subirTicketPesada }
     </div>
   )
 
-  // Flujo genérico — formulario de rol seleccionado
   return (
     <div className="campo-page">
-      <div className="campo-topbar">
-        <button onClick={() => setRolSeleccionado(null)} style={{background:'none',border:'none',cursor:'pointer',color:'var(--gray-600)'}}>
-          <ArrowLeft size={18} />
-        </button>
-        <div>
-          <div className="campo-title">Albarán {a.id}</div>
-          <div className="campo-sub">{ROLES_CONFIG[rolSeleccionado]?.label}</div>
-        </div>
-      </div>
-
-      <div className="campo-card">
-        <div className="campo-card-title">Datos del albarán</div>
-        {[
-          ['Especie',       `${a.especie} · ${a.tipoBiomasa}`],
-          ['Origen',        a.origen || '—'],
-          ['Destino',       a.instalacion],
-          ['Transportista', a.transportista || '—'],
-          ['Observaciones', a.observaciones || '—'],
-        ].map(([k, v]) => (
-          <div key={k} className="campo-row">
-            <span className="campo-row-key">{k}</span>
-            <span className="campo-row-val">{v}</span>
-          </div>
-        ))}
-      </div>
-
+      <Topbar onBack={() => setRolSeleccionado(null)} />
+      <DatosAlbaran />
       <PasoFirma
-        rol={rolSeleccionado}
-        a={a}
-        updateFirma={updateFirma}
-        subirTicketPesada={subirTicketPesada}
+        rol={rolSeleccionado} a={a}
+        updateFirma={updateFirma} subirTicketPesada={subirTicketPesada}
         onCompletado={() => setTodoCompletado(true)}
-        totalPasos={1}
-        pasoActual={1}
+        totalPasos={1} pasoActual={1}
       />
     </div>
   )

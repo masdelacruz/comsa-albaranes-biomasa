@@ -2,14 +2,14 @@ import { supabase } from '../supabase'
 import { notificarNuevoAlbaran, notificarFirmaCompletada, notificarAlbaranCerrado } from '../utils/notificaciones'
 
 const ROL_LABEL = {
-  oficina:     'Oficina',
-  astilladora: 'Astilladora',
-  camionero:   'Transportista',
-  instalacion: 'Instalación',
-  proveedor:   'Proveedor',
+  proveedor:     'Proveedor',
+  oficina:       'Oficina',
+  astilladora:   'Astilladora',
+  transportista: 'Transportista',
+  instalacion:   'Instalación',
 }
 
-const ROLES_FIRMA = ['oficina', 'astilladora', 'camionero', 'instalacion']
+const ROLES_FIRMA = ['oficina', 'astilladora', 'transportista', 'instalacion']
 
 async function generarId() {
   const { data } = await supabase.rpc('next_albaran_id')
@@ -49,7 +49,7 @@ export function useAlbaranActions(refetch, usuario) {
       firmasBase.push({ albaran_id: id, rol: 'astilladora', actor: form.astilladora, firmado: false, fecha: null })
     }
     if (esOp1 && form.transportista) {
-      firmasBase.push({ albaran_id: id, rol: 'camionero', actor: form.transportista, firmado: false, fecha: null })
+      firmasBase.push({ albaran_id: id, rol: 'transportista', actor: form.transportista, firmado: false, fecha: null })
     }
     firmasBase.push({ albaran_id: id, rol: 'instalacion', actor: form.instalacion, firmado: false, fecha: null })
 
@@ -69,7 +69,7 @@ export function useAlbaranActions(refetch, usuario) {
     return id
   }
 
-  const updateFirma = async (albaranId, rol, actor, pesadaData = null, firmaImagen = null) => {
+  const updateFirma = async (albaranId, rol, actor, pesadaData = null, firmaImagen = null, transporteData = null) => {
     const fecha = new Date().toLocaleString('es-ES')
     await supabase.from('firmas')
       .update({ firmado: true, fecha, actor, firma_imagen: firmaImagen })
@@ -80,14 +80,24 @@ export function useAlbaranActions(refetch, usuario) {
     })
     if (pesadaData) {
       await supabase.from('pesada')
-        .update({ entrada: pesadaData.entrada || null, salida: pesadaData.salida || null, humedad: pesadaData.humedad || null })
+        .update({
+          entrada: pesadaData.entrada || null,
+          salida:  pesadaData.salida  || null,
+          humedad: pesadaData.humedad || null,
+        })
         .eq('albaran_id', albaranId)
+    }
+    if (transporteData) {
+      await supabase.from('albaranes').update({
+        matricula_tractora:  transporteData.matriculaTractora  || null,
+        matricula_remolque:  transporteData.matriculaRemolque  || null,
+        chofer:              transporteData.chofer             || null,
+      }).eq('id', albaranId)
     }
 
     const { data: firmas } = await supabase.from('firmas').select('*').eq('albaran_id', albaranId)
     const firmasRelevantes = firmas?.filter(f => ROLES_FIRMA.includes(f.rol))
     const todasFirmadas = firmasRelevantes?.every(f => f.firmado)
-
     const { data: albaranData } = await supabase.from('albaranes').select('*').eq('id', albaranId).single()
     await notificarFirmaCompletada({ ...albaranData, id: albaranId }, actor)
     if (todasFirmadas) {

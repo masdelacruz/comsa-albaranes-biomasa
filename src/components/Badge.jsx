@@ -14,13 +14,10 @@ const LINE_W = 16
 
 export function FirmaSteps({ firmas }) {
   const keys = Object.keys(firmas)
-  const esOp2 = !keys.includes('astilladora') && !keys.includes('camionero')
+  const esOp2 = !keys.includes('astilladora') && !keys.includes('transportista')
 
   if (esOp2) {
-    const pasos = [
-      { key: 'oficina' },
-      { key: 'instalacion' },
-    ]
+    const pasos = [{ key: 'oficina' }, { key: 'instalacion' }]
     return (
       <div className="firma-steps">
         {pasos.map((s, i) => {
@@ -29,9 +26,7 @@ export function FirmaSteps({ firmas }) {
           return (
             <div key={s.key} className="firma-step-wrap">
               <div className={`firma-dot ${estado}`}>{firma?.firmado ? '✓' : i + 1}</div>
-              {i < pasos.length - 1 && (
-                <div className="firma-line" style={{width: LINE_W * 3 + 20 * 2}} />
-              )}
+              {i < pasos.length - 1 && <div className="firma-line" style={{width: LINE_W * 3 + 20 * 2}} />}
             </div>
           )
         })}
@@ -42,7 +37,7 @@ export function FirmaSteps({ firmas }) {
   const pasos = [
     { key: 'oficina' },
     { key: 'astilladora' },
-    { key: 'camionero' },
+    { key: 'transportista' },
     { key: 'instalacion' },
   ].filter(s => keys.includes(s.key))
 

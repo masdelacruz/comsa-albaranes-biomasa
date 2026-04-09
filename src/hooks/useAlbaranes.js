@@ -3,11 +3,11 @@ import { supabase } from '../supabase'
 
 const DOCS_OP1 = ['Autodeclaración', 'Acuerdo de cesión', 'Contrato prestación servicios', 'Permiso de corta']
 const DOCS_OP2 = ['Certificado SURE', 'Permiso de obra', 'Contrato prestación servicios']
-const ORDEN_FIRMAS = ['oficina', 'proveedor', 'astilladora', 'camionero', 'instalacion']
+const ORDEN_FIRMAS = ['oficina', 'astilladora', 'transportista', 'instalacion']
 
 export function useAlbaranes() {
   const [albaranes, setAlbaranes] = useState([])
-  const [loading, setLoading] = useState(true)
+  const [loading, setLoading]     = useState(true)
 
   const fetchAlbaranes = async () => {
     const { data: albs } = await supabase.from('albaranes').select('*').order('created_at', { ascending: false })
@@ -33,8 +33,7 @@ export function useAlbaranes() {
       ORDEN_FIRMAS.forEach(rol => { if (firmasMap[rol]) firmasObj[rol] = firmasMap[rol] })
 
       const pesada = (pesadas || []).find(p => p.albaran_id === a.id) || {}
-
-      const aDoc = (docs || []).filter(d => d.albaran_id === a.id)
+      const aDoc   = (docs || []).filter(d => d.albaran_id === a.id)
       const docsMap = {}
       aDoc.forEach(d => {
         docsMap[d.nombre] = {
@@ -53,9 +52,9 @@ export function useAlbaranes() {
         transportista: a.transportista, instalacion: a.instalacion,
         especie: a.especie, tipoBiomasa: a.tipo_biomasa,
         origen: a.origen, permiso: a.permiso, observaciones: a.observaciones,
-        estado: a.estado, certificacion: a.certificacion || 'PEFC', mapsOrigen: a.maps_origen,
+        estado: a.estado, mapsOrigen: a.maps_origen, mapsDestino: a.maps_destino,
         matriculaTractora: a.matricula_tractora, matriculaRemolque: a.matricula_remolque,
-        chofer: a.chofer,
+        chofer: a.chofer, certificacion: a.certificacion,
         firmas: firmasObj,
         pesada: {
           entrada: pesada.entrada || null, salida: pesada.salida || null,
