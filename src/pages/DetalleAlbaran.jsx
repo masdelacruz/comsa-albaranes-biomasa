@@ -1,10 +1,14 @@
-import { useRef, useState } from 'react'
+import { useRef, useState, useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { ArrowLeft, ExternalLink, CheckCircle, Clock, FileDown, Upload, Eye, FileText, AlertTriangle, Copy, Pencil, X, Check } from 'lucide-react'
 import { Badge } from '../components/Badge'
 import { generarPDF } from '../utils/generarPDF'
+import { supabase } from '../supabase'
+import { ESPECIES, TIPOS_BIOMASA } from '../data/mockData'
 import '../components/shared.css'
 import './DetalleAlbaran.css'
+
+const TIPOS_OP = ['Opció 1 — Compra en monte / plataforma', 'Opció 2 — Proveedor directo']
 
 const ORDEN_FIRMAS = ['oficina', 'astilladora', 'transportista', 'instalacion']
 
@@ -30,6 +34,21 @@ export default function DetalleAlbaran({ albaranes, simularFirma, subirDocumento
   const [formDatos,  setFormDatos]  = useState({})
   const [formPesada, setFormPesada] = useState({})
   const [guardando,  setGuardando]  = useState(false)
+
+  const [proveedores,    setProveedores]    = useState([])
+  const [astilladoras,   setAstilladoras]   = useState([])
+  const [transportistas, setTransportistas] = useState([])
+  const [instalaciones,  setInstalaciones]  = useState([])
+
+  useEffect(() => {
+    supabase.from('proveedores').select('*').eq('activo', true).order('nombre').then(({ data }) => {
+      const d = data || []
+      setProveedores(   d.filter(p => p.tipo === 'proveedor'   ).map(p => p.nombre))
+      setAstilladoras(  d.filter(p => p.tipo === 'astilladora' ).map(p => p.nombre))
+      setTransportistas(d.filter(p => p.tipo === 'transportista').map(p => p.nombre))
+      setInstalaciones( d.filter(p => p.tipo === 'instalacion' ).map(p => p.nombre))
+    })
+  }, [])
 
   const a = albaranes.find(x => x.id === id)
   if (!a) return <div style={{padding:40,color:'var(--gray-400)'}}>Albarán no encontrado.</div>
@@ -177,13 +196,11 @@ export default function DetalleAlbaran({ albaranes, simularFirma, subirDocumento
   const setD = (k, v) => setFormDatos(p => ({ ...p, [k]: v }))
   const setP = (k, v) => setFormPesada(p => ({ ...p, [k]: v }))
 
-  const editInput = (val, onChange, placeholder = '') => (
-    <input
-      className="edit-input"
-      value={val}
-      onChange={e => onChange(e.target.value)}
-      placeholder={placeholder || '—'}
-    />
+  const EditSelect = ({ value, onChange, options, placeholder }) => (
+    <select className="edit-input" value={value} onChange={e => onChange(e.target.value)}>
+      {placeholder && <option value="">{placeholder}</option>}
+      {options.map(o => <option key={o} value={o}>{o}</option>)}
+    </select>
   )
 
   return (
@@ -257,27 +274,78 @@ export default function DetalleAlbaran({ albaranes, simularFirma, subirDocumento
 
               {editandoDatos ? (
                 <div className="edit-grid">
-                  {[
-                    ['Tipo operación',       'tipo'],
-                    ['Certificación',        'certificacion'],
-                    ['Proveedor',            'proveedor'],
-                    ['Astilladora',          'astilladora'],
-                    ['Transportista',        'transportista'],
-                    ['Instalación destino',  'instalacion'],
-                    ['Especie',              'especie'],
-                    ['Tipo biomasa',         'tipoBiomasa'],
-                    ['Origen',               'origen'],
-                    ['Permiso / Ref.',       'permiso'],
-                    ['Chófer',               'chofer'],
-                    ['Matrícula tractora',   'matriculaTractora'],
-                    ['Matrícula remolque',   'matriculaRemolque'],
-                    ['Observaciones',        'observaciones'],
-                  ].map(([label, key]) => (
-                    <div key={key} className="edit-field">
-                      <label className="edit-label">{label}</label>
-                      {editInput(formDatos[key], v => setD(key, v))}
+                  <div className="edit-field">
+                    <label className="edit-label">Tipo operación</label>
+                    <EditSelect value={formDatos.tipo} onChange={v => setD('tipo', v)} options={TIPOS_OP} />
+                  </div>
+                  <div className="edit-field">
+                    <label className="edit-label">Certificación</label>
+                    <div style={{display:'flex',gap:12,paddingTop:4}}>
+                      {['SURE','PEFC'].map(cert => (
+                        <label key={cert} style={{display:'flex',alignItems:'center',gap:5,fontSize:13,cursor:'pointer',color:'var(--gray-700)'}}>
+                          <input
+                            type="checkbox"
+                            checked={formDatos.certificacion?.includes(cert) || false}
+                            onChange={e => {
+                              const actual = formDatos.certificacion ? formDatos.certificacion.split(',').filter(Boolean) : []
+                              const nueva  = e.target.checked ? [...actual, cert] : actual.filter(c => c !== cert)
+                              setD('certificacion', nueva.join(','))
+                            }}
+                            style={{width:14,height:14,accentColor:'var(--green-400)',cursor:'pointer'}}
+                          />
+                          {cert}
+                        </label>
+                      ))}
                     </div>
-                  ))}
+                  </div>
+                  <div className="edit-field">
+                    <label className="edit-label">Proveedor</label>
+                    <EditSelect value={formDatos.proveedor} onChange={v => setD('proveedor', v)} options={proveedores} placeholder="Selecciona..." />
+                  </div>
+                  <div className="edit-field">
+                    <label className="edit-label">Astilladora</label>
+                    <EditSelect value={formDatos.astilladora} onChange={v => setD('astilladora', v)} options={astilladoras} placeholder="Selecciona..." />
+                  </div>
+                  <div className="edit-field">
+                    <label className="edit-label">Transportista</label>
+                    <EditSelect value={formDatos.transportista} onChange={v => setD('transportista', v)} options={transportistas} placeholder="Selecciona..." />
+                  </div>
+                  <div className="edit-field">
+                    <label className="edit-label">Instalación destino</label>
+                    <EditSelect value={formDatos.instalacion} onChange={v => setD('instalacion', v)} options={instalaciones} placeholder="Selecciona..." />
+                  </div>
+                  <div className="edit-field">
+                    <label className="edit-label">Especie</label>
+                    <EditSelect value={formDatos.especie} onChange={v => setD('especie', v)} options={ESPECIES} />
+                  </div>
+                  <div className="edit-field">
+                    <label className="edit-label">Tipo biomasa</label>
+                    <EditSelect value={formDatos.tipoBiomasa} onChange={v => setD('tipoBiomasa', v)} options={TIPOS_BIOMASA} />
+                  </div>
+                  <div className="edit-field">
+                    <label className="edit-label">Origen</label>
+                    <input className="edit-input" value={formDatos.origen} onChange={e => setD('origen', e.target.value)} placeholder="Paraje / término municipal" />
+                  </div>
+                  <div className="edit-field">
+                    <label className="edit-label">Permiso / Ref.</label>
+                    <input className="edit-input" value={formDatos.permiso} onChange={e => setD('permiso', e.target.value)} placeholder="Nº permiso o SURE" />
+                  </div>
+                  <div className="edit-field">
+                    <label className="edit-label">Chófer</label>
+                    <input className="edit-input" value={formDatos.chofer} onChange={e => setD('chofer', e.target.value)} placeholder="Nombre" />
+                  </div>
+                  <div className="edit-field">
+                    <label className="edit-label">Matrícula tractora</label>
+                    <input className="edit-input" value={formDatos.matriculaTractora} onChange={e => setD('matriculaTractora', e.target.value)} placeholder="Ej: 1234ABC" />
+                  </div>
+                  <div className="edit-field">
+                    <label className="edit-label">Matrícula remolque</label>
+                    <input className="edit-input" value={formDatos.matriculaRemolque} onChange={e => setD('matriculaRemolque', e.target.value)} placeholder="Ej: R-1234-ABC" />
+                  </div>
+                  <div className="edit-field" style={{gridColumn:'1/-1'}}>
+                    <label className="edit-label">Observaciones</label>
+                    <textarea className="edit-input" value={formDatos.observaciones} onChange={e => setD('observaciones', e.target.value)} placeholder="Observaciones..." style={{minHeight:56,resize:'vertical'}} />
+                  </div>
                 </div>
               ) : (
                 [
