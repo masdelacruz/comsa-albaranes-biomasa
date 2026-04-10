@@ -146,5 +146,20 @@ const subirTicketPesada = async (albaranId, fichero, actorexterno = null) => {
   await refetch()
 }
 
-  return { addAlbaran, updateFirma, simularFirmaOficina, subirDocumento, subirTicketPesada }
+  const actualizarAlbaran = async (albaranId, campos, pesadaCampos = null) => {
+    const fecha = new Date().toLocaleString('es-ES')
+    if (campos && Object.keys(campos).length > 0) {
+      await supabase.from('albaranes').update(campos).eq('id', albaranId)
+    }
+    if (pesadaCampos && Object.keys(pesadaCampos).length > 0) {
+      await supabase.from('pesada').update(pesadaCampos).eq('albaran_id', albaranId)
+    }
+    await supabase.from('actividad').insert({
+      albaran_id: albaranId, ts: fecha,
+      texto: 'Datos editados manualmente', actor: usuario?.nombre || 'Oficina',
+    })
+    await refetch()
+  }
+
+  return { addAlbaran, updateFirma, simularFirmaOficina, subirDocumento, subirTicketPesada, actualizarAlbaran }
 }

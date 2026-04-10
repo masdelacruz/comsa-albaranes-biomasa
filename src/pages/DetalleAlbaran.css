@@ -25,3 +25,28 @@
 .doc-row { display:flex; align-items:center; justify-content:space-between; gap:12px; padding:10px 0; border-bottom:var(--border-light); }
 .doc-row:last-child { border-bottom:none; }
 @keyframes spin { to { transform:rotate(360deg); } }
+
+/* Edit mode */
+.btn-edit-section {
+  display: flex; align-items: center; justify-content: center;
+  width: 24px; height: 24px; border-radius: var(--radius-sm);
+  border: var(--border); background: transparent; cursor: pointer;
+  color: var(--gray-400); transition: color 0.15s, background 0.15s;
+  flex-shrink: 0;
+}
+.btn-edit-section:hover { color: var(--gray-700); background: var(--gray-100); }
+
+.edit-grid {
+  display: grid; grid-template-columns: 1fr 1fr; gap: 10px 14px;
+  padding-top: 10px;
+}
+.edit-field { display: flex; flex-direction: column; gap: 3px; }
+.edit-label { font-size: 11px; color: var(--gray-400); font-weight: 500; }
+.edit-input {
+  font-size: 13px; padding: 5px 8px;
+  border: 1px solid var(--gray-200); border-radius: var(--radius-sm);
+  background: var(--gray-50); color: var(--gray-800);
+  outline: none; transition: border-color 0.15s;
+  font-family: inherit; width: 100%; box-sizing: border-box;
+}
+.edit-input:focus { border-color: var(--green-400); background: #fff; }

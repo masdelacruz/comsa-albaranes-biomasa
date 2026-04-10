@@ -1,6 +1,6 @@
 import { useRef, useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
-import { ArrowLeft, ExternalLink, CheckCircle, Clock, FileDown, Upload, Eye, FileText, AlertTriangle, Copy } from 'lucide-react'
+import { ArrowLeft, ExternalLink, CheckCircle, Clock, FileDown, Upload, Eye, FileText, AlertTriangle, Copy, Pencil, X, Check } from 'lucide-react'
 import { Badge } from '../components/Badge'
 import { generarPDF } from '../utils/generarPDF'
 import '../components/shared.css'
@@ -15,7 +15,7 @@ const FIRMA_LABELS = {
   instalacion:   'Receptor — Instalación destino',
 }
 
-export default function DetalleAlbaran({ albaranes, simularFirma, subirDocumento, subirTicketPesada, usuario }) {
+export default function DetalleAlbaran({ albaranes, simularFirma, subirDocumento, subirTicketPesada, actualizarAlbaran, usuario }) {
   const { id } = useParams()
   const navigate = useNavigate()
   const fileRefs    = useRef({})
@@ -25,8 +25,17 @@ export default function DetalleAlbaran({ albaranes, simularFirma, subirDocumento
   const [confirmModal, setConfirmModal]   = useState(null)
   const [copiado, setCopiado]             = useState('')
 
+  const [editandoDatos,  setEditandoDatos]  = useState(false)
+  const [editandoPesada, setEditandoPesada] = useState(false)
+  const [formDatos,  setFormDatos]  = useState({})
+  const [formPesada, setFormPesada] = useState({})
+  const [guardando,  setGuardando]  = useState(false)
+
   const a = albaranes.find(x => x.id === id)
   if (!a) return <div style={{padding:40,color:'var(--gray-400)'}}>Albarán no encontrado.</div>
+
+  const esSuperadmin = usuario?.nivel === 'superadmin'
+  const puedeEditar  = esSuperadmin || a.estado !== 'cerrado'
 
   const campoUrl = `${window.location.origin}/campo/${a.id}`
   const pesoNeto = a.pesada.entrada && a.pesada.salida
@@ -97,6 +106,86 @@ export default function DetalleAlbaran({ albaranes, simularFirma, subirDocumento
     return (bytes / (1024 * 1024)).toFixed(1) + ' MB'
   }
 
+  const iniciarEditDatos = () => {
+    setFormDatos({
+      tipo:             a.tipo             || '',
+      certificacion:    a.certificacion    || '',
+      proveedor:        a.proveedor        || '',
+      astilladora:      a.astilladora      || '',
+      transportista:    a.transportista    || '',
+      instalacion:      a.instalacion      || '',
+      especie:          a.especie          || '',
+      tipoBiomasa:      a.tipoBiomasa      || '',
+      origen:           a.origen           || '',
+      permiso:          a.permiso          || '',
+      chofer:           a.chofer           || '',
+      matriculaTractora: a.matriculaTractora || '',
+      matriculaRemolque: a.matriculaRemolque || '',
+      observaciones:    a.observaciones    || '',
+    })
+    setEditandoDatos(true)
+  }
+
+  const guardarDatos = async () => {
+    setGuardando(true)
+    try {
+      await actualizarAlbaran(a.id, {
+        tipo:              formDatos.tipo             || null,
+        certificacion:     formDatos.certificacion    || null,
+        proveedor:         formDatos.proveedor        || null,
+        astilladora:       formDatos.astilladora      || null,
+        transportista:     formDatos.transportista    || null,
+        instalacion:       formDatos.instalacion      || null,
+        especie:           formDatos.especie          || null,
+        tipo_biomasa:      formDatos.tipoBiomasa      || null,
+        origen:            formDatos.origen           || null,
+        permiso:           formDatos.permiso          || null,
+        chofer:            formDatos.chofer           || null,
+        matricula_tractora: formDatos.matriculaTractora || null,
+        matricula_remolque: formDatos.matriculaRemolque || null,
+        observaciones:     formDatos.observaciones    || null,
+      })
+      setEditandoDatos(false)
+    } finally {
+      setGuardando(false)
+    }
+  }
+
+  const iniciarEditPesada = () => {
+    setFormPesada({
+      entrada: a.pesada.entrada ?? '',
+      salida:  a.pesada.salida  ?? '',
+      humedad: a.pesada.humedad ?? '',
+    })
+    setEditandoPesada(true)
+  }
+
+  const guardarPesada = async () => {
+    setGuardando(true)
+    try {
+      await actualizarAlbaran(a.id, {}, {
+        entrada: formPesada.entrada !== '' ? Number(formPesada.entrada) : null,
+        salida:  formPesada.salida  !== '' ? Number(formPesada.salida)  : null,
+        humedad: formPesada.humedad !== '' ? Number(formPesada.humedad) : null,
+      })
+      setEditandoPesada(false)
+    } finally {
+      setGuardando(false)
+    }
+  }
+
+  const setD = (k, v) => setFormDatos(p => ({ ...p, [k]: v }))
+  const setP = (k, v) => setFormPesada(p => ({ ...p, [k]: v }))
+
+  const editInput = (val, onChange, placeholder = '') => (
+    <input
+      className="edit-input"
+      value={val}
+      onChange={e => onChange(e.target.value)}
+      placeholder={placeholder || '—'}
+    />
+  )
+
   return (
     <div className="detalle-page">
       {confirmModal && (
@@ -144,43 +233,132 @@ export default function DetalleAlbaran({ albaranes, simularFirma, subirDocumento
       <div className="detalle-content">
         <div className="detalle-cols">
           <div className="detalle-left">
+
+            {/* ── DATOS DEL ALBARÁN ── */}
             <div className="card" style={{marginBottom:14}}>
-              <div className="section-label">Datos del albarán</div>
-              {[
-                ['Tipo operación',      a.tipo],
-                ['Certificación',       a.certificacion || '—'],
-                ['Proveedor',           a.proveedor || '—'],
-                ['Astilladora',         a.astilladora || '—'],
-                ['Transportista',       a.transportista || '—'],
-                ['Instalación destino', a.instalacion],
-                ['Especie',             `${a.especie} · ${a.tipoBiomasa}`],
-                ['Origen',              a.origen || '—'],
-                ['Permiso / Ref.',      a.permiso || '—'],
-                ['Chófer',              a.chofer || '—'],
-                ['Matrícula tractora',  a.matriculaTractora || '—'],
-                ['Matrícula remolque',  a.matriculaRemolque || '—'],
-                ['Observaciones',       a.observaciones || '—'],
-              ].map(([k, v]) => (
-                <div key={k} className="detalle-row">
-                  <span className="detalle-key">{k}</span>
-                  <span className="detalle-val">{v}</span>
+              <div className="section-label" style={{display:'flex',alignItems:'center',justifyContent:'space-between'}}>
+                Datos del albarán
+                {puedeEditar && !editandoDatos && (
+                  <button className="btn-edit-section" onClick={iniciarEditDatos} title="Editar datos">
+                    <Pencil size={12} />
+                  </button>
+                )}
+                {editandoDatos && (
+                  <div style={{display:'flex',gap:4}}>
+                    <button className="btn btn-primary" style={{fontSize:11,padding:'3px 8px'}} onClick={guardarDatos} disabled={guardando}>
+                      <Check size={11} /> Guardar
+                    </button>
+                    <button className="btn" style={{fontSize:11,padding:'3px 8px'}} onClick={() => setEditandoDatos(false)} disabled={guardando}>
+                      <X size={11} /> Cancelar
+                    </button>
+                  </div>
+                )}
+              </div>
+
+              {editandoDatos ? (
+                <div className="edit-grid">
+                  {[
+                    ['Tipo operación',       'tipo'],
+                    ['Certificación',        'certificacion'],
+                    ['Proveedor',            'proveedor'],
+                    ['Astilladora',          'astilladora'],
+                    ['Transportista',        'transportista'],
+                    ['Instalación destino',  'instalacion'],
+                    ['Especie',              'especie'],
+                    ['Tipo biomasa',         'tipoBiomasa'],
+                    ['Origen',               'origen'],
+                    ['Permiso / Ref.',       'permiso'],
+                    ['Chófer',               'chofer'],
+                    ['Matrícula tractora',   'matriculaTractora'],
+                    ['Matrícula remolque',   'matriculaRemolque'],
+                    ['Observaciones',        'observaciones'],
+                  ].map(([label, key]) => (
+                    <div key={key} className="edit-field">
+                      <label className="edit-label">{label}</label>
+                      {editInput(formDatos[key], v => setD(key, v))}
+                    </div>
+                  ))}
                 </div>
-              ))}
+              ) : (
+                [
+                  ['Tipo operación',      a.tipo],
+                  ['Certificación',       a.certificacion || '—'],
+                  ['Proveedor',           a.proveedor || '—'],
+                  ['Astilladora',         a.astilladora || '—'],
+                  ['Transportista',       a.transportista || '—'],
+                  ['Instalación destino', a.instalacion],
+                  ['Especie',             `${a.especie} · ${a.tipoBiomasa}`],
+                  ['Origen',              a.origen || '—'],
+                  ['Permiso / Ref.',      a.permiso || '—'],
+                  ['Chófer',              a.chofer || '—'],
+                  ['Matrícula tractora',  a.matriculaTractora || '—'],
+                  ['Matrícula remolque',  a.matriculaRemolque || '—'],
+                  ['Observaciones',       a.observaciones || '—'],
+                ].map(([k, v]) => (
+                  <div key={k} className="detalle-row">
+                    <span className="detalle-key">{k}</span>
+                    <span className="detalle-val">{v}</span>
+                  </div>
+                ))
+              )}
             </div>
 
+            {/* ── DATOS DE RECEPCIÓN Y PESADA ── */}
             <div className="card" style={{marginBottom:14}}>
-              <div className="section-label">Datos de recepción y pesada</div>
-              {[
-                ['Peso bruto',  a.pesada.entrada ? a.pesada.entrada.toLocaleString('es-ES') + ' kg' : '—'],
-                ['Tara',        a.pesada.salida  ? a.pesada.salida.toLocaleString('es-ES')  + ' kg' : '—'],
-                ['Peso neto',   pesoNeto],
-                ['Humedad (%)', a.pesada.humedad != null ? `${a.pesada.humedad}%` : 'Pendiente análisis'],
-              ].map(([k, v]) => (
-                <div key={k} className="detalle-row">
-                  <span className="detalle-key">{k}</span>
-                  <span className={`detalle-val ${v === 'Pendiente análisis' ? 'warn' : ''}`}>{v}</span>
+              <div className="section-label" style={{display:'flex',alignItems:'center',justifyContent:'space-between'}}>
+                Datos de recepción y pesada
+                {puedeEditar && !editandoPesada && (
+                  <button className="btn-edit-section" onClick={iniciarEditPesada} title="Editar pesada">
+                    <Pencil size={12} />
+                  </button>
+                )}
+                {editandoPesada && (
+                  <div style={{display:'flex',gap:4}}>
+                    <button className="btn btn-primary" style={{fontSize:11,padding:'3px 8px'}} onClick={guardarPesada} disabled={guardando}>
+                      <Check size={11} /> Guardar
+                    </button>
+                    <button className="btn" style={{fontSize:11,padding:'3px 8px'}} onClick={() => setEditandoPesada(false)} disabled={guardando}>
+                      <X size={11} /> Cancelar
+                    </button>
+                  </div>
+                )}
+              </div>
+
+              {editandoPesada ? (
+                <div className="edit-grid">
+                  {[
+                    ['Peso bruto (kg)', 'entrada', 'number'],
+                    ['Tara (kg)',       'salida',   'number'],
+                    ['Humedad (%)',     'humedad',  'number'],
+                  ].map(([label, key, type]) => (
+                    <div key={key} className="edit-field">
+                      <label className="edit-label">{label}</label>
+                      <input
+                        className="edit-input"
+                        type={type}
+                        value={formPesada[key]}
+                        onChange={e => setP(key, e.target.value)}
+                        placeholder="—"
+                      />
+                    </div>
+                  ))}
                 </div>
-              ))}
+              ) : (
+                <>
+                  {[
+                    ['Peso bruto',  a.pesada.entrada ? a.pesada.entrada.toLocaleString('es-ES') + ' kg' : '—'],
+                    ['Tara',        a.pesada.salida  ? a.pesada.salida.toLocaleString('es-ES')  + ' kg' : '—'],
+                    ['Peso neto',   pesoNeto],
+                    ['Humedad (%)', a.pesada.humedad != null ? `${a.pesada.humedad}%` : 'Pendiente análisis'],
+                  ].map(([k, v]) => (
+                    <div key={k} className="detalle-row">
+                      <span className="detalle-key">{k}</span>
+                      <span className={`detalle-val ${v === 'Pendiente análisis' ? 'warn' : ''}`}>{v}</span>
+                    </div>
+                  ))}
+                </>
+              )}
+
               <div className="detalle-row" style={{alignItems:'center'}}>
                 <span className="detalle-key">Ticket de pesada</span>
                 <span className="detalle-val" style={{display:'flex',alignItems:'center',gap:6,justifyContent:'flex-end'}}>
@@ -213,6 +391,7 @@ export default function DetalleAlbaran({ albaranes, simularFirma, subirDocumento
               </div>
             </div>
 
+            {/* ── DOCUMENTACIÓN ── */}
             <div className="card">
               <div className="section-label">Documentación</div>
               <div style={{display:'flex',flexDirection:'column',gap:0}}>
