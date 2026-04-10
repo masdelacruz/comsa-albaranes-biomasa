@@ -7,12 +7,12 @@ import './Administracion.css'
 const TIPOS = ['proveedor', 'astilladora', 'transportista', 'instalacion']
 const TIPO_LABELS = { proveedor: 'Proveedor', astilladora: 'Astilladora', transportista: 'Transportista', instalacion: 'Instalación' }
 
-const EMPTY_FORM = { nombre: '', tipo: 'astilladora', contacto: '', email: '', telefono: '', notas: '', activo: true }
+const EMPTY_FORM = { nombre: '', tipo: 'proveedor', contacto: '', email: '', telefono: '', notas: '', activo: true }
 
 export default function Administracion() {
   const [proveedores, setProveedores] = useState([])
   const [loading, setLoading]         = useState(true)
-  const [tab, setTab]                 = useState('astilladora')
+  const [tab, setTab]                 = useState('proveedor')
   const [busqueda, setBusqueda]       = useState('')
   const [modal, setModal]             = useState(false)
   const [editando, setEditando]       = useState(null)
