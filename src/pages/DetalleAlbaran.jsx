@@ -15,13 +15,15 @@ const FIRMA_LABELS = {
   instalacion:   'Receptor — Instalación destino',
 }
 
-export default function DetalleAlbaran({ albaranes, simularFirma, subirDocumento, usuario }) {
+export default function DetalleAlbaran({ albaranes, simularFirma, subirDocumento, subirTicketPesada, usuario }) {
   const { id } = useParams()
   const navigate = useNavigate()
-  const fileRefs = useRef({})
-  const [subiendo, setSubiendo]         = useState({})
-  const [confirmModal, setConfirmModal] = useState(null)
-  const [copiado, setCopiado]           = useState('')
+  const fileRefs    = useRef({})
+  const ticketRef   = useRef(null)
+  const [subiendo, setSubiendo]           = useState({})
+  const [subiendoTicket, setSubiendoTicket] = useState(false)
+  const [confirmModal, setConfirmModal]   = useState(null)
+  const [copiado, setCopiado]             = useState('')
 
   const a = albaranes.find(x => x.id === id)
   if (!a) return <div style={{padding:40,color:'var(--gray-400)'}}>Albarán no encontrado.</div>
@@ -47,7 +49,7 @@ export default function DetalleAlbaran({ albaranes, simularFirma, subirDocumento
     return rolesGrupo.join(',')
   }
 
-  const siguientePaso = getSiguientePaso()
+  const siguientePaso    = getSiguientePaso()
   const urlSiguientePaso = siguientePaso ? `${window.location.origin}/campo/${a.id}/${siguientePaso}` : null
 
   const getRolLabel = (roles) => {
@@ -78,6 +80,14 @@ export default function DetalleAlbaran({ albaranes, simularFirma, subirDocumento
     setSubiendo(prev => ({ ...prev, [docNombre]: true }))
     try { await subirDocumento(a.id, docNombre, fichero) }
     finally { setSubiendo(prev => ({ ...prev, [docNombre]: false })); e.target.value = '' }
+  }
+
+  const handleSubirTicket = async (e) => {
+    const fichero = e.target.files[0]
+    if (!fichero) return
+    setSubiendoTicket(true)
+    try { await subirTicketPesada(a.id, fichero) }
+    finally { setSubiendoTicket(false); e.target.value = '' }
   }
 
   const formatBytes = (bytes) => {
@@ -149,7 +159,6 @@ export default function DetalleAlbaran({ albaranes, simularFirma, subirDocumento
                 ['Chófer',              a.chofer || '—'],
                 ['Matrícula tractora',  a.matriculaTractora || '—'],
                 ['Matrícula remolque',  a.matriculaRemolque || '—'],
-                ['Nº camiones',         a.numCamiones],
                 ['Observaciones',       a.observaciones || '—'],
               ].map(([k, v]) => (
                 <div key={k} className="detalle-row">
@@ -162,26 +171,44 @@ export default function DetalleAlbaran({ albaranes, simularFirma, subirDocumento
             <div className="card" style={{marginBottom:14}}>
               <div className="section-label">Datos de recepción y pesada</div>
               {[
-                ['Peso bruto',         a.pesada.entrada ? a.pesada.entrada.toLocaleString('es-ES') + ' kg' : '—'],
-                ['Tara',               a.pesada.salida  ? a.pesada.salida.toLocaleString('es-ES')  + ' kg' : '—'],
-                ['Peso neto',          pesoNeto],
-                ['Humedad (%)',        a.pesada.humedad != null ? `${a.pesada.humedad}%` : 'Pendiente análisis'],
+                ['Peso bruto',  a.pesada.entrada ? a.pesada.entrada.toLocaleString('es-ES') + ' kg' : '—'],
+                ['Tara',        a.pesada.salida  ? a.pesada.salida.toLocaleString('es-ES')  + ' kg' : '—'],
+                ['Peso neto',   pesoNeto],
+                ['Humedad (%)', a.pesada.humedad != null ? `${a.pesada.humedad}%` : 'Pendiente análisis'],
               ].map(([k, v]) => (
                 <div key={k} className="detalle-row">
                   <span className="detalle-key">{k}</span>
                   <span className={`detalle-val ${v === 'Pendiente análisis' ? 'warn' : ''}`}>{v}</span>
                 </div>
               ))}
-              <div className="detalle-row">
+              <div className="detalle-row" style={{alignItems:'center'}}>
                 <span className="detalle-key">Ticket de pesada</span>
-                <span className="detalle-val">
-                  {a.pesada.ticketUrl
-                    ? <a href={a.pesada.ticketUrl} target="_blank" rel="noreferrer"
-                        style={{color:'var(--blue-700)',display:'flex',alignItems:'center',gap:4,justifyContent:'flex-end'}}>
-                        <Eye size={12} /> Ver ticket
-                      </a>
-                    : <span style={{color:'var(--gray-300)'}}>Sin adjuntar</span>
-                  }
+                <span className="detalle-val" style={{display:'flex',alignItems:'center',gap:6,justifyContent:'flex-end'}}>
+                  {a.pesada.ticketUrl && (
+                    <a href={a.pesada.ticketUrl} target="_blank" rel="noreferrer"
+                      style={{color:'var(--blue-700)',display:'flex',alignItems:'center',gap:4}}>
+                      <Eye size={12} /> Ver
+                    </a>
+                  )}
+                  <button
+                    className={`btn ${a.pesada.ticketUrl ? '' : 'btn-primary'}`}
+                    style={{fontSize:11,padding:'4px 8px'}}
+                    onClick={() => ticketRef.current?.click()}
+                    disabled={subiendoTicket}
+                  >
+                    {subiendoTicket
+                      ? <span style={{display:'flex',alignItems:'center',gap:4}}>
+                          <div style={{width:10,height:10,border:'2px solid currentColor',borderTopColor:'transparent',borderRadius:'50%',animation:'spin 0.6s linear infinite'}} />
+                          Subiendo
+                        </span>
+                      : <><Upload size={11} /> {a.pesada.ticketUrl ? 'Reemplazar' : 'Adjuntar'}</>
+                    }
+                  </button>
+                  <input
+                    type="file" accept=".pdf,.jpg,.jpeg,.png" style={{display:'none'}}
+                    ref={ticketRef}
+                    onChange={handleSubirTicket}
+                  />
                 </span>
               </div>
             </div>
@@ -220,7 +247,8 @@ export default function DetalleAlbaran({ albaranes, simularFirma, subirDocumento
                           : <><Upload size={11} /> {doc.adjunto ? 'Reemplazar' : 'Adjuntar'}</>
                         }
                       </button>
-                      <input type="file" accept=".pdf,.jpg,.jpeg,.png" style={{display:'none'}}
+                      <input
+                        type="file" accept=".pdf,.jpg,.jpeg,.png" style={{display:'none'}}
                         ref={el => fileRefs.current[nombre] = el}
                         onChange={e => handleSubirDoc(nombre, e)}
                       />

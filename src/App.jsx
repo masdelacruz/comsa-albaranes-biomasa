@@ -49,7 +49,7 @@ function AppConDatos({ usuario, logout }) {
         <Route index element={<Navigate to="/dashboard" replace />} />
         <Route path="dashboard"      element={<Dashboard albaranes={albaranes} usuario={usuario} />} />
         <Route path="nuevo"          element={<NuevoAlbaran addAlbaran={addAlbaran} usuario={usuario} />} />
-        <Route path="albaran/:id"    element={<DetalleAlbaran albaranes={albaranes} simularFirma={simularFirmaOficina} subirDocumento={subirDocumento} usuario={usuario} />} />
+        <Route path="albaran/:id"    element={<DetalleAlbaran albaranes={albaranes} simularFirma={simularFirmaOficina} subirDocumento={subirDocumento} subirTicketPesada={subirTicketPesada} usuario={usuario} />} />
         <Route path="historial"      element={<Historial albaranes={albaranes} />} />
         <Route path="estadisticas"   element={<Estadisticas albaranes={albaranes} />} />
         <Route path="administracion" element={<Administracion />} />
@@ -73,7 +73,8 @@ export default function App() {
   return (
     <BrowserRouter>
       <Routes>
-        <Route path="/campo/:id/*" element={<VistaCampoPublica />} />
+        <Route path="/campo/:id" element={<VistaCampoPublica />} />
+        <Route path="/campo/:id/:roles" element={<VistaCampoPublica />} />
         <Route path="/*" element={<AppInner />} />
       </Routes>
     </BrowserRouter>

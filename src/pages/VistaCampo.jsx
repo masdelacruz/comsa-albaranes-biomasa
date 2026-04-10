@@ -163,7 +163,7 @@ function PasoFirma({ rol, a, updateFirma, subirTicketPesada, onCompletado, total
                 const f = e.target.files[0]
                 if (!f) return
                 setTicketNombre(f.name)
-                await subirTicketPesada(a.id, f)
+                await subirTicketPesada(a.id, f, a.firmas[rol]?.actor)
               }}
             />
           </label>
