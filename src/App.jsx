@@ -30,6 +30,13 @@ const Bloqueado = () => (
   </div>
 )
 
+function VistaCampoPublica() {
+  const { albaranes, loading } = useAlbaranes()
+  const { updateFirma, subirTicketPesada } = useAlbaranActions(() => {}, null)
+  if (loading) return <Spinner />
+  return <VistaCampo albaranes={albaranes} updateFirma={updateFirma} subirTicketPesada={subirTicketPesada} />
+}
+
 function AppConDatos({ usuario, logout }) {
   const { albaranes, loading: dataLoading, refetch } = useAlbaranes()
   const { addAlbaran, updateFirma, simularFirmaOficina, subirDocumento, subirTicketPesada } = useAlbaranActions(refetch, usuario)
@@ -38,7 +45,6 @@ function AppConDatos({ usuario, logout }) {
 
   return (
     <Routes>
-      <Route path="/campo/:id/:roles?" element={<VistaCampo albaranes={albaranes} updateFirma={updateFirma} subirTicketPesada={subirTicketPesada} />} />
       <Route path="/" element={<Layout usuario={usuario} logout={logout} />}>
         <Route index element={<Navigate to="/dashboard" replace />} />
         <Route path="dashboard"      element={<Dashboard albaranes={albaranes} usuario={usuario} />} />
@@ -64,5 +70,12 @@ function AppInner() {
 }
 
 export default function App() {
-  return <BrowserRouter><AppInner /></BrowserRouter>
+  return (
+    <BrowserRouter>
+      <Routes>
+        <Route path="/campo/:id/*" element={<VistaCampoPublica />} />
+        <Route path="/*" element={<AppInner />} />
+      </Routes>
+    </BrowserRouter>
+  )
 }
