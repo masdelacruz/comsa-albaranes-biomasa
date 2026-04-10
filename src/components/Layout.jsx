@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { Outlet, NavLink } from 'react-router-dom'
-import { LayoutDashboard, PlusCircle, Leaf, Clock, BarChart2, Settings, LogOut, User, X, Mail, Briefcase, Shield, Users } from 'lucide-react'
+import { LayoutDashboard, PlusCircle, Clock, BarChart2, Settings, LogOut, User, X, Mail, Briefcase, Shield, Users } from 'lucide-react'
 import './Layout.css'
 
 export default function Layout({ usuario, logout }) {
@@ -22,7 +22,17 @@ export default function Layout({ usuario, logout }) {
     <div className="layout">
       <aside className="sidebar">
         <div className="sidebar-logo">
-          <div className="logo-icon"><Leaf size={18} /></div>
+          <div className="logo-icon">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" width="18" height="18">
+              <path fill="white" d="M16 4C14.5 6.5 9.5 10.5 9.5 17C9.5 21.7 12.4 25.5 16 25.5C19.6 25.5 22.5 21.7 22.5 17C22.5 10.5 17.5 6.5 16 4Z"/>
+              <line x1="16" y1="25.5" x2="16" y2="28.5" stroke="rgba(255,255,255,0.6)" stroke-width="1.8" stroke-linecap="round"/>
+              <line x1="16" y1="23" x2="16" y2="9" stroke="rgba(15,110,86,0.6)" stroke-width="1.3" stroke-linecap="round"/>
+              <line x1="16" y1="20" x2="12" y2="16.5" stroke="rgba(15,110,86,0.6)" stroke-width="1" stroke-linecap="round"/>
+              <line x1="16" y1="17" x2="12.5" y2="14" stroke="rgba(15,110,86,0.6)" stroke-width="1" stroke-linecap="round"/>
+              <line x1="16" y1="20" x2="20" y2="16.5" stroke="rgba(15,110,86,0.6)" stroke-width="1" stroke-linecap="round"/>
+              <line x1="16" y1="17" x2="19.5" y2="14" stroke="rgba(15,110,86,0.6)" stroke-width="1" stroke-linecap="round"/>
+            </svg>
+          </div>
           <div>
             <div className="logo-title">Comsa Service</div>
             <div className="logo-sub">Biomasa · Operaciones</div>
