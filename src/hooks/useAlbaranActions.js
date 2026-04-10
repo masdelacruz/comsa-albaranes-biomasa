@@ -146,7 +146,7 @@ const subirTicketPesada = async (albaranId, fichero, actorexterno = null) => {
   await refetch()
 }
 
-  const actualizarAlbaran = async (albaranId, campos, pesadaCampos = null) => {
+  const actualizarAlbaran = async (albaranId, campos, pesadaCampos = null, descripcion = 'Datos editados manualmente') => {
     const fecha = new Date().toLocaleString('es-ES')
     if (campos && Object.keys(campos).length > 0) {
       await supabase.from('albaranes').update(campos).eq('id', albaranId)
@@ -156,7 +156,7 @@ const subirTicketPesada = async (albaranId, fichero, actorexterno = null) => {
     }
     await supabase.from('actividad').insert({
       albaran_id: albaranId, ts: fecha,
-      texto: 'Datos editados manualmente', actor: usuario?.nombre || 'Oficina',
+      texto: descripcion, actor: usuario?.nombre || 'Oficina',
     })
     await refetch()
   }

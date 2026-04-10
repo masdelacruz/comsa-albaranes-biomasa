@@ -169,7 +169,7 @@ export default function DetalleAlbaran({ albaranes, simularFirma, subirDocumento
         matricula_tractora: formDatos.matriculaTractora || null,
         matricula_remolque: formDatos.matriculaRemolque || null,
         observaciones:      formDatos.observaciones     || null,
-      })
+      }, null, 'Datos del albarán editados')
       setEditandoDatos(false)
       mostrarToast('Datos del albarán actualizados')
     } finally {
@@ -193,7 +193,7 @@ export default function DetalleAlbaran({ albaranes, simularFirma, subirDocumento
         entrada: formPesada.entrada !== '' ? Number(formPesada.entrada) : null,
         salida:  formPesada.salida  !== '' ? Number(formPesada.salida)  : null,
         humedad: formPesada.humedad !== '' ? Number(formPesada.humedad) : null,
-      })
+      }, 'Datos de pesada editados')
       setEditandoPesada(false)
       mostrarToast('Datos de pesada actualizados')
     } finally {
