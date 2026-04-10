@@ -34,6 +34,12 @@ export default function DetalleAlbaran({ albaranes, simularFirma, subirDocumento
   const [formDatos,  setFormDatos]  = useState({})
   const [formPesada, setFormPesada] = useState({})
   const [guardando,  setGuardando]  = useState(false)
+  const [toast,      setToast]      = useState('')
+
+  const mostrarToast = (msg) => {
+    setToast(msg)
+    setTimeout(() => setToast(''), 3000)
+  }
 
   const [proveedores,    setProveedores]    = useState([])
   const [astilladoras,   setAstilladoras]   = useState([])
@@ -165,6 +171,7 @@ export default function DetalleAlbaran({ albaranes, simularFirma, subirDocumento
         observaciones:      formDatos.observaciones     || null,
       })
       setEditandoDatos(false)
+      mostrarToast('Datos del albarán actualizados')
     } finally {
       setGuardando(false)
     }
@@ -188,6 +195,7 @@ export default function DetalleAlbaran({ albaranes, simularFirma, subirDocumento
         humedad: formPesada.humedad !== '' ? Number(formPesada.humedad) : null,
       })
       setEditandoPesada(false)
+      mostrarToast('Datos de pesada actualizados')
     } finally {
       setGuardando(false)
     }
@@ -198,6 +206,11 @@ export default function DetalleAlbaran({ albaranes, simularFirma, subirDocumento
 
   return (
     <div className="detalle-page">
+      {toast && (
+        <div className="toast-guardado">
+          <CheckCircle size={14} /> {toast}
+        </div>
+      )}
       {confirmModal && (
         <div style={{position:'fixed',inset:0,background:'rgba(0,0,0,0.4)',display:'flex',alignItems:'center',justifyContent:'center',zIndex:100,padding:20}}>
           <div style={{background:'#fff',borderRadius:'var(--radius-xl)',padding:28,maxWidth:400,width:'100%',boxShadow:'0 20px 60px rgba(0,0,0,0.15)'}}>
