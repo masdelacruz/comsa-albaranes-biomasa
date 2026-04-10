@@ -20,6 +20,8 @@
 .btn:active { transform:scale(0.98); }
 .btn-primary { background:var(--green-400); color:#fff; border-color:var(--green-400); }
 .btn-primary:hover { background:var(--green-600); border-color:var(--green-600); }
+.btn-primary:disabled { background:var(--gray-200); border-color:var(--gray-200); color:var(--gray-400); cursor:not-allowed; }
+.btn-primary:disabled:hover { background:var(--gray-200); border-color:var(--gray-200); }
 .btn-ghost { border-color:transparent; background:transparent; }
 .btn-ghost:hover { background:var(--gray-100); }
 .section-label { font-size:11px; font-weight:600; text-transform:uppercase; letter-spacing:0.6px; color:var(--gray-400); margin-bottom:10px; }
