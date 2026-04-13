@@ -1,7 +1,7 @@
 import { useState, useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Download, Search, FileSpreadsheet } from 'lucide-react'
-import * as XLSX from 'xlsx'
+import ExcelJS from 'exceljs'
 import { Badge, FirmaSteps } from '../components/Badge'
 import '../components/shared.css'
 import './Historial.css'
@@ -40,83 +40,124 @@ export default function Historial({ albaranes }) {
     ? (humedadMedia.reduce((acc, a) => acc + a.pesada.humedad, 0) / humedadMedia.length).toFixed(1)
     : '—'
 
-  const exportarExcel = () => {
-    const cabeceras = [
-      'Fecha', 'Nº Albarán', 'Origen', 'Permiso / Ref.',
-      'Instalación destino', 'Proveedor', 'Astilladora', 'Transportista',
-      'Matrícula tractora', 'Matrícula remolque', 'Chófer',
-      'Especie', 'Tipo biomasa', 'SURE', 'PEFC',
-      'Peso bruto (kg)', 'Tara (kg)', 'Peso neto (kg)', 'Peso neto (t)', 'Humedad (%)',
-      'Estado', 'Observaciones',
-    ]
-
-    const filas = filtrados.map(a => {
-      const certs    = a.certificacion ? a.certificacion.split(',') : []
-      const pesoNeto = a.pesada.entrada && a.pesada.salida ? a.pesada.entrada - a.pesada.salida : null
-      return [
-        a.fecha.split('-').reverse().join('/'),
-        a.id,
-        a.origen            || '',
-        a.permiso           || '',
-        a.instalacion       || '',
-        a.proveedor         || '',
-        a.astilladora       || '',
-        a.transportista     || '',
-        a.matriculaTractora || '',
-        a.matriculaRemolque || '',
-        a.chofer            || '',
-        a.especie           || '',
-        a.tipoBiomasa       || '',
-        certs.includes('SURE') ? '✓' : '',
-        certs.includes('PEFC') ? '✓' : '',
-        a.pesada.entrada != null ? a.pesada.entrada : '',
-        a.pesada.salida  != null ? a.pesada.salida  : '',
-        pesoNeto         != null ? pesoNeto          : '',
-        pesoNeto         != null ? Number((pesoNeto / 1000).toFixed(3)) : '',
-        a.pesada.humedad != null ? a.pesada.humedad  : '',
-        a.estado        || '',
-        a.observaciones || '',
-      ]
+  const exportarExcel = async () => {
+    const wb = new ExcelJS.Workbook()
+    wb.creator = 'Comsa Service'
+    const ws = wb.addWorksheet('Albaranes', {
+      views: [{ state: 'frozen', ySplit: 1 }], // cabecera congelada
     })
 
-    const wb = XLSX.utils.book_new()
-    const ws = XLSX.utils.aoa_to_sheet([cabeceras, ...filas])
-
-    ws['!cols'] = [
-      {wch:12}, // Fecha
-      {wch:12}, // Nº Albarán
-      {wch:32}, // Origen
-      {wch:18}, // Permiso / Ref.
-      {wch:26}, // Instalación destino
-      {wch:22}, // Proveedor
-      {wch:22}, // Astilladora
-      {wch:22}, // Transportista
-      {wch:16}, // Matrícula tractora
-      {wch:16}, // Matrícula remolque
-      {wch:16}, // Chófer
-      {wch:14}, // Especie
-      {wch:18}, // Tipo biomasa
-      {wch:7},  // SURE
-      {wch:7},  // PEFC
-      {wch:15}, // Peso bruto (kg)
-      {wch:12}, // Tara (kg)
-      {wch:15}, // Peso neto (kg)
-      {wch:14}, // Peso neto (t)
-      {wch:12}, // Humedad (%)
-      {wch:20}, // Estado
-      {wch:34}, // Observaciones
+    // ── Columnas (ancho + clave) ──────────────────────────────────────────
+    ws.columns = [
+      { key: 'fecha',       header: 'Fecha',              width: 13 },
+      { key: 'id',          header: 'Nº Albarán',         width: 13 },
+      { key: 'origen',      header: 'Origen',             width: 32 },
+      { key: 'permiso',     header: 'Permiso / Ref.',     width: 20 },
+      { key: 'instalacion', header: 'Instalación destino',width: 26 },
+      { key: 'proveedor',   header: 'Proveedor',          width: 22 },
+      { key: 'astilladora', header: 'Astilladora',        width: 22 },
+      { key: 'transportista',header:'Transportista',      width: 22 },
+      { key: 'tractora',    header: 'Matrícula tractora', width: 17 },
+      { key: 'remolque',    header: 'Matrícula remolque', width: 17 },
+      { key: 'chofer',      header: 'Chófer',             width: 16 },
+      { key: 'especie',     header: 'Especie',            width: 14 },
+      { key: 'biomasa',     header: 'Tipo biomasa',       width: 18 },
+      { key: 'sure',        header: 'SURE',               width: 7  },
+      { key: 'pefc',        header: 'PEFC',               width: 7  },
+      { key: 'bruto',       header: 'Peso bruto (kg)',    width: 16 },
+      { key: 'tara',        header: 'Tara (kg)',          width: 13 },
+      { key: 'neto_kg',     header: 'Peso neto (kg)',     width: 16 },
+      { key: 'neto_t',      header: 'Peso neto (t)',      width: 14 },
+      { key: 'humedad',     header: 'Humedad (%)',        width: 13 },
+      { key: 'estado',      header: 'Estado',             width: 22 },
+      { key: 'obs',         header: 'Observaciones',      width: 34 },
     ]
 
-    // Auto-filtro en todas las columnas
-    const lastCol = XLSX.utils.encode_col(cabeceras.length - 1)
-    const lastRow = filtrados.length + 1
-    ws['!autofilter'] = { ref: `A1:${lastCol}${lastRow}` }
+    // ── Estilo cabecera ───────────────────────────────────────────────────
+    const headerRow = ws.getRow(1)
+    headerRow.height = 22
+    headerRow.eachCell(cell => {
+      cell.fill   = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF1D9E75' } }
+      cell.font   = { bold: true, color: { argb: 'FFFFFFFF' }, size: 11, name: 'Calibri' }
+      cell.alignment = { vertical: 'middle', horizontal: 'center', wrapText: false }
+      cell.border = {
+        bottom: { style: 'medium', color: { argb: 'FF0F6E56' } },
+      }
+    })
 
-    // Congelar primera fila
-    ws['!freeze'] = { xSplit: 0, ySplit: 1, topLeftCell: 'A2', activePane: 'bottomLeft', state: 'frozen' }
+    // ── Auto-filtro ───────────────────────────────────────────────────────
+    ws.autoFilter = { from: 'A1', to: { row: 1, column: ws.columns.length } }
 
-    XLSX.utils.book_append_sheet(wb, ws, 'Albaranes')
-    XLSX.writeFile(wb, `comsa_albaranes_${new Date().toISOString().split('T')[0]}.xlsx`)
+    // ── Filas de datos ────────────────────────────────────────────────────
+    filtrados.forEach((a, i) => {
+      const certs    = a.certificacion ? a.certificacion.split(',') : []
+      const pesoNeto = a.pesada.entrada && a.pesada.salida ? a.pesada.entrada - a.pesada.salida : null
+      const esPar    = i % 2 === 0
+
+      const row = ws.addRow({
+        fecha:        a.fecha.split('-').reverse().join('/'),
+        id:           a.id,
+        origen:       a.origen            || '',
+        permiso:      a.permiso           || '',
+        instalacion:  a.instalacion       || '',
+        proveedor:    a.proveedor         || '',
+        astilladora:  a.astilladora       || '',
+        transportista:a.transportista     || '',
+        tractora:     a.matriculaTractora || '',
+        remolque:     a.matriculaRemolque || '',
+        chofer:       a.chofer            || '',
+        especie:      a.especie           || '',
+        biomasa:      a.tipoBiomasa       || '',
+        sure:         certs.includes('SURE') ? '✓' : '',
+        pefc:         certs.includes('PEFC') ? '✓' : '',
+        bruto:        a.pesada.entrada    ?? '',
+        tara:         a.pesada.salida     ?? '',
+        neto_kg:      pesoNeto            ?? '',
+        neto_t:       pesoNeto != null ? Number((pesoNeto / 1000).toFixed(3)) : '',
+        humedad:      a.pesada.humedad    ?? '',
+        estado:       a.estado            || '',
+        obs:          a.observaciones     || '',
+      })
+
+      row.height = 18
+
+      // Color alterno de filas
+      const bgColor = esPar ? 'FFFFFFFF' : 'FFF4FAF7'
+      row.eachCell({ includeEmpty: true }, (cell, colNum) => {
+        cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: bgColor } }
+        cell.font = { size: 10, name: 'Calibri' }
+        cell.alignment = { vertical: 'middle' }
+        // Borde inferior suave
+        cell.border = { bottom: { style: 'hair', color: { argb: 'FFD1D5DB' } } }
+      })
+
+      // Columnas SURE y PEFC: centrado y verde si tiene
+      ;['sure', 'pefc'].forEach(key => {
+        const col  = ws.columns.findIndex(c => c.key === key) + 1
+        const cell = row.getCell(col)
+        cell.alignment = { vertical: 'middle', horizontal: 'center' }
+        if (cell.value === '✓') {
+          cell.font = { size: 12, bold: true, color: { argb: 'FF1D9E75' }, name: 'Calibri' }
+        }
+      })
+
+      // Columnas numéricas: alineadas a la derecha
+      ;['bruto','tara','neto_kg','neto_t','humedad'].forEach(key => {
+        const col  = ws.columns.findIndex(c => c.key === key) + 1
+        const cell = row.getCell(col)
+        cell.alignment = { vertical: 'middle', horizontal: 'right' }
+      })
+    })
+
+    // ── Descargar ─────────────────────────────────────────────────────────
+    const buffer = await wb.xlsx.writeBuffer()
+    const blob   = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' })
+    const url    = URL.createObjectURL(blob)
+    const link   = document.createElement('a')
+    link.href     = url
+    link.download = `comsa_albaranes_${new Date().toISOString().split('T')[0]}.xlsx`
+    link.click()
+    URL.revokeObjectURL(url)
   }
 
   const limpiarFiltros = () => {
