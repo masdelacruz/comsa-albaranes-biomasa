@@ -30,9 +30,11 @@ export default function Administracion() {
   const [confirmDelete, setConfirmDelete] = useState(null)
 
   // Certificaciones state
-  const [logos, setLogos]               = useState({})         // { applus: url, pefc: url, sure: url }
-  const [subiendoLogo, setSubiendoLogo] = useState({})         // { applus: true/false, ... }
-  const [confirmDelLogo, setConfirmDelLogo] = useState(null)   // logo id pending delete
+  const [logos, setLogos]                   = useState({})
+  const [subiendoLogo, setSubiendoLogo]     = useState({})
+  const [errorLogos, setErrorLogos]         = useState({})
+  const [confirmDelLogo, setConfirmDelLogo] = useState(null)
+  const [dragOverLogo, setDragOverLogo]     = useState(null)
   const fileInputRefs = {
     applus_1: useRef(null),
     applus_2: useRef(null),
@@ -122,30 +124,34 @@ export default function Administracion() {
   const handleSubirLogo = async (id, file) => {
     if (!file) return
     setSubiendoLogo(s => ({ ...s, [id]: true }))
+    setErrorLogos(e => ({ ...e, [id]: null }))
     try {
       const ext  = file.name.split('.').pop().toLowerCase()
       const path = `${id}.${ext}`
 
-      // Remove existing file first (ignore errors — may not exist)
-      await supabase.storage.from('logos').remove([path])
+      // Intentar borrar versiones anteriores con extensiones comunes
+      await supabase.storage.from('logos').remove([
+        `${id}.png`, `${id}.jpg`, `${id}.jpeg`, `${id}.svg`, `${id}.webp`
+      ])
 
       const { error: upErr } = await supabase.storage.from('logos').upload(path, file, { upsert: true })
-      if (upErr) throw upErr
+      if (upErr) throw new Error(`Storage: ${upErr.message}`)
 
       const { data: urlData } = supabase.storage.from('logos').getPublicUrl(path)
-      const url = urlData?.publicUrl
-      if (!url) throw new Error('No public URL returned')
+      const publicUrl = urlData?.publicUrl
+      if (!publicUrl) throw new Error('No se obtuvo URL pública. ¿El bucket es público?')
 
-      // Add a cache-busting timestamp so the img tag refreshes
-      const urlWithTs = `${url}?t=${Date.now()}`
+      const urlWithTs = `${publicUrl}?t=${Date.now()}`
 
-      await supabase.from('logos_config').upsert({ id, url: urlWithTs })
+      const { error: dbErr } = await supabase.from('logos_config').upsert({ id, url: urlWithTs })
+      if (dbErr) throw new Error(`Base de datos: ${dbErr.message}`)
+
       setLogos(l => ({ ...l, [id]: urlWithTs }))
     } catch (err) {
       console.error('Error subiendo logo:', err)
+      setErrorLogos(e => ({ ...e, [id]: err.message || 'Error desconocido' }))
     } finally {
       setSubiendoLogo(s => ({ ...s, [id]: false }))
-      // Reset the file input so the same file can be re-uploaded if needed
       if (fileInputRefs[id]?.current) fileInputRefs[id].current.value = ''
     }
   }
@@ -217,35 +223,51 @@ export default function Administracion() {
                 {LOGOS_CONFIG.filter(c => c.id.startsWith('applus')).map(cfg => {
                   const url      = logos[cfg.id]
                   const subiendo = !!subiendoLogo[cfg.id]
+                  const error    = errorLogos[cfg.id]
+                  const isDragOver = dragOverLogo === cfg.id
                   return (
                     <div key={cfg.id} className="card" style={{ padding: 14, display: 'flex', flexDirection: 'column', gap: 8 }}>
                       <div style={{ fontWeight: 600, fontSize: 13, color: 'var(--gray-800)' }}>{cfg.nombre}</div>
                       <div style={{ fontSize: 11, color: 'var(--gray-400)' }}>{cfg.descripcion}</div>
-                      <div style={{
-                        border: '1px dashed var(--gray-200)',
-                        borderRadius: 6,
-                        minHeight: 90,
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        background: 'var(--gray-50, #fafafa)',
-                        overflow: 'hidden',
-                      }}>
-                        {url ? (
+                      <div
+                        style={{
+                          border: isDragOver ? '2px dashed var(--green-400)' : '1px dashed var(--gray-200)',
+                          borderRadius: 6, minHeight: 90, display: 'flex', alignItems: 'center',
+                          justifyContent: 'center', cursor: 'pointer',
+                          background: isDragOver ? 'rgba(29,158,117,0.06)' : 'var(--gray-50,#fafafa)',
+                          overflow: 'hidden', transition: 'border 0.15s, background 0.15s',
+                        }}
+                        onClick={() => fileInputRefs[cfg.id].current?.click()}
+                        onDragOver={e => { e.preventDefault(); setDragOverLogo(cfg.id) }}
+                        onDragLeave={() => setDragOverLogo(null)}
+                        onDrop={e => { e.preventDefault(); setDragOverLogo(null); handleSubirLogo(cfg.id, e.dataTransfer.files?.[0]) }}
+                      >
+                        {subiendo ? (
+                          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6, color: 'var(--gray-400)' }}>
+                            <div style={{ width: 20, height: 20, border: '2px solid var(--green-400)', borderTopColor: 'transparent', borderRadius: '50%', animation: 'spin 0.6s linear infinite' }} />
+                            <span style={{ fontSize: 11 }}>Subiendo...</span>
+                          </div>
+                        ) : isDragOver ? (
+                          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4, color: 'var(--green-400)' }}>
+                            <Upload size={22} />
+                            <span style={{ fontSize: 11 }}>Soltar aquí</span>
+                          </div>
+                        ) : url ? (
                           <img src={url} alt={cfg.nombre} style={{ maxWidth: '100%', maxHeight: 90, objectFit: 'contain', padding: 4 }} />
                         ) : (
                           <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4, color: 'var(--gray-300)' }}>
                             <Image size={24} />
-                            <span style={{ fontSize: 11 }}>Sin logo</span>
+                            <span style={{ fontSize: 11 }}>Soltar o clicar</span>
                           </div>
                         )}
                       </div>
+                      {error && <div style={{ fontSize: 11, color: 'var(--red-600)', background: 'var(--red-50,#fff1f1)', border: '1px solid var(--red-100)', borderRadius: 4, padding: '4px 8px' }}>⚠ {error}</div>}
                       <input ref={fileInputRefs[cfg.id]} type="file" accept="image/*" style={{ display: 'none' }}
                         onChange={e => handleSubirLogo(cfg.id, e.target.files?.[0])} />
                       <div style={{ display: 'flex', gap: 6 }}>
                         <button className="btn btn-primary" style={{ flex: 1, fontSize: 11, padding: '5px 10px' }}
                           disabled={subiendo} onClick={() => fileInputRefs[cfg.id].current?.click()}>
-                          {subiendo ? 'Subiendo...' : <><Upload size={12} /> {url ? 'Reemplazar' : 'Subir'}</>}
+                          <Upload size={12} /> {url ? 'Reemplazar' : 'Subir'}
                         </button>
                         {url && (confirmDelLogo === cfg.id ? (
                           <div style={{ display: 'flex', gap: 4, alignItems: 'center' }}>
@@ -276,26 +298,51 @@ export default function Administracion() {
                 {LOGOS_CONFIG.filter(c => !c.id.startsWith('applus')).map(cfg => {
                   const url      = logos[cfg.id]
                   const subiendo = !!subiendoLogo[cfg.id]
+                  const error    = errorLogos[cfg.id]
+                  const isDragOver = dragOverLogo === cfg.id
                   return (
                     <div key={cfg.id} className="card" style={{ padding: 16, display: 'flex', flexDirection: 'column', gap: 10 }}>
                       <div style={{ fontWeight: 600, fontSize: 14, color: 'var(--gray-800)' }}>{cfg.nombre}</div>
                       <div style={{ fontSize: 11, color: 'var(--gray-500)' }}>{cfg.descripcion}</div>
-                      <div style={{ border: '1px dashed var(--gray-200)', borderRadius: 6, minHeight: 80, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--gray-50, #fafafa)', overflow: 'hidden' }}>
-                        {url ? (
+                      <div
+                        style={{
+                          border: isDragOver ? '2px dashed var(--green-400)' : '1px dashed var(--gray-200)',
+                          borderRadius: 6, minHeight: 80, display: 'flex', alignItems: 'center',
+                          justifyContent: 'center', cursor: 'pointer',
+                          background: isDragOver ? 'rgba(29,158,117,0.06)' : 'var(--gray-50,#fafafa)',
+                          overflow: 'hidden', transition: 'border 0.15s, background 0.15s',
+                        }}
+                        onClick={() => fileInputRefs[cfg.id].current?.click()}
+                        onDragOver={e => { e.preventDefault(); setDragOverLogo(cfg.id) }}
+                        onDragLeave={() => setDragOverLogo(null)}
+                        onDrop={e => { e.preventDefault(); setDragOverLogo(null); handleSubirLogo(cfg.id, e.dataTransfer.files?.[0]) }}
+                      >
+                        {subiendo ? (
+                          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6, color: 'var(--gray-400)' }}>
+                            <div style={{ width: 20, height: 20, border: '2px solid var(--green-400)', borderTopColor: 'transparent', borderRadius: '50%', animation: 'spin 0.6s linear infinite' }} />
+                            <span style={{ fontSize: 11 }}>Subiendo...</span>
+                          </div>
+                        ) : isDragOver ? (
+                          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4, color: 'var(--green-400)' }}>
+                            <Upload size={22} />
+                            <span style={{ fontSize: 11 }}>Soltar aquí</span>
+                          </div>
+                        ) : url ? (
                           <img src={url} alt={cfg.nombre} style={{ maxWidth: '100%', maxHeight: 80, objectFit: 'contain', padding: 4 }} />
                         ) : (
                           <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4, color: 'var(--gray-300)' }}>
                             <Image size={28} />
-                            <span style={{ fontSize: 11 }}>Sin logo</span>
+                            <span style={{ fontSize: 11 }}>Soltar o clicar</span>
                           </div>
                         )}
                       </div>
+                      {error && <div style={{ fontSize: 11, color: 'var(--red-600)', background: 'var(--red-50,#fff1f1)', border: '1px solid var(--red-100)', borderRadius: 4, padding: '4px 8px' }}>⚠ {error}</div>}
                       <input ref={fileInputRefs[cfg.id]} type="file" accept="image/*" style={{ display: 'none' }}
                         onChange={e => handleSubirLogo(cfg.id, e.target.files?.[0])} />
                       <div style={{ display: 'flex', gap: 6 }}>
                         <button className="btn btn-primary" style={{ flex: 1, fontSize: 11, padding: '5px 10px' }}
                           disabled={subiendo} onClick={() => fileInputRefs[cfg.id].current?.click()}>
-                          {subiendo ? 'Subiendo...' : <><Upload size={12} /> {url ? 'Reemplazar' : 'Subir logo'}</>}
+                          <Upload size={12} /> {url ? 'Reemplazar' : 'Subir logo'}
                         </button>
                         {url && (confirmDelLogo === cfg.id ? (
                           <div style={{ display: 'flex', gap: 4, alignItems: 'center' }}>

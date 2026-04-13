@@ -28,6 +28,8 @@ export default function DetalleAlbaran({ albaranes, simularFirma, subirDocumento
   const [subiendoTicket, setSubiendoTicket] = useState(false)
   const [confirmModal, setConfirmModal]     = useState(null)
   const [copiado, setCopiado]               = useState('')
+  const [dragOverDoc, setDragOverDoc]       = useState(null)   // nombre del doc sobre el que se arrastra
+  const [dragOverTicket, setDragOverTicket] = useState(false)
 
   const [editandoDatos,  setEditandoDatos]  = useState(false)
   const [editandoPesada, setEditandoPesada] = useState(false)
@@ -108,20 +110,40 @@ export default function DetalleAlbaran({ albaranes, simularFirma, subirDocumento
     setConfirmModal(null)
   }
 
-  const handleSubirDoc = async (docNombre, e) => {
-    const fichero = e.target.files[0]
+  const subirDoc = async (docNombre, fichero) => {
     if (!fichero) return
     setSubiendo(prev => ({ ...prev, [docNombre]: true }))
     try { await subirDocumento(a.id, docNombre, fichero) }
-    finally { setSubiendo(prev => ({ ...prev, [docNombre]: false })); e.target.value = '' }
+    finally { setSubiendo(prev => ({ ...prev, [docNombre]: false })) }
   }
 
-  const handleSubirTicket = async (e) => {
-    const fichero = e.target.files[0]
+  const handleSubirDoc = async (docNombre, e) => {
+    await subirDoc(docNombre, e.target.files[0])
+    e.target.value = ''
+  }
+
+  const handleDropDoc = (docNombre, e) => {
+    e.preventDefault()
+    setDragOverDoc(null)
+    subirDoc(docNombre, e.dataTransfer.files?.[0])
+  }
+
+  const subirTicket = async (fichero) => {
     if (!fichero) return
     setSubiendoTicket(true)
     try { await subirTicketPesada(a.id, fichero) }
-    finally { setSubiendoTicket(false); e.target.value = '' }
+    finally { setSubiendoTicket(false) }
+  }
+
+  const handleSubirTicket = async (e) => {
+    await subirTicket(e.target.files[0])
+    e.target.value = ''
+  }
+
+  const handleDropTicket = (e) => {
+    e.preventDefault()
+    setDragOverTicket(false)
+    subirTicket(e.dataTransfer.files?.[0])
   }
 
   const formatBytes = (bytes) => {
@@ -451,10 +473,20 @@ export default function DetalleAlbaran({ albaranes, simularFirma, subirDocumento
                 </>
               )}
 
-              <div className="detalle-row" style={{alignItems:'center'}}>
+              <div
+                className="detalle-row"
+                style={{
+                  alignItems:'center',
+                  ...(dragOverTicket ? {background:'rgba(29,158,117,0.06)',outline:'2px dashed var(--green-400)',outlineOffset:'-2px',borderRadius:'var(--radius-md)'} : {})
+                }}
+                onDragOver={e => { e.preventDefault(); setDragOverTicket(true) }}
+                onDragLeave={e => { if (!e.currentTarget.contains(e.relatedTarget)) setDragOverTicket(false) }}
+                onDrop={handleDropTicket}
+              >
                 <span className="detalle-key">Ticket de pesada</span>
                 <span className="detalle-val" style={{display:'flex',alignItems:'center',gap:6,justifyContent:'flex-end'}}>
-                  {a.pesada.ticketUrl && (
+                  {dragOverTicket && <span style={{fontSize:11,color:'var(--green-600)'}}>Soltar para adjuntar</span>}
+                  {a.pesada.ticketUrl && !dragOverTicket && (
                     <a href={a.pesada.ticketUrl} target="_blank" rel="noreferrer"
                       style={{color:'var(--blue-700)',display:'flex',alignItems:'center',gap:4}}>
                       <Eye size={12} /> Ver
@@ -487,45 +519,58 @@ export default function DetalleAlbaran({ albaranes, simularFirma, subirDocumento
             <div className="card">
               <div className="section-label">Documentación</div>
               <div style={{display:'flex',flexDirection:'column',gap:0}}>
-                {Object.entries(a.docs).map(([nombre, doc]) => (
-                  <div key={nombre} className="doc-row">
-                    <div style={{display:'flex',alignItems:'center',gap:8,flex:1,minWidth:0}}>
-                      <FileText size={14} color={doc.adjunto ? 'var(--green-400)' : 'var(--gray-300)'} style={{flexShrink:0}} />
-                      <div style={{minWidth:0}}>
-                        <div style={{fontSize:13,fontWeight:500,color:'var(--gray-800)',whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis'}}>{nombre}</div>
-                        {doc.adjunto && doc.nombreFichero && (
-                          <div style={{fontSize:11,color:'var(--gray-400)',marginTop:1}}>{doc.nombreFichero} · {formatBytes(doc.tamanyo)}</div>
+                {Object.entries(a.docs).map(([nombre, doc]) => {
+                  const isDragOver = dragOverDoc === nombre
+                  return (
+                    <div
+                      key={nombre}
+                      className="doc-row"
+                      style={isDragOver ? {background:'rgba(29,158,117,0.06)',outline:'2px dashed var(--green-400)',outlineOffset:'-2px',borderRadius:'var(--radius-md)'} : undefined}
+                      onDragOver={e => { e.preventDefault(); setDragOverDoc(nombre) }}
+                      onDragLeave={e => { if (!e.currentTarget.contains(e.relatedTarget)) setDragOverDoc(null) }}
+                      onDrop={e => handleDropDoc(nombre, e)}
+                    >
+                      <div style={{display:'flex',alignItems:'center',gap:8,flex:1,minWidth:0}}>
+                        <FileText size={14} color={isDragOver ? 'var(--green-400)' : doc.adjunto ? 'var(--green-400)' : 'var(--gray-300)'} style={{flexShrink:0}} />
+                        <div style={{minWidth:0}}>
+                          <div style={{fontSize:13,fontWeight:500,color:'var(--gray-800)',whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis'}}>{nombre}</div>
+                          {isDragOver
+                            ? <div style={{fontSize:11,color:'var(--green-600)',marginTop:1}}>Soltar para adjuntar</div>
+                            : doc.adjunto && doc.nombreFichero && (
+                                <div style={{fontSize:11,color:'var(--gray-400)',marginTop:1}}>{doc.nombreFichero} · {formatBytes(doc.tamanyo)}</div>
+                              )
+                          }
+                        </div>
+                      </div>
+                      <div style={{display:'flex',gap:6,alignItems:'center',flexShrink:0}}>
+                        {doc.adjunto && doc.url && (
+                          <a href={doc.url} target="_blank" rel="noreferrer" className="btn" style={{fontSize:11,padding:'4px 8px'}}>
+                            <Eye size={11} /> Ver
+                          </a>
                         )}
+                        <button
+                          className={`btn ${doc.adjunto ? '' : 'btn-primary'}`}
+                          style={{fontSize:11,padding:'4px 8px',minWidth:86}}
+                          onClick={() => fileRefs.current[nombre]?.click()}
+                          disabled={subiendo[nombre]}
+                        >
+                          {subiendo[nombre]
+                            ? <span style={{display:'flex',alignItems:'center',gap:4}}>
+                                <div style={{width:10,height:10,border:'2px solid currentColor',borderTopColor:'transparent',borderRadius:'50%',animation:'spin 0.6s linear infinite'}} />
+                                Subiendo
+                              </span>
+                            : <><Upload size={11} /> {doc.adjunto ? 'Reemplazar' : 'Adjuntar'}</>
+                          }
+                        </button>
+                        <input
+                          type="file" accept=".pdf,.jpg,.jpeg,.png" style={{display:'none'}}
+                          ref={el => fileRefs.current[nombre] = el}
+                          onChange={e => handleSubirDoc(nombre, e)}
+                        />
                       </div>
                     </div>
-                    <div style={{display:'flex',gap:6,alignItems:'center',flexShrink:0}}>
-                      {doc.adjunto && doc.url && (
-                        <a href={doc.url} target="_blank" rel="noreferrer" className="btn" style={{fontSize:11,padding:'4px 8px'}}>
-                          <Eye size={11} /> Ver
-                        </a>
-                      )}
-                      <button
-                        className={`btn ${doc.adjunto ? '' : 'btn-primary'}`}
-                        style={{fontSize:11,padding:'4px 8px',minWidth:86}}
-                        onClick={() => fileRefs.current[nombre]?.click()}
-                        disabled={subiendo[nombre]}
-                      >
-                        {subiendo[nombre]
-                          ? <span style={{display:'flex',alignItems:'center',gap:4}}>
-                              <div style={{width:10,height:10,border:'2px solid currentColor',borderTopColor:'transparent',borderRadius:'50%',animation:'spin 0.6s linear infinite'}} />
-                              Subiendo
-                            </span>
-                          : <><Upload size={11} /> {doc.adjunto ? 'Reemplazar' : 'Adjuntar'}</>
-                        }
-                      </button>
-                      <input
-                        type="file" accept=".pdf,.jpg,.jpeg,.png" style={{display:'none'}}
-                        ref={el => fileRefs.current[nombre] = el}
-                        onChange={e => handleSubirDoc(nombre, e)}
-                      />
-                    </div>
-                  </div>
-                ))}
+                  )
+                })}
               </div>
             </div>
           </div>
