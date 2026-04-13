@@ -23,12 +23,25 @@ export async function generarPDF(a) {
         reader.readAsDataURL(b)
       }))
 
+  // Detecta el formato real de una imagen base64 para jsPDF
+  const fmt = (b64) => {
+    if (!b64) return 'PNG'
+    if (b64.startsWith('data:image/jpeg') || b64.startsWith('data:image/jpg')) return 'JPEG'
+    if (b64.startsWith('data:image/webp')) return 'WEBP'
+    if (b64.startsWith('data:image/gif'))  return 'GIF'
+    return 'PNG'
+  }
+
+  // Dibuja una imagen centrada dentro de una celda (cx, cy = centro de la celda)
+  const addImgCentered = (b64, cx, cy, maxW, maxH) => {
+    try { doc.addImage(b64, fmt(b64), cx - maxW / 2, cy - maxH / 2, maxW, maxH) } catch {}
+  }
+
   // ── carga de logos ─────────────────────────────────────────────────────────
 
   let logoComsa
   try { logoComsa = await toBase64('/logo-comsa.png') } catch {}
 
-  // 4 logos Applus + PEFC + SURE
   let logoApplus1, logoApplus2, logoApplus3, logoApplus4, logoPefc, logoSure
   try {
     const { data } = await supabase.from('logos_config').select('id,url')
@@ -48,99 +61,96 @@ export async function generarPDF(a) {
   } catch {}
 
   // ── CABECERA ───────────────────────────────────────────────────────────────
-  //  Secciones (mm): COMSA=26 | Applus=44 | PEFC=54 | SURE=38 | Título=28
-  //  Total = 190 mm  ✓
-  //  Logos Applus: cuadrícula 2×2, cada uno 16×29 mm (relación 1:1.81 ≈ PNG original)
+  //  Sin divisores verticales — solo borde exterior.
+  //  Anchuras de zona (mm): COMSA=26 | Applus=46 | PEFC=56 | SURE=34 | Título=28
   const cabY = margen
-  const cabH = 66        // altura suficiente para 2 filas de logos portrait + márgenes
+  const cabH = 56        // altura cabecera
   const cabX = margen
 
-  const secWidths = [26, 44, 54, 38, contentW - 26 - 44 - 54 - 38]  // último = 28 mm
-  const secX = []
-  secWidths.reduce((acc, w, i) => { secX[i] = acc; return acc + w }, cabX)
-
-  // Borde exterior
-  doc.setDrawColor(180, 180, 180)
-  doc.setLineWidth(0.5)
+  // Solo borde exterior — sin líneas divisorias internas
+  doc.setDrawColor(170, 170, 170)
+  doc.setLineWidth(0.4)
   doc.rect(cabX, cabY, contentW, cabH)
 
-  // Divisores verticales
-  doc.setLineWidth(0.3)
-  for (let i = 1; i < secWidths.length; i++) {
-    doc.line(secX[i], cabY, secX[i], cabY + cabH)
+  const secW = [26, 46, 56, 34, 28]
+  const secX = []
+  secW.reduce((acc, w, i) => { secX[i] = acc; return acc + w }, cabX)
+
+  // Helper: centro X e Y de cada sección
+  const scx = (i) => secX[i] + secW[i] / 2
+  const scy = cabY + cabH / 2
+
+  // ── COMSA ──────────────────────────────────────────────────────────────────
+  if (logoComsa) {
+    addImgCentered(logoComsa, scx(0), scy - 4, 20, 20)
+  } else {
+    doc.setFillColor(29, 158, 117)
+    doc.roundedRect(scx(0) - 9, scy - 13, 18, 18, 3, 3, 'F')
   }
+  doc.setFont('helvetica', 'bold')
+  doc.setFontSize(6.5)
+  doc.setTextColor(...grisOsc)
+  doc.text('COMSA', scx(0), cabY + cabH - 9, { align: 'center' })
+  doc.setFont('helvetica', 'normal')
+  doc.setFontSize(5.5)
+  doc.text('SERVICE', scx(0), cabY + cabH - 5, { align: 'center' })
 
-  // ── Sección 0: COMSA ────────────────────────────────────────────────────────
+  // ── Applus — cuadrícula 2×2 ────────────────────────────────────────────────
   {
-    const sx = secX[0], sw = secWidths[0]
-    if (logoComsa) {
-      const lw = 18, lh = 18
-      try {
-        doc.addImage(logoComsa, 'PNG', sx + (sw - lw) / 2, cabY + (cabH - lh) / 2 - 4, lw, lh)
-      } catch {}
-    } else {
-      doc.setFillColor(29, 158, 117)
-      doc.roundedRect(sx + sw / 2 - 9, cabY + 10, 18, 18, 3, 3, 'F')
-    }
-    doc.setFont('helvetica', 'bold')
-    doc.setFontSize(7)
-    doc.setTextColor(...grisOsc)
-    doc.text('COMSA', sx + sw / 2, cabY + 42, { align: 'center' })
-    doc.setFont('helvetica', 'normal')
-    doc.setFontSize(6)
-    doc.text('SERVICE', sx + sw / 2, cabY + 47, { align: 'center' })
-  }
+    const sx = secX[1], sw = secW[1]
+    // Cada logo: 17mm ancho × 30mm alto (relación ~1:1.8, ajustada para caber bien)
+    const lw = 17, lh = 30
+    const gap = 2
+    const gridW = lw * 2 + gap   // 36 mm
+    const gridH = lh * 2 + gap   // 62 mm → si cabH=56 no caben 2 filas de 30mm
+    // Con cabH=56, usamos lh ajustado: (56 - 3*2) / 2 = 25mm de alto máximo
+    const lhFit = (cabH - 6) / 2          // ≈ 25 mm
+    const lwFit = lhFit / 1.814            // ≈ 13.8 mm → redondeamos a 14
+    const lhF   = Math.floor(lhFit)       // 25
+    const lwF   = Math.round(lwFit)       // 14
 
-  // ── Sección 1: Applus — cuadrícula 2×2 ─────────────────────────────────────
-  {
-    const sx = secX[1], sw = secWidths[1]
-
-    // Dimensiones de cada logo: relación de aspecto ~1:1.81 (original 1500×2721 px)
-    const logoW  = 16               // mm de ancho por logo
-    const logoH  = logoW * (2721 / 1500)  // ≈ 29 mm de alto
-    const gap    = 2                // mm entre logos
-    const gridW  = logoW * 2 + gap  // 34 mm
-    const gridH  = logoH * 2 + gap  // ≈ 60 mm
-
-    const startX = sx + (sw - gridW) / 2
-    const startY = cabY + (cabH - gridH) / 2
+    const gapF  = 2
+    const gW    = lwF * 2 + gapF           // 30
+    const gH    = lhF * 2 + gapF           // 52
+    const ox    = sx + (sw - gW) / 2       // offset X para centrar el grid
+    const oy    = cabY + (cabH - gH) / 2  // offset Y para centrar el grid
 
     const applusLogos = [logoApplus1, logoApplus2, logoApplus3, logoApplus4]
-
     applusLogos.forEach((logo, i) => {
       if (!logo) return
       const col = i % 2
       const row = Math.floor(i / 2)
-      const lx = startX + col * (logoW + gap)
-      const ly = startY + row * (logoH + gap)
-      try { doc.addImage(logo, 'PNG', lx, ly, logoW, logoH) } catch {}
+      const lx = ox + col * (lwF + gapF)
+      const ly = oy + row * (lhF + gapF)
+      try { doc.addImage(logo, fmt(logo), lx, ly, lwF, lhF) } catch {}
     })
   }
 
-  // ── Sección 2: PEFC ─────────────────────────────────────────────────────────
+  // ── PEFC ───────────────────────────────────────────────────────────────────
   {
-    const sx = secX[2], sw = secWidths[2]
-    const pad = 3
+    const sx = secX[2], sw = secW[2]
 
-    const logoW = 14, logoH = 22
+    // Logo PEFC pequeño a la izquierda (si existe)
+    const lw = 12, lh = 15
     if (logoPefc) {
       try {
-        doc.addImage(logoPefc, 'PNG', sx + pad, cabY + (cabH - logoH) / 2, logoW, logoH)
+        doc.addImage(logoPefc, fmt(logoPefc), sx + 3, cabY + (cabH - lh) / 2, lw, lh)
       } catch {}
     }
 
-    const txtX = sx + (logoPefc ? pad + logoW + 3 : pad)
+    // Texto — empieza tras el logo o desde el borde
+    const txtX = sx + (logoPefc ? 3 + lw + 3 : 4)
 
     const lines = [
-      { text: 'COMSA SERVICE',           bold: false, size: 5 },
-      { text: 'FACILITY MANAGEMENT SAU', bold: false, size: 5 },
-      { text: 'tiene una Cadena de',     bold: false, size: 5 },
-      { text: 'Custodia certificada',    bold: false, size: 5 },
-      { text: 'PEFC',                    bold: true,  size: 8, color: verde },
-      { text: 'PEFC/14-31-00318',        bold: false, size: 5 },
-      { text: 'www.pefc.es',             bold: false, size: 5 },
+      { text: 'COMSA SERVICE',           bold: false, size: 4.8 },
+      { text: 'FACILITY MANAGEMENT SAU', bold: false, size: 4.8 },
+      { text: 'tiene una Cadena de',     bold: false, size: 4.8 },
+      { text: 'Custodia certificada',    bold: false, size: 4.8 },
+      { text: 'PEFC',                    bold: true,  size: 8,   color: [0, 130, 60] },
+      { text: 'PEFC/14-31-00318',        bold: false, size: 4.8 },
+      { text: 'www.pefc.es',             bold: false, size: 4.8 },
     ]
-    const lineH  = 5.5
+    const lineH  = 5
     const totalH = (lines.length - 1) * lineH
     const startY = cabY + (cabH - totalH) / 2
 
@@ -152,77 +162,80 @@ export async function generarPDF(a) {
     })
   }
 
-  // ── Sección 3: SURE ─────────────────────────────────────────────────────────
+  // ── SURE ───────────────────────────────────────────────────────────────────
   {
-    const sx = secX[3], sw = secWidths[3]
+    const sx = secX[3], sw = secW[3]
 
-    const logoW = 32, logoH = 16
+    const lw = 28, lh = 13
     const txtLines = [
       'SUSTAINABLE RESOURCES',
       'Verification Scheme GmbH',
       'SURE EU/ES 001/ Z202 2281',
     ]
-    const lineH  = 5
-    const totalH = logoH + 6 + (txtLines.length - 1) * lineH
-    const groupY = cabY + (cabH - totalH) / 2
+    const lineH  = 4.8
+    const groupH = lh + 5 + (txtLines.length - 1) * lineH
+    const gy     = cabY + (cabH - groupH) / 2
 
     if (logoSure) {
       try {
-        doc.addImage(logoSure, 'PNG', sx + (sw - logoW) / 2, groupY, logoW, logoH)
+        doc.addImage(logoSure, fmt(logoSure), sx + (sw - lw) / 2, gy, lw, lh)
       } catch {}
     }
 
-    const txtStartY = groupY + logoH + 6
+    const txtY = gy + lh + 5
     doc.setFont('helvetica', 'normal')
-    doc.setFontSize(5)
+    doc.setFontSize(4.5)
     doc.setTextColor(...grisOsc)
     txtLines.forEach((line, i) => {
-      doc.text(line, sx + sw / 2, txtStartY + i * lineH, { align: 'center' })
+      doc.text(line, sx + sw / 2, txtY + i * lineH, { align: 'center' })
     })
   }
 
-  // ── Sección 4: Título ───────────────────────────────────────────────────────
+  // ── TÍTULO ─────────────────────────────────────────────────────────────────
   {
-    const sx = secX[4], sw = secWidths[4]
+    const sx = secX[4], sw = secW[4]
     const cx = sx + sw / 2
 
-    doc.setFillColor(248, 248, 248)
+    // Fondo muy suave para distinguir la sección
+    doc.setFillColor(247, 247, 247)
     doc.rect(sx, cabY, sw, cabH, 'F')
-    doc.setDrawColor(180, 180, 180)
-    doc.setLineWidth(0.3)
-    doc.rect(sx, cabY, sw, cabH)
+    // Borde izquierdo sutil como único separador visual
+    doc.setDrawColor(200, 200, 200)
+    doc.setLineWidth(0.2)
+    doc.line(sx, cabY, sx, cabY + cabH)
 
     doc.setFont('helvetica', 'bold')
-    doc.setFontSize(8)
+    doc.setFontSize(7.5)
     doc.setTextColor(...negro)
     doc.text('ALBARÁN DE', cx, cabY + 9, { align: 'center' })
-    doc.text('TRANSPORTE', cx, cabY + 15, { align: 'center' })
+    doc.text('TRANSPORTE', cx, cabY + 14.5, { align: 'center' })
 
     doc.setDrawColor(210, 210, 210)
     doc.setLineWidth(0.2)
-    doc.line(sx + 2, cabY + 18, sx + sw - 2, cabY + 18)
+    doc.line(sx + 2, cabY + 17, sx + sw - 2, cabY + 17)
 
     doc.setFont('helvetica', 'normal')
-    doc.setFontSize(6)
+    doc.setFontSize(5.5)
     doc.setTextColor(...grisOsc)
-    doc.text('Nº albarán:', sx + 2, cabY + 24)
+    doc.text('Nº albarán:', sx + 2, cabY + 23)
 
     doc.setFont('helvetica', 'bold')
-    doc.setFontSize(18)
+    doc.setFontSize(17)
     doc.setTextColor(200, 30, 30)
-    doc.text(String(a.id ?? ''), cx, cabY + 39, { align: 'center' })
+    doc.text(String(a.id ?? ''), cx, cabY + 37, { align: 'center' })
 
     doc.setDrawColor(210, 210, 210)
     doc.setLineWidth(0.2)
-    doc.line(sx + 2, cabY + 43, sx + sw - 2, cabY + 43)
+    doc.line(sx + 2, cabY + 40, sx + sw - 2, cabY + 40)
 
     doc.setFont('helvetica', 'normal')
-    doc.setFontSize(6)
+    doc.setFontSize(5.5)
     doc.setTextColor(...grisOsc)
-    const fechaStr = a.fecha ? a.fecha.split('-').reverse().join('/') : '___/___/______'
-    doc.text('Fecha:', sx + 2, cabY + 50)
+    const fechaStr = a.fecha ? a.fecha.split('-').reverse().join('/') : '—'
+    doc.text('Fecha:', sx + 2, cabY + 46)
+    doc.setFont('helvetica', 'normal')
     doc.setTextColor(...negro)
-    doc.text(fechaStr, sx + 2, cabY + 57)
+    doc.text(fechaStr, sx + 2, cabY + 51)
   }
 
   // ── TABLA DE DATOS ──────────────────────────────────────────────────────────
@@ -341,7 +354,7 @@ export async function generarPDF(a) {
     const imgAreaH = sigH - footerH
     if (firmaData?.firmaImagen) {
       try {
-        doc.addImage(firmaData.firmaImagen, 'PNG', bx + 4, by + 4, sigW - 8, imgAreaH - 8)
+        doc.addImage(firmaData.firmaImagen, fmt(firmaData.firmaImagen), bx + 4, by + 4, sigW - 8, imgAreaH - 8)
       } catch {}
     }
 
