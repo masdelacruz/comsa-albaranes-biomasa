@@ -1,5 +1,5 @@
-import { useState, useEffect } from 'react'
-import { Plus, Search, Pencil, Trash2, X, Check } from 'lucide-react'
+import { useState, useEffect, useRef } from 'react'
+import { Plus, Search, Pencil, Trash2, X, Check, Upload, Image } from 'lucide-react'
 import { supabase } from '../supabase'
 import '../components/shared.css'
 import './Administracion.css'
@@ -9,16 +9,34 @@ const TIPO_LABELS = { proveedor: 'Proveedor', astilladora: 'Astilladora', transp
 
 const EMPTY_FORM = { nombre: '', tipo: 'proveedor', contacto: '', email: '', telefono: '', notas: '', activo: true }
 
+const LOGOS_CONFIG = [
+  { id: 'applus', nombre: 'Applus®',  descripcion: 'Logo de certificación Applus' },
+  { id: 'pefc',   nombre: 'PEFC',     descripcion: 'Logo PEFC cadena de custodia' },
+  { id: 'sure',   nombre: 'SURE',     descripcion: 'Logo SURE Sustainable Resources' },
+]
+
 export default function Administracion() {
-  const [proveedores, setProveedores] = useState([])
-  const [loading, setLoading]         = useState(true)
-  const [tab, setTab]                 = useState('proveedor')
-  const [busqueda, setBusqueda]       = useState('')
-  const [modal, setModal]             = useState(false)
-  const [editando, setEditando]       = useState(null)
-  const [form, setForm]               = useState(EMPTY_FORM)
-  const [guardando, setGuardando]     = useState(false)
+  const [proveedores, setProveedores]     = useState([])
+  const [loading, setLoading]             = useState(true)
+  const [tab, setTab]                     = useState('proveedor')
+  const [busqueda, setBusqueda]           = useState('')
+  const [modal, setModal]                 = useState(false)
+  const [editando, setEditando]           = useState(null)
+  const [form, setForm]                   = useState(EMPTY_FORM)
+  const [guardando, setGuardando]         = useState(false)
   const [confirmDelete, setConfirmDelete] = useState(null)
+
+  // Certificaciones state
+  const [logos, setLogos]               = useState({})         // { applus: url, pefc: url, sure: url }
+  const [subiendoLogo, setSubiendoLogo] = useState({})         // { applus: true/false, ... }
+  const [confirmDelLogo, setConfirmDelLogo] = useState(null)   // logo id pending delete
+  const fileInputRefs = {
+    applus: useRef(null),
+    pefc:   useRef(null),
+    sure:   useRef(null),
+  }
+
+  // ── data fetching ───────────────────────────────────────────────────────────
 
   const fetchProveedores = async () => {
     const { data } = await supabase.from('proveedores').select('*').order('nombre')
@@ -26,7 +44,23 @@ export default function Administracion() {
     setLoading(false)
   }
 
-  useEffect(() => { fetchProveedores() }, [])
+  const fetchLogos = async () => {
+    try {
+      const { data } = await supabase.from('logos_config').select('id,url')
+      if (data) {
+        const map = {}
+        data.forEach(row => { map[row.id] = row.url })
+        setLogos(map)
+      }
+    } catch {}
+  }
+
+  useEffect(() => {
+    fetchProveedores()
+    fetchLogos()
+  }, [])
+
+  // ── providers tab helpers ───────────────────────────────────────────────────
 
   const filtrados = proveedores.filter(p => {
     if (p.tipo !== tab) return false
@@ -77,106 +111,271 @@ export default function Administracion() {
   const counts = {}
   TIPOS.forEach(t => { counts[t] = proveedores.filter(p => p.tipo === t).length })
 
+  // ── certificaciones helpers ─────────────────────────────────────────────────
+
+  const handleSubirLogo = async (id, file) => {
+    if (!file) return
+    setSubiendoLogo(s => ({ ...s, [id]: true }))
+    try {
+      const ext  = file.name.split('.').pop().toLowerCase()
+      const path = `${id}.${ext}`
+
+      // Remove existing file first (ignore errors — may not exist)
+      await supabase.storage.from('logos').remove([path])
+
+      const { error: upErr } = await supabase.storage.from('logos').upload(path, file, { upsert: true })
+      if (upErr) throw upErr
+
+      const { data: urlData } = supabase.storage.from('logos').getPublicUrl(path)
+      const url = urlData?.publicUrl
+      if (!url) throw new Error('No public URL returned')
+
+      // Add a cache-busting timestamp so the img tag refreshes
+      const urlWithTs = `${url}?t=${Date.now()}`
+
+      await supabase.from('logos_config').upsert({ id, url: urlWithTs })
+      setLogos(l => ({ ...l, [id]: urlWithTs }))
+    } catch (err) {
+      console.error('Error subiendo logo:', err)
+    } finally {
+      setSubiendoLogo(s => ({ ...s, [id]: false }))
+      // Reset the file input so the same file can be re-uploaded if needed
+      if (fileInputRefs[id]?.current) fileInputRefs[id].current.value = ''
+    }
+  }
+
+  const handleEliminarLogo = async (id) => {
+    try {
+      // Try to remove known extensions; ignore errors
+      await supabase.storage.from('logos').remove([`${id}.png`, `${id}.jpg`, `${id}.jpeg`, `${id}.svg`, `${id}.webp`])
+      await supabase.from('logos_config').delete().eq('id', id)
+      setLogos(l => { const n = { ...l }; delete n[id]; return n })
+    } catch (err) {
+      console.error('Error eliminando logo:', err)
+    } finally {
+      setConfirmDelLogo(null)
+    }
+  }
+
+  // ── render ──────────────────────────────────────────────────────────────────
+
   return (
     <div className="admin-page">
       <div className="page-header">
-        <div style={{display:'flex',alignItems:'center',justifyContent:'space-between'}}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
           <div>
             <div className="page-title">Administración</div>
             <div className="page-sub">Gestión de astilladoras, transportistas e instalaciones</div>
           </div>
-          <button className="btn btn-primary" onClick={abrirNuevo}>
-            <Plus size={15} /> Nuevo
-          </button>
+          {tab !== 'certificaciones' && (
+            <button className="btn btn-primary" onClick={abrirNuevo}>
+              <Plus size={15} /> Nuevo
+            </button>
+          )}
         </div>
       </div>
 
       <div className="admin-content">
         <div className="admin-tabs">
           {TIPOS.map(t => (
-            <button key={t} className={`admin-tab ${tab === t ? 'active' : ''}`} onClick={() => { setTab(t); setBusqueda('') }}>
-              {TIPO_LABELS[t]} <span style={{fontSize:11,color:'var(--gray-400)',marginLeft:4}}>({counts[t]})</span>
+            <button
+              key={t}
+              className={`admin-tab ${tab === t ? 'active' : ''}`}
+              onClick={() => { setTab(t); setBusqueda('') }}
+            >
+              {TIPO_LABELS[t]} <span style={{ fontSize: 11, color: 'var(--gray-400)', marginLeft: 4 }}>({counts[t]})</span>
             </button>
           ))}
+          <button
+            className={`admin-tab ${tab === 'certificaciones' ? 'active' : ''}`}
+            onClick={() => setTab('certificaciones')}
+          >
+            Certificaciones
+          </button>
         </div>
 
-        <div className="admin-toolbar">
-          <div className="admin-search">
-            <Search size={13} className="admin-search-icon" />
-            <input
-              type="text"
-              placeholder={`Buscar ${TIPO_LABELS[tab].toLowerCase()}...`}
-              value={busqueda}
-              onChange={e => setBusqueda(e.target.value)}
-            />
-          </div>
-          <div style={{fontSize:12,color:'var(--gray-400)'}}>
-            {filtrados.length} {filtrados.length === 1 ? 'registro' : 'registros'}
-          </div>
-        </div>
+        {/* ── Certificaciones panel ── */}
+        {tab === 'certificaciones' ? (
+          <div style={{ marginTop: 16 }}>
+            <div style={{ fontSize: 13, color: 'var(--gray-500)', marginBottom: 16 }}>
+              Logos que aparecerán en la cabecera de los albaranes PDF.
+            </div>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: 16 }}>
+              {LOGOS_CONFIG.map(cfg => {
+                const url      = logos[cfg.id]
+                const subiendo = !!subiendoLogo[cfg.id]
+                return (
+                  <div key={cfg.id} className="card" style={{ padding: 16, display: 'flex', flexDirection: 'column', gap: 10 }}>
+                    <div style={{ fontWeight: 600, fontSize: 14, color: 'var(--gray-800)' }}>{cfg.nombre}</div>
+                    <div style={{ fontSize: 11, color: 'var(--gray-500)' }}>{cfg.descripcion}</div>
 
-        <div className="card" style={{padding:0}}>
-          <table className="proveedor-table">
-            <thead>
-              <tr>
-                <th>Nombre</th>
-                <th>Contacto</th>
-                <th>Email</th>
-                <th>Teléfono</th>
-                <th>Estado</th>
-                <th>Acciones</th>
-              </tr>
-            </thead>
-            <tbody>
-              {loading ? (
-                <tr><td colSpan={6} className="empty-row">Cargando...</td></tr>
-              ) : filtrados.length === 0 ? (
-                <tr><td colSpan={6} className="empty-row">No hay {TIPO_LABELS[tab].toLowerCase()}s registrados</td></tr>
-              ) : filtrados.map(p => (
-                <tr key={p.id}>
-                  <td style={{fontWeight:500}}>{p.nombre}</td>
-                  <td style={{color:'var(--gray-600)'}}>{p.contacto || <span style={{color:'var(--gray-300)'}}>—</span>}</td>
-                  <td style={{color:'var(--blue-700)'}}>{p.email
-                    ? <a href={`mailto:${p.email}`} style={{color:'var(--blue-700)'}}>{p.email}</a>
-                    : <span style={{color:'var(--gray-300)'}}>—</span>}
-                  </td>
-                  <td style={{color:'var(--gray-600)'}}>{p.telefono || <span style={{color:'var(--gray-300)'}}>—</span>}</td>
-                  <td>
-                    <button
-                      onClick={() => handleToggleActivo(p)}
-                      style={{background:'none',border:'none',cursor:'pointer',display:'flex',alignItems:'center',fontSize:12,color:p.activo ? 'var(--green-600)' : 'var(--gray-400)',padding:0}}
-                    >
-                      <span className={`activo-dot ${p.activo ? 'si' : 'no'}`} />
-                      {p.activo ? 'Activo' : 'Inactivo'}
-                    </button>
-                  </td>
-                  <td>
-                    <div style={{display:'flex',gap:6}}>
-                      <button className="btn btn-ghost" style={{padding:'4px 8px',fontSize:11}} onClick={() => abrirEditar(p)}>
-                        <Pencil size={12} /> Editar
-                      </button>
-                      {confirmDelete === p.id ? (
-                        <div style={{display:'flex',gap:4,alignItems:'center'}}>
-                          <span style={{fontSize:11,color:'var(--red-700)'}}>¿Eliminar?</span>
-                          <button className="btn" style={{padding:'4px 8px',fontSize:11,color:'var(--red-700)',borderColor:'var(--red-100)'}} onClick={() => handleEliminar(p.id)}>
-                            <Check size={11} /> Sí
-                          </button>
-                          <button className="btn btn-ghost" style={{padding:'4px 8px',fontSize:11}} onClick={() => setConfirmDelete(null)}>
-                            <X size={11} />
-                          </button>
-                        </div>
+                    {/* Preview area */}
+                    <div style={{
+                      border: '1px dashed var(--gray-200)',
+                      borderRadius: 6,
+                      minHeight: 80,
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      background: 'var(--gray-50, #fafafa)',
+                      overflow: 'hidden',
+                    }}>
+                      {url ? (
+                        <img
+                          src={url}
+                          alt={cfg.nombre}
+                          style={{ maxWidth: '100%', maxHeight: 80, objectFit: 'contain', padding: 4 }}
+                        />
                       ) : (
-                        <button className="btn btn-ghost" style={{padding:'4px 8px',fontSize:11,color:'var(--red-400)'}} onClick={() => setConfirmDelete(p.id)}>
-                          <Trash2 size={12} />
-                        </button>
+                        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4, color: 'var(--gray-300)' }}>
+                          <Image size={28} />
+                          <span style={{ fontSize: 11 }}>Sin logo</span>
+                        </div>
                       )}
                     </div>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+
+                    {/* Hidden file input */}
+                    <input
+                      ref={fileInputRefs[cfg.id]}
+                      type="file"
+                      accept="image/*"
+                      style={{ display: 'none' }}
+                      onChange={e => handleSubirLogo(cfg.id, e.target.files?.[0])}
+                    />
+
+                    {/* Action buttons */}
+                    <div style={{ display: 'flex', gap: 6 }}>
+                      <button
+                        className="btn btn-primary"
+                        style={{ flex: 1, fontSize: 11, padding: '5px 10px' }}
+                        disabled={subiendo}
+                        onClick={() => fileInputRefs[cfg.id].current?.click()}
+                      >
+                        {subiendo ? (
+                          'Subiendo...'
+                        ) : (
+                          <><Upload size={12} /> {url ? 'Reemplazar' : 'Subir logo'}</>
+                        )}
+                      </button>
+
+                      {url && (
+                        confirmDelLogo === cfg.id ? (
+                          <div style={{ display: 'flex', gap: 4, alignItems: 'center' }}>
+                            <span style={{ fontSize: 11, color: 'var(--red-700)', whiteSpace: 'nowrap' }}>¿Eliminar?</span>
+                            <button
+                              className="btn"
+                              style={{ padding: '5px 8px', fontSize: 11, color: 'var(--red-700)', borderColor: 'var(--red-100)' }}
+                              onClick={() => handleEliminarLogo(cfg.id)}
+                            >
+                              <Check size={11} /> Sí
+                            </button>
+                            <button
+                              className="btn btn-ghost"
+                              style={{ padding: '5px 8px', fontSize: 11 }}
+                              onClick={() => setConfirmDelLogo(null)}
+                            >
+                              <X size={11} />
+                            </button>
+                          </div>
+                        ) : (
+                          <button
+                            className="btn btn-ghost"
+                            style={{ padding: '5px 8px', fontSize: 11, color: 'var(--red-400)' }}
+                            onClick={() => setConfirmDelLogo(cfg.id)}
+                          >
+                            <Trash2 size={12} />
+                          </button>
+                        )
+                      )}
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
+          </div>
+        ) : (
+          /* ── Providers panel ── */
+          <>
+            <div className="admin-toolbar">
+              <div className="admin-search">
+                <Search size={13} className="admin-search-icon" />
+                <input
+                  type="text"
+                  placeholder={`Buscar ${TIPO_LABELS[tab].toLowerCase()}...`}
+                  value={busqueda}
+                  onChange={e => setBusqueda(e.target.value)}
+                />
+              </div>
+              <div style={{ fontSize: 12, color: 'var(--gray-400)' }}>
+                {filtrados.length} {filtrados.length === 1 ? 'registro' : 'registros'}
+              </div>
+            </div>
+
+            <div className="card" style={{ padding: 0 }}>
+              <table className="proveedor-table">
+                <thead>
+                  <tr>
+                    <th>Nombre</th>
+                    <th>Contacto</th>
+                    <th>Email</th>
+                    <th>Teléfono</th>
+                    <th>Estado</th>
+                    <th>Acciones</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {loading ? (
+                    <tr><td colSpan={6} className="empty-row">Cargando...</td></tr>
+                  ) : filtrados.length === 0 ? (
+                    <tr><td colSpan={6} className="empty-row">No hay {TIPO_LABELS[tab].toLowerCase()}s registrados</td></tr>
+                  ) : filtrados.map(p => (
+                    <tr key={p.id}>
+                      <td style={{ fontWeight: 500 }}>{p.nombre}</td>
+                      <td style={{ color: 'var(--gray-600)' }}>{p.contacto || <span style={{ color: 'var(--gray-300)' }}>—</span>}</td>
+                      <td style={{ color: 'var(--blue-700)' }}>
+                        {p.email
+                          ? <a href={`mailto:${p.email}`} style={{ color: 'var(--blue-700)' }}>{p.email}</a>
+                          : <span style={{ color: 'var(--gray-300)' }}>—</span>}
+                      </td>
+                      <td style={{ color: 'var(--gray-600)' }}>{p.telefono || <span style={{ color: 'var(--gray-300)' }}>—</span>}</td>
+                      <td>
+                        <button
+                          onClick={() => handleToggleActivo(p)}
+                          style={{ background: 'none', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', fontSize: 12, color: p.activo ? 'var(--green-600)' : 'var(--gray-400)', padding: 0 }}
+                        >
+                          <span className={`activo-dot ${p.activo ? 'si' : 'no'}`} />
+                          {p.activo ? 'Activo' : 'Inactivo'}
+                        </button>
+                      </td>
+                      <td>
+                        <div style={{ display: 'flex', gap: 6 }}>
+                          <button className="btn btn-ghost" style={{ padding: '4px 8px', fontSize: 11 }} onClick={() => abrirEditar(p)}>
+                            <Pencil size={12} /> Editar
+                          </button>
+                          {confirmDelete === p.id ? (
+                            <div style={{ display: 'flex', gap: 4, alignItems: 'center' }}>
+                              <span style={{ fontSize: 11, color: 'var(--red-700)' }}>¿Eliminar?</span>
+                              <button className="btn" style={{ padding: '4px 8px', fontSize: 11, color: 'var(--red-700)', borderColor: 'var(--red-100)' }} onClick={() => handleEliminar(p.id)}>
+                                <Check size={11} /> Sí
+                              </button>
+                              <button className="btn btn-ghost" style={{ padding: '4px 8px', fontSize: 11 }} onClick={() => setConfirmDelete(null)}>
+                                <X size={11} />
+                              </button>
+                            </div>
+                          ) : (
+                            <button className="btn btn-ghost" style={{ padding: '4px 8px', fontSize: 11, color: 'var(--red-400)' }} onClick={() => setConfirmDelete(p.id)}>
+                              <Trash2 size={12} />
+                            </button>
+                          )}
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </>
+        )}
       </div>
 
       {modal && (
@@ -208,11 +407,11 @@ export default function Administracion() {
               </div>
               <div className="modal-field full">
                 <label>Notas internas</label>
-                <textarea placeholder="Observaciones, condiciones especiales..." value={form.notas} onChange={e => set('notas', e.target.value)} style={{minHeight:60}} />
+                <textarea placeholder="Observaciones, condiciones especiales..." value={form.notas} onChange={e => set('notas', e.target.value)} style={{ minHeight: 60 }} />
               </div>
-              <div className="modal-field full" style={{flexDirection:'row',alignItems:'center',gap:10}}>
-                <input type="checkbox" id="activo" checked={form.activo} onChange={e => set('activo', e.target.checked)} style={{width:'auto'}} />
-                <label htmlFor="activo" style={{margin:0,cursor:'pointer'}}>Activo — aparece en los desplegables de nuevos albaranes</label>
+              <div className="modal-field full" style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+                <input type="checkbox" id="activo" checked={form.activo} onChange={e => set('activo', e.target.checked)} style={{ width: 'auto' }} />
+                <label htmlFor="activo" style={{ margin: 0, cursor: 'pointer' }}>Activo — aparece en los desplegables de nuevos albaranes</label>
               </div>
             </div>
             <div className="modal-actions">
