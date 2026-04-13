@@ -23,50 +23,48 @@ export async function generarPDF(a) {
         reader.readAsDataURL(b)
       }))
 
-  const centerImg = (b64, x, y, secW, secH, maxW, maxH) => {
-    // Draw image centered within a cell (x,y,secW,secH), capped at maxW×maxH
-    const imgX = x + (secW - maxW) / 2
-    const imgY = y + (secH - maxH) / 2
-    try { doc.addImage(b64, 'PNG', imgX, imgY, maxW, maxH) } catch {}
-  }
-
-  // ── load logos ─────────────────────────────────────────────────────────────
+  // ── carga de logos ─────────────────────────────────────────────────────────
 
   let logoComsa
   try { logoComsa = await toBase64('/logo-comsa.png') } catch {}
 
-  let logoApplus, logoPefc, logoSure
+  // 4 logos Applus + PEFC + SURE
+  let logoApplus1, logoApplus2, logoApplus3, logoApplus4, logoPefc, logoSure
   try {
     const { data } = await supabase.from('logos_config').select('id,url')
     if (data) {
       for (const row of data) {
         try {
           const b64 = await toBase64(row.url)
-          if (row.id === 'applus') logoApplus = b64
-          if (row.id === 'pefc')   logoPefc   = b64
-          if (row.id === 'sure')   logoSure   = b64
+          if (row.id === 'applus_1') logoApplus1 = b64
+          if (row.id === 'applus_2') logoApplus2 = b64
+          if (row.id === 'applus_3') logoApplus3 = b64
+          if (row.id === 'applus_4') logoApplus4 = b64
+          if (row.id === 'pefc')     logoPefc    = b64
+          if (row.id === 'sure')     logoSure    = b64
         } catch {}
       }
     }
   } catch {}
 
-  // ── HEADER ─────────────────────────────────────────────────────────────────
-  //  Secciones (mm): COMSA=30 | Applus=36 | PEFC=54 | SURE=40 | Título=30
+  // ── CABECERA ───────────────────────────────────────────────────────────────
+  //  Secciones (mm): COMSA=26 | Applus=44 | PEFC=54 | SURE=38 | Título=28
   //  Total = 190 mm  ✓
+  //  Logos Applus: cuadrícula 2×2, cada uno 16×29 mm (relación 1:1.81 ≈ PNG original)
   const cabY = margen
-  const cabH = 52
+  const cabH = 66        // altura suficiente para 2 filas de logos portrait + márgenes
   const cabX = margen
 
-  const secWidths = [30, 36, 54, 40, contentW - 30 - 36 - 54 - 40]
+  const secWidths = [26, 44, 54, 38, contentW - 26 - 44 - 54 - 38]  // último = 28 mm
   const secX = []
   secWidths.reduce((acc, w, i) => { secX[i] = acc; return acc + w }, cabX)
 
-  // Outer border
+  // Borde exterior
   doc.setDrawColor(180, 180, 180)
   doc.setLineWidth(0.5)
   doc.rect(cabX, cabY, contentW, cabH)
 
-  // Vertical dividers
+  // Divisores verticales
   doc.setLineWidth(0.3)
   for (let i = 1; i < secWidths.length; i++) {
     doc.line(secX[i], cabY, secX[i], cabY + cabH)
@@ -76,49 +74,61 @@ export async function generarPDF(a) {
   {
     const sx = secX[0], sw = secWidths[0]
     if (logoComsa) {
-      centerImg(logoComsa, sx, cabY, sw, cabH, 20, 20)
+      const lw = 18, lh = 18
+      try {
+        doc.addImage(logoComsa, 'PNG', sx + (sw - lw) / 2, cabY + (cabH - lh) / 2 - 4, lw, lh)
+      } catch {}
     } else {
-      // Placeholder geométrico
       doc.setFillColor(29, 158, 117)
-      doc.roundedRect(sx + sw / 2 - 9, cabY + 8, 18, 18, 3, 3, 'F')
-      doc.setFont('helvetica', 'bold')
-      doc.setFontSize(6.5)
-      doc.setTextColor(255, 255, 255)
-      doc.text('C', sx + sw / 2, cabY + 19.5, { align: 'center' })
+      doc.roundedRect(sx + sw / 2 - 9, cabY + 10, 18, 18, 3, 3, 'F')
     }
     doc.setFont('helvetica', 'bold')
     doc.setFontSize(7)
     doc.setTextColor(...grisOsc)
-    doc.text('COMSA', sx + sw / 2, cabY + 36, { align: 'center' })
+    doc.text('COMSA', sx + sw / 2, cabY + 42, { align: 'center' })
     doc.setFont('helvetica', 'normal')
     doc.setFontSize(6)
-    doc.text('SERVICE', sx + sw / 2, cabY + 41, { align: 'center' })
+    doc.text('SERVICE', sx + sw / 2, cabY + 47, { align: 'center' })
   }
 
-  // ── Sección 1: Applus ───────────────────────────────────────────────────────
+  // ── Sección 1: Applus — cuadrícula 2×2 ─────────────────────────────────────
   {
     const sx = secX[1], sw = secWidths[1]
-    if (logoApplus) {
-      centerImg(logoApplus, sx, cabY, sw, cabH, 28, 22)
-    }
-    // Sin logo: celda vacía (esperando subida)
+
+    // Dimensiones de cada logo: relación de aspecto ~1:1.81 (original 1500×2721 px)
+    const logoW  = 16               // mm de ancho por logo
+    const logoH  = logoW * (2721 / 1500)  // ≈ 29 mm de alto
+    const gap    = 2                // mm entre logos
+    const gridW  = logoW * 2 + gap  // 34 mm
+    const gridH  = logoH * 2 + gap  // ≈ 60 mm
+
+    const startX = sx + (sw - gridW) / 2
+    const startY = cabY + (cabH - gridH) / 2
+
+    const applusLogos = [logoApplus1, logoApplus2, logoApplus3, logoApplus4]
+
+    applusLogos.forEach((logo, i) => {
+      if (!logo) return
+      const col = i % 2
+      const row = Math.floor(i / 2)
+      const lx = startX + col * (logoW + gap)
+      const ly = startY + row * (logoH + gap)
+      try { doc.addImage(logo, 'PNG', lx, ly, logoW, logoH) } catch {}
+    })
   }
 
   // ── Sección 2: PEFC ─────────────────────────────────────────────────────────
-  // Logo pequeño a la izquierda + bloque de texto a la derecha
   {
     const sx = secX[2], sw = secWidths[2]
     const pad = 3
 
-    // Logo PEFC (si existe)
-    const logoW = 14, logoH = 18
+    const logoW = 14, logoH = 22
     if (logoPefc) {
       try {
         doc.addImage(logoPefc, 'PNG', sx + pad, cabY + (cabH - logoH) / 2, logoW, logoH)
       } catch {}
     }
 
-    // Bloque de texto — empieza después del logo (o desde pad si no hay logo)
     const txtX = sx + (logoPefc ? pad + logoW + 3 : pad)
 
     const lines = [
@@ -130,9 +140,9 @@ export async function generarPDF(a) {
       { text: 'PEFC/14-31-00318',        bold: false, size: 5 },
       { text: 'www.pefc.es',             bold: false, size: 5 },
     ]
-    const lineH   = 5.5
-    const totalH  = (lines.length - 1) * lineH
-    const startY  = cabY + (cabH - totalH) / 2
+    const lineH  = 5.5
+    const totalH = (lines.length - 1) * lineH
+    const startY = cabY + (cabH - totalH) / 2
 
     lines.forEach((l, i) => {
       doc.setFont('helvetica', l.bold ? 'bold' : 'normal')
@@ -145,7 +155,6 @@ export async function generarPDF(a) {
   // ── Sección 3: SURE ─────────────────────────────────────────────────────────
   {
     const sx = secX[3], sw = secWidths[3]
-    const pad = 3
 
     const logoW = 32, logoH = 16
     const txtLines = [
@@ -153,9 +162,9 @@ export async function generarPDF(a) {
       'Verification Scheme GmbH',
       'SURE EU/ES 001/ Z202 2281',
     ]
-    const lineH = 5
-    const totalH  = logoH + 5 + (txtLines.length - 1) * lineH  // logo + gap + text block
-    const groupY  = cabY + (cabH - totalH) / 2
+    const lineH  = 5
+    const totalH = logoH + 6 + (txtLines.length - 1) * lineH
+    const groupY = cabY + (cabH - totalH) / 2
 
     if (logoSure) {
       try {
@@ -163,7 +172,7 @@ export async function generarPDF(a) {
       } catch {}
     }
 
-    const txtStartY = groupY + logoH + 5
+    const txtStartY = groupY + logoH + 6
     doc.setFont('helvetica', 'normal')
     doc.setFontSize(5)
     doc.setTextColor(...grisOsc)
@@ -177,47 +186,43 @@ export async function generarPDF(a) {
     const sx = secX[4], sw = secWidths[4]
     const cx = sx + sw / 2
 
-    // Fondo gris muy claro para distinguir
     doc.setFillColor(248, 248, 248)
     doc.rect(sx, cabY, sw, cabH, 'F')
-    // Redibujar borde derecho e interior
     doc.setDrawColor(180, 180, 180)
     doc.setLineWidth(0.3)
     doc.rect(sx, cabY, sw, cabH)
 
     doc.setFont('helvetica', 'bold')
-    doc.setFontSize(9)
+    doc.setFontSize(8)
     doc.setTextColor(...negro)
     doc.text('ALBARÁN DE', cx, cabY + 9, { align: 'center' })
     doc.text('TRANSPORTE', cx, cabY + 15, { align: 'center' })
 
-    // Separador fino
     doc.setDrawColor(210, 210, 210)
     doc.setLineWidth(0.2)
-    doc.line(sx + 3, cabY + 18, sx + sw - 3, cabY + 18)
+    doc.line(sx + 2, cabY + 18, sx + sw - 2, cabY + 18)
 
-    // Nº albarán
     doc.setFont('helvetica', 'normal')
-    doc.setFontSize(6.5)
+    doc.setFontSize(6)
     doc.setTextColor(...grisOsc)
-    doc.text('Nº albarán:', sx + 3, cabY + 24)
+    doc.text('Nº albarán:', sx + 2, cabY + 24)
 
     doc.setFont('helvetica', 'bold')
-    doc.setFontSize(20)
+    doc.setFontSize(18)
     doc.setTextColor(200, 30, 30)
-    doc.text(String(a.id ?? ''), cx, cabY + 37, { align: 'center' })
+    doc.text(String(a.id ?? ''), cx, cabY + 39, { align: 'center' })
 
-    // Separador fino
     doc.setDrawColor(210, 210, 210)
     doc.setLineWidth(0.2)
-    doc.line(sx + 3, cabY + 40, sx + sw - 3, cabY + 40)
+    doc.line(sx + 2, cabY + 43, sx + sw - 2, cabY + 43)
 
-    // Fecha
     doc.setFont('helvetica', 'normal')
-    doc.setFontSize(6.5)
+    doc.setFontSize(6)
     doc.setTextColor(...grisOsc)
     const fechaStr = a.fecha ? a.fecha.split('-').reverse().join('/') : '___/___/______'
-    doc.text(`Fecha:  ${fechaStr}`, sx + 3, cabY + 47)
+    doc.text('Fecha:', sx + 2, cabY + 50)
+    doc.setTextColor(...negro)
+    doc.text(fechaStr, sx + 2, cabY + 57)
   }
 
   // ── TABLA DE DATOS ──────────────────────────────────────────────────────────
@@ -340,7 +345,6 @@ export async function generarPDF(a) {
       } catch {}
     }
 
-    // Footer gris
     doc.setFillColor(...grisClaro)
     doc.setDrawColor(200, 200, 200)
     doc.rect(bx, by + imgAreaH, sigW, footerH, 'FD')
