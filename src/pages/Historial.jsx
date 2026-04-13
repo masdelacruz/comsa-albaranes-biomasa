@@ -41,40 +41,79 @@ export default function Historial({ albaranes }) {
     : '—'
 
   const exportarExcel = () => {
-    const datos = filtrados.map(a => ({
-      'Nº Albarán':       a.id,
-      'Fecha':            a.fecha.split('-').reverse().join('/'),
-      'Hora':             a.hora,
-      'Tipo operación':   a.tipo,
-      'Astilladora':      a.astilladora,
-      'Transportista':    a.transportista,
-      'Instalación':      a.instalacion,
-      'Especie':          a.especie,
-      'Tipo biomasa':     a.tipoBiomasa,
-      'Origen':           a.origen || '',
-      'Permiso / Ref.':   a.permiso || '',
-      'Nº camiones':      a.numCamiones,
-      'Observaciones':    a.observaciones || '',
-      'Estado':           a.estado,
-      'Firma oficina':    a.firmas.oficina?.firmado     ? 'Sí' : 'No',
-      'Firma astilladora':a.firmas.astilladora?.firmado ? 'Sí' : 'No',
-      'Firma camionero':  a.firmas.camionero?.firmado   ? 'Sí' : 'No',
-      'Firma instalación':a.firmas.instalacion?.firmado ? 'Sí' : 'No',
-      'Peso entrada (kg)':a.pesada.entrada || '',
-      'Peso salida (kg)': a.pesada.salida  || '',
-      'Peso neto (kg)':   a.pesada.entrada && a.pesada.salida ? a.pesada.entrada - a.pesada.salida : '',
-      'Humedad (%)':      a.pesada.humedad != null ? a.pesada.humedad : '',
-      'Ticket adjunto':   a.pesada.ticketAdjunto ? 'Sí' : 'No',
-    }))
+    const cabeceras = [
+      'Fecha', 'Nº Albarán', 'Origen', 'Permiso / Ref.',
+      'Instalación destino', 'Proveedor', 'Astilladora', 'Transportista',
+      'Matrícula tractora', 'Matrícula remolque', 'Chófer',
+      'Especie', 'Tipo biomasa', 'SURE', 'PEFC',
+      'Peso bruto (kg)', 'Tara (kg)', 'Peso neto (kg)', 'Peso neto (t)', 'Humedad (%)',
+      'Estado', 'Observaciones',
+    ]
+
+    const filas = filtrados.map(a => {
+      const certs    = a.certificacion ? a.certificacion.split(',') : []
+      const pesoNeto = a.pesada.entrada && a.pesada.salida ? a.pesada.entrada - a.pesada.salida : null
+      return [
+        a.fecha.split('-').reverse().join('/'),
+        a.id,
+        a.origen            || '',
+        a.permiso           || '',
+        a.instalacion       || '',
+        a.proveedor         || '',
+        a.astilladora       || '',
+        a.transportista     || '',
+        a.matriculaTractora || '',
+        a.matriculaRemolque || '',
+        a.chofer            || '',
+        a.especie           || '',
+        a.tipoBiomasa       || '',
+        certs.includes('SURE') ? '✓' : '',
+        certs.includes('PEFC') ? '✓' : '',
+        a.pesada.entrada != null ? a.pesada.entrada : '',
+        a.pesada.salida  != null ? a.pesada.salida  : '',
+        pesoNeto         != null ? pesoNeto          : '',
+        pesoNeto         != null ? Number((pesoNeto / 1000).toFixed(3)) : '',
+        a.pesada.humedad != null ? a.pesada.humedad  : '',
+        a.estado        || '',
+        a.observaciones || '',
+      ]
+    })
 
     const wb = XLSX.utils.book_new()
-    const ws = XLSX.utils.json_to_sheet(datos)
+    const ws = XLSX.utils.aoa_to_sheet([cabeceras, ...filas])
 
     ws['!cols'] = [
-      {wch:16},{wch:12},{wch:8},{wch:32},{wch:22},{wch:22},{wch:24},{wch:14},
-      {wch:18},{wch:36},{wch:18},{wch:12},{wch:30},{wch:18},{wch:14},{wch:18},
-      {wch:16},{wch:18},{wch:16},{wch:16},{wch:14},{wch:12},{wch:14},
+      {wch:12}, // Fecha
+      {wch:12}, // Nº Albarán
+      {wch:32}, // Origen
+      {wch:18}, // Permiso / Ref.
+      {wch:26}, // Instalación destino
+      {wch:22}, // Proveedor
+      {wch:22}, // Astilladora
+      {wch:22}, // Transportista
+      {wch:16}, // Matrícula tractora
+      {wch:16}, // Matrícula remolque
+      {wch:16}, // Chófer
+      {wch:14}, // Especie
+      {wch:18}, // Tipo biomasa
+      {wch:7},  // SURE
+      {wch:7},  // PEFC
+      {wch:15}, // Peso bruto (kg)
+      {wch:12}, // Tara (kg)
+      {wch:15}, // Peso neto (kg)
+      {wch:14}, // Peso neto (t)
+      {wch:12}, // Humedad (%)
+      {wch:20}, // Estado
+      {wch:34}, // Observaciones
     ]
+
+    // Auto-filtro en todas las columnas
+    const lastCol = XLSX.utils.encode_col(cabeceras.length - 1)
+    const lastRow = filtrados.length + 1
+    ws['!autofilter'] = { ref: `A1:${lastCol}${lastRow}` }
+
+    // Congelar primera fila
+    ws['!freeze'] = { xSplit: 0, ySplit: 1, topLeftCell: 'A2', activePane: 'bottomLeft', state: 'frozen' }
 
     XLSX.utils.book_append_sheet(wb, ws, 'Albaranes')
     XLSX.writeFile(wb, `comsa_albaranes_${new Date().toISOString().split('T')[0]}.xlsx`)
