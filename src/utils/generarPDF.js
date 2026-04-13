@@ -22,7 +22,6 @@ export async function generarPDF(a) {
         reader.readAsDataURL(b)
       }))
 
-  // Detecta el formato real del data URL para jsPDF
   const fmt = (b64) => {
     if (!b64) return 'PNG'
     if (b64.startsWith('data:image/jpeg') || b64.startsWith('data:image/jpg')) return 'JPEG'
@@ -30,26 +29,15 @@ export async function generarPDF(a) {
     return 'PNG'
   }
 
-  // Dibuja imagen ajustada a un rectángulo (mantiene aspecto, centra dentro del área)
-  const addImgFit = (b64, areaX, areaY, areaW, areaH) => {
+  // Ajusta imagen a un área manteniendo aspect ratio real
+  const addImgFit = (b64, ax, ay, aw, ah) => {
     if (!b64) return
     try {
-      // Obtener dimensiones naturales del imagen para calcular aspect ratio
-      const props = doc.getImageProperties(b64)
-      const ratio = props.width / props.height
+      const p  = doc.getImageProperties(b64)
+      const r  = p.width / p.height
       let iw, ih
-      if (areaW / areaH > ratio) {
-        // área más ancha que la imagen → ajustar por altura
-        ih = areaH
-        iw = ih * ratio
-      } else {
-        // área más alta que la imagen → ajustar por ancho
-        iw = areaW
-        ih = iw / ratio
-      }
-      const ix = areaX + (areaW - iw) / 2
-      const iy = areaY + (areaH - ih) / 2
-      doc.addImage(b64, fmt(b64), ix, iy, iw, ih)
+      if (aw / ah >= r) { ih = ah; iw = ih * r } else { iw = aw; ih = iw / r }
+      doc.addImage(b64, fmt(b64), ax + (aw - iw) / 2, ay + (ah - ih) / 2, iw, ih)
     } catch {}
   }
 
@@ -58,7 +46,6 @@ export async function generarPDF(a) {
   let logoComsa
   try { logoComsa = await toBase64('/logo-comsa.png') } catch {}
 
-  // applus_1=ISO9001 · applus_2=ISO14001 · applus_3=ISO45001 · applus_4=ISO50001
   let logoApplus1, logoApplus2, logoApplus3, logoApplus4, logoPefc, logoSure
   try {
     const { data } = await supabase.from('logos_config').select('id,url')
@@ -78,81 +65,98 @@ export async function generarPDF(a) {
   } catch {}
 
   // ── CABECERA ─────────────────────────────────────────────────────────────────
-  //  UNA sola fila horizontal. Sin divisores. Sin fondos. Solo borde exterior.
-  //  Layout (mm): COMSA(20) | A9001(18) | A14001(18) | A45001(18) | A50001(18)
-  //               | PEFC(20) | SURE(24) | Título(54) = 190 mm ✓
+  //  Una fila: COMSA(20) | A9001(16)×4=64 | PEFC(20) | SURE(24) | Título(62) = 190mm
   const cabY = margen
-  const cabH = 38     // altura: suficiente para logos portrait con padding
-  const pad  = 3      // padding interior por logo
+  const cabH = 44    // altura total de la cabecera
+  const pad  = 2     // padding interior de cada logo
 
-  // Solo borde exterior, fondo blanco (sin relleno = blanco)
+  // Borde exterior, fondo blanco
   doc.setDrawColor(170, 170, 170)
   doc.setLineWidth(0.4)
   doc.rect(margen, cabY, contentW, cabH)
 
-  // Zonas horizontales — cada logo en su área
-  //  x0=COMSA  x1=A1  x2=A2  x3=A3  x4=A4  x5=PEFC  x6=SURE  x7=Título
-  const zones = [
-    { w: 20 },   // 0 COMSA
-    { w: 18 },   // 1 Applus ISO 9001
-    { w: 18 },   // 2 Applus ISO 14001
-    { w: 18 },   // 3 Applus ISO 45001
-    { w: 18 },   // 4 Applus ISO 50001
-    { w: 20 },   // 5 PEFC
-    { w: 24 },   // 6 SURE
-    { w: contentW - 20 - 18*4 - 20 - 24 },  // 7 Título (= 54 mm)
-  ]
-  let zx = margen
-  zones.forEach(z => { z.x = zx; zx += z.w })
+  // Zonas X
+  const Z_COMSA  = { x: margen,       w: 20 }
+  const Z_A1     = { x: margen + 20,  w: 16 }
+  const Z_A2     = { x: margen + 36,  w: 16 }
+  const Z_A3     = { x: margen + 52,  w: 16 }
+  const Z_A4     = { x: margen + 68,  w: 16 }
+  const Z_PEFC   = { x: margen + 84,  w: 20 }
+  const Z_SURE   = { x: margen + 104, w: 24 }
+  const Z_TITULO = { x: margen + 128, w: 62 }  // 190 - 128 = 62 mm
 
-  const drawLogoZone = (logo, zi) => {
-    const z = zones[zi]
-    addImgFit(logo, z.x + pad, cabY + pad, z.w - pad * 2, cabH - pad * 2)
+  // Helper: dibuja logo en zona con padding uniforme
+  const logoZone = (b64, z) => addImgFit(b64, z.x + pad, cabY + pad, z.w - pad * 2, cabH - pad * 2)
+
+  // COMSA
+  logoZone(logoComsa, Z_COMSA)
+
+  // Applus: tamaño FIJO igual para los 4 (ratio 1:1.82 de los logos reales)
+  // Calculamos una vez con el primer logo disponible, aplicamos a todos
+  const applusRatio = 1 / 1.82   // ancho/alto
+  const applusH = cabH - pad * 2  // 40mm
+  const applusW = applusH * applusRatio  // ≈ 22mm → recortamos a la zona (16-4=12mm)
+  const applusWFit = Math.min(applusW, Z_A1.w - pad * 2)  // cabe en slot
+  const applusHFit = applusWFit / applusRatio
+
+  const drawApplus = (b64, z) => {
+    if (!b64) return
+    const lx = z.x + (z.w - applusWFit) / 2
+    const ly = cabY + (cabH - applusHFit) / 2
+    try { doc.addImage(b64, fmt(b64), lx, ly, applusWFit, applusHFit) } catch {}
   }
 
-  // Logos: COMSA | 4×Applus (9001→50001) | PEFC | SURE
-  drawLogoZone(logoComsa,   0)
-  drawLogoZone(logoApplus1, 1)
-  drawLogoZone(logoApplus2, 2)
-  drawLogoZone(logoApplus3, 3)
-  drawLogoZone(logoApplus4, 4)
-  drawLogoZone(logoPefc,    5)
-  drawLogoZone(logoSure,    6)
+  drawApplus(logoApplus1, Z_A1)
+  drawApplus(logoApplus2, Z_A2)
+  drawApplus(logoApplus3, Z_A3)
+  drawApplus(logoApplus4, Z_A4)
+
+  // PEFC y SURE
+  logoZone(logoPefc, Z_PEFC)
+  logoZone(logoSure, Z_SURE)
 
   // ── Zona Título ─────────────────────────────────────────────────────────────
   {
-    const z = zones[7]
-    const cx = z.x + z.w / 2
+    const zx = Z_TITULO.x
+    const zw = Z_TITULO.w
+    const cx = zx + zw / 2
 
+    // Línea separadora izquierda muy suave
+    doc.setDrawColor(200, 200, 200)
+    doc.setLineWidth(0.2)
+    doc.line(zx, cabY + 2, zx, cabY + cabH - 2)
+
+    // "ALBARÁN DE TRANSPORTE" — UNA SOLA LÍNEA
     doc.setFont('helvetica', 'bold')
-    doc.setFontSize(8)
+    doc.setFontSize(9)
     doc.setTextColor(...negro)
-    doc.text('ALBARÁN DE', cx, cabY + 8, { align: 'center' })
-    doc.text('TRANSPORTE', cx, cabY + 13.5, { align: 'center' })
+    doc.text('ALBARÁN DE TRANSPORTE', cx, cabY + 9, { align: 'center' })
 
     doc.setDrawColor(200, 200, 200)
     doc.setLineWidth(0.2)
-    doc.line(z.x + 2, cabY + 16, z.x + z.w - 2, cabY + 16)
+    doc.line(zx + 2, cabY + 12, zx + zw - 2, cabY + 12)
 
+    // Nº albarán
     doc.setFont('helvetica', 'normal')
-    doc.setFontSize(5.5)
+    doc.setFontSize(6)
     doc.setTextColor(...grisOsc)
-    doc.text('Nº albarán:', z.x + 3, cabY + 20)
+    doc.text('Nº albarán:', zx + 3, cabY + 17)
 
     doc.setFont('helvetica', 'bold')
-    doc.setFontSize(16)
+    doc.setFontSize(18)
     doc.setTextColor(200, 30, 30)
     doc.text(String(a.id ?? ''), cx, cabY + 30, { align: 'center' })
 
     doc.setDrawColor(200, 200, 200)
     doc.setLineWidth(0.2)
-    doc.line(z.x + 2, cabY + 32, z.x + z.w - 2, cabY + 32)
+    doc.line(zx + 2, cabY + 33, zx + zw - 2, cabY + 33)
 
+    // Fecha — tamaño visible
     doc.setFont('helvetica', 'normal')
-    doc.setFontSize(5.5)
+    doc.setFontSize(8)
     doc.setTextColor(...grisOsc)
     const fechaStr = a.fecha ? a.fecha.split('-').reverse().join('/') : '—'
-    doc.text(`Fecha:  ${fechaStr}`, z.x + 3, cabY + 36)
+    doc.text(`Fecha:  ${fechaStr}`, zx + 3, cabY + 40)
   }
 
   // ── TABLA DE DATOS ──────────────────────────────────────────────────────────
@@ -271,7 +275,8 @@ export async function generarPDF(a) {
     const imgAreaH = sigH - footerH
     if (firmaData?.firmaImagen) {
       try {
-        doc.addImage(firmaData.firmaImagen, fmt(firmaData.firmaImagen), bx + 4, by + 4, sigW - 8, imgAreaH - 8)
+        doc.addImage(firmaData.firmaImagen, fmt(firmaData.firmaImagen),
+          bx + 4, by + 4, sigW - 8, imgAreaH - 8)
       } catch {}
     }
 
@@ -297,7 +302,6 @@ export async function generarPDF(a) {
   // ── PIE DE PÁGINA ───────────────────────────────────────────────────────────
   const pageH   = 297
   const footerY = Math.max(y + 4, pageH - 10)
-
   doc.setFontSize(7)
   doc.setTextColor(160, 160, 160)
   doc.setFont('helvetica', 'normal')
