@@ -640,8 +640,8 @@ export default function DetalleAlbaran({ albaranes, simularFirma, subirDocumento
                   <button className="btn" style={{flex:1,fontSize:11}} onClick={() => copiar(campoUrl, 'general')}>
                     {copiado === 'general' ? <><CheckCircle size={11} /> Copiado</> : <><Copy size={11} /> Copiar enlace general</>}
                   </button>
-                  <button className="btn" style={{fontSize:11,padding:'5px 8px'}} onClick={() => navigate(`/campo/${a.id}`)}>
-                    <ExternalLink size={13} /> Ver vista campo
+                  <button className="btn" style={{fontSize:11,padding:'5px 8px'}} onClick={() => window.open(campoUrl, '_blank')}>
+                    <ExternalLink size={13} />
                   </button>
                 </div>
               </div>
