@@ -57,7 +57,7 @@ function AppConDatos({ usuario, logout }) {
       </Route>
     </Routes>
   )
-}
+} 
 
 function AppInner() {
   const { session, usuario, loading: authLoading, bloqueado, verificado, logout } = useAuth()
