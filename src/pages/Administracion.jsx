@@ -42,7 +42,9 @@ const LOGOS_SECTIONS = [
 // Lista plana para compatibilidad con funciones de subida/borrado
 const LOGOS_CONFIG = LOGOS_SECTIONS.flatMap(s => s.logos)
 
-export default function Administracion() {
+export default function Administracion({ usuario }) {
+  const esSuperadmin = usuario?.nivel === 'superadmin'
+
   const [proveedores, setProveedores]     = useState([])
   const [loading, setLoading]             = useState(true)
   const [tab, setTab]                     = useState('proveedor')
@@ -223,12 +225,14 @@ export default function Administracion() {
               {TIPO_LABELS[t]} <span style={{ fontSize: 11, color: 'var(--gray-400)', marginLeft: 4 }}>({counts[t]})</span>
             </button>
           ))}
-          <button
-            className={`admin-tab ${tab === 'logos' ? 'active' : ''}`}
-            onClick={() => setTab('logos')}
-          >
-            Logos
-          </button>
+          {esSuperadmin && (
+            <button
+              className={`admin-tab ${tab === 'logos' ? 'active' : ''}`}
+              onClick={() => setTab('logos')}
+            >
+              Logos
+            </button>
+          )}
         </div>
 
         {/* ── Logos panel ── */}

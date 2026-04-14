@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { supabase } from '../supabase'
-import { Plus, Pencil, Check, X, Shield, ShieldOff } from 'lucide-react'
+import { supabaseAdmin } from '../supabaseAdmin'
+import { Plus, Pencil, Check, X, Shield, ShieldOff, Eye, EyeOff } from 'lucide-react'
 import '../components/shared.css'
 import './Usuarios.css'
 
@@ -20,9 +21,10 @@ export default function Usuarios({ usuario }) {
   const [modal, setModal]           = useState(false)
   const [editando, setEditando]     = useState(null)
   const [form, setForm]             = useState(EMPTY_FORM)
-  const [guardando, setGuardando]   = useState(false)
-  const [error, setError]           = useState('')
+  const [guardando, setGuardando]     = useState(false)
+  const [error, setError]             = useState('')
   const [confirmDesact, setConfirmDesact] = useState(null)
+  const [showPassword, setShowPassword] = useState(false)
 
   const esSuperadmin = usuario?.nivel === 'superadmin'
 
@@ -50,7 +52,7 @@ export default function Usuarios({ usuario }) {
     setModal(true)
   }
 
-  const cerrarModal = () => { setModal(false); setEditando(null); setForm(EMPTY_FORM); setError('') }
+  const cerrarModal = () => { setModal(false); setEditando(null); setForm(EMPTY_FORM); setError(''); setShowPassword(false) }
 
   const handleGuardar = async () => {
     if (!form.nombre.trim() || !form.email.trim()) return
@@ -63,8 +65,13 @@ export default function Usuarios({ usuario }) {
       }).eq('id', editando)
 
       if (form.password.trim()) {
-        const { error } = await supabase.auth.admin.updateUserById(editando, { password: form.password })
-        if (error) { setError('No se pudo cambiar la contraseña'); setGuardando(false); return }
+        if (!supabaseAdmin) {
+          setError('Falta la service role key en .env para poder cambiar contraseñas.')
+          setGuardando(false)
+          return
+        }
+        const { error: pwErr } = await supabaseAdmin.auth.admin.updateUserById(editando, { password: form.password })
+        if (pwErr) { setError(`No se pudo cambiar la contraseña: ${pwErr.message}`); setGuardando(false); return }
       }
     } else {
       const { data: authData, error: authError } = await supabase.auth.signUp({
@@ -94,12 +101,6 @@ export default function Usuarios({ usuario }) {
     setConfirmDesact(null)
   }
 
-  if (!esSuperadmin) return (
-    <div style={{padding:40,textAlign:'center',color:'var(--gray-400)'}}>
-      No tienes permisos para acceder a esta sección.
-    </div>
-  )
-
   return (
     <div className="usuarios-page">
       <div className="page-header">
@@ -108,9 +109,11 @@ export default function Usuarios({ usuario }) {
             <div className="page-title">Gestión de usuarios</div>
             <div className="page-sub">{usuarios.length} usuarios registrados</div>
           </div>
-          <button className="btn btn-primary" onClick={abrirNuevo}>
-            <Plus size={15} /> Nuevo usuario
-          </button>
+          {esSuperadmin && (
+            <button className="btn btn-primary" onClick={abrirNuevo}>
+              <Plus size={15} /> Nuevo usuario
+            </button>
+          )}
         </div>
       </div>
 
@@ -124,7 +127,7 @@ export default function Usuarios({ usuario }) {
                 <th>Rol</th>
                 <th>Nivel</th>
                 <th>Estado</th>
-                <th>Acciones</th>
+                {esSuperadmin && <th>Acciones</th>}
               </tr>
             </thead>
             <tbody>
@@ -154,34 +157,36 @@ export default function Usuarios({ usuario }) {
                       {u.activo ? 'Activo' : 'Inactivo'}
                     </span>
                   </td>
-                  <td>
-                    <div style={{display:'flex',gap:6}}>
-                      <button className="btn btn-ghost" style={{padding:'4px 8px',fontSize:11}} onClick={() => abrirEditar(u)}>
-                        <Pencil size={12} /> Editar
-                      </button>
-                      {u.id !== usuario?.id && (
-                        confirmDesact === u.id ? (
-                          <div style={{display:'flex',gap:4,alignItems:'center'}}>
-                            <span style={{fontSize:11,color:'var(--red-700)'}}>¿{u.activo ? 'Desactivar' : 'Activar'}?</span>
-                            <button className="btn" style={{padding:'4px 8px',fontSize:11,color:'var(--red-700)',borderColor:'var(--red-100)'}} onClick={() => handleToggleActivo(u)}>
-                              <Check size={11} />
+                  {esSuperadmin && (
+                    <td>
+                      <div style={{display:'flex',gap:6}}>
+                        <button className="btn btn-ghost" style={{padding:'4px 8px',fontSize:11}} onClick={() => abrirEditar(u)}>
+                          <Pencil size={12} /> Editar
+                        </button>
+                        {u.id !== usuario?.id && (
+                          confirmDesact === u.id ? (
+                            <div style={{display:'flex',gap:4,alignItems:'center'}}>
+                              <span style={{fontSize:11,color:'var(--red-700)'}}>¿{u.activo ? 'Desactivar' : 'Activar'}?</span>
+                              <button className="btn" style={{padding:'4px 8px',fontSize:11,color:'var(--red-700)',borderColor:'var(--red-100)'}} onClick={() => handleToggleActivo(u)}>
+                                <Check size={11} />
+                              </button>
+                              <button className="btn btn-ghost" style={{padding:'4px 8px',fontSize:11}} onClick={() => setConfirmDesact(null)}>
+                                <X size={11} />
+                              </button>
+                            </div>
+                          ) : (
+                            <button
+                              className="btn btn-ghost"
+                              style={{padding:'4px 8px',fontSize:11,color: u.activo ? 'var(--red-400)' : 'var(--green-400)'}}
+                              onClick={() => setConfirmDesact(u.id)}
+                            >
+                              {u.activo ? <><ShieldOff size={12} /> Desactivar</> : <><Shield size={12} /> Activar</>}
                             </button>
-                            <button className="btn btn-ghost" style={{padding:'4px 8px',fontSize:11}} onClick={() => setConfirmDesact(null)}>
-                              <X size={11} />
-                            </button>
-                          </div>
-                        ) : (
-                          <button
-                            className="btn btn-ghost"
-                            style={{padding:'4px 8px',fontSize:11,color: u.activo ? 'var(--red-400)' : 'var(--green-400)'}}
-                            onClick={() => setConfirmDesact(u.id)}
-                          >
-                            {u.activo ? <><ShieldOff size={12} /> Desactivar</> : <><Shield size={12} /> Activar</>}
-                          </button>
-                        )
-                      )}
-                    </div>
-                  </td>
+                          )
+                        )}
+                      </div>
+                    </td>
+                  )}
                 </tr>
               ))}
             </tbody>
@@ -222,12 +227,23 @@ export default function Usuarios({ usuario }) {
                 <label style={{fontSize:12,fontWeight:500,color:'var(--gray-600)'}}>
                   {editando ? 'Nueva contraseña (dejar vacío para no cambiar)' : 'Contraseña provisional'}
                 </label>
-                <input
-                  type="password"
-                  placeholder={editando ? '••••••••' : 'Comsa2025!'}
-                  value={form.password}
-                  onChange={e => set('password', e.target.value)}
-                />
+                <div style={{position:'relative',display:'flex',alignItems:'center'}}>
+                  <input
+                    type={showPassword ? 'text' : 'password'}
+                    placeholder={editando ? '••••••••' : 'Comsa2025!'}
+                    value={form.password}
+                    onChange={e => set('password', e.target.value)}
+                    style={{paddingRight:36,width:'100%'}}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(v => !v)}
+                    style={{position:'absolute',right:8,background:'none',border:'none',cursor:'pointer',padding:4,color:'var(--gray-400)',display:'flex',alignItems:'center'}}
+                    tabIndex={-1}
+                  >
+                    {showPassword ? <EyeOff size={15} /> : <Eye size={15} />}
+                  </button>
+                </div>
               </div>
               {error && (
                 <div style={{background:'var(--red-50)',border:'1px solid var(--red-100)',borderRadius:'var(--radius-sm)',padding:'8px 12px',fontSize:12,color:'var(--red-700)'}}>

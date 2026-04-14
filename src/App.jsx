@@ -52,7 +52,7 @@ function AppConDatos({ usuario, logout }) {
         <Route path="albaran/:id"    element={<DetalleAlbaran albaranes={albaranes} simularFirma={simularFirmaOficina} subirDocumento={subirDocumento} subirTicketPesada={subirTicketPesada} actualizarAlbaran={actualizarAlbaran} usuario={usuario} />} />
         <Route path="historial"      element={<Historial albaranes={albaranes} />} />
         <Route path="estadisticas"   element={<Estadisticas albaranes={albaranes} />} />
-        <Route path="administracion" element={<Administracion />} />
+        <Route path="administracion" element={<Administracion usuario={usuario} />} />
         <Route path="usuarios"       element={<Usuarios usuario={usuario} />} />
       </Route>
     </Routes>
