@@ -633,15 +633,21 @@ export default function DetalleAlbaran({ albaranes, simularFirma, subirDocumento
             <div className="card">
               <div className="section-label">Actividad</div>
               <div className="timeline">
-                {a.actividad.map((ev, i) => (
-                  <div key={i} className="tl-item">
-                    <div className="tl-dot" />
-                    <div>
-                      <div className="tl-texto">{ev.texto}</div>
-                      <div className="tl-meta">{ev.ts} · {ev.actor}</div>
+                {a.actividad.map((ev, i) => {
+                  const externos = [a.astilladora, a.transportista, a.instalacion].filter(Boolean)
+                  const tipo = ev.actor === 'Sistema' ? 'sistema'
+                    : externos.includes(ev.actor) ? 'externo'
+                    : 'interno'
+                  return (
+                    <div key={i} className={`tl-item tl-${tipo}`}>
+                      <div className={`tl-dot tl-${tipo}`} />
+                      <div>
+                        <div className="tl-texto">{ev.texto}</div>
+                        <div className="tl-meta">{ev.ts} · {ev.actor}</div>
+                      </div>
                     </div>
-                  </div>
-                ))}
+                  )
+                })}
               </div>
             </div>
           </div>
