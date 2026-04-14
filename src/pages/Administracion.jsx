@@ -10,6 +10,7 @@ const TIPO_LABELS = { proveedor: 'Proveedor', astilladora: 'Astilladora', transp
 const EMPTY_FORM = { nombre: '', tipo: 'proveedor', contacto: '', email: '', telefono: '', notas: '', activo: true }
 
 const LOGOS_CONFIG = [
+  { id: 'comsa',    nombre: 'COMSA Service',       descripcion: 'Logo principal COMSA Service (aparece en el PDF)' },
   { id: 'applus_1', nombre: 'Applus · ISO 9001',  descripcion: 'Certificación ISO 9001 (ej. EC-1952/05)' },
   { id: 'applus_2', nombre: 'Applus · ISO 14001', descripcion: 'Certificación ISO 14001 (ej. MA-0904/08)' },
   { id: 'applus_3', nombre: 'Applus · ISO 45001', descripcion: 'Certificación ISO 45001 (ej. PRL-4023/19)' },
@@ -36,6 +37,7 @@ export default function Administracion() {
   const [confirmDelLogo, setConfirmDelLogo] = useState(null)
   const [dragOverLogo, setDragOverLogo]     = useState(null)
   const fileInputRefs = {
+    comsa:    useRef(null),
     applus_1: useRef(null),
     applus_2: useRef(null),
     applus_3: useRef(null),

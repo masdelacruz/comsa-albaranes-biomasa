@@ -46,16 +46,14 @@ export async function generarPDF(a) {
 
   // ── carga de logos ─────────────────────────────────────────────────────────
 
-  let logoComsa
-  try { logoComsa = await toBase64('/logo-comsa.png') } catch {}
-
-  let logoApplus1, logoApplus2, logoApplus3, logoApplus4, logoPefc, logoSure
+  let logoComsa, logoApplus1, logoApplus2, logoApplus3, logoApplus4, logoPefc, logoSure
   try {
     const { data } = await supabase.from('logos_config').select('id,url')
     if (data) {
       for (const row of data) {
         try {
           const b64 = await toBase64(row.url)
+          if (row.id === 'comsa')    logoComsa   = b64
           if (row.id === 'applus_1') logoApplus1 = b64
           if (row.id === 'applus_2') logoApplus2 = b64
           if (row.id === 'applus_3') logoApplus3 = b64
@@ -141,14 +139,14 @@ export async function generarPDF(a) {
   drawApplus(logoApplus3, X.a3)
   drawApplus(logoApplus4, X.a4)
 
-  // ── PEFC — logo pequeño + bloque de texto ─────────────────────────────────
+  // ── PEFC — logo + bloque de texto ─────────────────────────────────────────
   {
     const sx = X.pefc, sw = WZ.pefc
-    const lw = 10, lh = 14
+    const lw = 15, lh = 18
     if (logoPefc) {
-      addImgFit(logoPefc, sx + 1, cabY + (cabH - lh) / 2, lw, lh)
+      addImgFit(logoPefc, sx + 2, cabY + (cabH - lh) / 2, lw, lh)
     }
-    const tx = sx + lw + 3
+    const tx = sx + lw + 4
     const lines = [
       { t: 'COMSA SERVICE',           b: false, s: 4.2 },
       { t: 'FACILITY MANAGEMENT SAU', b: false, s: 4.2 },
@@ -264,27 +262,26 @@ export async function generarPDF(a) {
   const pn   = (a.pesada?.entrada && a.pesada?.salida)
     ? (a.pesada.entrada - a.pesada.salida).toLocaleString('es-ES') + ' kg' : '...................'
 
-  doc.setFont('helvetica', 'bold')
-  doc.setFontSize(9)
-  doc.setTextColor(...grisOsc)
-  doc.text('Peso Bruto', margen, y)
-  doc.setFont('helvetica', 'normal')
-  doc.setTextColor(...negro)
-  doc.text(pb, margen + 28, y)
+  // 3 columnas iguales de 63,3mm — label derecha · valor izquierda en el centro
+  const colW   = contentW / 3                // ≈ 63.3 mm
+  const mid1   = margen + colW * 0.5         // centro col1
+  const mid2   = margen + colW * 1.5         // centro col2
+  const mid3   = margen + colW * 2.5         // centro col3
+  const gap    = 1.5                         // mm entre label y valor
 
-  doc.setFont('helvetica', 'bold')
-  doc.setTextColor(...grisOsc)
-  doc.text('Tara', 88, y)
-  doc.setFont('helvetica', 'normal')
-  doc.setTextColor(...negro)
-  doc.text(tara, 97, y)
+  const drawPesoGroup = (label, valor, midX) => {
+    doc.setFont('helvetica', 'bold')
+    doc.setFontSize(9)
+    doc.setTextColor(...grisOsc)
+    doc.text(label, midX - gap, y, { align: 'right' })
+    doc.setFont('helvetica', 'normal')
+    doc.setTextColor(...negro)
+    doc.text(valor, midX + gap, y, { align: 'left' })
+  }
 
-  doc.setFont('helvetica', 'bold')
-  doc.setTextColor(...grisOsc)
-  doc.text('Peso Neto', 148, y)
-  doc.setFont('helvetica', 'normal')
-  doc.setTextColor(...negro)
-  doc.text(pn, 164, y)
+  drawPesoGroup('Peso Bruto', pb,   mid1)
+  drawPesoGroup('Tara',       tara, mid2)
+  drawPesoGroup('Peso Neto',  pn,   mid3)
 
   y += 6
   doc.setDrawColor(200, 200, 200)
