@@ -22,7 +22,7 @@
 .tl-dot { width:11px; height:11px; border-radius:50%; flex-shrink:0; margin-top:4px; }
 .tl-dot.tl-sistema  { background:#8a888786; }
 .tl-dot.tl-interno  { background:#60a5fa; }
-.tl-dot.tl-externo  { background:#4d59f8; }
+.tl-dot.tl-externo  { background:#f6f85f; }
 .tl-texto { font-size:13px; color:var(--gray-800); font-weight:500; }
 .tl-meta  { font-size:11px; color:var(--gray-400); margin-top:2px; }
 .doc-row { display:flex; align-items:center; justify-content:space-between; gap:12px; padding:10px 0; border-bottom:var(--border-light); }
