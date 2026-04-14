@@ -48,8 +48,9 @@ export default function Usuarios({ usuario }) {
 
   const abrirEditar = (u) => {
     setEditando(u.id)
-    setForm({ nombre: u.nombre, email: u.email, rol: u.rol, nivel: u.nivel, password: '', _pwActual: u.password_visible || '' })
+    setForm({ nombre: u.nombre, email: u.email, rol: u.rol, nivel: u.nivel, password: u.password_visible || '', _pwActual: u.password_visible || '' })
     setError('')
+    setShowPassword(false)
     setModal(true)
   }
 
@@ -61,13 +62,14 @@ export default function Usuarios({ usuario }) {
     setError('')
 
     if (editando) {
+      const pwCambiada = form.password.trim() && form.password !== form._pwActual
       const updateData = { nombre: form.nombre, rol: form.rol, nivel: form.nivel }
-      if (form.password.trim()) updateData.password_visible = form.password
+      if (pwCambiada) updateData.password_visible = form.password
       await supabase.from('usuarios').update(updateData).eq('id', editando)
 
-      if (form.password.trim()) {
+      if (pwCambiada) {
         if (!supabaseAdmin) {
-          setError('Falta la service role key en .env para poder cambiar contraseñas.')
+          setError('Reinicia el servidor (npm run dev) para que cargue la service role key.')
           setGuardando(false)
           return
         }
@@ -254,7 +256,7 @@ export default function Usuarios({ usuario }) {
                 <div style={{position:'relative',display:'flex',alignItems:'center'}}>
                   <input
                     type={showPassword ? 'text' : 'password'}
-                    placeholder={editando ? (form._pwActual || '••••••••') : 'Comsa2025!'}
+                    placeholder={editando ? '••••••••' : 'Comsa2025!'}
                     value={form.password}
                     onChange={e => set('password', e.target.value)}
                     style={{paddingRight:36,width:'100%'}}
