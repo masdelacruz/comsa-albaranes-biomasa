@@ -66,80 +66,56 @@ export async function generarPDF(a) {
   } catch {}
 
   // ═══════════════════════════════════════════════════════════════════════════
-  //  CABECERA — replica exacta del documento de referencia
-  //  Altura: 24 mm (compacta)
-  //  Zonas (mm): COMSA=18 | A9001=13 | A14001=13 | A45001=13 | A50001=13
-  //              | PEFC=50 | SURE=36 | TÍTULO=34
-  //  Total: 18+52+50+36+34 = 190 mm ✓
+  //  CABECERA — 4 bloques simétricos + bloque TÍTULO
+  //  Todos los logos a la misma altura LH, ratio preservado con addImgFit
+  //  Área logos: 156mm | Título: 34mm | Total: 190mm
   // ═══════════════════════════════════════════════════════════════════════════
 
-  const cabY = margen
-  const cabH = 24
+  const cabY  = margen
+  const cabH  = 24
+  const LH    = cabH - 4   // 20mm — altura fija para todos los logos
 
-  // Borde exterior — sin divisores
+  // Borde exterior
   doc.setDrawColor(150, 150, 150)
   doc.setLineWidth(0.4)
   doc.rect(margen, cabY, contentW, cabH)
 
-  // Posiciones X de cada zona
-  const X = {
-    comsa : margen,
-    a1    : margen + 18,
-    a2    : margen + 31,
-    a3    : margen + 44,
-    a4    : margen + 57,
-    pefc  : margen + 70,
-    sure  : margen + 120,
-    titulo: margen + 156,
-  }
-  // Anchos
-  const WZ = {
-    comsa : 18,
-    applus: 13,    // cada uno de los 4
-    pefc  : 50,
-    sure  : 36,
-    titulo: 34,    // 190 - 156 = 34 mm
-  }
+  // ── Layout de 4 bloques en 156mm ──────────────────────────────────────────
+  // Anchos de bloque (slot donde se centra cada logo o grupo)
+  const logosAreaW = 156                        // mm disponibles para logos
+  const BW = { comsa: 20, applus: 56, pefc: 22, sure: 38 }
+  const totalBW    = BW.comsa + BW.applus + BW.pefc + BW.sure  // 136mm
+  const gapCount   = 5                          // antes, entre×3, después
+  const gap        = (logosAreaW - totalBW) / gapCount          // ≈ 4mm c/u
 
-  const CY = cabY + cabH / 2   // centro vertical de la cabecera
-
-  // ── COMSA — solo logo, centrado ────────────────────────────────────────────
-  {
-    const lw = 15, lh = 15
-    addImgFit(logoComsa, X.comsa + (WZ.comsa - lw) / 2, cabY + (cabH - lh) / 2, lw, lh)
+  const BX = {
+    comsa  : margen + gap,
+    applus : margen + gap + BW.comsa + gap,
+    pefc   : margen + gap + BW.comsa + gap + BW.applus + gap,
+    sure   : margen + gap + BW.comsa + gap + BW.applus + gap + BW.pefc + gap,
   }
+  const logoY = cabY + (cabH - LH) / 2         // Y para centrar verticalmente
 
-  // ── 4 × APPLUS — mismo tamaño fijo para todos ──────────────────────────────
-  // Ratio real logos Applus: ~1:1.82 (portrait). Altura fija = cabH - 4mm = 20mm
-  const AH = cabH - 4          // 20 mm de alto
-  const AW = AH * (1 / 1.82)   // ≈ 11 mm de ancho
+  // ── COMSA ─────────────────────────────────────────────────────────────────
+  addImgFit(logoComsa, BX.comsa, logoY, BW.comsa, LH)
 
-  const drawApplus = (b64, x) => {
-    if (!b64) return
-    const lx = x + (WZ.applus - AW) / 2
-    const ly = cabY + (cabH - AH) / 2
-    try { doc.addImage(b64, fmt(b64), lx, ly, AW, AH) } catch {}
-  }
-  drawApplus(logoApplus1, X.a1)
-  drawApplus(logoApplus2, X.a2)
-  drawApplus(logoApplus3, X.a3)
-  drawApplus(logoApplus4, X.a4)
+  // ── 4 × APPLUS — slots iguales dentro del bloque ──────────────────────────
+  const AslotW = BW.applus / 4   // 14mm por logo
+  ;[logoApplus1, logoApplus2, logoApplus3, logoApplus4].forEach((logo, i) => {
+    addImgFit(logo, BX.applus + i * AslotW, logoY, AslotW, LH)
+  })
 
-  // ── PEFC — solo logo, centrado en su zona ─────────────────────────────────
-  {
-    const lw = 20, lh = 20
-    addImgFit(logoPefc, X.pefc + (WZ.pefc - lw) / 2, cabY + (cabH - lh) / 2, lw, lh)
-  }
+  // ── PEFC ──────────────────────────────────────────────────────────────────
+  addImgFit(logoPefc, BX.pefc, logoY, BW.pefc, LH)
 
-  // ── SURE — solo logo, centrado en su zona ─────────────────────────────────
-  {
-    const lw = 30, lh = 14
-    addImgFit(logoSure, X.sure + (WZ.sure - lw) / 2, cabY + (cabH - lh) / 2, lw, lh)
-  }
+  // ── SURE ──────────────────────────────────────────────────────────────────
+  addImgFit(logoSure, BX.sure, logoY, BW.sure, LH)
 
   // ── TÍTULO ─────────────────────────────────────────────────────────────────
   {
-    const sx = X.titulo, sw = WZ.titulo, cx = sx + sw / 2
+    const tituloX = margen + logosAreaW
+    const sw = contentW - logosAreaW             // 34mm
+    const sx = tituloX, cx = sx + sw / 2
 
     // Separador izquierdo suave
     doc.setDrawColor(180, 180, 180)
