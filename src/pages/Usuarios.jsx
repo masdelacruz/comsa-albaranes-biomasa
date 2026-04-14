@@ -78,13 +78,14 @@ export default function Usuarios({ usuario }) {
       }
     } else {
       const pwUsada = form.password || 'Comsa2025!'
-      const { data: authData, error: authError } = await supabase.auth.signUp({
+      const { data: authData, error: authError } = await supabaseAdmin.auth.admin.createUser({
         email: form.email,
         password: pwUsada,
+        email_confirm: true,   // activo inmediatamente, sin email de confirmación
       })
       if (authError) { setError(authError.message); setGuardando(false); return }
 
-      await supabase.from('usuarios').insert({
+      const { error: dbErr } = await supabase.from('usuarios').insert({
         id: authData.user.id,
         nombre: form.nombre,
         email: form.email,
@@ -93,6 +94,7 @@ export default function Usuarios({ usuario }) {
         activo: true,
         password_visible: pwUsada,
       })
+      if (dbErr) { setError(`Usuario creado en auth pero error en BD: ${dbErr.message}`); setGuardando(false); return }
     }
 
     await fetchUsuarios()

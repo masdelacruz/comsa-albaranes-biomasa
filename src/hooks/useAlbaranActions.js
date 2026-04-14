@@ -121,7 +121,8 @@ export function useAlbaranActions(refetch, usuario) {
     const path = `${albaranId}/${limpiarNombre(docNombre)}_${Date.now()}.${ext}`
     const { error } = await supabase.storage.from('documentos').upload(path, fichero, { cacheControl: '3600', upsert: true })
     if (error) throw error
-    const { data: { publicUrl } } = supabase.storage.from('documentos').getPublicUrl(path)
+    const { data: urlData } = supabase.storage.from('documentos').getPublicUrl(path)
+    const publicUrl = urlData?.publicUrl
     await supabase.from('docs').update({ adjunto: true, url: publicUrl, nombre_fichero: fichero.name, tipo_fichero: fichero.type, tamanyo: fichero.size })
       .eq('albaran_id', albaranId).eq('nombre', docNombre)
     await supabase.from('actividad').insert({
@@ -136,7 +137,8 @@ const subirTicketPesada = async (albaranId, fichero, actorexterno = null) => {
   const path = `${albaranId}/ticket_pesada_${Date.now()}.${ext}`
   const { error } = await supabase.storage.from('documentos').upload(path, fichero, { cacheControl: '3600', upsert: true })
   if (error) throw error
-  const { data: { publicUrl } } = supabase.storage.from('documentos').getPublicUrl(path)
+  const { data: urlData2 } = supabase.storage.from('documentos').getPublicUrl(path)
+  const publicUrl = urlData2?.publicUrl
   await supabase.from('pesada').update({ ticket_adjunto: true, ticket_url: publicUrl }).eq('albaran_id', albaranId)
   await supabase.from('actividad').insert({
     albaran_id: albaranId, ts: new Date().toLocaleString('es-ES'),
