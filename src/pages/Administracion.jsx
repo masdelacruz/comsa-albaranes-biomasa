@@ -9,15 +9,38 @@ const TIPO_LABELS = { proveedor: 'Proveedor', astilladora: 'Astilladora', transp
 
 const EMPTY_FORM = { nombre: '', tipo: 'proveedor', contacto: '', email: '', telefono: '', notas: '', activo: true }
 
-const LOGOS_CONFIG = [
-  { id: 'comsa',    nombre: 'COMSA Service',       descripcion: 'Logo principal COMSA Service (aparece en el PDF)' },
-  { id: 'applus_1', nombre: 'Applus · ISO 9001',  descripcion: 'Certificación ISO 9001 (ej. EC-1952/05)' },
-  { id: 'applus_2', nombre: 'Applus · ISO 14001', descripcion: 'Certificación ISO 14001 (ej. MA-0904/08)' },
-  { id: 'applus_3', nombre: 'Applus · ISO 45001', descripcion: 'Certificación ISO 45001 (ej. PRL-4023/19)' },
-  { id: 'applus_4', nombre: 'Applus · ISO 50001', descripcion: 'Certificación ISO 50001 (ej. SGE-0021/24)' },
-  { id: 'pefc',     nombre: 'PEFC',               descripcion: 'Logo PEFC cadena de custodia' },
-  { id: 'sure',     nombre: 'SURE',               descripcion: 'Logo SURE Sustainable Resources' },
+const LOGOS_SECTIONS = [
+  {
+    key: 'corporativos',
+    titulo: 'Corporativos',
+    color: '#1D9E75',
+    logos: [
+      { id: 'comsa', nombre: 'COMSA Service', descripcion: 'Logotipo corporativo · cabecera de todos los albaranes PDF' },
+    ],
+  },
+  {
+    key: 'applus',
+    titulo: 'Applus®',
+    color: '#E8720C',
+    logos: [
+      { id: 'applus_1', nombre: 'ISO 9001',  descripcion: 'Gestión de calidad · EC-1952/05' },
+      { id: 'applus_2', nombre: 'ISO 14001', descripcion: 'Gestión ambiental · MA-0904/08' },
+      { id: 'applus_3', nombre: 'ISO 45001', descripcion: 'Seguridad y salud laboral · PRL-4023/19' },
+      { id: 'applus_4', nombre: 'ISO 50001', descripcion: 'Gestión energética · SGE-0021/24' },
+    ],
+  },
+  {
+    key: 'certs',
+    titulo: 'Certificaciones',
+    color: '#1D9E75',
+    logos: [
+      { id: 'pefc', nombre: 'PEFC', descripcion: 'Cadena de custodia forestal certificada · PEFC/14-31-00318' },
+      { id: 'sure', nombre: 'SURE', descripcion: 'Biomasa sostenible verificada · SURE EU/ES 001/Z202 2281' },
+    ],
+  },
 ]
+// Lista plana para compatibilidad con funciones de subida/borrado
+const LOGOS_CONFIG = LOGOS_SECTIONS.flatMap(s => s.logos)
 
 export default function Administracion() {
   const [proveedores, setProveedores]     = useState([])
@@ -30,7 +53,7 @@ export default function Administracion() {
   const [guardando, setGuardando]         = useState(false)
   const [confirmDelete, setConfirmDelete] = useState(null)
 
-  // Certificaciones state
+  // Logos state
   const [logos, setLogos]                   = useState({})
   const [subiendoLogo, setSubiendoLogo]     = useState({})
   const [errorLogos, setErrorLogos]         = useState({})
@@ -181,7 +204,7 @@ export default function Administracion() {
             <div className="page-title">Administración</div>
             <div className="page-sub">Gestión de astilladoras, transportistas e instalaciones</div>
           </div>
-          {tab !== 'certificaciones' && (
+          {tab !== 'logos' && (
             <button className="btn btn-primary" onClick={abrirNuevo}>
               <Plus size={15} /> Nuevo
             </button>
@@ -201,169 +224,99 @@ export default function Administracion() {
             </button>
           ))}
           <button
-            className={`admin-tab ${tab === 'certificaciones' ? 'active' : ''}`}
-            onClick={() => setTab('certificaciones')}
+            className={`admin-tab ${tab === 'logos' ? 'active' : ''}`}
+            onClick={() => setTab('logos')}
           >
-            Certificaciones
+            Logos
           </button>
         </div>
 
-        {/* ── Certificaciones panel ── */}
-        {tab === 'certificaciones' ? (
+        {/* ── Logos panel ── */}
+        {tab === 'logos' ? (
           <div style={{ marginTop: 16 }}>
-            <div style={{ fontSize: 13, color: 'var(--gray-500)', marginBottom: 20 }}>
-              Logos que aparecerán en la cabecera de los albaranes PDF.
+            <div style={{ fontSize: 13, color: 'var(--gray-500)', marginBottom: 24 }}>
+              Logos que aparecen en la cabecera de los albaranes PDF. Formatos admitidos: PNG, JPG, SVG, WEBP.
             </div>
 
-            {/* Bloque Applus */}
-            <div style={{ marginBottom: 20 }}>
-              <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--gray-600)', marginBottom: 10, display: 'flex', alignItems: 'center', gap: 6 }}>
-                <span style={{ width: 8, height: 8, borderRadius: '50%', background: '#E8720C', display: 'inline-block' }} />
-                Applus® — 4 logos ISO (se muestran en cuadrícula 2×2 en el PDF)
-              </div>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: 12 }}>
-                {LOGOS_CONFIG.filter(c => c.id.startsWith('applus')).map(cfg => {
-                  const url      = logos[cfg.id]
-                  const subiendo = !!subiendoLogo[cfg.id]
-                  const error    = errorLogos[cfg.id]
-                  const isDragOver = dragOverLogo === cfg.id
-                  return (
-                    <div key={cfg.id} className="card" style={{ padding: 14, display: 'flex', flexDirection: 'column', gap: 8 }}>
-                      <div style={{ fontWeight: 600, fontSize: 13, color: 'var(--gray-800)' }}>{cfg.nombre}</div>
-                      <div style={{ fontSize: 11, color: 'var(--gray-400)' }}>{cfg.descripcion}</div>
-                      <div
-                        style={{
-                          border: isDragOver ? '2px dashed var(--green-400)' : '1px dashed var(--gray-200)',
-                          borderRadius: 6, minHeight: 90, display: 'flex', alignItems: 'center',
-                          justifyContent: 'center', cursor: 'pointer',
-                          background: isDragOver ? 'rgba(29,158,117,0.06)' : 'var(--gray-50,#fafafa)',
-                          overflow: 'hidden', transition: 'border 0.15s, background 0.15s',
-                        }}
-                        onClick={() => fileInputRefs[cfg.id].current?.click()}
-                        onDragOver={e => { e.preventDefault(); setDragOverLogo(cfg.id) }}
-                        onDragLeave={() => setDragOverLogo(null)}
-                        onDrop={e => { e.preventDefault(); setDragOverLogo(null); handleSubirLogo(cfg.id, e.dataTransfer.files?.[0]) }}
-                      >
-                        {subiendo ? (
-                          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6, color: 'var(--gray-400)' }}>
-                            <div style={{ width: 20, height: 20, border: '2px solid var(--green-400)', borderTopColor: 'transparent', borderRadius: '50%', animation: 'spin 0.6s linear infinite' }} />
-                            <span style={{ fontSize: 11 }}>Subiendo...</span>
-                          </div>
-                        ) : isDragOver ? (
-                          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4, color: 'var(--green-400)' }}>
-                            <Upload size={22} />
-                            <span style={{ fontSize: 11 }}>Soltar aquí</span>
-                          </div>
-                        ) : url ? (
-                          <img src={url} alt={cfg.nombre} style={{ maxWidth: '100%', maxHeight: 90, objectFit: 'contain', padding: 4 }} />
-                        ) : (
-                          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4, color: 'var(--gray-300)' }}>
-                            <Image size={24} />
-                            <span style={{ fontSize: 11 }}>Soltar o clicar</span>
-                          </div>
-                        )}
-                      </div>
-                      {error && <div style={{ fontSize: 11, color: 'var(--red-600)', background: 'var(--red-50,#fff1f1)', border: '1px solid var(--red-100)', borderRadius: 4, padding: '4px 8px' }}>⚠ {error}</div>}
-                      <input ref={fileInputRefs[cfg.id]} type="file" accept="image/*" style={{ display: 'none' }}
-                        onChange={e => handleSubirLogo(cfg.id, e.target.files?.[0])} />
-                      <div style={{ display: 'flex', gap: 6 }}>
-                        <button className="btn btn-primary" style={{ flex: 1, fontSize: 11, padding: '5px 10px' }}
-                          disabled={subiendo} onClick={() => fileInputRefs[cfg.id].current?.click()}>
-                          <Upload size={12} /> {url ? 'Reemplazar' : 'Subir'}
-                        </button>
-                        {url && (confirmDelLogo === cfg.id ? (
-                          <div style={{ display: 'flex', gap: 4, alignItems: 'center' }}>
-                            <span style={{ fontSize: 11, color: 'var(--red-700)', whiteSpace: 'nowrap' }}>¿Eliminar?</span>
-                            <button className="btn" style={{ padding: '5px 8px', fontSize: 11, color: 'var(--red-700)', borderColor: 'var(--red-100)' }}
-                              onClick={() => handleEliminarLogo(cfg.id)}><Check size={11} /> Sí</button>
-                            <button className="btn btn-ghost" style={{ padding: '5px 8px', fontSize: 11 }}
-                              onClick={() => setConfirmDelLogo(null)}><X size={11} /></button>
-                          </div>
-                        ) : (
-                          <button className="btn btn-ghost" style={{ padding: '5px 8px', fontSize: 11, color: 'var(--red-400)' }}
-                            onClick={() => setConfirmDelLogo(cfg.id)}><Trash2 size={12} /></button>
-                        ))}
-                      </div>
+            {LOGOS_SECTIONS.map((section, si) => {
+              const renderCard = (cfg) => {
+                const url        = logos[cfg.id]
+                const subiendo   = !!subiendoLogo[cfg.id]
+                const error      = errorLogos[cfg.id]
+                const isDragOver = dragOverLogo === cfg.id
+                return (
+                  <div key={cfg.id} className="card" style={{ padding: 14, display: 'flex', flexDirection: 'column', gap: 8 }}>
+                    <div style={{ fontWeight: 600, fontSize: 13, color: 'var(--gray-800)' }}>{cfg.nombre}</div>
+                    <div style={{ fontSize: 11, color: 'var(--gray-400)' }}>{cfg.descripcion}</div>
+                    <div
+                      style={{
+                        border: isDragOver ? '2px dashed var(--green-400)' : '1px dashed var(--gray-200)',
+                        borderRadius: 6, minHeight: 86, display: 'flex', alignItems: 'center',
+                        justifyContent: 'center', cursor: 'pointer',
+                        background: isDragOver ? 'rgba(29,158,117,0.06)' : 'var(--gray-50,#fafafa)',
+                        overflow: 'hidden', transition: 'border 0.15s, background 0.15s',
+                      }}
+                      onClick={() => fileInputRefs[cfg.id].current?.click()}
+                      onDragOver={e => { e.preventDefault(); setDragOverLogo(cfg.id) }}
+                      onDragLeave={() => setDragOverLogo(null)}
+                      onDrop={e => { e.preventDefault(); setDragOverLogo(null); handleSubirLogo(cfg.id, e.dataTransfer.files?.[0]) }}
+                    >
+                      {subiendo ? (
+                        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6, color: 'var(--gray-400)' }}>
+                          <div style={{ width: 20, height: 20, border: '2px solid var(--green-400)', borderTopColor: 'transparent', borderRadius: '50%', animation: 'spin 0.6s linear infinite' }} />
+                          <span style={{ fontSize: 11 }}>Subiendo...</span>
+                        </div>
+                      ) : isDragOver ? (
+                        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4, color: 'var(--green-400)' }}>
+                          <Upload size={22} />
+                          <span style={{ fontSize: 11 }}>Soltar aquí</span>
+                        </div>
+                      ) : url ? (
+                        <img src={url} alt={cfg.nombre} style={{ maxWidth: '100%', maxHeight: 86, objectFit: 'contain', padding: 6 }} />
+                      ) : (
+                        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4, color: 'var(--gray-300)' }}>
+                          <Image size={26} />
+                          <span style={{ fontSize: 11 }}>Soltar o clicar</span>
+                        </div>
+                      )}
                     </div>
-                  )
-                })}
-              </div>
-            </div>
+                    {error && <div style={{ fontSize: 11, color: 'var(--red-600)', background: 'var(--red-50,#fff1f1)', border: '1px solid var(--red-100)', borderRadius: 4, padding: '4px 8px' }}>⚠ {error}</div>}
+                    <input ref={fileInputRefs[cfg.id]} type="file" accept="image/*" style={{ display: 'none' }}
+                      onChange={e => handleSubirLogo(cfg.id, e.target.files?.[0])} />
+                    <div style={{ display: 'flex', gap: 6 }}>
+                      <button className="btn btn-primary" style={{ flex: 1, fontSize: 11, padding: '5px 10px' }}
+                        disabled={subiendo} onClick={() => fileInputRefs[cfg.id].current?.click()}>
+                        <Upload size={12} /> {url ? 'Reemplazar' : 'Subir'}
+                      </button>
+                      {url && (confirmDelLogo === cfg.id ? (
+                        <div style={{ display: 'flex', gap: 4, alignItems: 'center' }}>
+                          <span style={{ fontSize: 11, color: 'var(--red-700)', whiteSpace: 'nowrap' }}>¿Eliminar?</span>
+                          <button className="btn" style={{ padding: '5px 8px', fontSize: 11, color: 'var(--red-700)', borderColor: 'var(--red-100)' }}
+                            onClick={() => handleEliminarLogo(cfg.id)}><Check size={11} /> Sí</button>
+                          <button className="btn btn-ghost" style={{ padding: '5px 8px', fontSize: 11 }}
+                            onClick={() => setConfirmDelLogo(null)}><X size={11} /></button>
+                        </div>
+                      ) : (
+                        <button className="btn btn-ghost" style={{ padding: '5px 8px', fontSize: 11, color: 'var(--red-400)' }}
+                          onClick={() => setConfirmDelLogo(cfg.id)}><Trash2 size={12} /></button>
+                      ))}
+                    </div>
+                  </div>
+                )
+              }
 
-            {/* Bloque PEFC + SURE */}
-            <div>
-              <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--gray-600)', marginBottom: 10, display: 'flex', alignItems: 'center', gap: 6 }}>
-                <span style={{ width: 8, height: 8, borderRadius: '50%', background: 'var(--green-400)', display: 'inline-block' }} />
-                Certificaciones de biomasa
-              </div>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: 16 }}>
-                {LOGOS_CONFIG.filter(c => !c.id.startsWith('applus')).map(cfg => {
-                  const url      = logos[cfg.id]
-                  const subiendo = !!subiendoLogo[cfg.id]
-                  const error    = errorLogos[cfg.id]
-                  const isDragOver = dragOverLogo === cfg.id
-                  return (
-                    <div key={cfg.id} className="card" style={{ padding: 16, display: 'flex', flexDirection: 'column', gap: 10 }}>
-                      <div style={{ fontWeight: 600, fontSize: 14, color: 'var(--gray-800)' }}>{cfg.nombre}</div>
-                      <div style={{ fontSize: 11, color: 'var(--gray-500)' }}>{cfg.descripcion}</div>
-                      <div
-                        style={{
-                          border: isDragOver ? '2px dashed var(--green-400)' : '1px dashed var(--gray-200)',
-                          borderRadius: 6, minHeight: 80, display: 'flex', alignItems: 'center',
-                          justifyContent: 'center', cursor: 'pointer',
-                          background: isDragOver ? 'rgba(29,158,117,0.06)' : 'var(--gray-50,#fafafa)',
-                          overflow: 'hidden', transition: 'border 0.15s, background 0.15s',
-                        }}
-                        onClick={() => fileInputRefs[cfg.id].current?.click()}
-                        onDragOver={e => { e.preventDefault(); setDragOverLogo(cfg.id) }}
-                        onDragLeave={() => setDragOverLogo(null)}
-                        onDrop={e => { e.preventDefault(); setDragOverLogo(null); handleSubirLogo(cfg.id, e.dataTransfer.files?.[0]) }}
-                      >
-                        {subiendo ? (
-                          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6, color: 'var(--gray-400)' }}>
-                            <div style={{ width: 20, height: 20, border: '2px solid var(--green-400)', borderTopColor: 'transparent', borderRadius: '50%', animation: 'spin 0.6s linear infinite' }} />
-                            <span style={{ fontSize: 11 }}>Subiendo...</span>
-                          </div>
-                        ) : isDragOver ? (
-                          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4, color: 'var(--green-400)' }}>
-                            <Upload size={22} />
-                            <span style={{ fontSize: 11 }}>Soltar aquí</span>
-                          </div>
-                        ) : url ? (
-                          <img src={url} alt={cfg.nombre} style={{ maxWidth: '100%', maxHeight: 80, objectFit: 'contain', padding: 4 }} />
-                        ) : (
-                          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4, color: 'var(--gray-300)' }}>
-                            <Image size={28} />
-                            <span style={{ fontSize: 11 }}>Soltar o clicar</span>
-                          </div>
-                        )}
-                      </div>
-                      {error && <div style={{ fontSize: 11, color: 'var(--red-600)', background: 'var(--red-50,#fff1f1)', border: '1px solid var(--red-100)', borderRadius: 4, padding: '4px 8px' }}>⚠ {error}</div>}
-                      <input ref={fileInputRefs[cfg.id]} type="file" accept="image/*" style={{ display: 'none' }}
-                        onChange={e => handleSubirLogo(cfg.id, e.target.files?.[0])} />
-                      <div style={{ display: 'flex', gap: 6 }}>
-                        <button className="btn btn-primary" style={{ flex: 1, fontSize: 11, padding: '5px 10px' }}
-                          disabled={subiendo} onClick={() => fileInputRefs[cfg.id].current?.click()}>
-                          <Upload size={12} /> {url ? 'Reemplazar' : 'Subir logo'}
-                        </button>
-                        {url && (confirmDelLogo === cfg.id ? (
-                          <div style={{ display: 'flex', gap: 4, alignItems: 'center' }}>
-                            <span style={{ fontSize: 11, color: 'var(--red-700)', whiteSpace: 'nowrap' }}>¿Eliminar?</span>
-                            <button className="btn" style={{ padding: '5px 8px', fontSize: 11, color: 'var(--red-700)', borderColor: 'var(--red-100)' }}
-                              onClick={() => handleEliminarLogo(cfg.id)}><Check size={11} /> Sí</button>
-                            <button className="btn btn-ghost" style={{ padding: '5px 8px', fontSize: 11 }}
-                              onClick={() => setConfirmDelLogo(null)}><X size={11} /></button>
-                          </div>
-                        ) : (
-                          <button className="btn btn-ghost" style={{ padding: '5px 8px', fontSize: 11, color: 'var(--red-400)' }}
-                            onClick={() => setConfirmDelLogo(cfg.id)}><Trash2 size={12} /></button>
-                        ))}
-                      </div>
-                    </div>
-                  )
-                })}
-              </div>
-            </div>
+              return (
+                <div key={section.key} style={{ marginBottom: si < LOGOS_SECTIONS.length - 1 ? 28 : 0 }}>
+                  <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--gray-600)', marginBottom: 10, display: 'flex', alignItems: 'center', gap: 6 }}>
+                    <span style={{ width: 8, height: 8, borderRadius: '50%', background: section.color, display: 'inline-block', flexShrink: 0 }} />
+                    {section.titulo}
+                  </div>
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: 12 }}>
+                    {section.logos.map(renderCard)}
+                  </div>
+                </div>
+              )
+            })}
           </div>
         ) : (
           /* ── Providers panel ── */
