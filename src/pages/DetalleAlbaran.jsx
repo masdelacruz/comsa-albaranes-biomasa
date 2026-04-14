@@ -1,6 +1,6 @@
 import { useRef, useState, useEffect } from 'react'
-import { useParams, useNavigate } from 'react-router-dom'
-import { ArrowLeft, ExternalLink, CheckCircle, Clock, FileDown, Upload, Eye, FileText, AlertTriangle, Copy, Pencil, X, Check } from 'lucide-react'
+import { useParams } from 'react-router-dom'
+import { ExternalLink, CheckCircle, Clock, FileDown, Upload, Eye, FileText, AlertTriangle, Copy, Pencil, X, Check } from 'lucide-react'
 import { Badge } from '../components/Badge'
 import { generarPDF } from '../utils/generarPDF'
 import { supabase } from '../supabase'
@@ -21,7 +21,6 @@ const TIPOS_OP = ['Opció 1 — Compra en monte / plataforma', 'Opció 2 — Pro
 
 export default function DetalleAlbaran({ albaranes, simularFirma, subirDocumento, subirTicketPesada, actualizarAlbaran, usuario }) {
   const { id } = useParams()
-  const navigate = useNavigate()
   const fileRefs    = useRef({})
   const ticketRef   = useRef(null)
   const [subiendo, setSubiendo]             = useState({})
@@ -64,7 +63,6 @@ export default function DetalleAlbaran({ albaranes, simularFirma, subirDocumento
   const esSuperadmin = usuario?.nivel === 'superadmin'
   const puedeEditar  = esSuperadmin || a.estado !== 'cerrado'
 
-  const campoUrl = `${window.location.origin}/campo/${a.id}`
   const pesoNeto = a.pesada.entrada && a.pesada.salida
     ? (a.pesada.entrada - a.pesada.salida).toLocaleString('es-ES') + ' kg' : '—'
 
@@ -260,10 +258,7 @@ export default function DetalleAlbaran({ albaranes, simularFirma, subirDocumento
       )}
 
       <div className="page-header">
-        <button className="btn btn-ghost" onClick={() => navigate('/dashboard')} style={{marginBottom:12}}>
-          <ArrowLeft size={14} /> Volver
-        </button>
-        <div style={{display:'flex',alignItems:'center',justifyContent:'space-between'}}>
+<div style={{display:'flex',alignItems:'center',justifyContent:'space-between'}}>
           <div style={{display:'flex',alignItems:'center',gap:12}}>
             <div className="page-title" style={{fontFamily:'var(--font-mono)',fontSize:18}}>{a.id}</div>
             <Badge estado={a.estado} />
@@ -633,18 +628,6 @@ export default function DetalleAlbaran({ albaranes, simularFirma, subirDocumento
                   </div>
                 </div>
               )}
-              <div className="campo-link-box">
-                <div style={{fontSize:11,color:'var(--gray-400)',marginBottom:4}}>Enlace general</div>
-                <code className="campo-url">{campoUrl}</code>
-                <div style={{display:'flex',gap:6,marginTop:8}}>
-                  <button className="btn" style={{flex:1,fontSize:11}} onClick={() => copiar(campoUrl, 'general')}>
-                    {copiado === 'general' ? <><CheckCircle size={11} /> Copiado</> : <><Copy size={11} /> Copiar enlace general</>}
-                  </button>
-                  <button className="btn" style={{fontSize:11,padding:'5px 8px'}} onClick={() => window.open(campoUrl, '_blank')}>
-                    <ExternalLink size={13} />
-                  </button>
-                </div>
-              </div>
             </div>
 
             <div className="card">
