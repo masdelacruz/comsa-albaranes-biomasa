@@ -25,6 +25,7 @@ export default function Usuarios({ usuario }) {
   const [error, setError]             = useState('')
   const [confirmDesact, setConfirmDesact] = useState(null)
   const [showPassword, setShowPassword] = useState(false)
+  const [pwVisible, setPwVisible]       = useState({})   // { [userId]: true/false }
 
   const esSuperadmin = usuario?.nivel === 'superadmin'
 
@@ -47,7 +48,7 @@ export default function Usuarios({ usuario }) {
 
   const abrirEditar = (u) => {
     setEditando(u.id)
-    setForm({ nombre: u.nombre, email: u.email, rol: u.rol, nivel: u.nivel, password: '' })
+    setForm({ nombre: u.nombre, email: u.email, rol: u.rol, nivel: u.nivel, password: '', _pwActual: u.password_visible || '' })
     setError('')
     setModal(true)
   }
@@ -60,9 +61,9 @@ export default function Usuarios({ usuario }) {
     setError('')
 
     if (editando) {
-      await supabase.from('usuarios').update({
-        nombre: form.nombre, rol: form.rol, nivel: form.nivel,
-      }).eq('id', editando)
+      const updateData = { nombre: form.nombre, rol: form.rol, nivel: form.nivel }
+      if (form.password.trim()) updateData.password_visible = form.password
+      await supabase.from('usuarios').update(updateData).eq('id', editando)
 
       if (form.password.trim()) {
         if (!supabaseAdmin) {
@@ -74,9 +75,10 @@ export default function Usuarios({ usuario }) {
         if (pwErr) { setError(`No se pudo cambiar la contraseña: ${pwErr.message}`); setGuardando(false); return }
       }
     } else {
+      const pwUsada = form.password || 'Comsa2025!'
       const { data: authData, error: authError } = await supabase.auth.signUp({
         email: form.email,
-        password: form.password || 'Comsa2025!',
+        password: pwUsada,
       })
       if (authError) { setError(authError.message); setGuardando(false); return }
 
@@ -87,6 +89,7 @@ export default function Usuarios({ usuario }) {
         rol: form.rol,
         nivel: form.nivel,
         activo: true,
+        password_visible: pwUsada,
       })
     }
 
@@ -127,6 +130,7 @@ export default function Usuarios({ usuario }) {
                 <th>Rol</th>
                 <th>Nivel</th>
                 <th>Estado</th>
+                {esSuperadmin && <th>Contraseña</th>}
                 {esSuperadmin && <th>Acciones</th>}
               </tr>
             </thead>
@@ -157,6 +161,26 @@ export default function Usuarios({ usuario }) {
                       {u.activo ? 'Activo' : 'Inactivo'}
                     </span>
                   </td>
+                  {esSuperadmin && (
+                    <td>
+                      {u.password_visible ? (
+                        <div style={{display:'flex',alignItems:'center',gap:6}}>
+                          <span style={{fontFamily:'monospace',fontSize:12,color:'var(--gray-700)',letterSpacing: pwVisible[u.id] ? 0 : 2}}>
+                            {pwVisible[u.id] ? u.password_visible : '••••••••'}
+                          </span>
+                          <button
+                            type="button"
+                            onClick={() => setPwVisible(v => ({...v, [u.id]: !v[u.id]}))}
+                            style={{background:'none',border:'none',cursor:'pointer',padding:2,color:'var(--gray-400)',display:'flex',alignItems:'center'}}
+                          >
+                            {pwVisible[u.id] ? <EyeOff size={13} /> : <Eye size={13} />}
+                          </button>
+                        </div>
+                      ) : (
+                        <span style={{fontSize:11,color:'var(--gray-300)'}}>—</span>
+                      )}
+                    </td>
+                  )}
                   {esSuperadmin && (
                     <td>
                       <div style={{display:'flex',gap:6}}>
@@ -230,7 +254,7 @@ export default function Usuarios({ usuario }) {
                 <div style={{position:'relative',display:'flex',alignItems:'center'}}>
                   <input
                     type={showPassword ? 'text' : 'password'}
-                    placeholder={editando ? '••••••••' : 'Comsa2025!'}
+                    placeholder={editando ? (form._pwActual || '••••••••') : 'Comsa2025!'}
                     value={form.password}
                     onChange={e => set('password', e.target.value)}
                     style={{paddingRight:36,width:'100%'}}
