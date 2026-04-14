@@ -103,25 +103,11 @@ export async function generarPDF(a) {
 
   const CY = cabY + cabH / 2   // centro vertical de la cabecera
 
-  // ── COMSA ──────────────────────────────────────────────────────────────────
-  // Logo arriba + texto "COMSA / SERVICE" abajo (igual que referencia)
-  const comsaLogoH = 11
-  const comsaLogoW = 11
-  const comsaLogoY = cabY + 2
-  if (logoComsa) {
-    addImgFit(logoComsa, X.comsa + (WZ.comsa - comsaLogoW) / 2, comsaLogoY, comsaLogoW, comsaLogoH)
-  } else {
-    // Placeholder cuadrado verde si no carga
-    doc.setFillColor(29, 158, 117)
-    doc.rect(X.comsa + (WZ.comsa - comsaLogoW) / 2, comsaLogoY, comsaLogoW, comsaLogoH, 'F')
+  // ── COMSA — solo logo, centrado ────────────────────────────────────────────
+  {
+    const lw = 15, lh = 15
+    addImgFit(logoComsa, X.comsa + (WZ.comsa - lw) / 2, cabY + (cabH - lh) / 2, lw, lh)
   }
-  doc.setFont('helvetica', 'bold')
-  doc.setFontSize(5.5)
-  doc.setTextColor(...grisOsc)
-  doc.text('COMSA', X.comsa + WZ.comsa / 2, comsaLogoY + comsaLogoH + 3, { align: 'center' })
-  doc.setFont('helvetica', 'normal')
-  doc.setFontSize(4.5)
-  doc.text('SERVICE', X.comsa + WZ.comsa / 2, comsaLogoY + comsaLogoH + 6, { align: 'center' })
 
   // ── 4 × APPLUS — mismo tamaño fijo para todos ──────────────────────────────
   // Ratio real logos Applus: ~1:1.82 (portrait). Altura fija = cabH - 4mm = 20mm
@@ -139,52 +125,16 @@ export async function generarPDF(a) {
   drawApplus(logoApplus3, X.a3)
   drawApplus(logoApplus4, X.a4)
 
-  // ── PEFC — logo + bloque de texto ─────────────────────────────────────────
+  // ── PEFC — solo logo, centrado en su zona ─────────────────────────────────
   {
-    const sx = X.pefc, sw = WZ.pefc
-    const lw = 15, lh = 18
-    if (logoPefc) {
-      addImgFit(logoPefc, sx + 2, cabY + (cabH - lh) / 2, lw, lh)
-    }
-    const tx = sx + lw + 4
-    const lines = [
-      { t: 'COMSA SERVICE',           b: false, s: 4.2 },
-      { t: 'FACILITY MANAGEMENT SAU', b: false, s: 4.2 },
-      { t: 'tiene una Cadena de',     b: false, s: 4.2 },
-      { t: 'Custodia certificada',    b: false, s: 4.2 },
-      { t: 'PEFC',                    b: true,  s: 6,   c: [0, 130, 60] },
-      { t: 'PEFC/14-31-00318',        b: false, s: 4.2 },
-      { t: 'www.pefc.es',             b: false, s: 4.2 },
-    ]
-    const lh2  = 2.9
-    const tot  = (lines.length - 1) * lh2
-    const sy   = cabY + (cabH - tot) / 2
-    lines.forEach((l, i) => {
-      doc.setFont('helvetica', l.b ? 'bold' : 'normal')
-      doc.setFontSize(l.s)
-      doc.setTextColor(...(l.c || grisOsc))
-      doc.text(l.t, tx, sy + i * lh2)
-    })
+    const lw = 20, lh = 20
+    addImgFit(logoPefc, X.pefc + (WZ.pefc - lw) / 2, cabY + (cabH - lh) / 2, lw, lh)
   }
 
-  // ── SURE — logo + texto pequeño debajo ─────────────────────────────────────
+  // ── SURE — solo logo, centrado en su zona ─────────────────────────────────
   {
-    const sx = X.sure, sw = WZ.sure
-    const lw = sw - 4, lh = 12
-    const ly  = cabY + 2
-    if (logoSure) {
-      addImgFit(logoSure, sx + 2, ly, lw, lh)
-    }
-    const txtLines = [
-      'SUSTAINABLE RESOURCES',
-      'Verification Scheme GmbH',
-      'SURE EU/ES 001/ Z202 2281',
-    ]
-    const tsy = ly + lh + 1.5
-    doc.setFont('helvetica', 'normal')
-    doc.setFontSize(3.8)
-    doc.setTextColor(...grisOsc)
-    txtLines.forEach((t, i) => doc.text(t, sx + sw / 2, tsy + i * 2.8, { align: 'center' }))
+    const lw = 30, lh = 14
+    addImgFit(logoSure, X.sure + (WZ.sure - lw) / 2, cabY + (cabH - lh) / 2, lw, lh)
   }
 
   // ── TÍTULO ─────────────────────────────────────────────────────────────────
@@ -262,26 +212,44 @@ export async function generarPDF(a) {
   const pn   = (a.pesada?.entrada && a.pesada?.salida)
     ? (a.pesada.entrada - a.pesada.salida).toLocaleString('es-ES') + ' kg' : '...................'
 
-  // 3 columnas iguales de 63,3mm — label derecha · valor izquierda en el centro
-  const colW   = contentW / 3                // ≈ 63.3 mm
-  const mid1   = margen + colW * 0.5         // centro col1
-  const mid2   = margen + colW * 1.5         // centro col2
-  const mid3   = margen + colW * 2.5         // centro col3
-  const gap    = 1.5                         // mm entre label y valor
+  doc.setFontSize(9)
+  const sp = 2  // separación label-valor
 
-  const drawPesoGroup = (label, valor, midX) => {
-    doc.setFont('helvetica', 'bold')
-    doc.setFontSize(9)
-    doc.setTextColor(...grisOsc)
-    doc.text(label, midX - gap, y, { align: 'right' })
-    doc.setFont('helvetica', 'normal')
-    doc.setTextColor(...negro)
-    doc.text(valor, midX + gap, y, { align: 'left' })
-  }
+  // ── Peso Bruto: pegado al margen izquierdo
+  doc.setFont('helvetica', 'bold')
+  doc.setTextColor(...grisOsc)
+  doc.text('Peso Bruto', margen, y)
+  doc.setFont('helvetica', 'normal')
+  doc.setTextColor(...negro)
+  doc.text(pb, margen + doc.getTextWidth('Peso Bruto') + sp, y)
 
-  drawPesoGroup('Peso Bruto', pb,   mid1)
-  drawPesoGroup('Tara',       tara, mid2)
-  drawPesoGroup('Peso Neto',  pn,   mid3)
+  // ── Tara: grupo centrado exactamente en W/2
+  doc.setFont('helvetica', 'bold')
+  const taraLW = doc.getTextWidth('Tara')
+  doc.setFont('helvetica', 'normal')
+  const taraVW = doc.getTextWidth(tara)
+  const taraTotalW = taraLW + sp + taraVW
+  const taraX = W / 2 - taraTotalW / 2
+  doc.setFont('helvetica', 'bold')
+  doc.setTextColor(...grisOsc)
+  doc.text('Tara', taraX, y)
+  doc.setFont('helvetica', 'normal')
+  doc.setTextColor(...negro)
+  doc.text(tara, taraX + taraLW + sp, y)
+
+  // ── Peso Neto: pegado al margen derecho
+  doc.setFont('helvetica', 'bold')
+  const pnLW = doc.getTextWidth('Peso Neto')
+  doc.setFont('helvetica', 'normal')
+  const pnVW = doc.getTextWidth(pn)
+  const pnTotalW = pnLW + sp + pnVW
+  const pnX = W - margen - pnTotalW
+  doc.setFont('helvetica', 'bold')
+  doc.setTextColor(...grisOsc)
+  doc.text('Peso Neto', pnX, y)
+  doc.setFont('helvetica', 'normal')
+  doc.setTextColor(...negro)
+  doc.text(pn, pnX + pnLW + sp, y)
 
   y += 6
   doc.setDrawColor(200, 200, 200)
