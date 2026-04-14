@@ -20,9 +20,9 @@
 .tl-item { display:flex; gap:10px; padding:6px 0; position:relative; }
 .tl-item:not(:last-child)::after { content:''; position:absolute; left:5px; top:20px; bottom:-6px; width:1px; background:var(--gray-200); }
 .tl-dot { width:11px; height:11px; border-radius:50%; flex-shrink:0; margin-top:4px; }
-.tl-dot.tl-sistema  { background:#8a888786; }
+.tl-dot.tl-sistema  { background:#9ca3af; }
 .tl-dot.tl-interno  { background:#60a5fa; }
-.tl-dot.tl-externo  { background:#f6f85f; }
+.tl-dot.tl-externo  { background:#a78bfa; }
 .tl-texto { font-size:13px; color:var(--gray-800); font-weight:500; }
 .tl-meta  { font-size:11px; color:var(--gray-400); margin-top:2px; }
 .doc-row { display:flex; align-items:center; justify-content:space-between; gap:12px; padding:10px 0; border-bottom:var(--border-light); }
