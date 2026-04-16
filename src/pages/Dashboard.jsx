@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { AlertTriangle, Plus, Filter } from 'lucide-react'
 import { Badge, FirmaSteps } from '../components/Badge'
+import { labelSemanaActual } from '../utils/semana'
 import '../components/shared.css'
 import './Dashboard.css'
 
@@ -28,7 +29,7 @@ export default function Dashboard({ albaranes }) {
         <div style={{display:'flex',alignItems:'center',justifyContent:'space-between'}}>
           <div>
             <div className="page-title">Dashboard</div>
-            <div className="page-sub">Semana 13 · 24–28 marzo 2025</div>
+            <div className="page-sub">{labelSemanaActual()}</div>
           </div>
           <button className="btn btn-primary" onClick={() => navigate('/nuevo')}>
             <Plus size={15} /> Nuevo albarán

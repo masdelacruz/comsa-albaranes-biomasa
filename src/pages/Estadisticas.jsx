@@ -1,4 +1,5 @@
 import { useMemo } from 'react'
+import { ultimas4Semanas } from '../utils/semana'
 import '../components/shared.css'
 import './Estadisticas.css'
 
@@ -43,12 +44,7 @@ export default function Estadisticas({ albaranes }) {
       'Humedad pendiente': albaranes.filter(a => a.estado === 'humedad_pendiente').length,
     }
 
-    const semanas = [
-      { label: 'S10', val: 3 },
-      { label: 'S11', val: 5 },
-      { label: 'S12', val: 4 },
-      { label: 'S13', val: total, activa: true },
-    ]
+    const semanas = ultimas4Semanas(albaranes)
 
     return {
       total, cerrados, pendientes, humedadMedia, pesoTotal,
@@ -57,7 +53,7 @@ export default function Estadisticas({ albaranes }) {
       porEspecie:     Object.entries(porEspecie).sort((a,b) => b[1] - a[1]),
       porEstado:      Object.entries(porEstado).filter(([,v]) => v > 0),
       semanas,
-      maxSemana: Math.max(...[3,5,4,total]),
+      maxSemana: Math.max(...semanas.map(s => s.val), 1),
     }
   }, [albaranes])
 
@@ -65,7 +61,7 @@ export default function Estadisticas({ albaranes }) {
     <div className="stats-page">
       <div className="page-header">
         <div className="page-title">Estadísticas</div>
-        <div className="page-sub">Resumen de operaciones de biomasa · 2025</div>
+        <div className="page-sub">Resumen de operaciones de biomasa · {new Date().getFullYear()}</div>
       </div>
 
       <div className="stats-content">
