@@ -1,0 +1,118 @@
+version: "3.9"
+
+# ─────────────────────────────────────────────────────────────────
+# COMSA Albaranes · biomasa.cserintranet.com
+# Red interna: biomasa_net
+# Puertos expuestos al host: solo 3080 (proxy Apache lo recoge)
+# ─────────────────────────────────────────────────────────────────
+
+networks:
+  biomasa:
+    external: true   # Red Docker ya existente — apache2 ya está en ella
+
+volumes:
+  pg_data:
+  minio_data:
+
+services:
+
+  # ── PostgreSQL ─────────────────────────────────────────────────
+  db:
+    image: postgres:16-alpine
+    container_name: biomasa_db
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB:       ${POSTGRES_DB}
+      POSTGRES_USER:     ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    volumes:
+      - pg_data:/var/lib/postgresql/data
+      - ./scripts/schema.sql:/docker-entrypoint-initdb.d/01_schema.sql:ro
+    networks:
+      - biomasa
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ── MinIO (storage) ────────────────────────────────────────────
+  minio:
+    image: minio/minio:latest
+    container_name: biomasa_minio
+    restart: unless-stopped
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER:     ${MINIO_ROOT_USER}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD}
+    volumes:
+      - minio_data:/data
+    networks:
+      - biomasa
+    # La consola MinIO (9001) NO se expone al host en prod.
+    # Para administrarla: ssh tunnel → ssh -L 9001:localhost:9001 user@82.223.104.137
+
+  # ── API Backend ────────────────────────────────────────────────
+  api:
+    build:
+      context: ./api
+      dockerfile: Dockerfile
+    container_name: biomasa_api
+    restart: unless-stopped
+    environment:
+      NODE_ENV:          production
+      PORT:              3001
+      POSTGRES_DB:       ${POSTGRES_DB}
+      POSTGRES_USER:     ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_HOST:     db
+      POSTGRES_PORT:     5432
+      JWT_SECRET:        ${JWT_SECRET}
+      MINIO_ENDPOINT:    minio
+      MINIO_PORT:        9000
+      MINIO_USE_SSL:     "false"
+      MINIO_ACCESS_KEY:  ${MINIO_ROOT_USER}
+      MINIO_SECRET_KEY:  ${MINIO_ROOT_PASSWORD}
+      MINIO_BUCKET:      documentos
+      SMTP_HOST:         ${SMTP_HOST}
+      SMTP_PORT:         ${SMTP_PORT}
+      SMTP_USER:         ${SMTP_USER}
+      SMTP_PASS:         ${SMTP_PASS}
+      SMTP_FROM:         ${SMTP_FROM}
+      APP_URL:           https://biomasa.cserintranet.com
+    depends_on:
+      db:
+        condition: service_healthy
+      minio:
+        condition: service_started
+    networks:
+      - biomasa
+
+  # ── Frontend (nginx sirviendo el build de Vite) ────────────────
+  frontend:
+    build:
+      context: ..
+      dockerfile: deploy/Dockerfile
+      args:
+        VITE_API_URL: /api
+    container_name: biomasa_frontend
+    restart: unless-stopped
+    networks:
+      - biomasa
+
+  # ── Nginx interno: une frontend + API ────────────────────────────
+  # Expone puerto 8080 al host → Apache hace ProxyPass a localhost:8080
+  # También accesible directamente en http://82.223.104.137:8080 para pruebas
+  nginx:
+    image: nginx:alpine
+    container_name: biomasa_nginx
+    restart: unless-stopped
+    ports:
+      - "8080:80"
+    volumes:
+      - ./nginx-internal.conf:/etc/nginx/conf.d/default.conf:ro
+    depends_on:
+      - frontend
+      - api
+    networks:
+      - biomasa

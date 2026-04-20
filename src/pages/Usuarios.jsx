@@ -1,6 +1,5 @@
 import { useState, useEffect } from 'react'
-import { supabase } from '../supabase'
-import { supabaseAdmin } from '../supabaseAdmin'
+import { api } from '../lib/api'
 import { Plus, Pencil, Check, X, Shield, ShieldOff, Eye, EyeOff } from 'lucide-react'
 import '../components/shared.css'
 import './Usuarios.css'
@@ -30,7 +29,7 @@ export default function Usuarios({ usuario }) {
   const esSuperadmin = usuario?.nivel === 'superadmin'
 
   const fetchUsuarios = async () => {
-    const { data } = await supabase.from('usuarios').select('*').order('nombre')
+    const data = await api.get('/usuarios')
     setUsuarios(data || [])
     setLoading(false)
   }
@@ -61,40 +60,28 @@ export default function Usuarios({ usuario }) {
     setGuardando(true)
     setError('')
 
-    if (editando) {
-      const pwCambiada = form.password.trim() && form.password !== form._pwActual
-      const updateData = { nombre: form.nombre, rol: form.rol, nivel: form.nivel }
-      if (pwCambiada) updateData.password_visible = form.password
-      await supabase.from('usuarios').update(updateData).eq('id', editando)
-
-      if (pwCambiada) {
-        if (!supabaseAdmin) {
-          setError('Reinicia el servidor (npm run dev) para que cargue la service role key.')
-          setGuardando(false)
-          return
-        }
-        const { error: pwErr } = await supabaseAdmin.auth.admin.updateUserById(editando, { password: form.password })
-        if (pwErr) { setError(`No se pudo cambiar la contraseña: ${pwErr.message}`); setGuardando(false); return }
+    try {
+      if (editando) {
+        const pwCambiada = form.password.trim() && form.password !== form._pwActual
+        await api.patch(`/usuarios/${editando}`, {
+          nombre: form.nombre,
+          rol:    form.rol,
+          nivel:  form.nivel,
+          ...(pwCambiada ? { password: form.password } : {}),
+        })
+      } else {
+        await api.post('/usuarios', {
+          nombre:   form.nombre,
+          email:    form.email,
+          rol:      form.rol,
+          nivel:    form.nivel,
+          password: form.password || 'Comsa2025!',
+        })
       }
-    } else {
-      const pwUsada = form.password || 'Comsa2025!'
-      const { data: authData, error: authError } = await supabaseAdmin.auth.admin.createUser({
-        email: form.email,
-        password: pwUsada,
-        email_confirm: true,   // activo inmediatamente, sin email de confirmación
-      })
-      if (authError) { setError(authError.message); setGuardando(false); return }
-
-      const { error: dbErr } = await supabase.from('usuarios').insert({
-        id: authData.user.id,
-        nombre: form.nombre,
-        email: form.email,
-        rol: form.rol,
-        nivel: form.nivel,
-        activo: true,
-        password_visible: pwUsada,
-      })
-      if (dbErr) { setError(`Usuario creado en auth pero error en BD: ${dbErr.message}`); setGuardando(false); return }
+    } catch (err) {
+      setError(err.message || 'Error al guardar')
+      setGuardando(false)
+      return
     }
 
     await fetchUsuarios()
@@ -103,7 +90,7 @@ export default function Usuarios({ usuario }) {
   }
 
   const handleToggleActivo = async (u) => {
-    await supabase.from('usuarios').update({ activo: !u.activo }).eq('id', u.id)
+    await api.patch(`/usuarios/${u.id}`, { activo: !u.activo })
     await fetchUsuarios()
     setConfirmDesact(null)
   }

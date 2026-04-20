@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { supabase } from '../supabase'
+import { api } from '../lib/api'
 import { Leaf } from 'lucide-react'
 import './Login.css'
 
@@ -13,9 +13,14 @@ export default function Login() {
     e.preventDefault()
     setLoading(true)
     setError('')
-    const { error } = await supabase.auth.signInWithPassword({ email, password })
-    if (error) {
-      setError('Email o contraseña incorrectos')
+    try {
+      const { token } = await api.login(email, password)
+      api.setToken(token)
+      window.location.reload()
+    } catch (err) {
+      setError(err.data?.error === 'cuenta_bloqueada'
+        ? 'Tu cuenta está desactivada. Contacta con Marc Serrano.'
+        : 'Email o contraseña incorrectos')
       setLoading(false)
     }
   }

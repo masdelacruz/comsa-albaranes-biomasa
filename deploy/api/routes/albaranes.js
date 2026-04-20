@@ -1,0 +1,251 @@
+const router = require('express').Router()
+const pool   = require('../db')
+const { requireAuth } = require('./auth')
+
+// Rutas de /campo/:id son públicas — todo lo demás requiere auth
+// El frontend llama con o sin token según el contexto.
+
+// ── Helper: arma el objeto completo de un albarán ─────────────────
+async function fetchOne(id) {
+  const [aRes, fRes, pRes, dRes, actRes] = await Promise.all([
+    pool.query('SELECT * FROM albaranes WHERE id = $1', [id]),
+    pool.query('SELECT * FROM firmas WHERE albaran_id = $1', [id]),
+    pool.query('SELECT * FROM pesada WHERE albaran_id = $1', [id]),
+    pool.query('SELECT * FROM docs WHERE albaran_id = $1', [id]),
+    pool.query('SELECT * FROM actividad WHERE albaran_id = $1 ORDER BY created_at ASC', [id]),
+  ])
+  const a = aRes.rows[0]
+  if (!a) return null
+  return buildAlbaran(a, fRes.rows, pRes.rows[0], dRes.rows, actRes.rows)
+}
+
+function buildAlbaran(a, firmas, pesada, docs, actividad) {
+  const firmasObj = {}
+  firmas.forEach(f => {
+    firmasObj[f.rol] = {
+      firmado: f.firmado, fecha: f.fecha, actor: f.actor,
+      firmaImagen: f.firma_imagen || null,
+    }
+  })
+  const p = pesada || {}
+  const docsObj = {}
+  docs.forEach(d => {
+    docsObj[d.nombre] = {
+      adjunto: d.adjunto, url: d.url || null,
+      nombreFichero: d.nombre_fichero || null,
+      tipoFichero: d.tipo_fichero || null,
+      tamanyo: d.tamanyo || null,
+    }
+  })
+  return {
+    id: a.id, fecha: a.fecha, hora: a.hora, numCamiones: a.num_camiones,
+    tipo: a.tipo, proveedor: a.proveedor, astilladora: a.astilladora,
+    transportista: a.transportista, instalacion: a.instalacion,
+    especie: a.especie, tipoBiomasa: a.tipo_biomasa,
+    origen: a.origen, permiso: a.permiso, observaciones: a.observaciones,
+    estado: a.estado, mapsOrigen: a.maps_origen, mapsDestino: a.maps_destino,
+    matriculaTractora: a.matricula_tractora, matriculaRemolque: a.matricula_remolque,
+    chofer: a.chofer, certificacion: a.certificacion || [],
+    firmas: firmasObj,
+    pesada: {
+      entrada: p.entrada || null, salida: p.salida || null,
+      humedad: p.humedad || null,
+      ticketAdjunto: p.ticket_adjunto || false,
+      ticketUrl: p.ticket_url || null,
+    },
+    docs: docsObj,
+    actividad: actividad.map(ev => ({ ts: ev.ts, texto: ev.texto, actor: ev.actor })),
+  }
+}
+
+// ── GET /albaranes  (requiere auth) ──────────────────────────────
+router.get('/', requireAuth, async (_req, res) => {
+  const { rows: albs } = await pool.query(
+    'SELECT * FROM albaranes ORDER BY created_at DESC'
+  )
+  if (!albs.length) return res.json([])
+
+  const ids = albs.map(a => `'${a.id}'`).join(',')
+  const [fRes, pRes, dRes, actRes] = await Promise.all([
+    pool.query(`SELECT * FROM firmas WHERE albaran_id IN (${ids})`),
+    pool.query(`SELECT * FROM pesada WHERE albaran_id IN (${ids})`),
+    pool.query(`SELECT * FROM docs WHERE albaran_id IN (${ids})`),
+    pool.query(`SELECT * FROM actividad WHERE albaran_id IN (${ids}) ORDER BY created_at ASC`),
+  ])
+
+  const result = albs.map(a =>
+    buildAlbaran(
+      a,
+      fRes.rows.filter(f => f.albaran_id === a.id),
+      pRes.rows.find(p => p.albaran_id === a.id),
+      dRes.rows.filter(d => d.albaran_id === a.id),
+      actRes.rows.filter(ev => ev.albaran_id === a.id),
+    )
+  )
+  res.json(result)
+})
+
+// ── GET /albaranes/:id  (PÚBLICO — usado por vista de campo) ──────
+router.get('/:id', async (req, res) => {
+  const albaran = await fetchOne(req.params.id)
+  if (!albaran) return res.status(404).json({ error: 'No encontrado' })
+  res.json(albaran)
+})
+
+// ── POST /albaranes  (requiere auth) ─────────────────────────────
+router.post('/', requireAuth, async (req, res) => {
+  const f = req.body
+  const { rows } = await pool.query('SELECT next_albaran_id() AS id')
+  const id   = rows[0].id
+  const fecha = new Date().toLocaleString('es-ES')
+  const esOp1 = f.tipo?.includes('1')
+  const docs  = esOp1
+    ? ['Autodeclaración', 'Acuerdo de cesión', 'Contrato prestación servicios', 'Permiso de corta']
+    : ['Certificado SURE', 'Permiso de obra', 'Contrato prestación servicios']
+
+  const client = await pool.connect()
+  try {
+    await client.query('BEGIN')
+
+    await client.query(
+      `INSERT INTO albaranes (id,fecha,hora,num_camiones,tipo,proveedor,astilladora,
+       transportista,instalacion,especie,tipo_biomasa,origen,permiso,observaciones,
+       estado,maps_origen,maps_destino,matricula_tractora,matricula_remolque,
+       chofer,certificacion)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,'pendiente_campo',$15,$16,$17,$18,$19,$20)`,
+      [id, f.fecha, f.hora, f.numCamiones, f.tipo, f.proveedor, f.astilladora,
+       f.transportista, f.instalacion, f.especie, f.tipoBiomasa, f.origen,
+       f.permiso, f.observaciones, f.mapsOrigen, f.mapsDestino,
+       f.matriculaTractora, f.matriculaRemolque, f.chofer,
+       f.certificacion || []]
+    )
+
+    // Firmas
+    const firmasBase = [{ rol:'oficina', actor: f.actorNombre || 'Oficina', firmado: true, fecha }]
+    if (esOp1 && f.astilladora)   firmasBase.push({ rol:'astilladora',  actor:f.astilladora,  firmado:false, fecha:null })
+    if (esOp1 && f.transportista) firmasBase.push({ rol:'transportista', actor:f.transportista,firmado:false, fecha:null })
+    firmasBase.push({ rol:'instalacion', actor:f.instalacion, firmado:false, fecha:null })
+
+    for (const fr of firmasBase) {
+      await client.query(
+        'INSERT INTO firmas (albaran_id,rol,actor,firmado,fecha) VALUES ($1,$2,$3,$4,$5)',
+        [id, fr.rol, fr.actor, fr.firmado, fr.fecha]
+      )
+    }
+
+    await client.query('INSERT INTO pesada (albaran_id) VALUES ($1)', [id])
+
+    for (const d of docs) {
+      await client.query(
+        'INSERT INTO docs (albaran_id,nombre,adjunto) VALUES ($1,$2,false)', [id, d]
+      )
+    }
+
+    const actorNombre = f.actorNombre || 'Oficina'
+    await client.query(
+      'INSERT INTO actividad (albaran_id,ts,texto,actor) VALUES ($1,$2,$3,$4),($1,$2,$5,$6)',
+      [id, fecha, 'Albarán creado', actorNombre, 'Enlace generado para campo', 'Sistema']
+    )
+
+    await client.query('COMMIT')
+    res.json({ id })
+  } catch (e) {
+    await client.query('ROLLBACK')
+    console.error(e)
+    res.status(500).json({ error: e.message })
+  } finally {
+    client.release()
+  }
+})
+
+// ── PATCH /albaranes/:id  (requiere auth) ─────────────────────────
+router.patch('/:id', requireAuth, async (req, res) => {
+  const { campos, pesadaCampos, descripcion } = req.body
+  const { id } = req.params
+  const fecha = new Date().toLocaleString('es-ES')
+  const actorNombre = req.user.nombre || 'Oficina'
+
+  if (campos && Object.keys(campos).length) {
+    const sets  = Object.keys(campos).map((k, i) => `${k} = $${i+2}`).join(', ')
+    const vals  = Object.values(campos)
+    await pool.query(`UPDATE albaranes SET ${sets} WHERE id = $1`, [id, ...vals])
+  }
+
+  if (pesadaCampos && Object.keys(pesadaCampos).length) {
+    const sets = Object.keys(pesadaCampos).map((k, i) => `${k} = $${i+2}`).join(', ')
+    const vals = Object.values(pesadaCampos)
+    await pool.query(`UPDATE pesada SET ${sets} WHERE albaran_id = $1`, [id, ...vals])
+  }
+
+  await pool.query(
+    'INSERT INTO actividad (albaran_id,ts,texto,actor) VALUES ($1,$2,$3,$4)',
+    [id, fecha, descripcion || 'Datos editados manualmente', actorNombre]
+  )
+
+  const albaran = await fetchOne(id)
+  res.json(albaran)
+})
+
+// ── POST /albaranes/:id/firmas/:rol  (PÚBLICO — campo) ───────────
+router.post('/:id/firmas/:rol', async (req, res) => {
+  const { id, rol } = req.params
+  const { actor, firmaImagen, pesadaData, campoData } = req.body
+  const fecha = new Date().toLocaleString('es-ES')
+  const ROLES_FIRMA = ['oficina','astilladora','transportista','instalacion']
+  const ROL_LABEL = { oficina:'Oficina', astilladora:'Astilladora', transportista:'Transportista', instalacion:'Instalación' }
+
+  await pool.query(
+    'UPDATE firmas SET firmado=true, fecha=$1, actor=$2, firma_imagen=$3 WHERE albaran_id=$4 AND rol=$5',
+    [fecha, actor, firmaImagen || null, id, rol]
+  )
+  await pool.query(
+    'INSERT INTO actividad (albaran_id,ts,texto,actor) VALUES ($1,$2,$3,$4)',
+    [id, fecha, `${ROL_LABEL[rol] || rol} confirmó y firmó`, actor]
+  )
+
+  if (pesadaData) {
+    await pool.query(
+      'UPDATE pesada SET entrada=$1, salida=$2, humedad=$3 WHERE albaran_id=$4',
+      [pesadaData.entrada||null, pesadaData.salida||null, pesadaData.humedad||null, id]
+    )
+  }
+
+  if (campoData) {
+    const map = {
+      matriculaTractora: 'matricula_tractora',
+      matriculaRemolque: 'matricula_remolque',
+      chofer: 'chofer',
+      origen: 'origen',
+    }
+    const cols = Object.entries(campoData)
+      .filter(([k]) => map[k])
+      .map(([k, v]) => [map[k], v])
+    if (cols.length) {
+      const sets = cols.map(([c], i) => `${c} = $${i+2}`).join(', ')
+      await pool.query(`UPDATE albaranes SET ${sets} WHERE id = $1`,
+        [id, ...cols.map(([,v]) => v || null)]
+      )
+    }
+  }
+
+  // Comprueba cierre automático
+  const { rows: firmas } = await pool.query(
+    'SELECT * FROM firmas WHERE albaran_id=$1 AND rol=ANY($2)',
+    [id, ROLES_FIRMA]
+  )
+  const todasFirmadas = firmas.length > 0 && firmas.every(f => f.firmado)
+
+  if (todasFirmadas) {
+    await pool.query("UPDATE albaranes SET estado='cerrado' WHERE id=$1", [id])
+    await pool.query(
+      'INSERT INTO actividad (albaran_id,ts,texto,actor) VALUES ($1,$2,$3,$4)',
+      [id, fecha, 'Albarán cerrado automáticamente', 'Sistema']
+    )
+  }
+
+  const albaran = await fetchOne(id)
+  res.json({ albaran, cerrado: todasFirmadas })
+})
+
+module.exports = router
+module.exports.fetchOne = fetchOne

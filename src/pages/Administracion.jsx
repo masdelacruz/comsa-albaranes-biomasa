@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react'
 import { Plus, Search, Pencil, Trash2, X, Check, Upload, Image } from 'lucide-react'
-import { supabase } from '../supabase'
+import { api } from '../lib/api'
 import '../components/shared.css'
 import './Administracion.css'
 
@@ -74,19 +74,15 @@ export default function Administracion({ usuario }) {
   // ── data fetching ───────────────────────────────────────────────────────────
 
   const fetchProveedores = async () => {
-    const { data } = await supabase.from('proveedores').select('*').order('nombre')
+    const data = await api.get('/empresas')
     setProveedores(data || [])
     setLoading(false)
   }
 
   const fetchLogos = async () => {
     try {
-      const { data } = await supabase.from('logos_config').select('id,url')
-      if (data) {
-        const map = {}
-        data.forEach(row => { map[row.id] = row.url })
-        setLogos(map)
-      }
+      const map = await api.get('/storage/logos')
+      setLogos(map || {})
     } catch {}
   }
 
@@ -123,9 +119,9 @@ export default function Administracion({ usuario }) {
     if (!form.nombre.trim()) return
     setGuardando(true)
     if (editando) {
-      await supabase.from('proveedores').update(form).eq('id', editando)
+      await api.patch(`/empresas/${editando}`, form)
     } else {
-      await supabase.from('proveedores').insert(form)
+      await api.post('/empresas', form)
     }
     await fetchProveedores()
     setGuardando(false)
@@ -133,12 +129,12 @@ export default function Administracion({ usuario }) {
   }
 
   const handleToggleActivo = async (p) => {
-    await supabase.from('proveedores').update({ activo: !p.activo }).eq('id', p.id)
+    await api.patch(`/empresas/${p.id}`, { activo: !p.activo })
     await fetchProveedores()
   }
 
   const handleEliminar = async (id) => {
-    await supabase.from('proveedores').delete().eq('id', id)
+    await api.delete(`/empresas/${id}`)
     await fetchProveedores()
     setConfirmDelete(null)
   }
@@ -153,29 +149,11 @@ export default function Administracion({ usuario }) {
     setSubiendoLogo(s => ({ ...s, [id]: true }))
     setErrorLogos(e => ({ ...e, [id]: null }))
     try {
-      const ext  = file.name.split('.').pop().toLowerCase()
-      const path = `${id}.${ext}`
-
-      // Intentar borrar versiones anteriores con extensiones comunes
-      await supabase.storage.from('logos').remove([
-        `${id}.png`, `${id}.jpg`, `${id}.jpeg`, `${id}.svg`, `${id}.webp`
-      ])
-
-      const { error: upErr } = await supabase.storage.from('logos').upload(path, file, { upsert: true })
-      if (upErr) throw new Error(`Storage: ${upErr.message}`)
-
-      const { data: urlData } = supabase.storage.from('logos').getPublicUrl(path)
-      const publicUrl = urlData?.publicUrl
-      if (!publicUrl) throw new Error('No se obtuvo URL pública. ¿El bucket es público?')
-
-      const urlWithTs = `${publicUrl}?t=${Date.now()}`
-
-      const { error: dbErr } = await supabase.from('logos_config').upsert({ id, url: urlWithTs })
-      if (dbErr) throw new Error(`Base de datos: ${dbErr.message}`)
-
-      setLogos(l => ({ ...l, [id]: urlWithTs }))
+      const fd = new FormData()
+      fd.append('file', file)
+      const { url } = await api.upload(`/storage/upload/logos/${id}`, fd)
+      setLogos(l => ({ ...l, [id]: `${url}?t=${Date.now()}` }))
     } catch (err) {
-      console.error('Error subiendo logo:', err)
       setErrorLogos(e => ({ ...e, [id]: err.message || 'Error desconocido' }))
     } finally {
       setSubiendoLogo(s => ({ ...s, [id]: false }))
@@ -185,9 +163,7 @@ export default function Administracion({ usuario }) {
 
   const handleEliminarLogo = async (id) => {
     try {
-      // Try to remove known extensions; ignore errors
-      await supabase.storage.from('logos').remove([`${id}.png`, `${id}.jpg`, `${id}.jpeg`, `${id}.svg`, `${id}.webp`])
-      await supabase.from('logos_config').delete().eq('id', id)
+      await api.delete(`/storage/logos/${id}`)
       setLogos(l => { const n = { ...l }; delete n[id]; return n })
     } catch (err) {
       console.error('Error eliminando logo:', err)
