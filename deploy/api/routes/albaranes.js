@@ -38,7 +38,7 @@ function buildAlbaran(a, firmas, pesada, docs, actividad) {
     }
   })
   return {
-    id: a.id, fecha: a.fecha, hora: a.hora, numCamiones: a.num_camiones,
+    id: a.id, fecha: a.fecha ? new Date(a.fecha).toISOString().slice(0,10) : null, hora: a.hora, numCamiones: a.num_camiones,
     tipo: a.tipo, proveedor: a.proveedor, astilladora: a.astilladora,
     transportista: a.transportista, instalacion: a.instalacion,
     especie: a.especie, tipoBiomasa: a.tipo_biomasa,
