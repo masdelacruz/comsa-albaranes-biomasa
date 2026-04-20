@@ -114,21 +114,16 @@ CREATE TABLE IF NOT EXISTS logos (
 );
 
 -- ── Función: ID correlativo de albarán ────────────────────────────
--- Formato: ALB-AAAA-NNNN  (ej. ALB-2026-0001)
+-- Formato: número entero correlativo (ej. 20020, 20021, ...)
 CREATE OR REPLACE FUNCTION next_albaran_id() RETURNS TEXT AS $$
 DECLARE
-  anio    TEXT := TO_CHAR(NOW(), 'YYYY');
-  prefix  TEXT;
   siguiente INTEGER;
 BEGIN
-  prefix := 'ALB-' || anio || '-';
-  SELECT COALESCE(
-    MAX(CAST(SUBSTRING(id FROM LENGTH(prefix) + 1) AS INTEGER)), 0
-  ) + 1
+  SELECT COALESCE(MAX(CAST(id AS INTEGER)), 20019) + 1
   INTO siguiente
   FROM albaranes
-  WHERE id LIKE prefix || '%';
-  RETURN prefix || LPAD(siguiente::TEXT, 4, '0');
+  WHERE id ~ '^\d+$';
+  RETURN siguiente::TEXT;
 END;
 $$ LANGUAGE plpgsql;
 

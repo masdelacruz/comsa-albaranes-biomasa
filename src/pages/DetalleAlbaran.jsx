@@ -267,7 +267,7 @@ export default function DetalleAlbaran({ albaranes, simularFirma, subirDocumento
             <FileDown size={15} /> Descargar PDF
           </button>
         </div>
-        <div className="page-sub">{a.astilladora || a.proveedor} → {a.instalacion} · {a.fecha.split('-').reverse().join('/')}</div>
+        <div className="page-sub">{a.astilladora || a.proveedor} → {a.instalacion} · {a.fecha?.slice(0,10).split('-').reverse().join('/')}</div>
       </div>
 
       <div className="detalle-content">

@@ -95,7 +95,7 @@ export default function Historial({ albaranes }) {
       const esPar    = i % 2 === 0
 
       const row = ws.addRow({
-        fecha:        a.fecha.split('-').reverse().join('/'),
+        fecha:        a.fecha?.slice(0,10).split('-').reverse().join('/'),
         id:           a.id,
         origen:       a.origen            || '',
         permiso:      a.permiso           || '',
@@ -263,7 +263,7 @@ export default function Historial({ albaranes }) {
               ) : filtrados.map(a => (
                 <tr key={a.id} onClick={() => navigate(`/albaran/${a.id}`)}>
                   <td className="albaran-id">{a.id}</td>
-                  <td>{a.fecha.split('-').reverse().join('/')}</td>
+                  <td>{a.fecha?.slice(0,10).split('-').reverse().join('/')}</td>
                   <td>{a.astilladora}</td>
                   <td>{a.transportista}</td>
                   <td>{a.instalacion}</td>

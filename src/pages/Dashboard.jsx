@@ -83,7 +83,7 @@ export default function Dashboard({ albaranes }) {
               {filtrados.map(a => (
                 <tr key={a.id} onClick={() => navigate(`/albaran/${a.id}`)}>
                   <td className="albaran-id">{a.id}</td>
-                  <td>{a.fecha.split('-').reverse().join('/')}</td>
+                  <td>{a.fecha?.slice(0,10).split('-').reverse().join('/')}</td>
                   <td>{a.astilladora}</td>
                   <td>{a.transportista}</td>
                   <td>{a.instalacion}</td>

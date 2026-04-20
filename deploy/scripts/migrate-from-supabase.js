@@ -59,7 +59,7 @@ async function run() {
          a.astilladora, a.transportista, a.instalacion, a.especie, a.tipo_biomasa,
          a.origen, a.permiso, a.observaciones, a.estado, a.maps_origen, a.maps_destino,
          a.matricula_tractora, a.matricula_remolque, a.chofer,
-         a.certificacion || [], a.created_at]
+         [].concat(a.certificacion || []), a.created_at]
       )
     }
     console.log(`   ${albaranes.length} albaranes migrados`)

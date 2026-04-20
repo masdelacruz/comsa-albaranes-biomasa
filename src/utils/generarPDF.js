@@ -148,7 +148,7 @@ export async function generarPDF(a) {
     doc.setFont('helvetica', 'normal')
     doc.setFontSize(6)
     doc.setTextColor(...grisOsc)
-    const fechaStr = a.fecha ? a.fecha.split('-').reverse().join('/') : '__ / __ / ____'
+    const fechaStr = a.fecha ? a.fecha?.slice(0,10).split('-').reverse().join('/') : '__ / __ / ____'
     doc.text(`Fecha:  ${fechaStr}`, sx + 2, cabY + 23)
   }
 

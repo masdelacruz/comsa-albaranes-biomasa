@@ -270,7 +270,7 @@ export default function VistaCampo({ albaranes, updateFirma, subirTicketPesada }
       }
       <div>
         <div className="campo-title">Albarán {a.id}</div>
-        <div className="campo-sub">{a.astilladora || a.proveedor} → {a.instalacion} · {a.fecha?.split('-').reverse().join('/')}</div>
+        <div className="campo-sub">{a.astilladora || a.proveedor} → {a.instalacion} · {a.fecha?.slice(0,10).split('-').reverse().join('/')}</div>
       </div>
     </div>
   )
