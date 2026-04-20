@@ -1,6 +1,6 @@
 import { useRef, useState, useEffect } from 'react'
-import { useParams } from 'react-router-dom'
-import { ExternalLink, CheckCircle, Clock, FileDown, Upload, Eye, FileText, AlertTriangle, Copy, Pencil, X, Check } from 'lucide-react'
+import { useParams, useNavigate } from 'react-router-dom'
+import { ExternalLink, CheckCircle, Clock, FileDown, Upload, Eye, FileText, AlertTriangle, Copy, Pencil, X, Check, Trash2 } from 'lucide-react'
 import { Badge } from '../components/Badge'
 import { generarPDF } from '../utils/generarPDF'
 import { supabase } from '../supabase'
@@ -19,8 +19,9 @@ const FIRMA_LABELS = {
 
 const TIPOS_OP = ['Opció 1 — Compra en monte / plataforma', 'Opció 2 — Proveedor directo']
 
-export default function DetalleAlbaran({ albaranes, simularFirma, subirDocumento, subirTicketPesada, actualizarAlbaran, usuario }) {
+export default function DetalleAlbaran({ albaranes, simularFirma, subirDocumento, subirTicketPesada, actualizarAlbaran, borrarAlbaran, usuario }) {
   const { id } = useParams()
+  const navigate = useNavigate()
   const fileRefs    = useRef({})
   const ticketRef   = useRef(null)
   const [subiendo, setSubiendo]             = useState({})
@@ -36,6 +37,7 @@ export default function DetalleAlbaran({ albaranes, simularFirma, subirDocumento
   const [formPesada, setFormPesada] = useState({})
   const [guardando,  setGuardando]  = useState(false)
   const [toast,      setToast]      = useState('')
+  const [confirmBorrar, setConfirmBorrar] = useState(false)
 
   const mostrarToast = (msg) => {
     setToast(msg)
@@ -61,7 +63,7 @@ export default function DetalleAlbaran({ albaranes, simularFirma, subirDocumento
   if (!a) return <div style={{padding:40,color:'var(--gray-400)'}}>Albarán no encontrado.</div>
 
   const esSuperadmin = usuario?.nivel === 'superadmin'
-  const puedeEditar  = esSuperadmin || a.estado !== 'cerrado'
+  const puedeEditar  = true
 
   const pesoNeto = a.pesada.entrada && a.pesada.salida
     ? (a.pesada.entrada - a.pesada.salida).toLocaleString('es-ES') + ' kg' : '—'
@@ -263,9 +265,16 @@ export default function DetalleAlbaran({ albaranes, simularFirma, subirDocumento
             <div className="page-title" style={{fontFamily:'var(--font-mono)',fontSize:18}}>{a.id}</div>
             <Badge estado={a.estado} />
           </div>
-          <button className="btn" onClick={() => generarPDF(a)}>
-            <FileDown size={15} /> Descargar PDF
-          </button>
+          <div style={{display:'flex',gap:8}}>
+            <button className="btn" onClick={() => generarPDF(a)}>
+              <FileDown size={15} /> Descargar PDF
+            </button>
+            {esSuperadmin && (
+              <button className="btn" style={{color:'var(--red-400)',borderColor:'var(--red-100)'}} onClick={() => setConfirmBorrar(true)}>
+                <Trash2 size={15} /> Borrar
+              </button>
+            )}
+          </div>
         </div>
         <div className="page-sub">{a.astilladora || a.proveedor} → {a.instalacion} · {a.fecha?.slice(0,10).split('-').reverse().join('/')}</div>
       </div>
@@ -654,5 +663,29 @@ export default function DetalleAlbaran({ albaranes, simularFirma, subirDocumento
         </div>
       </div>
     </div>
+
+    {confirmBorrar && (
+      <div style={{position:'fixed',inset:0,background:'rgba(0,0,0,0.4)',display:'flex',alignItems:'center',justifyContent:'center',zIndex:200,padding:20}}>
+        <div style={{background:'#fff',borderRadius:'var(--radius-xl)',padding:28,width:'100%',maxWidth:380,boxShadow:'0 20px 60px rgba(0,0,0,0.15)'}}>
+          <div style={{display:'flex',alignItems:'center',gap:10,marginBottom:12}}>
+            <Trash2 size={20} color='var(--red-400)' />
+            <span style={{fontSize:16,fontWeight:600}}>Borrar albarán</span>
+          </div>
+          <p style={{fontSize:14,color:'var(--gray-600)',marginBottom:20}}>
+            ¿Seguro que quieres borrar el albarán <strong>{a.id}</strong>? Esta acción no se puede deshacer.
+          </p>
+          <div style={{display:'flex',gap:8,justifyContent:'flex-end'}}>
+            <button className="btn" onClick={() => setConfirmBorrar(false)}>Cancelar</button>
+            <button
+              className="btn"
+              style={{background:'var(--red-500)',color:'#fff',borderColor:'var(--red-500)'}}
+              onClick={async () => { await borrarAlbaran(a.id); setConfirmBorrar(false); navigate('/dashboard') }}
+            >
+              <Trash2 size={14} /> Borrar definitivamente
+            </button>
+          </div>
+        </div>
+      </div>
+    )}
   )
 }

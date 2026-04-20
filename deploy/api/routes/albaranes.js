@@ -247,5 +247,13 @@ router.post('/:id/firmas/:rol', async (req, res) => {
   res.json({ albaran, cerrado: todasFirmadas })
 })
 
+// ── DELETE /albaranes/:id  (solo superadmin) ─────────────────────
+router.delete('/:id', requireAuth, async (req, res) => {
+  if (req.user.nivel !== 'superadmin') return res.status(403).json({ error: 'Solo superadmin puede borrar albaranes' })
+  const { id } = req.params
+  await pool.query('DELETE FROM albaranes WHERE id = $1', [id])
+  res.json({ ok: true })
+})
+
 module.exports = router
 module.exports.fetchOne = fetchOne

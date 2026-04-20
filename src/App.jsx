@@ -39,7 +39,7 @@ function VistaCampoPublica() {
 
 function AppConDatos({ usuario, logout }) {
   const { albaranes, loading: dataLoading, refetch } = useAlbaranes()
-  const { addAlbaran, updateFirma, simularFirmaOficina, subirDocumento, subirTicketPesada, actualizarAlbaran } = useAlbaranActions(refetch, usuario)
+  const { addAlbaran, updateFirma, simularFirmaOficina, subirDocumento, subirTicketPesada, actualizarAlbaran, borrarAlbaran } = useAlbaranActions(refetch, usuario)
 
   if (dataLoading) return <Spinner />
 
@@ -49,7 +49,7 @@ function AppConDatos({ usuario, logout }) {
         <Route index element={<Navigate to="/dashboard" replace />} />
         <Route path="dashboard"      element={<Dashboard albaranes={albaranes} usuario={usuario} />} />
         <Route path="nuevo"          element={<NuevoAlbaran addAlbaran={addAlbaran} usuario={usuario} />} />
-        <Route path="albaran/:id"    element={<DetalleAlbaran albaranes={albaranes} simularFirma={simularFirmaOficina} subirDocumento={subirDocumento} subirTicketPesada={subirTicketPesada} actualizarAlbaran={actualizarAlbaran} usuario={usuario} />} />
+        <Route path="albaran/:id"    element={<DetalleAlbaran albaranes={albaranes} simularFirma={simularFirmaOficina} subirDocumento={subirDocumento} subirTicketPesada={subirTicketPesada} actualizarAlbaran={actualizarAlbaran} borrarAlbaran={borrarAlbaran} usuario={usuario} />} />
         <Route path="historial"      element={<Historial albaranes={albaranes} />} />
         <Route path="estadisticas"   element={<Estadisticas albaranes={albaranes} />} />
         <Route path="administracion" element={<Administracion usuario={usuario} />} />

@@ -48,5 +48,10 @@ export function useAlbaranActions(refetch, usuario) {
     await refetch()
   }
 
-  return { addAlbaran, updateFirma, simularFirmaOficina, subirDocumento, subirTicketPesada, actualizarAlbaran }
+  const borrarAlbaran = async (albaranId) => {
+    await api.delete(`/albaranes/${albaranId}`)
+    await refetch()
+  }
+
+  return { addAlbaran, updateFirma, simularFirmaOficina, subirDocumento, subirTicketPesada, actualizarAlbaran, borrarAlbaran }
 }
