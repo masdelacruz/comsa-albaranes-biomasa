@@ -227,6 +227,7 @@ export default function DetalleAlbaran({ albaranes, simularFirma, subirDocumento
   const setP = (k, v) => setFormPesada(p => ({ ...p, [k]: v }))
 
   return (
+    <>
     <div className="detalle-page">
       {toast && (
         <div className="toast-guardado">
@@ -687,5 +688,6 @@ export default function DetalleAlbaran({ albaranes, simularFirma, subirDocumento
         </div>
       </div>
     )}
+    </>
   )
 }
