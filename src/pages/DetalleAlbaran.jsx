@@ -679,7 +679,7 @@ export default function DetalleAlbaran({ albaranes, simularFirma, subirDocumento
             <button className="btn" onClick={() => setConfirmBorrar(false)}>Cancelar</button>
             <button
               className="btn"
-              style={{background:'var(--red-500)',color:'#fff',borderColor:'var(--red-500)'}}
+              style={{background:'var(--red-400)',color:'#fff',borderColor:'var(--red-400)'}}
               onClick={async () => { await borrarAlbaran(a.id); setConfirmBorrar(false); navigate('/dashboard') }}
             >
               <Trash2 size={14} /> Borrar definitivamente

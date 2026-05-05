@@ -1,15 +1,17 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { AlertTriangle, Plus, Filter } from 'lucide-react'
+import { AlertTriangle, Plus, Filter, Trash2 } from 'lucide-react'
 import { Badge, FirmaSteps } from '../components/Badge'
 import { labelSemanaActual } from '../utils/semana'
 import '../components/shared.css'
 import './Dashboard.css'
 
-export default function Dashboard({ albaranes }) {
+export default function Dashboard({ albaranes, usuario, borrarAlbaran }) {
   const navigate = useNavigate()
   const [filtroInstalacion, setFiltroInstalacion] = useState('')
   const [filtroEstado, setFiltroEstado] = useState('')
+  const [confirmBorrar, setConfirmBorrar] = useState(null)
+  const esSuperadmin = usuario?.nivel === 'superadmin'
 
   const instalaciones = [...new Set(albaranes.map(a => a.instalacion))]
   const pendienteFirma = albaranes.filter(a => a.estado !== 'cerrado').length
@@ -24,6 +26,7 @@ export default function Dashboard({ albaranes }) {
   })
 
   return (
+    <>
     <div className="dashboard">
       <div className="page-header">
         <div style={{display:'flex',alignItems:'center',justifyContent:'space-between'}}>
@@ -77,6 +80,7 @@ export default function Dashboard({ albaranes }) {
               <tr>
                 <th>Nº albarán</th><th>Fecha</th><th>Astilladora</th><th>Transportista</th>
                 <th>Destino</th><th>Especie</th><th>Estado</th><th>Firmas</th>
+                {esSuperadmin && <th></th>}
               </tr>
             </thead>
             <tbody>
@@ -90,6 +94,17 @@ export default function Dashboard({ albaranes }) {
                   <td>{a.especie}</td>
                   <td><Badge estado={a.estado} /></td>
                   <td><FirmaSteps firmas={a.firmas} /></td>
+                  {esSuperadmin && (
+                    <td onClick={e => e.stopPropagation()}>
+                      <button
+                        style={{background:'none',border:'none',cursor:'pointer',padding:4,color:'var(--gray-300)',display:'flex',alignItems:'center'}}
+                        onClick={() => setConfirmBorrar(a.id)}
+                        title="Borrar albarán"
+                      >
+                        <Trash2 size={14} />
+                      </button>
+                    </td>
+                  )}
                 </tr>
               ))}
             </tbody>
@@ -97,5 +112,30 @@ export default function Dashboard({ albaranes }) {
         </div>
       </div>
     </div>
+
+    {confirmBorrar && (
+      <div style={{position:'fixed',inset:0,background:'rgba(0,0,0,0.4)',display:'flex',alignItems:'center',justifyContent:'center',zIndex:200,padding:20}}>
+        <div style={{background:'#fff',borderRadius:'var(--radius-xl)',padding:28,width:'100%',maxWidth:380,boxShadow:'0 20px 60px rgba(0,0,0,0.15)'}}>
+          <div style={{display:'flex',alignItems:'center',gap:10,marginBottom:12}}>
+            <Trash2 size={20} color='var(--red-400)' />
+            <span style={{fontSize:16,fontWeight:600}}>Borrar albarán</span>
+          </div>
+          <p style={{fontSize:14,color:'var(--gray-600)',marginBottom:20}}>
+            ¿Seguro que quieres borrar el albarán <strong>{confirmBorrar}</strong>? Esta acción no se puede deshacer.
+          </p>
+          <div style={{display:'flex',gap:8,justifyContent:'flex-end'}}>
+            <button className="btn" onClick={() => setConfirmBorrar(null)}>Cancelar</button>
+            <button
+              className="btn"
+              style={{background:'var(--red-400)',color:'#fff',borderColor:'var(--red-400)'}}
+              onClick={async () => { await borrarAlbaran(confirmBorrar); setConfirmBorrar(null) }}
+            >
+              <Trash2 size={14} /> Borrar definitivamente
+            </button>
+          </div>
+        </div>
+      </div>
+    )}
+    </>
   )
 }
