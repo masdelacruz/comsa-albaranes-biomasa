@@ -141,7 +141,8 @@ async function run() {
     // ── 8. Logos (URLs de Supabase Storage) ───────────────────────
     // Los ficheros físicos hay que migrarlos aparte (ver instrucciones abajo)
     console.log('→ Logos...')
-    const logos = await fetchAll('logos')
+    let logos = []
+    try { logos = await fetchAll('logos') } catch(e) { console.log('   (tabla logos no existe en Supabase, saltando)') }
     for (const l of logos) {
       await client.query(
         `INSERT INTO logos (id,nombre,url,updated_at) VALUES ($1,$2,$3,$4)
