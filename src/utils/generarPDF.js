@@ -1,6 +1,6 @@
 import jsPDF from 'jspdf'
 import autoTable from 'jspdf-autotable'
-import { supabase } from '../supabase'
+import { api } from '../lib/api'
 
 export async function generarPDF(a) {
   const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' })
@@ -48,20 +48,22 @@ export async function generarPDF(a) {
 
   let logoComsa, logoApplus1, logoApplus2, logoApplus3, logoApplus4, logoPefc, logoSure
   try {
-    const { data } = await supabase.from('logos_config').select('id,url')
-    if (data) {
-      for (const row of data) {
-        try {
-          const b64 = await toBase64(row.url)
-          if (row.id === 'comsa')    logoComsa   = b64
-          if (row.id === 'applus_1') logoApplus1 = b64
-          if (row.id === 'applus_2') logoApplus2 = b64
-          if (row.id === 'applus_3') logoApplus3 = b64
-          if (row.id === 'applus_4') logoApplus4 = b64
-          if (row.id === 'pefc')     logoPefc    = b64
-          if (row.id === 'sure')     logoSure    = b64
-        } catch {}
+    const map = await api.get('/storage/logos')
+    if (map) {
+      const ids = { comsa: 'logoComsa', applus_1: 'logoApplus1', applus_2: 'logoApplus2', applus_3: 'logoApplus3', applus_4: 'logoApplus4', pefc: 'logoPefc', sure: 'logoSure' }
+      const assigns = { logoComsa: null, logoApplus1: null, logoApplus2: null, logoApplus3: null, logoApplus4: null, logoPefc: null, logoSure: null }
+      for (const [id, varName] of Object.entries(ids)) {
+        if (map[id]) {
+          try { assigns[varName] = await toBase64(map[id]) } catch {}
+        }
       }
+      logoComsa   = assigns.logoComsa
+      logoApplus1 = assigns.logoApplus1
+      logoApplus2 = assigns.logoApplus2
+      logoApplus3 = assigns.logoApplus3
+      logoApplus4 = assigns.logoApplus4
+      logoPefc    = assigns.logoPefc
+      logoSure    = assigns.logoSure
     }
   } catch {}
 

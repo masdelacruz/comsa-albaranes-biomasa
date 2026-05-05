@@ -11,7 +11,8 @@ function limpiarNombre(str) {
 
 function getPublicUrl(req, bucket, path) {
   // Las URLs públicas pasan por el proxy Apache → /storage/file/...
-  return `${process.env.APP_URL}/api/storage/file/${encodeURIComponent(path)}`
+  // No codificamos el path completo (la / debe llegar como / al proxy)
+  return `${process.env.APP_URL}/api/storage/file/${path}`
 }
 
 // ── GET /storage/file/*  (PÚBLICO — descarga de documentos) ──────

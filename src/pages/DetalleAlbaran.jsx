@@ -3,7 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom'
 import { ExternalLink, CheckCircle, Clock, FileDown, Upload, Eye, FileText, AlertTriangle, Copy, Pencil, X, Check, Trash2 } from 'lucide-react'
 import { Badge } from '../components/Badge'
 import { generarPDF } from '../utils/generarPDF'
-import { supabase } from '../supabase'
+import { api } from '../lib/api'
 import { ESPECIES, TIPOS_BIOMASA } from '../data/mockData'
 import '../components/shared.css'
 import './DetalleAlbaran.css'
@@ -50,13 +50,13 @@ export default function DetalleAlbaran({ albaranes, simularFirma, subirDocumento
   const [instalaciones,  setInstalaciones]  = useState([])
 
   useEffect(() => {
-    supabase.from('proveedores').select('*').eq('activo', true).order('nombre').then(({ data }) => {
+    api.get('/empresas?activo=true').then(data => {
       const d = data || []
       setProveedores(   d.filter(p => p.tipo === 'proveedor'   ).map(p => p.nombre))
       setAstilladoras(  d.filter(p => p.tipo === 'astilladora' ).map(p => p.nombre))
       setTransportistas(d.filter(p => p.tipo === 'transportista').map(p => p.nombre))
       setInstalaciones( d.filter(p => p.tipo === 'instalacion' ).map(p => p.nombre))
-    })
+    }).catch(() => {})
   }, [])
 
   const a = albaranes.find(x => x.id === id)
