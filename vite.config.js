@@ -9,7 +9,7 @@ export default defineConfig({
       // En desarrollo local, /api se redirige al servidor
       // Cambia la URL si el servidor tiene otro nombre o puerto
       '/api': {
-        target: 'http://biomasa.cserintranet.com',
+        target: 'http://localhost:3001',
         changeOrigin: true,
       },
     },

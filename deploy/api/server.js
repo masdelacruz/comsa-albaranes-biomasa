@@ -1,11 +1,12 @@
 const express   = require('express')
 const cors      = require('cors')
+const path      = require('path')
 const { Client: MinioClient } = require('minio')
 
 const app  = express()
 const PORT = process.env.PORT || 3001
 
-// ── MinIO client (global, disponible en rutas) ────────────────────
+// ── MinIO client ──────────────────────────────────────────────────
 const minio = new MinioClient({
   endPoint:  process.env.MINIO_ENDPOINT  || 'minio',
   port:      parseInt(process.env.MINIO_PORT || '9000'),
@@ -16,27 +17,19 @@ const minio = new MinioClient({
 
 const BUCKET = process.env.MINIO_BUCKET || 'documentos'
 
-// Asegura que el bucket existe al arrancar
 async function initMinio() {
   const exists = await minio.bucketExists(BUCKET)
   if (!exists) {
     await minio.makeBucket(BUCKET)
-    // Política pública de lectura (las URLs de docs son públicas)
     const policy = JSON.stringify({
       Version: '2012-10-17',
-      Statement: [{
-        Effect: 'Allow',
-        Principal: { AWS: ['*'] },
-        Action: ['s3:GetObject'],
-        Resource: [`arn:aws:s3:::${BUCKET}/*`],
-      }],
+      Statement: [{ Effect: 'Allow', Principal: { AWS: ['*'] }, Action: ['s3:GetObject'], Resource: [`arn:aws:s3:::${BUCKET}/*`] }],
     })
     await minio.setBucketPolicy(BUCKET, policy)
     console.log(`Bucket '${BUCKET}' creado.`)
   }
 }
 
-// Exportar para uso en rutas
 app.set('minio', minio)
 app.set('minio_bucket', BUCKET)
 
@@ -44,18 +37,21 @@ app.set('minio_bucket', BUCKET)
 app.use(cors())
 app.use(express.json({ limit: '10mb' }))
 
-// ── Rutas ─────────────────────────────────────────────────────────
-app.use('/auth',       require('./routes/auth'))
-app.use('/albaranes',  require('./routes/albaranes'))
-app.use('/empresas',   require('./routes/empresas'))
-app.use('/usuarios',   require('./routes/usuarios'))
-app.use('/storage',    require('./routes/storage'))
-app.use('/email',      require('./routes/email'))
+// ── API routes bajo /api ──────────────────────────────────────────
+app.use('/api/auth',      require('./routes/auth'))
+app.use('/api/albaranes', require('./routes/albaranes'))
+app.use('/api/empresas',  require('./routes/empresas'))
+app.use('/api/usuarios',  require('./routes/usuarios'))
+app.use('/api/storage',   require('./routes/storage'))
+app.use('/api/email',     require('./routes/email'))
 
-// Health check (Zabbix / Portainer lo puede usar)
-app.get('/health', (_req, res) => res.json({ ok: true, ts: new Date().toISOString() }))
+app.get('/api/health', (_req, res) => res.json({ ok: true, ts: new Date().toISOString() }))
+
+// ── Frontend estático (build de Vite) ─────────────────────────────
+const PUBLIC = path.join(__dirname, 'public')
+app.use(express.static(PUBLIC))
+app.get('*', (_req, res) => res.sendFile(path.join(PUBLIC, 'index.html')))
 
 // ── Arranque ──────────────────────────────────────────────────────
 initMinio().catch(e => console.error('MinIO init error:', e))
-
-app.listen(PORT, () => console.log(`API escuchando en :${PORT}`))
+app.listen(PORT, () => console.log(`Servidor escuchando en :${PORT}`))
