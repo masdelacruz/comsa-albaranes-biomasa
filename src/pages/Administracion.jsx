@@ -54,6 +54,8 @@ export default function Administracion({ usuario }) {
   const [form, setForm]                   = useState(EMPTY_FORM)
   const [guardando, setGuardando]         = useState(false)
   const [confirmDelete, setConfirmDelete] = useState(null)
+  const [subiendoFirma, setSubiendoFirma] = useState(false)
+  const [firmaUrl, setFirmaUrl]           = useState(null)
 
   // Logos state
   const [logos, setLogos]                   = useState({})
@@ -108,10 +110,31 @@ export default function Administracion({ usuario }) {
   const abrirEditar = (p) => {
     setEditando(p.id)
     setForm({ nombre: p.nombre, tipo: p.tipo, contacto: p.contacto || '', email: p.email || '', telefono: p.telefono || '', notas: p.notas || '', activo: p.activo })
+    setFirmaUrl(p.firma_imagen || null)
     setModal(true)
   }
 
-  const cerrarModal = () => { setModal(false); setEditando(null); setForm(EMPTY_FORM) }
+  const cerrarModal = () => { setModal(false); setEditando(null); setForm(EMPTY_FORM); setFirmaUrl(null) }
+
+  const handleSubirFirma = async (fichero) => {
+    if (!fichero || !editando) return
+    setSubiendoFirma(true)
+    try {
+      const fd = new FormData()
+      fd.append('file', fichero)
+      const token = localStorage.getItem('biomasa_token')
+      const res = await fetch(`/api/storage/upload/empresa/${editando}/firma`, {
+        method: 'POST',
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+        body: fd,
+      })
+      const { url } = await res.json()
+      setFirmaUrl(url)
+      await fetchProveedores()
+    } finally {
+      setSubiendoFirma(false)
+    }
+  }
 
   const set = (k, v) => setForm(f => ({ ...f, [k]: v }))
 
@@ -418,6 +441,34 @@ export default function Administracion({ usuario }) {
                 <input type="checkbox" id="activo" checked={form.activo} onChange={e => set('activo', e.target.checked)} style={{ width: 'auto' }} />
                 <label htmlFor="activo" style={{ margin: 0, cursor: 'pointer' }}>Activo — aparece en los desplegables de nuevos albaranes</label>
               </div>
+
+              {editando && (
+                <div className="modal-field full">
+                  <label>Firma oficial de la empresa</label>
+                  <div style={{border:'1px solid var(--gray-200)',borderRadius:'var(--radius-md)',padding:12,background:'var(--gray-50)'}}>
+                    {firmaUrl ? (
+                      <div style={{textAlign:'center',marginBottom:10}}>
+                        <img src={firmaUrl} alt="Firma" style={{maxHeight:70,maxWidth:'100%',objectFit:'contain'}} />
+                      </div>
+                    ) : (
+                      <div style={{textAlign:'center',fontSize:12,color:'var(--gray-400)',marginBottom:10}}>
+                        Sin firma registrada
+                      </div>
+                    )}
+                    <label style={{display:'flex',alignItems:'center',gap:8,cursor:'pointer',justifyContent:'center',fontSize:12,color:'var(--green-600)',fontWeight:500}}>
+                      <Upload size={14} />
+                      {subiendoFirma ? 'Subiendo...' : firmaUrl ? 'Cambiar imagen de firma' : 'Subir imagen de firma'}
+                      <input type="file" accept=".png,.jpg,.jpeg,.svg" style={{display:'none'}}
+                        onChange={e => { if(e.target.files[0]) handleSubirFirma(e.target.files[0]); e.target.value='' }}
+                        disabled={subiendoFirma}
+                      />
+                    </label>
+                    <div style={{fontSize:11,color:'var(--gray-400)',textAlign:'center',marginTop:4}}>
+                      PNG, JPG o SVG · Se usará al confirmar con un clic desde el campo
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
             <div className="modal-actions">
               <button className="btn" onClick={cerrarModal}>Cancelar</button>

@@ -85,6 +85,26 @@ router.post('/upload/:albaranId/ticket', upload.single('file'), async (req, res)
   res.json({ url })
 })
 
+// ── POST /storage/upload/empresa/:empresaId/firma  (requiere auth) ──
+router.post('/upload/empresa/:empresaId/firma', requireAuth, upload.single('file'), async (req, res) => {
+  const minio  = req.app.get('minio')
+  const bucket = req.app.get('minio_bucket')
+  const { empresaId } = req.params
+  const fichero = req.file
+
+  const ext  = (fichero.originalname.split('.').pop() || 'png')
+  const path = `firmas_empresa/${empresaId}.${ext}`
+
+  await minio.putObject(bucket, path, fichero.buffer, fichero.size, { 'Content-Type': fichero.mimetype })
+  const url = getPublicUrl(req, bucket, path)
+
+  await pool.query(
+    'UPDATE proveedores SET firma_imagen=$1 WHERE id=$2',
+    [url, empresaId]
+  )
+  res.json({ url })
+})
+
 // ── POST /storage/upload/:albaranId/logo  (requiere auth) ────────
 router.post('/upload/logos/:logoId', requireAuth, upload.single('file'), async (req, res) => {
   const minio  = req.app.get('minio')

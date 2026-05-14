@@ -1,6 +1,8 @@
 networks:
   biomasa:
     driver: bridge
+  internet:
+    external: true
 
 volumes:
   pg_data:
@@ -74,3 +76,4 @@ services:
         condition: service_started
     networks:
       - biomasa
+      - internet

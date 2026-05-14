@@ -30,7 +30,7 @@ router.post('/', requireAuth, async (req, res) => {
 
 // ── PATCH /empresas/:id ───────────────────────────────────────────
 router.patch('/:id', requireAuth, async (req, res) => {
-  const fields = ['nombre','tipo','contacto','email','telefono','notas','activo']
+  const fields = ['nombre','tipo','contacto','email','telefono','notas','activo','firma_imagen']
   const updates = [], vals = []
   let idx = 1
   for (const f of fields) {

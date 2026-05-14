@@ -8,13 +8,14 @@ import { ESPECIES, TIPOS_BIOMASA } from '../data/mockData'
 import '../components/shared.css'
 import './DetalleAlbaran.css'
 
-const ORDEN_FIRMAS = ['oficina', 'astilladora', 'transportista', 'instalacion']
+const ORDEN_FIRMAS = ['proveedor', 'astilladora', 'transportista', 'instalacion', 'oficina']
 
 const FIRMA_LABELS = {
-  oficina:       'Oficina',
+  proveedor:     'Proveedor — Origen',
   astilladora:   'Astilladora',
   transportista: 'Transportista',
   instalacion:   'Receptor — Instalación destino',
+  oficina:       'Oficina',
 }
 
 const TIPOS_OP = ['Opció 1 — Compra en monte / plataforma', 'Opció 2 — Proveedor directo']
@@ -71,8 +72,10 @@ export default function DetalleAlbaran({ albaranes, simularFirma, subirDocumento
   const firmasOrdenadas = ORDEN_FIRMAS.filter(k => a.firmas[k])
 
   const getSiguientePaso = () => {
+    // Solo roles externos (no oficina) pendientes
     const pendientes = firmasOrdenadas.filter(k => k !== 'oficina' && !a.firmas[k]?.firmado)
     if (pendientes.length === 0) return null
+    // Agrupa roles consecutivos del mismo actor en un único enlace
     const primero = pendientes[0]
     const actorPrimero = a.firmas[primero]?.actor
     const rolesGrupo = [primero]
@@ -84,6 +87,10 @@ export default function DetalleAlbaran({ albaranes, simularFirma, subirDocumento
     }
     return rolesGrupo.join(',')
   }
+
+  // ¿Puede la oficina firmar ahora? (todos los externos firmados, oficina pendiente)
+  const puedeOficinaFirmar = a.firmas?.oficina && !a.firmas.oficina.firmado &&
+    firmasOrdenadas.filter(k => k !== 'oficina').every(k => a.firmas[k]?.firmado)
 
   const siguientePaso    = getSiguientePaso()
   const urlSiguientePaso = siguientePaso ? `${window.location.origin}/campo/${a.id}/${siguientePaso}` : null
@@ -598,6 +605,11 @@ export default function DetalleAlbaran({ albaranes, simularFirma, subirDocumento
                         : <span className="badge badge-amber"><Clock size={10} /> Pendiente</span>
                       }
                     </div>
+                    {firma.firmado && firma.nombrePersona && (
+                      <div style={{fontSize:11,color:'var(--gray-500)',marginTop:2}}>
+                        Persona: {firma.nombrePersona}
+                      </div>
+                    )}
                     {firma.firmado && <div className="firma-fecha">{firma.fecha}</div>}
                     {firma.firmado && firma.firmaImagen && (
                       <img src={firma.firmaImagen} alt="Firma"
@@ -605,7 +617,13 @@ export default function DetalleAlbaran({ albaranes, simularFirma, subirDocumento
                           background:'#fafaf9',borderRadius:'var(--radius-sm)',border:'var(--border)'}}
                       />
                     )}
-                    {!firma.firmado && a.estado !== 'cerrado' && key !== 'oficina' && (
+                    {!firma.firmado && a.estado !== 'cerrado' && key === 'oficina' && puedeOficinaFirmar && (
+                      <button className="btn btn-primary" style={{fontSize:12,marginTop:8,width:'100%'}}
+                        onClick={() => setConfirmModal('oficina')}>
+                        ✓ Firmar como Oficina
+                      </button>
+                    )}
+                    {!firma.firmado && a.estado !== 'cerrado' && key !== 'oficina' && esSuperadmin && (
                       <button className="btn" style={{fontSize:12,marginTop:8,width:'100%'}}
                         onClick={() => setConfirmModal(key)}>
                         Simular firma →
@@ -644,7 +662,7 @@ export default function DetalleAlbaran({ albaranes, simularFirma, subirDocumento
               <div className="section-label">Actividad</div>
               <div className="timeline">
                 {a.actividad.map((ev, i) => {
-                  const externos = [a.astilladora, a.transportista, a.instalacion].filter(Boolean)
+                  const externos = [a.proveedor, a.astilladora, a.transportista, a.instalacion].filter(Boolean)
                   const tipo = ev.actor === 'Sistema' ? 'sistema'
                     : externos.includes(ev.actor) ? 'externo'
                     : 'interno'

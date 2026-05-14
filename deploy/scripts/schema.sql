@@ -33,14 +33,15 @@ CREATE TABLE IF NOT EXISTS albaranes (
 
 -- ── Firmas ────────────────────────────────────────────────────────
 CREATE TABLE IF NOT EXISTS firmas (
-  id            SERIAL PRIMARY KEY,
-  albaran_id    TEXT NOT NULL REFERENCES albaranes(id) ON DELETE CASCADE,
-  rol           TEXT NOT NULL,
-  actor         TEXT,
-  firmado       BOOLEAN NOT NULL DEFAULT FALSE,
-  fecha         TEXT,
-  firma_imagen  TEXT,
-  created_at    TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  id             SERIAL PRIMARY KEY,
+  albaran_id     TEXT NOT NULL REFERENCES albaranes(id) ON DELETE CASCADE,
+  rol            TEXT NOT NULL,
+  actor          TEXT,
+  nombre_persona TEXT,
+  firmado        BOOLEAN NOT NULL DEFAULT FALSE,
+  fecha          TEXT,
+  firma_imagen   TEXT,
+  created_at     TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   UNIQUE (albaran_id, rol)
 );
 
@@ -94,15 +95,16 @@ CREATE TABLE IF NOT EXISTS usuarios (
 
 -- ── Proveedores / Empresas ────────────────────────────────────────
 CREATE TABLE IF NOT EXISTS proveedores (
-  id        UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  nombre    TEXT NOT NULL,
-  tipo      TEXT NOT NULL,   -- proveedor | astilladora | transportista | instalacion
-  contacto  TEXT,
-  email     TEXT,
-  telefono  TEXT,
-  notas     TEXT,
-  activo    BOOLEAN NOT NULL DEFAULT TRUE,
-  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+  id           UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  nombre       TEXT NOT NULL,
+  tipo         TEXT NOT NULL,   -- proveedor | astilladora | transportista | instalacion
+  contacto     TEXT,
+  email        TEXT,
+  telefono     TEXT,
+  notas        TEXT,
+  activo       BOOLEAN NOT NULL DEFAULT TRUE,
+  firma_imagen TEXT,             -- URL a MinIO con la imagen de firma oficial
+  created_at   TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
 -- ── Logos PDF ─────────────────────────────────────────────────────

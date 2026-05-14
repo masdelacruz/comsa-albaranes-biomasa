@@ -13,11 +13,12 @@
 const { createClient } = require('@supabase/supabase-js')
 const { Pool }         = require('pg')
 const bcrypt           = require('bcrypt')
+const ws               = require('ws')
 
 const supabase = createClient(
   process.env.SUPABASE_URL,
   process.env.SUPABASE_SERVICE_KEY,
-  { auth: { autoRefreshToken: false, persistSession: false } }
+  { auth: { autoRefreshToken: false, persistSession: false }, realtime: { transport: ws } }
 )
 
 const pool = new Pool({
