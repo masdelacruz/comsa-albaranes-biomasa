@@ -13,10 +13,10 @@ export function useAlbaranActions(refetch, usuario) {
     return id
   }
 
-  const updateFirma = async (albaranId, rol, actor, nombrePersona = null, pesadaData = null, firmaImagen = null, campoData = null) => {
+  const updateFirma = async (albaranId, rol, actor, nombrePersona = null, pesadaData = null, firmaImagen = null, campoData = null, observacionesFirma = null) => {
     const { albaran, cerrado } = await api.post(
       `/albaranes/${albaranId}/firmas/${rol}`,
-      { actor, nombrePersona, firmaImagen, pesadaData, campoData }
+      { actor, nombrePersona, firmaImagen, pesadaData, campoData, observacionesFirma }
     )
     await notificarFirmaCompletada({ ...albaran, id: albaranId }, actor)
     if (cerrado) await notificarAlbaranCerrado({ ...albaran, id: albaranId })
@@ -53,5 +53,10 @@ export function useAlbaranActions(refetch, usuario) {
     await refetch()
   }
 
-  return { addAlbaran, updateFirma, simularFirmaOficina, subirDocumento, subirTicketPesada, actualizarAlbaran, borrarAlbaran }
+  const reabrirAlbaran = async (albaranId) => {
+    await api.post(`/albaranes/${albaranId}/reabrir`, {})
+    await refetch()
+  }
+
+  return { addAlbaran, updateFirma, simularFirmaOficina, subirDocumento, subirTicketPesada, actualizarAlbaran, borrarAlbaran, reabrirAlbaran }
 }

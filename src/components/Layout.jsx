@@ -3,7 +3,7 @@ import { Outlet, NavLink } from 'react-router-dom'
 import { LayoutDashboard, PlusCircle, Clock, BarChart2, Settings, LogOut, User, X, Mail, Briefcase, Shield, Users } from 'lucide-react'
 import './Layout.css'
 
-export default function Layout({ usuario, logout }) {
+export default function Layout({ usuario, logout, albaranes = [] }) {
   const [perfilOpen, setPerfilOpen]       = useState(false)
   const [confirmLogout, setConfirmLogout] = useState(false)
 
@@ -12,6 +12,8 @@ export default function Layout({ usuario, logout }) {
     : '?'
 
   const esSuperadmin = usuario?.nivel === 'superadmin'
+
+  const pendientesOficina = albaranes.filter(a => a.estado === 'pendiente_oficina').length
 
   const handleLogout = async () => {
     await logout()
@@ -42,6 +44,11 @@ export default function Layout({ usuario, logout }) {
         <nav className="sidebar-nav">
           <NavLink to="/dashboard"      className={({isActive}) => isActive ? 'nav-item active' : 'nav-item'}>
             <LayoutDashboard size={16} /><span>Dashboard</span>
+            {pendientesOficina > 0 && (
+              <span style={{marginLeft:'auto',background:'var(--blue-400)',color:'#fff',fontSize:10,fontWeight:700,borderRadius:99,padding:'1px 6px',minWidth:18,textAlign:'center',lineHeight:'16px'}}>
+                {pendientesOficina}
+              </span>
+            )}
           </NavLink>
           <NavLink to="/nuevo"          className={({isActive}) => isActive ? 'nav-item active' : 'nav-item'}>
             <PlusCircle size={16} /><span>Nuevo albarán</span>

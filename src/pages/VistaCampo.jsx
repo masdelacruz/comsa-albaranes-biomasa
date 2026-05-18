@@ -92,6 +92,7 @@ function PasoFirma({ rol, a, updateFirma, subirTicketPesada, onCompletado, total
 
   // Campos comunes
   const [nombrePersona,     setNombrePersona]    = useState('')
+  const [observaciones,     setObservaciones]    = useState('')
   const [matriculaTractora, setMatriculaTractora]= useState(a.matriculaTractora || '')
   const [matriculaRemolque, setMatriculaRemolque]= useState(a.matriculaRemolque || '')
   const [chofer,            setChofer]           = useState(a.chofer || '')
@@ -131,7 +132,7 @@ function PasoFirma({ rol, a, updateFirma, subirTicketPesada, onCompletado, total
       chofer: rol === 'transportista' ? chofer : null,
     } : null
 
-    await updateFirma(a.id, rol, empresaNombre, nombrePersona || null, pesadaData, firmaImagen, campoData)
+    await updateFirma(a.id, rol, empresaNombre, nombrePersona || null, pesadaData, firmaImagen, campoData, observaciones.trim() || null)
     setFirmado(true)
     setFirmando(false)
     setTimeout(() => onCompletado(), 1200)
@@ -292,6 +293,17 @@ function PasoFirma({ rol, a, updateFirma, subirTicketPesada, onCompletado, total
         </>
       )}
 
+      {/* ── OBSERVACIONES (opcional) ──────────────────────────────── */}
+      <div className="campo-field" style={{marginBottom:14}}>
+        <label>Observaciones <span style={{fontWeight:400,color:'var(--gray-400)'}}>(opcional)</span></label>
+        <textarea
+          placeholder="Incidencias, notas o comentarios sobre este paso..."
+          value={observaciones}
+          onChange={e => setObservaciones(e.target.value)}
+          style={{width:'100%',padding:'8px 10px',borderRadius:'var(--radius-sm)',border:'1px solid var(--gray-200)',fontSize:13,resize:'vertical',minHeight:60,fontFamily:'inherit'}}
+        />
+      </div>
+
       {/* ── FIRMA / SELLO EMPRESA ─────────────────────────────────── */}
       {requiereFirma && (
         <div style={{marginBottom:14}}>
@@ -346,7 +358,22 @@ export default function VistaCampo({ albaranes, updateFirma, subirTicketPesada }
   const [todoCompletado,    setTodoCompletado]     = useState(false)
 
   const a = albaranes.find(x => x.id === id)
+
+  // Restaurar rol guardado en sessionStorage (evita re-selección si se recarga la página)
+  useEffect(() => {
+    if (!a || rolesParam) return
+    const guardado = sessionStorage.getItem(`campo_rol_${id}`)
+    if (guardado && ROLES_CONFIG[guardado] && a.firmas?.[guardado] && !a.firmas[guardado].firmado) {
+      setRolSeleccionado(guardado)
+    }
+  }, [id, a, rolesParam])
+
   if (!a) return <div style={{padding:40,textAlign:'center',color:'#999'}}>Albarán no encontrado.</div>
+
+  const seleccionarRol = (r) => {
+    setRolSeleccionado(r)
+    sessionStorage.setItem(`campo_rol_${id}`, r)
+  }
 
   const rolesDirectos = rolesParam
     ? rolesParam.split(',').filter(r => ROLES_CONFIG[r])
@@ -355,6 +382,7 @@ export default function VistaCampo({ albaranes, updateFirma, subirTicketPesada }
   const ROLES_SELECTOR = ROLES_ORDEN.filter(r => a.firmas?.[r] !== undefined)
 
   const handleCompletadoPaso = (rolCompletado) => {
+    sessionStorage.removeItem(`campo_rol_${id}`)
     setPasosCompletados(prev => [...prev, rolCompletado])
     if (rolesDirectos && pasoActual < rolesDirectos.length - 1) {
       setTimeout(() => setPasoActual(prev => prev + 1), 1400)
@@ -464,7 +492,7 @@ export default function VistaCampo({ albaranes, updateFirma, subirTicketPesada }
             return (
               <button key={r} className={`rol-btn ${yaFirmado ? 'done' : ''}`}
                 style={{borderColor: yaFirmado ? 'var(--gray-200)' : config.color}}
-                onClick={() => !yaFirmado && setRolSeleccionado(r)}>
+                onClick={() => !yaFirmado && seleccionarRol(r)}>
                 <div className="rol-btn-left">
                   <div className="rol-btn-icon" style={{background: yaFirmado ? 'var(--gray-100)' : config.bg}}>
                     {yaFirmado ? <CheckCircle size={18} color="var(--green-400)" /> : config.icon}

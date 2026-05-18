@@ -57,17 +57,17 @@ function VistaCampoPublica() {
 
 function AppConDatos({ usuario, logout }) {
   const { albaranes, loading: dataLoading, refetch } = useAlbaranes()
-  const { addAlbaran, updateFirma, simularFirmaOficina, subirDocumento, subirTicketPesada, actualizarAlbaran, borrarAlbaran } = useAlbaranActions(refetch, usuario)
+  const { addAlbaran, updateFirma, simularFirmaOficina, subirDocumento, subirTicketPesada, actualizarAlbaran, borrarAlbaran, reabrirAlbaran } = useAlbaranActions(refetch, usuario)
 
   if (dataLoading) return <Spinner />
 
   return (
     <Routes>
-      <Route path="/" element={<Layout usuario={usuario} logout={logout} />}>
+      <Route path="/" element={<Layout usuario={usuario} logout={logout} albaranes={albaranes} />}>
         <Route index element={<Navigate to="/dashboard" replace />} />
         <Route path="dashboard"      element={<Dashboard albaranes={albaranes} usuario={usuario} borrarAlbaran={borrarAlbaran} />} />
         <Route path="nuevo"          element={<NuevoAlbaran addAlbaran={addAlbaran} usuario={usuario} />} />
-        <Route path="albaran/:id"    element={<DetalleAlbaran albaranes={albaranes} simularFirma={simularFirmaOficina} updateFirma={updateFirma} subirDocumento={subirDocumento} subirTicketPesada={subirTicketPesada} actualizarAlbaran={actualizarAlbaran} borrarAlbaran={borrarAlbaran} usuario={usuario} />} />
+        <Route path="albaran/:id"    element={<DetalleAlbaran albaranes={albaranes} simularFirma={simularFirmaOficina} updateFirma={updateFirma} subirDocumento={subirDocumento} subirTicketPesada={subirTicketPesada} actualizarAlbaran={actualizarAlbaran} borrarAlbaran={borrarAlbaran} reabrirAlbaran={reabrirAlbaran} usuario={usuario} />} />
         <Route path="historial"      element={<Historial albaranes={albaranes} usuario={usuario} refetch={refetch} />} />
         <Route path="estadisticas"   element={<Estadisticas albaranes={albaranes} />} />
         <Route path="administracion" element={<Administracion usuario={usuario} />} />

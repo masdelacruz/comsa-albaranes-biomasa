@@ -28,6 +28,8 @@ CREATE TABLE IF NOT EXISTS albaranes (
   matricula_remolque  TEXT,
   chofer              TEXT,
   certificacion       TEXT[],
+  grupo_id            TEXT,        -- agrupa albaranes creados juntos (flota)
+  camion_orden        INTEGER DEFAULT 1,  -- posición dentro del grupo
   created_at          TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
@@ -42,7 +44,8 @@ CREATE TABLE IF NOT EXISTS firmas (
   fecha          TEXT,
   firma_imagen   TEXT,
   created_at     TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-  ip_origen      TEXT,
+  ip_origen           TEXT,
+  observaciones_firma TEXT,
   UNIQUE (albaran_id, rol)
 );
 

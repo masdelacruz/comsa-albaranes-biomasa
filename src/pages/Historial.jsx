@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Download, Search, FileSpreadsheet, CheckSquare, Upload, Trash2, Square } from 'lucide-react'
 import ExcelJS from 'exceljs'
@@ -29,6 +29,8 @@ export default function Historial({ albaranes, usuario, refetch }) {
   const [descargando,     setDescargando]     = useState(false)
   const [confirmEliminar, setConfirmEliminar] = useState(false)
   const [eliminando,      setEliminando]      = useState(false)
+  const [pagina,          setPagina]          = useState(1)
+  const POR_PAGINA = 25
 
   const esSuperadmin = usuario?.nivel === 'superadmin'
 
@@ -92,6 +94,12 @@ export default function Historial({ albaranes, usuario, refetch }) {
     if (filtroFechaHasta && a.fecha > filtroFechaHasta) return false
     return true
   }), [albaranes, busqueda, filtroInstalacion, filtroAstilladora, filtroEstado, filtroFechaDesde, filtroFechaHasta])
+
+  // Resetear página al cambiar filtros
+  useEffect(() => { setPagina(1) }, [busqueda, filtroInstalacion, filtroAstilladora, filtroEstado, filtroFechaDesde, filtroFechaHasta])
+
+  const totalPaginas = Math.ceil(filtrados.length / POR_PAGINA)
+  const paginados    = filtrados.slice((pagina - 1) * POR_PAGINA, pagina * POR_PAGINA)
 
   const totalPesoNeto = filtrados.reduce((acc, a) => {
     if (a.pesada.entrada && a.pesada.salida) return acc + (a.pesada.entrada - a.pesada.salida)
@@ -232,6 +240,7 @@ export default function Historial({ albaranes, usuario, refetch }) {
           <select value={filtroEstado} onChange={e => setFiltroEstado(e.target.value)}>
             <option value="">Todos los estados</option>
             <option value="pendiente_campo">Pendiente campo</option>
+            <option value="pendiente_oficina">Pendiente oficina</option>
             <option value="en_transito">En tránsito</option>
             <option value="humedad_pendiente">Humedad pendiente</option>
             <option value="cerrado">Cerrado</option>
@@ -292,7 +301,7 @@ export default function Historial({ albaranes, usuario, refetch }) {
             <tbody>
               {filtrados.length === 0 ? (
                 <tr><td colSpan={seleccionando ? 12 : 11} className="empty-state">No hay albaranes con los filtros seleccionados</td></tr>
-              ) : filtrados.map(a => (
+              ) : paginados.map(a => (
                 <tr key={a.id} onClick={() => seleccionando ? toggleSeleccion(a.id) : navigate(`/albaran/${a.id}`)}
                   style={{cursor:'pointer', background: seleccionados.has(a.id) ? 'var(--green-50)' : undefined}}>
                   {seleccionando && (
@@ -316,6 +325,31 @@ export default function Historial({ albaranes, usuario, refetch }) {
             </tbody>
           </table>
         </div>
+
+        {/* Paginación */}
+        {totalPaginas > 1 && (
+          <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',padding:'12px 4px',marginTop:8}}>
+            <div style={{fontSize:12,color:'var(--gray-500)'}}>
+              Mostrando {(pagina-1)*POR_PAGINA+1}–{Math.min(pagina*POR_PAGINA, filtrados.length)} de {filtrados.length}
+            </div>
+            <div style={{display:'flex',gap:4}}>
+              <button className="btn" style={{fontSize:12,padding:'4px 10px'}} disabled={pagina===1} onClick={() => setPagina(1)}>«</button>
+              <button className="btn" style={{fontSize:12,padding:'4px 10px'}} disabled={pagina===1} onClick={() => setPagina(p => p-1)}>‹</button>
+              {Array.from({length:Math.min(5,totalPaginas)}, (_, i) => {
+                const inicio = Math.max(1, Math.min(pagina-2, totalPaginas-4))
+                const p = inicio + i
+                if (p > totalPaginas) return null
+                return (
+                  <button key={p} className={`btn${p===pagina?' btn-primary':''}`} style={{fontSize:12,padding:'4px 10px'}} onClick={() => setPagina(p)}>
+                    {p}
+                  </button>
+                )
+              })}
+              <button className="btn" style={{fontSize:12,padding:'4px 10px'}} disabled={pagina===totalPaginas} onClick={() => setPagina(p => p+1)}>›</button>
+              <button className="btn" style={{fontSize:12,padding:'4px 10px'}} disabled={pagina===totalPaginas} onClick={() => setPagina(totalPaginas)}>»</button>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Pill flotante de acciones masivas — posición fija, no afecta al layout */}

@@ -1,8 +1,9 @@
 export const ESTADOS = {
-  pendiente_campo:   { label: 'Pendiente campo',  color: 'amber' },
-  en_transito:       { label: 'En tránsito',       color: 'blue'  },
-  humedad_pendiente: { label: 'Humedad pendiente', color: 'red'   },
-  cerrado:           { label: 'Cerrado',            color: 'green' },
+  pendiente_campo:   { label: 'Pendiente campo',   color: 'amber' },
+  pendiente_oficina: { label: 'Pendiente oficina', color: 'blue'  },
+  en_transito:       { label: 'En tránsito',        color: 'blue'  },
+  humedad_pendiente: { label: 'Humedad pendiente',  color: 'red'   },
+  cerrado:           { label: 'Cerrado',             color: 'green' },
 }
 
 export function Badge({ estado }) {

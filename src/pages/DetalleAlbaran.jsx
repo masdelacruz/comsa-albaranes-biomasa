@@ -1,6 +1,6 @@
 import { useRef, useState, useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
-import { ExternalLink, CheckCircle, Clock, FileDown, Upload, Eye, FileText, AlertTriangle, Copy, Pencil, X, Check, Trash2 } from 'lucide-react'
+import { ExternalLink, CheckCircle, Clock, FileDown, Upload, Eye, FileText, AlertTriangle, Copy, Pencil, X, Check, Trash2, MapPin, Share2, Truck, RotateCcw } from 'lucide-react'
 import { Badge } from '../components/Badge'
 import { generarPDF } from '../utils/generarPDF'
 import { api } from '../lib/api'
@@ -20,7 +20,7 @@ const FIRMA_LABELS = {
 
 const TIPOS_OP = ['Opció 1 — Compra en monte / plataforma', 'Opció 2 — Proveedor directo']
 
-export default function DetalleAlbaran({ albaranes, simularFirma, updateFirma, subirDocumento, subirTicketPesada, actualizarAlbaran, borrarAlbaran, usuario }) {
+export default function DetalleAlbaran({ albaranes, simularFirma, updateFirma, subirDocumento, subirTicketPesada, actualizarAlbaran, borrarAlbaran, reabrirAlbaran, usuario }) {
   const { id } = useParams()
   const navigate = useNavigate()
   const fileRefs    = useRef({})
@@ -42,6 +42,8 @@ export default function DetalleAlbaran({ albaranes, simularFirma, updateFirma, s
   const [confirmBorrar, setConfirmBorrar]   = useState(false)
   const [firmaOficinaModal, setFirmaOficinaModal] = useState(false)
   const [firmandoOficina, setFirmandoOficina]     = useState(false)
+  const [confirmReabrir,  setConfirmReabrir]      = useState(false)
+  const [reabriendo,      setReabriendo]          = useState(false)
 
   const mostrarToast = (msg) => {
     setToast(msg)
@@ -67,7 +69,13 @@ export default function DetalleAlbaran({ albaranes, simularFirma, updateFirma, s
   if (!a) return <div style={{padding:40,color:'var(--gray-400)'}}>Albarán no encontrado.</div>
 
   const esSuperadmin = usuario?.nivel === 'superadmin'
-  const puedeEditar  = true
+  const puedeEditar  = esSuperadmin || a.estado !== 'cerrado'
+
+  // Info de flota
+  const flotaAlbaranes = a.grupoId
+    ? albaranes.filter(x => x.grupoId === a.grupoId).sort((x, y) => (x.camionOrden || 1) - (y.camionOrden || 1))
+    : []
+  const esFlota = flotaAlbaranes.length > 1
 
   const pesoNeto = a.pesada.entrada && a.pesada.salida
     ? (a.pesada.entrada - a.pesada.salida).toLocaleString('es-ES') + ' kg' : '—'
@@ -133,6 +141,19 @@ export default function DetalleAlbaran({ albaranes, simularFirma, updateFirma, s
     }
   }
 
+  const handleReabrir = async () => {
+    setReabriendo(true)
+    try {
+      await reabrirAlbaran(a.id)
+      setConfirmReabrir(false)
+      mostrarToast('Albarán reabierto ✓')
+    } catch {
+      mostrarToast('Error al reabrir. Inténtalo de nuevo.')
+    } finally {
+      setReabriendo(false)
+    }
+  }
+
   const subirDoc = async (docNombre, fichero) => {
     if (!fichero) return
     setSubiendo(prev => ({ ...prev, [docNombre]: true }))
@@ -187,6 +208,8 @@ export default function DetalleAlbaran({ albaranes, simularFirma, updateFirma, s
       especie:           a.especie           || '',
       tipoBiomasa:       a.tipoBiomasa       || '',
       origen:            a.origen            || '',
+      mapsOrigen:        a.mapsOrigen        || '',
+      mapsDestino:       a.mapsDestino       || '',
       permiso:           a.permiso           || '',
       chofer:            a.chofer            || '',
       matriculaTractora: a.matriculaTractora || '',
@@ -209,6 +232,8 @@ export default function DetalleAlbaran({ albaranes, simularFirma, updateFirma, s
         especie:            formDatos.especie           || null,
         tipo_biomasa:       formDatos.tipoBiomasa       || null,
         origen:             formDatos.origen            || null,
+        maps_origen:        formDatos.mapsOrigen        || null,
+        maps_destino:       formDatos.mapsDestino       || null,
         permiso:            formDatos.permiso           || null,
         chofer:             formDatos.chofer            || null,
         matricula_tractora: formDatos.matriculaTractora || null,
@@ -249,6 +274,15 @@ export default function DetalleAlbaran({ albaranes, simularFirma, updateFirma, s
   const setD = (k, v) => setFormDatos(p => ({ ...p, [k]: v }))
   const setP = (k, v) => setFormPesada(p => ({ ...p, [k]: v }))
 
+  const compartirUrl = (url, medio) => {
+    const texto = encodeURIComponent(`Albarán ${a.id} — ${a.astilladora || a.proveedor} → ${a.instalacion}`)
+    const enlace = encodeURIComponent(url)
+    if (medio === 'whatsapp')  window.open(`https://wa.me/?text=${texto}%20${enlace}`, '_blank')
+    if (medio === 'telegram')  window.open(`https://t.me/share/url?url=${enlace}&text=${texto}`, '_blank')
+    if (medio === 'email')     window.open(`mailto:?subject=Albarán ${a.id}&body=${decodeURIComponent(texto)}%0A%0A${url}`, '_blank')
+    if (medio === 'copiar')    copiar(url, 'siguiente')
+  }
+
   return (
     <>
     <div className="detalle-page">
@@ -285,11 +319,21 @@ export default function DetalleAlbaran({ albaranes, simularFirma, updateFirma, s
 
       <div className="page-header">
 <div style={{display:'flex',alignItems:'center',justifyContent:'space-between'}}>
-          <div style={{display:'flex',alignItems:'center',gap:12}}>
+          <div style={{display:'flex',alignItems:'center',gap:12,flexWrap:'wrap'}}>
             <div className="page-title" style={{fontFamily:'var(--font-mono)',fontSize:18}}>{a.id}</div>
             <Badge estado={a.estado} />
+            {esFlota && (
+              <div style={{display:'inline-flex',alignItems:'center',gap:5,padding:'3px 10px',borderRadius:99,background:'var(--blue-50)',border:'1px solid var(--blue-100)',fontSize:12,fontWeight:600,color:'var(--blue-700)'}}>
+                <Truck size={12} /> Camión {a.camionOrden || 1} de {flotaAlbaranes.length}
+              </div>
+            )}
           </div>
           <div style={{display:'flex',gap:8}}>
+            {esSuperadmin && a.estado === 'cerrado' && (
+              <button className="btn" style={{color:'var(--blue-600)',borderColor:'var(--blue-100)'}} onClick={() => setConfirmReabrir(true)}>
+                <RotateCcw size={14} /> Reabrir
+              </button>
+            )}
             {a.certificacion?.includes('SURE') ? (
               <div style={{position:'relative'}}>
                 <button className="btn" onClick={() => setPdfMenuOpen(o => !o)}>
@@ -425,6 +469,14 @@ export default function DetalleAlbaran({ albaranes, simularFirma, updateFirma, s
                     <input className="edit-input" value={formDatos.origen} onChange={e => setD('origen', e.target.value)} placeholder="Paraje / término municipal" />
                   </div>
                   <div className="edit-field">
+                    <label className="edit-label">Maps origen</label>
+                    <input className="edit-input" type="url" value={formDatos.mapsOrigen} onChange={e => setD('mapsOrigen', e.target.value)} placeholder="https://maps.google.com/..." />
+                  </div>
+                  <div className="edit-field">
+                    <label className="edit-label">Maps destino</label>
+                    <input className="edit-input" type="url" value={formDatos.mapsDestino} onChange={e => setD('mapsDestino', e.target.value)} placeholder="https://maps.google.com/..." />
+                  </div>
+                  <div className="edit-field">
                     <label className="edit-label">Permiso / Ref.</label>
                     <input className="edit-input" value={formDatos.permiso} onChange={e => setD('permiso', e.target.value)} placeholder="Nº permiso o SURE" />
                   </div>
@@ -446,26 +498,50 @@ export default function DetalleAlbaran({ albaranes, simularFirma, updateFirma, s
                   </div>
                 </div>
               ) : (
-                [
-                  ['Tipo operación',      a.tipo],
-                  ['Certificación',       a.certificacion || '—'],
-                  ['Proveedor',           a.proveedor || '—'],
-                  ['Astilladora',         a.astilladora || '—'],
-                  ['Transportista',       a.transportista || '—'],
-                  ['Instalación destino', a.instalacion],
-                  ['Especie',             `${a.especie} · ${a.tipoBiomasa}`],
-                  ['Origen',              a.origen || '—'],
-                  ['Permiso / Ref.',      a.permiso || '—'],
-                  ['Chófer',              a.chofer || '—'],
-                  ['Matrícula tractora',  a.matriculaTractora || '—'],
-                  ['Matrícula remolque',  a.matriculaRemolque || '—'],
-                  ['Observaciones',       a.observaciones || '—'],
-                ].map(([k, v]) => (
-                  <div key={k} className="detalle-row">
-                    <span className="detalle-key">{k}</span>
-                    <span className="detalle-val">{v}</span>
-                  </div>
-                ))
+                <>
+                  {[
+                    ['Tipo operación',      a.tipo],
+                    ['Certificación',       a.certificacion || '—'],
+                    ['Proveedor',           a.proveedor || '—'],
+                    ['Astilladora',         a.astilladora || '—'],
+                    ['Transportista',       a.transportista || '—'],
+                    ['Instalación destino', a.instalacion],
+                    ['Especie',             `${a.especie} · ${a.tipoBiomasa}`],
+                    ['Origen',              a.origen || '—'],
+                    ['Permiso / Ref.',      a.permiso || '—'],
+                    ['Chófer',              a.chofer || '—'],
+                    ['Matrícula tractora',  a.matriculaTractora || '—'],
+                    ['Matrícula remolque',  a.matriculaRemolque || '—'],
+                    ['Observaciones',       a.observaciones || '—'],
+                  ].map(([k, v]) => (
+                    <div key={k} className="detalle-row">
+                      <span className="detalle-key">{k}</span>
+                      <span className="detalle-val">{v}</span>
+                    </div>
+                  ))}
+                  {a.mapsOrigen && (
+                    <div className="detalle-row">
+                      <span className="detalle-key">Maps origen</span>
+                      <span className="detalle-val">
+                        <a href={a.mapsOrigen} target="_blank" rel="noreferrer"
+                          style={{display:'inline-flex',alignItems:'center',gap:4,color:'var(--blue-700)',fontWeight:500,fontSize:12}}>
+                          <MapPin size={11} /> Ver en Maps
+                        </a>
+                      </span>
+                    </div>
+                  )}
+                  {a.mapsDestino && (
+                    <div className="detalle-row">
+                      <span className="detalle-key">Maps destino</span>
+                      <span className="detalle-val">
+                        <a href={a.mapsDestino} target="_blank" rel="noreferrer"
+                          style={{display:'inline-flex',alignItems:'center',gap:4,color:'var(--blue-700)',fontWeight:500,fontSize:12}}>
+                          <MapPin size={11} /> Ver en Maps
+                        </a>
+                      </span>
+                    </div>
+                  )}
+                </>
               )}
             </div>
 
@@ -682,25 +758,53 @@ export default function DetalleAlbaran({ albaranes, simularFirma, updateFirma, s
             </div>
 
             <div className="card" style={{marginBottom:14}}>
-              <div className="section-label">Enlace de campo</div>
-              {urlSiguientePaso && (
-                <div style={{background:'var(--green-50)',border:'1px solid var(--green-100)',borderRadius:'var(--radius-md)',padding:'10px 12px',marginBottom:10}}>
+              <div className="section-label" style={{display:'flex',alignItems:'center',gap:5}}>
+                <Share2 size={12} /> Enlace de campo
+              </div>
+              {urlSiguientePaso ? (
+                <div style={{background:'var(--green-50)',border:'1px solid var(--green-100)',borderRadius:'var(--radius-md)',padding:'10px 12px'}}>
                   <div style={{fontSize:11,fontWeight:600,color:'var(--green-600)',marginBottom:4}}>
                     Siguiente paso — {getRolLabel(siguientePaso)}
                   </div>
-                  <code style={{fontSize:11,color:'var(--green-600)',wordBreak:'break-all',display:'block',marginBottom:8}}>
+                  <code style={{fontSize:11,color:'var(--green-600)',wordBreak:'break-all',display:'block',marginBottom:10}}>
                     {urlSiguientePaso}
                   </code>
-                  <div style={{display:'flex',gap:6}}>
+                  {/* Botones de copia/apertura */}
+                  <div style={{display:'flex',gap:5,marginBottom:8}}>
                     <button className="btn btn-primary" style={{flex:1,fontSize:11,padding:'5px 8px'}}
                       onClick={() => copiar(urlSiguientePaso, 'siguiente')}>
-                      {copiado === 'siguiente' ? <><CheckCircle size={11} /> Copiado</> : <><Copy size={11} /> Copiar enlace siguiente paso</>}
+                      {copiado === 'siguiente' ? <><CheckCircle size={11} /> Copiado</> : <><Copy size={11} /> Copiar</>}
                     </button>
                     <button className="btn" style={{fontSize:11,padding:'5px 8px'}}
                       onClick={() => window.open(urlSiguientePaso, '_blank')}>
                       <ExternalLink size={11} />
                     </button>
                   </div>
+                  {/* Compartir */}
+                  <div style={{fontSize:10,fontWeight:600,textTransform:'uppercase',letterSpacing:'0.5px',color:'var(--gray-400)',marginBottom:6}}>
+                    Compartir por
+                  </div>
+                  <div style={{display:'flex',gap:5}}>
+                    <button onClick={() => compartirUrl(urlSiguientePaso, 'whatsapp')}
+                      style={{flex:1,display:'inline-flex',alignItems:'center',justifyContent:'center',gap:4,padding:'6px 8px',borderRadius:'var(--radius-sm)',border:'1px solid #d1fae5',background:'#ecfdf5',color:'#065f46',fontSize:11,fontWeight:500,cursor:'pointer'}}>
+                      <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/><path d="M11.99 2C6.477 2 2 6.477 2 11.99c0 1.762.476 3.411 1.305 4.83L2 22l5.335-1.391A9.953 9.953 0 0011.99 22C17.523 22 22 17.523 22 12.01 22 6.477 17.523 2 11.99 2zm0 18.002a7.966 7.966 0 01-4.073-1.113l-.29-.173-3.017.787.81-2.945-.19-.302A7.96 7.96 0 014.002 12c0-4.406 3.583-7.998 7.988-7.998 4.406 0 7.998 3.592 7.998 7.998 0 4.406-3.592 7.998-7.998 8.002z"/></svg>
+                      WhatsApp
+                    </button>
+                    <button onClick={() => compartirUrl(urlSiguientePaso, 'telegram')}
+                      style={{flex:1,display:'inline-flex',alignItems:'center',justifyContent:'center',gap:4,padding:'6px 8px',borderRadius:'var(--radius-sm)',border:'1px solid #bfdbfe',background:'#eff6ff',color:'#1e40af',fontSize:11,fontWeight:500,cursor:'pointer'}}>
+                      <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0C5.373 0 0 5.373 0 12s5.373 12 12 12 12-5.373 12-12S18.627 0 12 0zm5.562 8.248l-1.97 9.289c-.145.658-.537.818-1.084.508l-3-2.21-1.447 1.394c-.16.16-.295.295-.605.295l.213-3.053 5.56-5.023c.242-.213-.054-.333-.373-.12L7.48 13.802l-2.95-.924c-.641-.203-.654-.641.136-.949l11.526-4.443c.537-.194 1.006.131.37.762z"/></svg>
+                      Telegram
+                    </button>
+                    <button onClick={() => compartirUrl(urlSiguientePaso, 'email')}
+                      style={{flex:1,display:'inline-flex',alignItems:'center',justifyContent:'center',gap:4,padding:'6px 8px',borderRadius:'var(--radius-sm)',border:'var(--border)',background:'var(--gray-50)',color:'var(--gray-700)',fontSize:11,fontWeight:500,cursor:'pointer'}}>
+                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="m22 7-10 7L2 7"/></svg>
+                      Email
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <div style={{fontSize:12,color:'var(--gray-400)',fontStyle:'italic'}}>
+                  {a.estado === 'cerrado' ? 'Todas las firmas completadas' : 'Todas las firmas externas completadas — pendiente de firma oficina'}
                 </div>
               )}
             </div>
@@ -781,6 +885,37 @@ export default function DetalleAlbaran({ albaranes, simularFirma, updateFirma, s
               onClick={async () => { await borrarAlbaran(a.id); setConfirmBorrar(false); navigate('/dashboard') }}
             >
               <Trash2 size={14} /> Borrar definitivamente
+            </button>
+          </div>
+        </div>
+      </div>
+    )}
+
+    {confirmReabrir && (
+      <div style={{position:'fixed',inset:0,background:'rgba(0,0,0,0.4)',display:'flex',alignItems:'center',justifyContent:'center',zIndex:200,padding:20}}>
+        <div style={{background:'#fff',borderRadius:'var(--radius-xl)',padding:28,width:'100%',maxWidth:400,boxShadow:'0 20px 60px rgba(0,0,0,0.15)'}}>
+          <div style={{display:'flex',alignItems:'center',gap:10,marginBottom:12}}>
+            <RotateCcw size={20} color='var(--blue-400)' />
+            <span style={{fontSize:16,fontWeight:600}}>Reabrir albarán</span>
+          </div>
+          <p style={{fontSize:13,color:'var(--gray-600)',marginBottom:8}}>
+            El albarán <strong>{a.id}</strong> volverá al estado <strong>Pendiente oficina</strong>.
+          </p>
+          <p style={{fontSize:13,color:'var(--gray-600)',marginBottom:20}}>
+            La firma de oficina quedará borrada. Las firmas externas se conservan.
+          </p>
+          <div style={{display:'flex',gap:8,justifyContent:'flex-end'}}>
+            <button className="btn" onClick={() => setConfirmReabrir(false)} disabled={reabriendo}>Cancelar</button>
+            <button
+              className="btn"
+              style={{background:'var(--blue-400)',color:'#fff',borderColor:'var(--blue-400)'}}
+              onClick={handleReabrir}
+              disabled={reabriendo}
+            >
+              {reabriendo
+                ? <><div style={{width:12,height:12,border:'2px solid #fff',borderTopColor:'transparent',borderRadius:'50%',animation:'spin 0.6s linear infinite'}} /> Reabriendo...</>
+                : <><RotateCcw size={14} /> Reabrir</>
+              }
             </button>
           </div>
         </div>

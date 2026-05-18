@@ -47,12 +47,13 @@ export default function NuevoAlbaran({ addAlbaran }) {
   const handleGuardar = async () => {
     setGuardado(true)
     if (numCamiones === 1) {
-      const id = await addAlbaran({ ...form, numCamiones: 1 })
+      const id = await addAlbaran({ ...form, numCamiones: 1, grupoId: null, camionOrden: 1 })
       setTimeout(() => navigate(`/albaran/${id}`), 1200)
     } else {
+      const grupoId = crypto.randomUUID()
       for (let i = 0; i < numCamiones; i++) {
         setProgreso(i + 1)
-        await addAlbaran({ ...form, numCamiones: 1 })
+        await addAlbaran({ ...form, numCamiones: 1, grupoId, camionOrden: i + 1 })
       }
       setTimeout(() => navigate('/dashboard'), 1200)
     }

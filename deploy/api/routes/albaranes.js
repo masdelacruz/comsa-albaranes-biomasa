@@ -2,8 +2,11 @@ const router = require('express').Router()
 const pool   = require('../db')
 const { requireAuth } = require('./auth')
 
-// Rutas de /campo/:id son públicas — todo lo demás requiere auth
-// El frontend llama con o sin token según el contexto.
+// ── Helper: normaliza nombre a Title Case ─────────────────────────
+function toTitleCase(str) {
+  if (!str || typeof str !== 'string') return str
+  return str.toLowerCase().replace(/\b\w/g, c => c.toUpperCase())
+}
 
 // ── Helper: arma el objeto completo de un albarán ─────────────────
 async function fetchOne(id) {
@@ -16,7 +19,6 @@ async function fetchOne(id) {
   ])
   const a = aRes.rows[0]
   if (!a) return null
-  // Carga firmas de empresa (para campo click-to-sign)
   const empresasNombres = [a.proveedor, a.astilladora, a.transportista, a.instalacion].filter(Boolean)
   const empresaFirmaMap = {}
   if (empresasNombres.length) {
@@ -37,6 +39,7 @@ function buildAlbaran(a, firmas, pesada, docs, actividad, empresaFirmaMap = {}) 
       nombrePersona: f.nombre_persona || null,
       firmaImagen: f.firma_imagen || null,
       ipOrigen: f.ip_origen || null,
+      observacionesFirma: f.observaciones_firma || null,
     }
   })
   const p = pesada || {}
@@ -50,7 +53,9 @@ function buildAlbaran(a, firmas, pesada, docs, actividad, empresaFirmaMap = {}) 
     }
   })
   return {
-    id: a.id, fecha: a.fecha ? new Date(a.fecha).toISOString().slice(0,10) : null, hora: a.hora, numCamiones: a.num_camiones,
+    id: a.id, fecha: a.fecha ? new Date(a.fecha).toISOString().slice(0,10) : null,
+    hora: a.hora, numCamiones: a.num_camiones,
+    grupoId: a.grupo_id || null, camionOrden: a.camion_orden || 1,
     tipo: a.tipo, proveedor: a.proveedor, astilladora: a.astilladora,
     transportista: a.transportista, instalacion: a.instalacion,
     especie: a.especie, tipoBiomasa: a.tipo_biomasa,
@@ -86,7 +91,6 @@ router.get('/', requireAuth, async (_req, res) => {
     pool.query(`SELECT * FROM actividad WHERE albaran_id IN (${ids}) ORDER BY created_at ASC`),
   ])
 
-  // Carga imágenes de firma/sello de todas las empresas referenciadas (una sola query)
   const allNombres = [...new Set(
     albs.flatMap(a => [a.proveedor, a.astilladora, a.transportista, a.instalacion].filter(Boolean))
   )]
@@ -130,7 +134,6 @@ router.post('/', requireAuth, async (req, res) => {
     ? ['Autodeclaración', 'Acuerdo de cesión', 'Contrato prestación servicios', 'Permiso de corta']
     : ['Autodeclaración', 'Certificado SURE', 'Permiso de obra', 'Contrato prestación servicios']
 
-  // Normalizar certificacion: puede llegar como string 'SURE,PEFC' o array o vacío
   const certArray = Array.isArray(f.certificacion)
     ? f.certificacion
     : (typeof f.certificacion === 'string' && f.certificacion
@@ -145,27 +148,26 @@ router.post('/', requireAuth, async (req, res) => {
       `INSERT INTO albaranes (id,fecha,hora,num_camiones,tipo,proveedor,astilladora,
        transportista,instalacion,especie,tipo_biomasa,origen,permiso,observaciones,
        estado,maps_origen,maps_destino,matricula_tractora,matricula_remolque,
-       chofer,certificacion)
-       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,'pendiente_campo',$15,$16,$17,$18,$19,$20)`,
+       chofer,certificacion,grupo_id,camion_orden)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,'pendiente_campo',$15,$16,$17,$18,$19,$20,$21,$22)`,
       [id, f.fecha, f.hora, f.numCamiones, f.tipo, f.proveedor, f.astilladora,
        f.transportista, f.instalacion, f.especie, f.tipoBiomasa, f.origen,
        f.permiso, f.observaciones, f.mapsOrigen, f.mapsDestino,
        f.matriculaTractora, f.matriculaRemolque, f.chofer,
-       certArray]
+       certArray, f.grupoId || null, f.camionOrden || 1]
     )
 
-    // Firmas — orden: proveedor → astilladora (Op1) → transportista (Op1) → instalacion → oficina
     const firmasBase = []
-    if (f.proveedor)              firmasBase.push({ rol:'proveedor',     actor:f.proveedor,    firmado:false, fecha:null })
-    if (esOp1 && f.astilladora)   firmasBase.push({ rol:'astilladora',   actor:f.astilladora,  firmado:false, fecha:null })
-    if (esOp1 && f.transportista) firmasBase.push({ rol:'transportista', actor:f.transportista,firmado:false, fecha:null })
-    if (f.instalacion)            firmasBase.push({ rol:'instalacion',   actor:f.instalacion,  firmado:false, fecha:null })
-    firmasBase.push({ rol:'oficina', actor: f.actorNombre || 'Oficina', firmado:false, fecha:null })
+    if (f.proveedor)              firmasBase.push({ rol:'proveedor',     actor:f.proveedor })
+    if (esOp1 && f.astilladora)   firmasBase.push({ rol:'astilladora',   actor:f.astilladora })
+    if (esOp1 && f.transportista) firmasBase.push({ rol:'transportista', actor:f.transportista })
+    if (f.instalacion)            firmasBase.push({ rol:'instalacion',   actor:f.instalacion })
+    firmasBase.push({ rol:'oficina', actor: f.actorNombre || 'Oficina' })
 
     for (const fr of firmasBase) {
       await client.query(
-        'INSERT INTO firmas (albaran_id,rol,actor,firmado,fecha) VALUES ($1,$2,$3,$4,$5)',
-        [id, fr.rol, fr.actor, fr.firmado, fr.fecha]
+        'INSERT INTO firmas (albaran_id,rol,actor,firmado,fecha) VALUES ($1,$2,$3,false,null)',
+        [id, fr.rol, fr.actor]
       )
     }
 
@@ -200,9 +202,17 @@ router.patch('/:id', requireAuth, async (req, res) => {
   const { id } = req.params
   const fecha = new Date().toLocaleString('es-ES')
   const actorNombre = req.user.nombre || 'Oficina'
+  const esSuperadmin = req.user.nivel === 'superadmin'
+
+  // Bloquear edición de albarán cerrado para usuarios no-superadmin
+  if (!esSuperadmin) {
+    const { rows } = await pool.query('SELECT estado FROM albaranes WHERE id=$1', [id])
+    if (rows[0]?.estado === 'cerrado') {
+      return res.status(403).json({ error: 'El albarán está cerrado y no puede editarse.' })
+    }
+  }
 
   if (campos && Object.keys(campos).length) {
-    // Normalizar certificacion si viene como string
     if ('certificacion' in campos) {
       const c = campos.certificacion
       campos.certificacion = Array.isArray(c) ? c
@@ -228,33 +238,69 @@ router.patch('/:id', requireAuth, async (req, res) => {
   res.json(albaran)
 })
 
-// Helper: normaliza nombre a Title Case ("MARCOS LOPEZ" → "Marcos Lopez")
-function toTitleCase(str) {
-  if (!str || typeof str !== 'string') return str
-  return str.toLowerCase().replace(/\b\w/g, c => c.toUpperCase())
-}
+// ── POST /albaranes/:id/reabrir  (solo superadmin) ────────────────
+router.post('/:id/reabrir', requireAuth, async (req, res) => {
+  if (req.user.nivel !== 'superadmin') {
+    return res.status(403).json({ error: 'Solo superadmin puede reabrir albaranes' })
+  }
+  const { id } = req.params
+  const fecha = new Date().toLocaleString('es-ES')
+  const actorNombre = req.user.nombre || 'Oficina'
+
+  // Verificar que está cerrado
+  const { rows } = await pool.query('SELECT estado FROM albaranes WHERE id=$1', [id])
+  if (!rows[0]) return res.status(404).json({ error: 'No encontrado' })
+  if (rows[0].estado !== 'cerrado') {
+    return res.status(400).json({ error: 'El albarán no está cerrado' })
+  }
+
+  // Resetear firma de oficina
+  await pool.query(
+    `UPDATE firmas SET firmado=false, fecha=null, nombre_persona=null,
+     firma_imagen=null, ip_origen=null, observaciones_firma=null
+     WHERE albaran_id=$1 AND rol='oficina'`,
+    [id]
+  )
+
+  // Volver a pendiente_oficina (todas las externas siguen firmadas)
+  await pool.query("UPDATE albaranes SET estado='pendiente_oficina' WHERE id=$1", [id])
+
+  await pool.query(
+    'INSERT INTO actividad (albaran_id,ts,texto,actor) VALUES ($1,$2,$3,$4)',
+    [id, fecha, 'Albarán reabierto por superadmin — firma de oficina reseteada', actorNombre]
+  )
+
+  const albaran = await fetchOne(id)
+  res.json(albaran)
+})
 
 // ── POST /albaranes/:id/firmas/:rol  (PÚBLICO — campo) ───────────
 router.post('/:id/firmas/:rol', async (req, res) => {
   const { id, rol } = req.params
   const { actor, firmaImagen, pesadaData, campoData } = req.body
   const nombrePersona = toTitleCase(req.body.nombrePersona)
+  const observacionesFirma = req.body.observacionesFirma || null
   const fecha = new Date().toLocaleString('es-ES')
   const ROL_LABEL = { oficina:'Oficina', proveedor:'Proveedor', astilladora:'Astilladora', transportista:'Transportista', instalacion:'Instalación' }
 
-  // Captura IP real — Apache añade X-Forwarded-For con la IP del cliente original
   const ip = (req.headers['x-forwarded-for'] || '').split(',')[0].trim()
           || req.headers['x-real-ip']
           || req.socket?.remoteAddress
           || 'desconocida'
 
   await pool.query(
-    'UPDATE firmas SET firmado=true, fecha=$1, actor=$2, nombre_persona=$3, firma_imagen=$4, ip_origen=$5 WHERE albaran_id=$6 AND rol=$7',
-    [fecha, actor, nombrePersona || null, firmaImagen || null, ip, id, rol]
+    `UPDATE firmas SET firmado=true, fecha=$1, actor=$2, nombre_persona=$3,
+     firma_imagen=$4, ip_origen=$5, observaciones_firma=$6
+     WHERE albaran_id=$7 AND rol=$8`,
+    [fecha, actor, nombrePersona || null, firmaImagen || null, ip, observacionesFirma, id, rol]
   )
+
+  const obsTexto = observacionesFirma ? ` · Obs: "${observacionesFirma}"` : ''
   await pool.query(
     'INSERT INTO actividad (albaran_id,ts,texto,actor) VALUES ($1,$2,$3,$4)',
-    [id, fecha, `${ROL_LABEL[rol] || rol} confirmó y firmó${nombrePersona ? ' ('+nombrePersona+')' : ''} · IP: ${ip}`, actor]
+    [id, fecha,
+     `${ROL_LABEL[rol] || rol} confirmó y firmó${nombrePersona ? ' ('+nombrePersona+')' : ''} · IP: ${ip}${obsTexto}`,
+     actor]
   )
 
   if (pesadaData) {
@@ -282,17 +328,27 @@ router.post('/:id/firmas/:rol', async (req, res) => {
     }
   }
 
-  // Comprueba cierre automático — todas las firmas del albarán deben estar firmadas
-  const { rows: firmas } = await pool.query(
-    'SELECT * FROM firmas WHERE albaran_id=$1', [id]
-  )
+  // Evalúa estado tras firma
+  const { rows: firmas } = await pool.query('SELECT * FROM firmas WHERE albaran_id=$1', [id])
   const todasFirmadas = firmas.length > 0 && firmas.every(f => f.firmado)
+  const externasPendientes = firmas.filter(f => f.rol !== 'oficina' && !f.firmado)
+  const oficinaPendiente   = firmas.find(f => f.rol === 'oficina' && !f.firmado)
 
   if (todasFirmadas) {
     await pool.query("UPDATE albaranes SET estado='cerrado' WHERE id=$1", [id])
     await pool.query(
       'INSERT INTO actividad (albaran_id,ts,texto,actor) VALUES ($1,$2,$3,$4)',
-      [id, fecha, 'Albarán cerrado automáticamente', 'Sistema']
+      [id, fecha, 'Albarán cerrado — todas las firmas completadas', 'Sistema']
+    )
+  } else if (externasPendientes.length === 0 && oficinaPendiente) {
+    // Todas las externas firmadas, oficina pendiente → pendiente_oficina
+    await pool.query(
+      "UPDATE albaranes SET estado='pendiente_oficina' WHERE id=$1 AND estado != 'cerrado'",
+      [id]
+    )
+    await pool.query(
+      'INSERT INTO actividad (albaran_id,ts,texto,actor) VALUES ($1,$2,$3,$4)',
+      [id, fecha, 'Todas las firmas externas completadas — pendiente firma de oficina', 'Sistema']
     )
   }
 

@@ -18,10 +18,22 @@ export function useAlbaranes() {
 
   useEffect(() => {
     fetchAlbaranes()
-    // Polling cada 30 s para mantener datos actualizados
-    // (reemplaza el realtime de Supabase)
-    const interval = setInterval(fetchAlbaranes, 30_000)
-    return () => clearInterval(interval)
+
+    // Polling cada 30 s — pausa cuando el tab está oculto
+    const interval = setInterval(() => {
+      if (!document.hidden) fetchAlbaranes()
+    }, 30_000)
+
+    // Al volver al tab, recarga inmediatamente
+    const onVisibilityChange = () => {
+      if (!document.hidden) fetchAlbaranes()
+    }
+    document.addEventListener('visibilitychange', onVisibilityChange)
+
+    return () => {
+      clearInterval(interval)
+      document.removeEventListener('visibilitychange', onVisibilityChange)
+    }
   }, [fetchAlbaranes])
 
   return { albaranes, loading, refetch: fetchAlbaranes }
