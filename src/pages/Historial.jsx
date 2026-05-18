@@ -1,6 +1,6 @@
 import { useState, useMemo, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Download, Search, FileSpreadsheet, CheckSquare, Upload, Trash2, Square } from 'lucide-react'
+import { Download, Search, FileSpreadsheet, CheckSquare, Upload, Trash2, Square, X } from 'lucide-react'
 import ExcelJS from 'exceljs'
 import { Badge, FirmaSteps } from '../components/Badge'
 import { generarPDF } from '../utils/generarPDF'
@@ -10,7 +10,7 @@ import './Historial.css'
 
 const TIPOS_DOC = ['Autodeclaración','Acuerdo de cesión','Contrato prestación servicios','Permiso de corta','Certificado SURE','Permiso de obra']
 
-export default function Historial({ albaranes, usuario, refetch }) {
+export default function Historial({ albaranes, usuario, refetch, borrarAlbaran }) {
   const navigate = useNavigate()
   const [busqueda, setBusqueda] = useState('')
   const [filtroInstalacion, setFiltroInstalacion] = useState('')
@@ -29,6 +29,7 @@ export default function Historial({ albaranes, usuario, refetch }) {
   const [descargando,     setDescargando]     = useState(false)
   const [confirmEliminar, setConfirmEliminar] = useState(false)
   const [eliminando,      setEliminando]      = useState(false)
+  const [confirmBorrarFila, setConfirmBorrarFila] = useState(null)  // id del albaran a borrar individualmente
   const [pagina,          setPagina]          = useState(1)
   const POR_PAGINA = 25
 
@@ -296,11 +297,12 @@ export default function Historial({ albaranes, usuario, refetch }) {
                 <th>Humedad</th>
                 <th>Estado</th>
                 <th>Firmas</th>
+                {esSuperadmin && <th></th>}
               </tr>
             </thead>
             <tbody>
               {filtrados.length === 0 ? (
-                <tr><td colSpan={seleccionando ? 12 : 11} className="empty-state">No hay albaranes con los filtros seleccionados</td></tr>
+                <tr><td colSpan={seleccionando ? 12 : (esSuperadmin ? 12 : 11)} className="empty-state">No hay albaranes con los filtros seleccionados</td></tr>
               ) : paginados.map(a => (
                 <tr key={a.id} onClick={() => seleccionando ? toggleSeleccion(a.id) : navigate(`/albaran/${a.id}`)}
                   style={{cursor:'pointer', background: seleccionados.has(a.id) ? 'var(--green-50)' : undefined}}>
@@ -320,6 +322,17 @@ export default function Historial({ albaranes, usuario, refetch }) {
                   <td>{a.pesada.humedad != null ? `${a.pesada.humedad}%` : <span style={{color:'var(--gray-300)'}}>—</span>}</td>
                   <td><Badge estado={a.estado} /></td>
                   <td><FirmaSteps firmas={a.firmas} estado={a.estado} /></td>
+                  {esSuperadmin && (
+                    <td onClick={e => e.stopPropagation()}>
+                      <button
+                        style={{background:'none',border:'none',cursor:'pointer',padding:4,color:'var(--gray-300)',display:'flex',alignItems:'center'}}
+                        onClick={() => setConfirmBorrarFila(a.id)}
+                        title="Borrar albarán"
+                      >
+                        <Trash2 size={14} />
+                      </button>
+                    </td>
+                  )}
                 </tr>
               ))}
             </tbody>
@@ -398,6 +411,34 @@ export default function Historial({ albaranes, usuario, refetch }) {
               <button className="btn" onClick={() => { setModalAdjuntar(false); setDocTipo(''); setDocFichero(null) }}>Cancelar</button>
               <button className="btn btn-primary" disabled={!docTipo || !docFichero || adjuntando} onClick={handleAdjuntarDoc}>
                 {adjuntando ? 'Adjuntando...' : `Adjuntar a ${seleccionados.size} albaranes`}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal borrar fila individual */}
+      {confirmBorrarFila && (
+        <div style={{position:'fixed',inset:0,background:'rgba(0,0,0,0.4)',display:'flex',alignItems:'center',justifyContent:'center',zIndex:200,padding:20}}>
+          <div style={{background:'#fff',borderRadius:'var(--radius-xl)',padding:28,width:'100%',maxWidth:380,boxShadow:'0 20px 60px rgba(0,0,0,0.15)'}}>
+            <div style={{display:'flex',alignItems:'center',gap:10,marginBottom:12}}>
+              <Trash2 size={20} color='var(--red-400)' />
+              <span style={{fontSize:16,fontWeight:600}}>Borrar albarán</span>
+            </div>
+            <p style={{fontSize:14,color:'var(--gray-600)',marginBottom:20}}>
+              ¿Seguro que quieres borrar el albarán <strong>{confirmBorrarFila}</strong>? Esta acción no se puede deshacer.
+            </p>
+            <div style={{display:'flex',gap:8,justifyContent:'flex-end'}}>
+              <button className="btn" onClick={() => setConfirmBorrarFila(null)}>Cancelar</button>
+              <button
+                className="btn"
+                style={{background:'var(--red-400)',color:'#fff',borderColor:'var(--red-400)'}}
+                onClick={async () => {
+                  if (borrarAlbaran) await borrarAlbaran(confirmBorrarFila)
+                  setConfirmBorrarFila(null)
+                }}
+              >
+                <Trash2 size={14} /> Borrar definitivamente
               </button>
             </div>
           </div>

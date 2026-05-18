@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { AlertTriangle, Plus, Filter, Trash2 } from 'lucide-react'
 import { Badge, FirmaSteps } from '../components/Badge'
@@ -11,6 +11,8 @@ export default function Dashboard({ albaranes, usuario, borrarAlbaran }) {
   const [filtroInstalacion, setFiltroInstalacion] = useState('')
   const [filtroEstado, setFiltroEstado] = useState('')
   const [confirmBorrar, setConfirmBorrar] = useState(null)
+  const [pagina, setPagina] = useState(1)
+  const POR_PAGINA = 25
   const esSuperadmin = usuario?.nivel === 'superadmin'
 
   const instalaciones = [...new Set(albaranes.map(a => a.instalacion))]
@@ -24,6 +26,11 @@ export default function Dashboard({ albaranes, usuario, borrarAlbaran }) {
     if (filtroEstado && a.estado !== filtroEstado) return false
     return true
   })
+
+  useEffect(() => { setPagina(1) }, [filtroInstalacion, filtroEstado])
+
+  const totalPaginas = Math.ceil(filtrados.length / POR_PAGINA)
+  const paginados    = filtrados.slice((pagina - 1) * POR_PAGINA, pagina * POR_PAGINA)
 
   return (
     <>
@@ -67,6 +74,7 @@ export default function Dashboard({ albaranes, usuario, borrarAlbaran }) {
             <select value={filtroEstado} onChange={e => setFiltroEstado(e.target.value)} style={{width:'auto',fontSize:12,padding:'5px 8px'}}>
               <option value="">Todos los estados</option>
               <option value="pendiente_campo">Pendiente campo</option>
+              <option value="pendiente_oficina">Pendiente oficina</option>
               <option value="en_transito">En tránsito</option>
               <option value="humedad_pendiente">Humedad pendiente</option>
               <option value="cerrado">Cerrado</option>
@@ -84,7 +92,7 @@ export default function Dashboard({ albaranes, usuario, borrarAlbaran }) {
               </tr>
             </thead>
             <tbody>
-              {filtrados.map(a => (
+              {paginados.map(a => (
                 <tr key={a.id} onClick={() => navigate(`/albaran/${a.id}`)}>
                   <td className="albaran-id">{a.id}</td>
                   <td>{a.fecha?.slice(0,10).split('-').reverse().join('/')}</td>
@@ -111,6 +119,29 @@ export default function Dashboard({ albaranes, usuario, borrarAlbaran }) {
             </tbody>
           </table>
         </div>
+
+        {/* Paginación */}
+        {totalPaginas > 1 && (
+          <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',padding:'12px 4px',marginTop:8}}>
+            <div style={{fontSize:12,color:'var(--gray-500)'}}>
+              Mostrando {(pagina-1)*POR_PAGINA+1}–{Math.min(pagina*POR_PAGINA, filtrados.length)} de {filtrados.length}
+            </div>
+            <div style={{display:'flex',gap:4}}>
+              <button className="btn" style={{fontSize:12,padding:'4px 10px'}} disabled={pagina===1} onClick={() => setPagina(1)}>«</button>
+              <button className="btn" style={{fontSize:12,padding:'4px 10px'}} disabled={pagina===1} onClick={() => setPagina(p => p-1)}>‹</button>
+              {Array.from({length:Math.min(5,totalPaginas)}, (_,i) => {
+                const inicio = Math.max(1, Math.min(pagina-2, totalPaginas-4))
+                const p = inicio + i
+                if (p > totalPaginas) return null
+                return (
+                  <button key={p} className={`btn${p===pagina?' btn-primary':''}`} style={{fontSize:12,padding:'4px 10px'}} onClick={() => setPagina(p)}>{p}</button>
+                )
+              })}
+              <button className="btn" style={{fontSize:12,padding:'4px 10px'}} disabled={pagina===totalPaginas} onClick={() => setPagina(p => p+1)}>›</button>
+              <button className="btn" style={{fontSize:12,padding:'4px 10px'}} disabled={pagina===totalPaginas} onClick={() => setPagina(totalPaginas)}>»</button>
+            </div>
+          </div>
+        )}
       </div>
     </div>
 
