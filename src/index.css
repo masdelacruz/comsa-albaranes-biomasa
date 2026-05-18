@@ -62,6 +62,7 @@ input:focus, select:focus, textarea:focus {
   box-shadow: 0 0 0 3px rgba(29,158,117,0.1);
 }
 textarea { resize: vertical; min-height: 70px; }
+input[type="checkbox"], input[type="radio"] { width:auto; height:auto; padding:0; border:none; background:none; box-shadow:none; transition:none; }
 ::-webkit-scrollbar { width: 5px; height: 5px; }
 ::-webkit-scrollbar-track { background: transparent; }
 ::-webkit-scrollbar-thumb { background: var(--gray-300); border-radius: 99px; }

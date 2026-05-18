@@ -54,8 +54,9 @@ export default function Administracion({ usuario }) {
   const [form, setForm]                   = useState(EMPTY_FORM)
   const [guardando, setGuardando]         = useState(false)
   const [confirmDelete, setConfirmDelete] = useState(null)
-  const [subiendoFirma, setSubiendoFirma] = useState(false)
-  const [firmaUrl, setFirmaUrl]           = useState(null)
+  const [subiendoFirma, setSubiendoFirma]       = useState(false)
+  const [firmaUrl, setFirmaUrl]                 = useState(null)
+  const [firmaModalEmpresa, setFirmaModalEmpresa] = useState(null)
 
   // Logos state
   const [logos, setLogos]                   = useState({})
@@ -131,6 +132,26 @@ export default function Administracion({ usuario }) {
       const { url } = await res.json()
       setFirmaUrl(url)
       await fetchProveedores()
+    } finally {
+      setSubiendoFirma(false)
+    }
+  }
+
+  const handleSubirFirmaModal = async (fichero) => {
+    if (!fichero || !firmaModalEmpresa) return
+    setSubiendoFirma(true)
+    try {
+      const fd = new FormData()
+      fd.append('file', fichero)
+      const token = localStorage.getItem('biomasa_token')
+      const res = await fetch(`/api/storage/upload/empresa/${firmaModalEmpresa.id}/firma`, {
+        method: 'POST',
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+        body: fd,
+      })
+      const { url } = await res.json()
+      setFirmaModalEmpresa(prev => prev ? { ...prev, firma_imagen: url } : null)
+      setProveedores(prev => prev.map(p => p.id === firmaModalEmpresa.id ? { ...p, firma_imagen: url } : p))
     } finally {
       setSubiendoFirma(false)
     }
@@ -380,6 +401,14 @@ export default function Administracion({ usuario }) {
                           <button className="btn btn-ghost" style={{ padding: '4px 8px', fontSize: 11 }} onClick={() => abrirEditar(p)}>
                             <Pencil size={12} /> Editar
                           </button>
+                          <button
+                            className="btn btn-ghost"
+                            style={{ padding: '4px 8px', fontSize: 11, color: p.firma_imagen ? 'var(--green-600)' : 'var(--gray-400)' }}
+                            title={p.firma_imagen ? 'Firma registrada · click para cambiar' : 'Sin firma · click para añadir'}
+                            onClick={() => { setFirmaUrl(null); setFirmaModalEmpresa(p) }}
+                          >
+                            <Image size={12} /> Firma
+                          </button>
                           {confirmDelete === p.id ? (
                             <div style={{ display: 'flex', gap: 4, alignItems: 'center' }}>
                               <span style={{ fontSize: 11, color: 'var(--red-700)' }}>¿Eliminar?</span>
@@ -405,6 +434,41 @@ export default function Administracion({ usuario }) {
           </>
         )}
       </div>
+
+      {/* Modal firma rápida */}
+      {firmaModalEmpresa && (
+        <div className="modal-overlay" onClick={() => setFirmaModalEmpresa(null)}>
+          <div className="modal" style={{maxWidth:360}} onClick={e => e.stopPropagation()}>
+            <div className="modal-title">Firma — {firmaModalEmpresa.nombre}</div>
+            <div style={{marginBottom:16}}>
+              {firmaModalEmpresa.firma_imagen ? (
+                <div style={{border:'1px solid var(--gray-200)',borderRadius:8,padding:16,background:'var(--gray-50)',textAlign:'center',marginBottom:14}}>
+                  <img src={firmaModalEmpresa.firma_imagen} alt="Firma" style={{maxHeight:90,maxWidth:'100%',objectFit:'contain'}} />
+                  <div style={{fontSize:11,color:'var(--green-600)',marginTop:6,fontWeight:500}}>✓ Firma registrada</div>
+                </div>
+              ) : (
+                <div style={{border:'1px dashed var(--gray-200)',borderRadius:8,padding:24,textAlign:'center',color:'var(--gray-400)',fontSize:13,marginBottom:14}}>
+                  Sin firma registrada
+                </div>
+              )}
+              <label style={{display:'flex',alignItems:'center',justifyContent:'center',gap:8,cursor:'pointer',fontSize:13,color:'var(--green-600)',fontWeight:500,padding:'10px 0',border:'1px solid var(--green-100)',borderRadius:8,background:'var(--green-50)'}}>
+                <Upload size={15}/>
+                {subiendoFirma ? 'Subiendo...' : firmaModalEmpresa.firma_imagen ? 'Cambiar imagen de firma' : 'Subir imagen de firma'}
+                <input type="file" accept=".png,.jpg,.jpeg,.svg" style={{display:'none'}}
+                  onChange={e => { if(e.target.files[0]) handleSubirFirmaModal(e.target.files[0]); e.target.value='' }}
+                  disabled={subiendoFirma}
+                />
+              </label>
+              <div style={{fontSize:11,color:'var(--gray-400)',textAlign:'center',marginTop:8}}>
+                PNG, JPG o SVG · Se muestra al confirmar firma desde el campo
+              </div>
+            </div>
+            <div className="modal-actions">
+              <button className="btn btn-primary" onClick={() => setFirmaModalEmpresa(null)}>Cerrar</button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {modal && (
         <div className="modal-overlay" onClick={cerrarModal}>

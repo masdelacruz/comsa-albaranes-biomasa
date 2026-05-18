@@ -200,9 +200,6 @@ export default function Historial({ albaranes, usuario, refetch }) {
             <div className="page-sub">{filtrados.length} registros encontrados</div>
           </div>
           <div style={{display:'flex',gap:8}}>
-            <button className={`btn ${seleccionando ? 'btn-primary' : ''}`} onClick={() => { if(seleccionando) cancelarSeleccion(); else setSeleccionando(true) }}>
-              <CheckSquare size={15} /> {seleccionando ? 'Cancelar selección' : 'Seleccionar'}
-            </button>
             <button className="btn btn-primary" onClick={exportarExcel}>
               <FileSpreadsheet size={15} /> Exportar Excel
             </button>
@@ -246,20 +243,31 @@ export default function Historial({ albaranes, usuario, refetch }) {
           )}
         </div>
 
-        {/* Controles de selección */}
-        {seleccionando && (
-          <div style={{display:'flex',alignItems:'center',gap:8,marginBottom:8,padding:'8px 12px',background:'var(--gray-50)',borderRadius:'var(--radius-md)',border:'var(--border)'}}>
-            <button className="btn" style={{fontSize:12}} onClick={seleccionarTodos}>
-              <CheckSquare size={13} /> Seleccionar todos ({filtrados.length})
+        {/* Barra de selección — siempre visible debajo de los filtros */}
+        <div style={{display:'flex',alignItems:'center',gap:8,marginBottom:8}}>
+          {!seleccionando ? (
+            <button className="btn" style={{fontSize:12}} onClick={() => setSeleccionando(true)}>
+              <CheckSquare size={13} /> Seleccionar
             </button>
-            <button className="btn" style={{fontSize:12}} onClick={deseleccionarTodos}>
-              <Square size={13} /> Deseleccionar todos
-            </button>
-            <span style={{fontSize:12,color:'var(--gray-500)',marginLeft:'auto'}}>
-              {seleccionados.size > 0 ? `${seleccionados.size} seleccionados` : 'Ninguno seleccionado'}
-            </span>
-          </div>
-        )}
+          ) : (
+            <>
+              <button className="btn btn-primary" style={{fontSize:12}} onClick={seleccionarTodos}>
+                <CheckSquare size={13} /> Todos ({filtrados.length})
+              </button>
+              <button className="btn" style={{fontSize:12}} onClick={deseleccionarTodos}>
+                <Square size={13} /> Ninguno
+              </button>
+              <button className="btn btn-ghost" style={{fontSize:12,color:'var(--gray-500)'}} onClick={cancelarSeleccion}>
+                × Cancelar
+              </button>
+              {seleccionados.size > 0 && (
+                <span style={{fontSize:12,color:'var(--green-600)',fontWeight:600,marginLeft:4}}>
+                  {seleccionados.size} seleccionados
+                </span>
+              )}
+            </>
+          )}
+        </div>
 
         {/* Barra de acciones masivas */}
         {seleccionados.size > 0 && (
@@ -300,14 +308,14 @@ export default function Historial({ albaranes, usuario, refetch }) {
               {filtrados.length === 0 ? (
                 <tr><td colSpan={seleccionando ? 11 : 10} className="empty-state">No hay albaranes con los filtros seleccionados</td></tr>
               ) : filtrados.map(a => (
-                <tr key={a.id} onClick={() => !seleccionando && navigate(`/albaran/${a.id}`)}
-                  style={{cursor: seleccionando ? 'default' : 'pointer', background: seleccionados.has(a.id) ? 'var(--green-50)' : undefined}}>
+                <tr key={a.id} onClick={() => seleccionando ? toggleSeleccion(a.id) : navigate(`/albaran/${a.id}`)}
+                  style={{cursor:'pointer', background: seleccionados.has(a.id) ? 'var(--green-50)' : undefined}}>
                   {seleccionando && (
-                    <td onClick={e => { e.stopPropagation(); toggleSeleccion(a.id) }} style={{textAlign:'center',cursor:'pointer'}}>
+                    <td style={{textAlign:'center',width:36}} onClick={e => e.stopPropagation()}>
                       <input type="checkbox" checked={seleccionados.has(a.id)} onChange={() => toggleSeleccion(a.id)} style={{cursor:'pointer'}} />
                     </td>
                   )}
-                  <td className="albaran-id" onClick={() => seleccionando && toggleSeleccion(a.id)}>{a.id}</td>
+                  <td className="albaran-id">{a.id}</td>
                   <td>{a.fecha?.slice(0,10).split('-').reverse().join('/')}</td>
                   <td>{a.astilladora}</td>
                   <td>{a.transportista}</td>
