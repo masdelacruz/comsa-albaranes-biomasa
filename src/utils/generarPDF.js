@@ -2,7 +2,8 @@ import jsPDF from 'jspdf'
 import autoTable from 'jspdf-autotable'
 import { api } from '../lib/api'
 
-export async function generarPDF(a) {
+export async function generarPDF(a, options = {}) {
+  const { includeTicket = false } = options
   const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' })
   const W        = 210
   const margen   = 10
@@ -320,5 +321,19 @@ export async function generarPDF(a) {
     W / 2, footerY, { align: 'center' }
   )
 
-  doc.save(`${a.id}_albaran_comsa.pdf`)
+  // ── TICKET DE PESADA (página adicional si se solicita) ─────────────────────
+  if (includeTicket && a.pesada?.ticketUrl) {
+    doc.addPage()
+    try {
+      const ticketB64 = await toBase64(a.pesada.ticketUrl)
+      addImgFit(ticketB64, margen, margen, contentW, 297 - margen * 2)
+    } catch {
+      doc.setFontSize(12)
+      doc.setTextColor(150, 150, 150)
+      doc.text('Ticket de pesada no disponible', W / 2, 148, { align: 'center' })
+    }
+  }
+
+  const nombre = includeTicket ? `${a.id}_albaran_ticket_comsa.pdf` : `${a.id}_albaran_comsa.pdf`
+  doc.save(nombre)
 }

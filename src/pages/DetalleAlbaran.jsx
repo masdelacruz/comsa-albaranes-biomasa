@@ -31,6 +31,7 @@ export default function DetalleAlbaran({ albaranes, simularFirma, subirDocumento
   const [copiado, setCopiado]               = useState('')
   const [dragOverDoc, setDragOverDoc]       = useState(null)   // nombre del doc sobre el que se arrastra
   const [dragOverTicket, setDragOverTicket] = useState(false)
+  const [pdfMenuOpen, setPdfMenuOpen]       = useState(false)
 
   const [editandoDatos,  setEditandoDatos]  = useState(false)
   const [editandoPesada, setEditandoPesada] = useState(false)
@@ -274,9 +275,33 @@ export default function DetalleAlbaran({ albaranes, simularFirma, subirDocumento
             <Badge estado={a.estado} />
           </div>
           <div style={{display:'flex',gap:8}}>
-            <button className="btn" onClick={() => generarPDF(a)}>
-              <FileDown size={15} /> Descargar PDF
-            </button>
+            {a.certificacion?.includes('SURE') ? (
+              <div style={{position:'relative'}}>
+                <button className="btn" onClick={() => setPdfMenuOpen(o => !o)}>
+                  <FileDown size={15} /> Descargar PDF ▾
+                </button>
+                {pdfMenuOpen && (
+                  <div style={{position:'absolute',top:'calc(100% + 4px)',right:0,background:'#fff',border:'var(--border)',borderRadius:'var(--radius-md)',boxShadow:'0 4px 16px rgba(0,0,0,0.1)',zIndex:50,minWidth:220}}>
+                    <button style={{display:'block',width:'100%',padding:'9px 14px',textAlign:'left',background:'none',border:'none',cursor:'pointer',fontSize:13}}
+                      onClick={() => { generarPDF(a); setPdfMenuOpen(false) }}>
+                      <FileDown size={13} style={{marginRight:6}} /> Solo albarán
+                    </button>
+                    <button style={{display:'block',width:'100%',padding:'9px 14px',textAlign:'left',background:'none',border:'none',fontSize:13,
+                      cursor: a.pesada?.ticketAdjunto ? 'pointer' : 'not-allowed',
+                      color: a.pesada?.ticketAdjunto ? 'inherit' : 'var(--gray-400)'}}
+                      disabled={!a.pesada?.ticketAdjunto}
+                      onClick={() => { if(a.pesada?.ticketAdjunto){ generarPDF(a, { includeTicket: true }); setPdfMenuOpen(false) } }}>
+                      <FileDown size={13} style={{marginRight:6}} /> Albarán + ticket pesada
+                      {!a.pesada?.ticketAdjunto && <span style={{fontSize:11,marginLeft:6}}>(sin ticket)</span>}
+                    </button>
+                  </div>
+                )}
+              </div>
+            ) : (
+              <button className="btn" onClick={() => generarPDF(a)}>
+                <FileDown size={15} /> Descargar PDF
+              </button>
+            )}
             {esSuperadmin && (
               <button className="btn" style={{color:'var(--red-400)',borderColor:'var(--red-100)'}} onClick={() => setConfirmBorrar(true)}>
                 <Trash2 size={15} /> Borrar

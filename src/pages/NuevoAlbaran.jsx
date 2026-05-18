@@ -12,6 +12,8 @@ const DOCS_OP2 = ['Certificado SURE','Permiso de obra','Contrato prestación ser
 export default function NuevoAlbaran({ addAlbaran }) {
   const navigate = useNavigate()
   const [guardado, setGuardado]             = useState(false)
+  const [numCamiones, setNumCamiones]       = useState(1)
+  const [progreso, setProgreso]             = useState(0)
   const [proveedores, setProveedores]       = useState([])
   const [astilladoras, setAstilladoras]     = useState([])
   const [transportistas, setTransportistas] = useState([])
@@ -44,15 +46,32 @@ export default function NuevoAlbaran({ addAlbaran }) {
 
   const handleGuardar = async () => {
     setGuardado(true)
-    const id = await addAlbaran(form)
-    setTimeout(() => navigate(`/albaran/${id}`), 1200)
+    if (numCamiones === 1) {
+      const id = await addAlbaran({ ...form, numCamiones: 1 })
+      setTimeout(() => navigate(`/albaran/${id}`), 1200)
+    } else {
+      for (let i = 0; i < numCamiones; i++) {
+        setProgreso(i + 1)
+        await addAlbaran({ ...form, numCamiones: 1 })
+      }
+      setTimeout(() => navigate('/dashboard'), 1200)
+    }
   }
 
   if (guardado) return (
     <div className="nuevo-saved">
       <CheckCircle size={48} color="var(--green-400)" />
-      <h2>Albarán creado</h2>
-      <p>Redirigiendo al detalle...</p>
+      {numCamiones > 1 && progreso < numCamiones ? (
+        <>
+          <h2>Creando albaranes...</h2>
+          <p>{progreso} de {numCamiones} creados</p>
+        </>
+      ) : (
+        <>
+          <h2>{numCamiones > 1 ? `${numCamiones} albaranes creados` : 'Albarán creado'}</h2>
+          <p>Redirigiendo{numCamiones > 1 ? ' al panel' : ' al detalle'}...</p>
+        </>
+      )}
     </div>
   )
 
@@ -153,6 +172,19 @@ export default function NuevoAlbaran({ addAlbaran }) {
             <div className="form-field">
               <label>Permiso / referencia</label>
               <input type="text" placeholder="Nº permiso de corta o SURE" value={form.permiso} onChange={e => set('permiso', e.target.value)} />
+            </div>
+            <div className="form-field">
+              <label>Número de camiones</label>
+              <div style={{display:'flex',alignItems:'center',gap:8}}>
+                <button type="button" className="btn" style={{padding:'4px 12px',fontSize:18,lineHeight:1}} onClick={() => setNumCamiones(n => Math.max(1, n-1))}>−</button>
+                <span style={{fontSize:16,fontWeight:600,minWidth:28,textAlign:'center'}}>{numCamiones}</span>
+                <button type="button" className="btn" style={{padding:'4px 12px',fontSize:18,lineHeight:1}} onClick={() => setNumCamiones(n => Math.min(20, n+1))}>+</button>
+              </div>
+              {numCamiones > 1 && (
+                <div style={{fontSize:12,color:'var(--green-600)',marginTop:4}}>
+                  Se crearán {numCamiones} albaranes independientes con los mismos datos
+                </div>
+              )}
             </div>
             <div className="form-field full">
               <label>Observaciones</label>

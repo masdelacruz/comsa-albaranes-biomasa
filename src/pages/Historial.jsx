@@ -1,12 +1,16 @@
 import { useState, useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Download, Search, FileSpreadsheet } from 'lucide-react'
+import { Download, Search, FileSpreadsheet, CheckSquare, Upload, Trash2, Square } from 'lucide-react'
 import ExcelJS from 'exceljs'
 import { Badge, FirmaSteps } from '../components/Badge'
+import { generarPDF } from '../utils/generarPDF'
+import { api } from '../lib/api'
 import '../components/shared.css'
 import './Historial.css'
 
-export default function Historial({ albaranes }) {
+const TIPOS_DOC = ['Autodeclaración','Acuerdo de cesión','Contrato prestación servicios','Permiso de corta','Certificado SURE','Permiso de obra']
+
+export default function Historial({ albaranes, usuario, refetch }) {
   const navigate = useNavigate()
   const [busqueda, setBusqueda] = useState('')
   const [filtroInstalacion, setFiltroInstalacion] = useState('')
@@ -15,8 +19,68 @@ export default function Historial({ albaranes }) {
   const [filtroFechaDesde, setFiltroFechaDesde] = useState('')
   const [filtroFechaHasta, setFiltroFechaHasta] = useState('')
 
-  const instalaciones = [...new Set(albaranes.map(a => a.instalacion))]
-  const astilladoras  = [...new Set(albaranes.map(a => a.astilladora))]
+  // ── Selección masiva ──────────────────────────────────────────────
+  const [seleccionando,   setSeleccionando]   = useState(false)
+  const [seleccionados,   setSeleccionados]   = useState(new Set())
+  const [modalAdjuntar,   setModalAdjuntar]   = useState(false)
+  const [docTipo,         setDocTipo]         = useState('')
+  const [docFichero,      setDocFichero]      = useState(null)
+  const [adjuntando,      setAdjuntando]      = useState(false)
+  const [descargando,     setDescargando]     = useState(false)
+  const [confirmEliminar, setConfirmEliminar] = useState(false)
+  const [eliminando,      setEliminando]      = useState(false)
+
+  const esSuperadmin = usuario?.nivel === 'superadmin'
+
+  const toggleSeleccion   = (id) => setSeleccionados(prev => { const n = new Set(prev); n.has(id) ? n.delete(id) : n.add(id); return n })
+  const seleccionarTodos  = () => setSeleccionados(new Set(filtrados.map(a => a.id)))
+  const deseleccionarTodos= () => setSeleccionados(new Set())
+  const cancelarSeleccion = () => { setSeleccionando(false); setSeleccionados(new Set()) }
+
+  const subirDocumento = async (albaranId, docNombre, fichero) => {
+    const fd = new FormData()
+    fd.append('file', fichero)
+    fd.append('docNombre', docNombre)
+    await api.upload(`/storage/upload/${albaranId}/doc`, fd)
+  }
+
+  const handleAdjuntarDoc = async () => {
+    if (!docTipo || !docFichero) return
+    setAdjuntando(true)
+    try {
+      for (const id of seleccionados) {
+        await subirDocumento(id, docTipo, docFichero)
+      }
+      setModalAdjuntar(false); setDocTipo(''); setDocFichero(null)
+      cancelarSeleccion()
+      if (refetch) await refetch()
+    } finally { setAdjuntando(false) }
+  }
+
+  const handleDescargarPDFs = async () => {
+    setDescargando(true)
+    for (const id of seleccionados) {
+      const a = albaranes.find(x => x.id === id)
+      if (a) await generarPDF(a)
+    }
+    setDescargando(false)
+    cancelarSeleccion()
+  }
+
+  const handleEliminar = async () => {
+    setEliminando(true)
+    try {
+      for (const id of seleccionados) {
+        await api.delete(`/albaranes/${id}`)
+      }
+      setConfirmEliminar(false)
+      cancelarSeleccion()
+      if (refetch) await refetch()
+    } finally { setEliminando(false) }
+  }
+
+  const instalaciones = [...new Set(albaranes.map(a => a.instalacion).filter(Boolean))]
+  const astilladoras  = [...new Set(albaranes.map(a => a.astilladora).filter(Boolean))]
 
   const filtrados = useMemo(() => albaranes.filter(a => {
     if (busqueda && ![a.id, a.astilladora, a.transportista, a.instalacion, a.especie, a.origen, a.permiso]
@@ -43,11 +107,7 @@ export default function Historial({ albaranes }) {
   const exportarExcel = async () => {
     const wb = new ExcelJS.Workbook()
     wb.creator = 'Comsa Service'
-    const ws = wb.addWorksheet('Albaranes', {
-      views: [{ state: 'frozen', ySplit: 1 }], // cabecera congelada
-    })
-
-    // ── Columnas (ancho + clave) ──────────────────────────────────────────
+    const ws = wb.addWorksheet('Albaranes', { views: [{ state: 'frozen', ySplit: 1 }] })
     ws.columns = [
       { key: 'fecha',       header: 'Fecha',              width: 13 },
       { key: 'id',          header: 'Nº Albarán',         width: 13 },
@@ -72,92 +132,58 @@ export default function Historial({ albaranes }) {
       { key: 'estado',      header: 'Estado',             width: 22 },
       { key: 'obs',         header: 'Observaciones',      width: 34 },
     ]
-
-    // ── Estilo cabecera ───────────────────────────────────────────────────
     const headerRow = ws.getRow(1)
     headerRow.height = 22
     headerRow.eachCell(cell => {
       cell.fill   = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF1D9E75' } }
       cell.font   = { bold: true, color: { argb: 'FFFFFFFF' }, size: 11, name: 'Calibri' }
       cell.alignment = { vertical: 'middle', horizontal: 'center', wrapText: false }
-      cell.border = {
-        bottom: { style: 'medium', color: { argb: 'FF0F6E56' } },
-      }
+      cell.border = { bottom: { style: 'medium', color: { argb: 'FF0F6E56' } } }
     })
-
-    // ── Auto-filtro ───────────────────────────────────────────────────────
     ws.autoFilter = { from: 'A1', to: { row: 1, column: ws.columns.length } }
-
-    // ── Filas de datos ────────────────────────────────────────────────────
     filtrados.forEach((a, i) => {
-      const certs    = a.certificacion ? a.certificacion.split(',') : []
+      const certs    = Array.isArray(a.certificacion) ? a.certificacion : (a.certificacion ? a.certificacion.split(',') : [])
       const pesoNeto = a.pesada.entrada && a.pesada.salida ? a.pesada.entrada - a.pesada.salida : null
       const esPar    = i % 2 === 0
-
       const row = ws.addRow({
-        fecha:        a.fecha?.slice(0,10).split('-').reverse().join('/'),
-        id:           a.id,
-        origen:       a.origen            || '',
-        permiso:      a.permiso           || '',
-        instalacion:  a.instalacion       || '',
-        proveedor:    a.proveedor         || '',
-        astilladora:  a.astilladora       || '',
-        transportista:a.transportista     || '',
-        tractora:     a.matriculaTractora || '',
-        remolque:     a.matriculaRemolque || '',
-        chofer:       a.chofer            || '',
-        especie:      a.especie           || '',
-        biomasa:      a.tipoBiomasa       || '',
-        sure:         certs.includes('SURE') ? '✓' : '',
-        pefc:         certs.includes('PEFC') ? '✓' : '',
-        bruto:        a.pesada.entrada    ?? '',
-        tara:         a.pesada.salida     ?? '',
-        neto_kg:      pesoNeto            ?? '',
-        neto_t:       pesoNeto != null ? Number((pesoNeto / 1000).toFixed(3)) : '',
-        humedad:      a.pesada.humedad    ?? '',
-        estado:       a.estado            || '',
-        obs:          a.observaciones     || '',
+        fecha: a.fecha?.slice(0,10).split('-').reverse().join('/'),
+        id: a.id, origen: a.origen||'', permiso: a.permiso||'',
+        instalacion: a.instalacion||'', proveedor: a.proveedor||'',
+        astilladora: a.astilladora||'', transportista: a.transportista||'',
+        tractora: a.matriculaTractora||'', remolque: a.matriculaRemolque||'',
+        chofer: a.chofer||'', especie: a.especie||'', biomasa: a.tipoBiomasa||'',
+        sure: certs.includes('SURE') ? '✓' : '',
+        pefc: certs.includes('PEFC') ? '✓' : '',
+        bruto: a.pesada.entrada??'', tara: a.pesada.salida??'',
+        neto_kg: pesoNeto??'',
+        neto_t: pesoNeto != null ? Number((pesoNeto/1000).toFixed(3)) : '',
+        humedad: a.pesada.humedad??'', estado: a.estado||'', obs: a.observaciones||'',
       })
-
       row.height = 18
-
-      // Color alterno de filas
       const bgColor = esPar ? 'FFFFFFFF' : 'FFF4FAF7'
-      row.eachCell({ includeEmpty: true }, (cell, colNum) => {
+      row.eachCell({ includeEmpty: true }, (cell) => {
         cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: bgColor } }
         cell.font = { size: 10, name: 'Calibri' }
         cell.alignment = { vertical: 'middle' }
-        // Borde inferior suave
         cell.border = { bottom: { style: 'hair', color: { argb: 'FFD1D5DB' } } }
       })
-
-      // Columnas SURE y PEFC: centrado y verde si tiene
-      ;['sure', 'pefc'].forEach(key => {
-        const col  = ws.columns.findIndex(c => c.key === key) + 1
+      ;['sure','pefc'].forEach(key => {
+        const col = ws.columns.findIndex(c => c.key === key) + 1
         const cell = row.getCell(col)
         cell.alignment = { vertical: 'middle', horizontal: 'center' }
-        if (cell.value === '✓') {
-          cell.font = { size: 12, bold: true, color: { argb: 'FF1D9E75' }, name: 'Calibri' }
-        }
+        if (cell.value === '✓') cell.font = { size: 12, bold: true, color: { argb: 'FF1D9E75' }, name: 'Calibri' }
       })
-
-      // Columnas numéricas: alineadas a la derecha
       ;['bruto','tara','neto_kg','neto_t','humedad'].forEach(key => {
-        const col  = ws.columns.findIndex(c => c.key === key) + 1
-        const cell = row.getCell(col)
-        cell.alignment = { vertical: 'middle', horizontal: 'right' }
+        const col = ws.columns.findIndex(c => c.key === key) + 1
+        row.getCell(col).alignment = { vertical: 'middle', horizontal: 'right' }
       })
     })
-
-    // ── Descargar ─────────────────────────────────────────────────────────
     const buffer = await wb.xlsx.writeBuffer()
     const blob   = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' })
     const url    = URL.createObjectURL(blob)
     const link   = document.createElement('a')
-    link.href     = url
-    link.download = `comsa_albaranes_${new Date().toISOString().split('T')[0]}.xlsx`
-    link.click()
-    URL.revokeObjectURL(url)
+    link.href = url; link.download = `comsa_albaranes_${new Date().toISOString().split('T')[0]}.xlsx`
+    link.click(); URL.revokeObjectURL(url)
   }
 
   const limpiarFiltros = () => {
@@ -173,51 +199,30 @@ export default function Historial({ albaranes }) {
             <div className="page-title">Historial de albaranes</div>
             <div className="page-sub">{filtrados.length} registros encontrados</div>
           </div>
-          <button className="btn btn-primary" onClick={exportarExcel}>
-            <FileSpreadsheet size={15} /> Exportar Excel
-          </button>
+          <div style={{display:'flex',gap:8}}>
+            <button className={`btn ${seleccionando ? 'btn-primary' : ''}`} onClick={() => { if(seleccionando) cancelarSeleccion(); else setSeleccionando(true) }}>
+              <CheckSquare size={15} /> {seleccionando ? 'Cancelar selección' : 'Seleccionar'}
+            </button>
+            <button className="btn btn-primary" onClick={exportarExcel}>
+              <FileSpreadsheet size={15} /> Exportar Excel
+            </button>
+          </div>
         </div>
       </div>
 
       <div className="historial-content">
         <div className="resumen-bar">
-          <div className="resumen-chip">
-            <div className="label">Total albaranes</div>
-            <div className="val">{filtrados.length}</div>
-            <div className="sub">en selección actual</div>
-          </div>
-          <div className="resumen-chip">
-            <div className="label">Cerrados</div>
-            <div className="val" style={{color:'var(--green-400)'}}>{cerrados}</div>
-            <div className="sub">de {filtrados.length} totales</div>
-          </div>
-          <div className="resumen-chip">
-            <div className="label">Peso neto total</div>
-            <div className="val">{totalPesoNeto > 0 ? (totalPesoNeto / 1000).toFixed(1) + ' t' : '—'}</div>
-            <div className="sub">con pesada registrada</div>
-          </div>
-          <div className="resumen-chip">
-            <div className="label">Humedad media</div>
-            <div className="val">{mediaHumedad}{mediaHumedad !== '—' ? '%' : ''}</div>
-            <div className="sub">{humedadMedia.length} muestras</div>
-          </div>
-          <div className="resumen-chip">
-            <div className="label">Pendientes</div>
-            <div className="val" style={{color:'var(--amber-400)'}}>{filtrados.length - cerrados}</div>
-            <div className="sub">sin cerrar</div>
-          </div>
+          <div className="resumen-chip"><div className="label">Total albaranes</div><div className="val">{filtrados.length}</div><div className="sub">en selección actual</div></div>
+          <div className="resumen-chip"><div className="label">Cerrados</div><div className="val" style={{color:'var(--green-400)'}}>{cerrados}</div><div className="sub">de {filtrados.length} totales</div></div>
+          <div className="resumen-chip"><div className="label">Peso neto total</div><div className="val">{totalPesoNeto > 0 ? (totalPesoNeto/1000).toFixed(1)+' t' : '—'}</div><div className="sub">con pesada registrada</div></div>
+          <div className="resumen-chip"><div className="label">Humedad media</div><div className="val">{mediaHumedad}{mediaHumedad !== '—' ? '%' : ''}</div><div className="sub">{humedadMedia.length} muestras</div></div>
+          <div className="resumen-chip"><div className="label">Pendientes</div><div className="val" style={{color:'var(--amber-400)'}}>{filtrados.length - cerrados}</div><div className="sub">sin cerrar</div></div>
         </div>
 
         <div className="filtros-bar">
           <div style={{position:'relative',display:'flex',alignItems:'center'}}>
             <Search size={13} style={{position:'absolute',left:8,color:'var(--gray-400)'}} />
-            <input
-              type="text"
-              placeholder="Buscar por ID, astilladora, destino..."
-              value={busqueda}
-              onChange={e => setBusqueda(e.target.value)}
-              style={{paddingLeft:28}}
-            />
+            <input type="text" placeholder="Buscar por ID, astilladora, destino..." value={busqueda} onChange={e => setBusqueda(e.target.value)} style={{paddingLeft:28}} />
           </div>
           <select value={filtroInstalacion} onChange={e => setFiltroInstalacion(e.target.value)}>
             <option value="">Todas las instalaciones</option>
@@ -236,15 +241,49 @@ export default function Historial({ albaranes }) {
           </select>
           <input type="date" value={filtroFechaDesde} onChange={e => setFiltroFechaDesde(e.target.value)} title="Desde" />
           <input type="date" value={filtroFechaHasta} onChange={e => setFiltroFechaHasta(e.target.value)} title="Hasta" />
-          {(busqueda || filtroInstalacion || filtroAstilladora || filtroEstado || filtroFechaDesde || filtroFechaHasta) && (
+          {(busqueda||filtroInstalacion||filtroAstilladora||filtroEstado||filtroFechaDesde||filtroFechaHasta) && (
             <button className="btn btn-ghost" onClick={limpiarFiltros} style={{fontSize:12}}>Limpiar filtros ×</button>
           )}
         </div>
+
+        {/* Controles de selección */}
+        {seleccionando && (
+          <div style={{display:'flex',alignItems:'center',gap:8,marginBottom:8,padding:'8px 12px',background:'var(--gray-50)',borderRadius:'var(--radius-md)',border:'var(--border)'}}>
+            <button className="btn" style={{fontSize:12}} onClick={seleccionarTodos}>
+              <CheckSquare size={13} /> Seleccionar todos ({filtrados.length})
+            </button>
+            <button className="btn" style={{fontSize:12}} onClick={deseleccionarTodos}>
+              <Square size={13} /> Deseleccionar todos
+            </button>
+            <span style={{fontSize:12,color:'var(--gray-500)',marginLeft:'auto'}}>
+              {seleccionados.size > 0 ? `${seleccionados.size} seleccionados` : 'Ninguno seleccionado'}
+            </span>
+          </div>
+        )}
+
+        {/* Barra de acciones masivas */}
+        {seleccionados.size > 0 && (
+          <div style={{display:'flex',alignItems:'center',gap:8,marginBottom:8,padding:'10px 14px',background:'var(--green-50)',border:'1px solid var(--green-100)',borderRadius:'var(--radius-md)'}}>
+            <span style={{fontSize:13,fontWeight:600,color:'var(--green-700)',marginRight:4}}>{seleccionados.size} albaranes seleccionados</span>
+            <button className="btn btn-primary" style={{fontSize:12}} onClick={() => setModalAdjuntar(true)}>
+              <Upload size={13} /> Adjuntar documento
+            </button>
+            <button className="btn" style={{fontSize:12}} onClick={handleDescargarPDFs} disabled={descargando}>
+              <Download size={13} /> {descargando ? 'Descargando...' : 'Descargar PDFs'}
+            </button>
+            {esSuperadmin && (
+              <button className="btn" style={{fontSize:12,color:'var(--red-400)',borderColor:'var(--red-200)'}} onClick={() => setConfirmEliminar(true)}>
+                <Trash2 size={13} /> Eliminar
+              </button>
+            )}
+          </div>
+        )}
 
         <div className="card" style={{padding:0}}>
           <table className="historial-table">
             <thead>
               <tr>
+                {seleccionando && <th style={{width:36}}></th>}
                 <th>Nº albarán</th>
                 <th>Fecha</th>
                 <th>Astilladora</th>
@@ -259,23 +298,23 @@ export default function Historial({ albaranes }) {
             </thead>
             <tbody>
               {filtrados.length === 0 ? (
-                <tr><td colSpan={10} className="empty-state">No hay albaranes con los filtros seleccionados</td></tr>
+                <tr><td colSpan={seleccionando ? 11 : 10} className="empty-state">No hay albaranes con los filtros seleccionados</td></tr>
               ) : filtrados.map(a => (
-                <tr key={a.id} onClick={() => navigate(`/albaran/${a.id}`)}>
-                  <td className="albaran-id">{a.id}</td>
+                <tr key={a.id} onClick={() => !seleccionando && navigate(`/albaran/${a.id}`)}
+                  style={{cursor: seleccionando ? 'default' : 'pointer', background: seleccionados.has(a.id) ? 'var(--green-50)' : undefined}}>
+                  {seleccionando && (
+                    <td onClick={e => { e.stopPropagation(); toggleSeleccion(a.id) }} style={{textAlign:'center',cursor:'pointer'}}>
+                      <input type="checkbox" checked={seleccionados.has(a.id)} onChange={() => toggleSeleccion(a.id)} style={{cursor:'pointer'}} />
+                    </td>
+                  )}
+                  <td className="albaran-id" onClick={() => seleccionando && toggleSeleccion(a.id)}>{a.id}</td>
                   <td>{a.fecha?.slice(0,10).split('-').reverse().join('/')}</td>
                   <td>{a.astilladora}</td>
                   <td>{a.transportista}</td>
                   <td>{a.instalacion}</td>
                   <td>{a.especie}</td>
-                  <td>{a.pesada.entrada && a.pesada.salida
-                    ? ((a.pesada.entrada - a.pesada.salida) / 1000).toFixed(1) + ' t'
-                    : <span style={{color:'var(--gray-300)'}}>—</span>}
-                  </td>
-                  <td>{a.pesada.humedad != null
-                    ? `${a.pesada.humedad}%`
-                    : <span style={{color:'var(--gray-300)'}}>—</span>}
-                  </td>
+                  <td>{a.pesada.entrada && a.pesada.salida ? ((a.pesada.entrada-a.pesada.salida)/1000).toFixed(1)+' t' : <span style={{color:'var(--gray-300)'}}>—</span>}</td>
+                  <td>{a.pesada.humedad != null ? `${a.pesada.humedad}%` : <span style={{color:'var(--gray-300)'}}>—</span>}</td>
                   <td><Badge estado={a.estado} /></td>
                   <td><FirmaSteps firmas={a.firmas} /></td>
                 </tr>
@@ -284,6 +323,52 @@ export default function Historial({ albaranes }) {
           </table>
         </div>
       </div>
+
+      {/* Modal adjuntar documento */}
+      {modalAdjuntar && (
+        <div style={{position:'fixed',inset:0,background:'rgba(0,0,0,0.4)',display:'flex',alignItems:'center',justifyContent:'center',zIndex:200,padding:20}}>
+          <div style={{background:'#fff',borderRadius:'var(--radius-xl)',padding:28,width:'100%',maxWidth:400,boxShadow:'0 20px 60px rgba(0,0,0,0.15)'}}>
+            <div style={{fontSize:16,fontWeight:600,marginBottom:16}}>Adjuntar documento a {seleccionados.size} albaranes</div>
+            <div style={{marginBottom:12}}>
+              <label style={{fontSize:12,fontWeight:600,color:'var(--gray-600)',display:'block',marginBottom:6}}>Tipo de documento</label>
+              <select value={docTipo} onChange={e => setDocTipo(e.target.value)} style={{width:'100%'}}>
+                <option value="">Selecciona tipo...</option>
+                {TIPOS_DOC.map(t => <option key={t}>{t}</option>)}
+              </select>
+            </div>
+            <div style={{marginBottom:20}}>
+              <label style={{fontSize:12,fontWeight:600,color:'var(--gray-600)',display:'block',marginBottom:6}}>Fichero</label>
+              <input type="file" accept=".pdf,.jpg,.jpeg,.png" onChange={e => setDocFichero(e.target.files[0])} />
+              {docFichero && <div style={{fontSize:11,color:'var(--gray-500)',marginTop:4}}>{docFichero.name}</div>}
+            </div>
+            <div style={{display:'flex',gap:8,justifyContent:'flex-end'}}>
+              <button className="btn" onClick={() => { setModalAdjuntar(false); setDocTipo(''); setDocFichero(null) }}>Cancelar</button>
+              <button className="btn btn-primary" disabled={!docTipo || !docFichero || adjuntando} onClick={handleAdjuntarDoc}>
+                {adjuntando ? 'Adjuntando...' : `Adjuntar a ${seleccionados.size} albaranes`}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal confirmar eliminar */}
+      {confirmEliminar && (
+        <div style={{position:'fixed',inset:0,background:'rgba(0,0,0,0.4)',display:'flex',alignItems:'center',justifyContent:'center',zIndex:200,padding:20}}>
+          <div style={{background:'#fff',borderRadius:'var(--radius-xl)',padding:28,width:'100%',maxWidth:380,boxShadow:'0 20px 60px rgba(0,0,0,0.15)'}}>
+            <div style={{display:'flex',alignItems:'center',gap:10,marginBottom:12}}>
+              <Trash2 size={20} color="var(--red-400)" />
+              <span style={{fontSize:16,fontWeight:600}}>Eliminar {seleccionados.size} albaranes</span>
+            </div>
+            <p style={{fontSize:13,color:'var(--gray-600)',marginBottom:20}}>Esta acción no se puede deshacer.</p>
+            <div style={{display:'flex',gap:8,justifyContent:'flex-end'}}>
+              <button className="btn" onClick={() => setConfirmEliminar(false)}>Cancelar</button>
+              <button className="btn" style={{background:'var(--red-400)',color:'#fff',borderColor:'var(--red-400)'}} disabled={eliminando} onClick={handleEliminar}>
+                {eliminando ? 'Eliminando...' : 'Eliminar todo'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
