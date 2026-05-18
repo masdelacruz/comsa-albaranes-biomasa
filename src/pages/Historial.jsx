@@ -278,6 +278,7 @@ export default function Historial({ albaranes, usuario, refetch }) {
                 {seleccionando && <th style={{width:36}}></th>}
                 <th>Nº albarán</th>
                 <th>Fecha</th>
+                <th>Proveedor</th>
                 <th>Astilladora</th>
                 <th>Transportista</th>
                 <th>Destino</th>
@@ -290,7 +291,7 @@ export default function Historial({ albaranes, usuario, refetch }) {
             </thead>
             <tbody>
               {filtrados.length === 0 ? (
-                <tr><td colSpan={seleccionando ? 11 : 10} className="empty-state">No hay albaranes con los filtros seleccionados</td></tr>
+                <tr><td colSpan={seleccionando ? 12 : 11} className="empty-state">No hay albaranes con los filtros seleccionados</td></tr>
               ) : filtrados.map(a => (
                 <tr key={a.id} onClick={() => seleccionando ? toggleSeleccion(a.id) : navigate(`/albaran/${a.id}`)}
                   style={{cursor:'pointer', background: seleccionados.has(a.id) ? 'var(--green-50)' : undefined}}>
@@ -301,6 +302,7 @@ export default function Historial({ albaranes, usuario, refetch }) {
                   )}
                   <td className="albaran-id">{a.id}</td>
                   <td>{a.fecha?.slice(0,10).split('-').reverse().join('/')}</td>
+                  <td>{a.proveedor}</td>
                   <td>{a.astilladora}</td>
                   <td>{a.transportista}</td>
                   <td>{a.instalacion}</td>

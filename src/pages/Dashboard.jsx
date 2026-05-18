@@ -78,7 +78,7 @@ export default function Dashboard({ albaranes, usuario, borrarAlbaran }) {
           <table className="albaran-table">
             <thead>
               <tr>
-                <th>Nº albarán</th><th>Fecha</th><th>Astilladora</th><th>Transportista</th>
+                <th>Nº albarán</th><th>Fecha</th><th>Proveedor</th><th>Astilladora</th><th>Transportista</th>
                 <th>Destino</th><th>Especie</th><th>Estado</th><th>Firmas</th>
                 {esSuperadmin && <th></th>}
               </tr>
@@ -88,6 +88,7 @@ export default function Dashboard({ albaranes, usuario, borrarAlbaran }) {
                 <tr key={a.id} onClick={() => navigate(`/albaran/${a.id}`)}>
                   <td className="albaran-id">{a.id}</td>
                   <td>{a.fecha?.slice(0,10).split('-').reverse().join('/')}</td>
+                  <td>{a.proveedor}</td>
                   <td>{a.astilladora}</td>
                   <td>{a.transportista}</td>
                   <td>{a.instalacion}</td>

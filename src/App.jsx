@@ -1,4 +1,5 @@
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
+import { useState, useEffect, useCallback } from 'react'
+import { BrowserRouter, Routes, Route, Navigate, useParams } from 'react-router-dom'
 import Layout from './components/Layout'
 import Dashboard from './pages/Dashboard'
 import NuevoAlbaran from './pages/NuevoAlbaran'
@@ -31,10 +32,27 @@ const Bloqueado = () => (
 )
 
 function VistaCampoPublica() {
-  const { albaranes, loading } = useAlbaranes()
-  const { updateFirma, subirTicketPesada } = useAlbaranActions(() => {}, null)
+  const { id } = useParams()
+  const [albaran, setAlbaran] = useState(null)
+  const [loading, setLoading] = useState(true)
+
+  // Carga el albarán desde el endpoint PÚBLICO (sin auth, incluye empresaFirmaMap)
+  const refetchAlbaran = useCallback(async () => {
+    try {
+      const res  = await fetch(`/api/albaranes/${id}`)
+      const data = await res.json()
+      if (data?.id) setAlbaran(data)
+    } catch {}
+  }, [id])
+
+  useEffect(() => {
+    refetchAlbaran().finally(() => setLoading(false))
+  }, [refetchAlbaran])
+
+  const { updateFirma, subirTicketPesada } = useAlbaranActions(refetchAlbaran, null)
+
   if (loading) return <Spinner />
-  return <VistaCampo albaranes={albaranes} updateFirma={updateFirma} subirTicketPesada={subirTicketPesada} />
+  return <VistaCampo albaranes={albaran ? [albaran] : []} updateFirma={updateFirma} subirTicketPesada={subirTicketPesada} />
 }
 
 function AppConDatos({ usuario, logout }) {
