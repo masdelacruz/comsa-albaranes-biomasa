@@ -228,15 +228,23 @@ router.patch('/:id', requireAuth, async (req, res) => {
   res.json(albaran)
 })
 
+// Helper: normaliza nombre a Title Case ("MARCOS LOPEZ" → "Marcos Lopez")
+function toTitleCase(str) {
+  if (!str || typeof str !== 'string') return str
+  return str.toLowerCase().replace(/\b\w/g, c => c.toUpperCase())
+}
+
 // ── POST /albaranes/:id/firmas/:rol  (PÚBLICO — campo) ───────────
 router.post('/:id/firmas/:rol', async (req, res) => {
   const { id, rol } = req.params
-  const { actor, nombrePersona, firmaImagen, pesadaData, campoData } = req.body
+  const { actor, firmaImagen, pesadaData, campoData } = req.body
+  const nombrePersona = toTitleCase(req.body.nombrePersona)
   const fecha = new Date().toLocaleString('es-ES')
   const ROL_LABEL = { oficina:'Oficina', proveedor:'Proveedor', astilladora:'Astilladora', transportista:'Transportista', instalacion:'Instalación' }
 
-  // Captura IP real (Apache reenvía X-Forwarded-For)
+  // Captura IP real — Apache añade X-Forwarded-For con la IP del cliente original
   const ip = (req.headers['x-forwarded-for'] || '').split(',')[0].trim()
+          || req.headers['x-real-ip']
           || req.socket?.remoteAddress
           || 'desconocida'
 
