@@ -86,6 +86,19 @@ router.get('/', requireAuth, async (_req, res) => {
     pool.query(`SELECT * FROM actividad WHERE albaran_id IN (${ids}) ORDER BY created_at ASC`),
   ])
 
+  // Carga imágenes de firma/sello de todas las empresas referenciadas (una sola query)
+  const allNombres = [...new Set(
+    albs.flatMap(a => [a.proveedor, a.astilladora, a.transportista, a.instalacion].filter(Boolean))
+  )]
+  const empresaFirmaMap = {}
+  if (allNombres.length) {
+    const eRes = await pool.query(
+      'SELECT nombre, firma_imagen FROM proveedores WHERE nombre = ANY($1) AND firma_imagen IS NOT NULL',
+      [allNombres]
+    )
+    eRes.rows.forEach(e => { empresaFirmaMap[e.nombre] = e.firma_imagen })
+  }
+
   const result = albs.map(a =>
     buildAlbaran(
       a,
@@ -93,6 +106,7 @@ router.get('/', requireAuth, async (_req, res) => {
       pRes.rows.find(p => p.albaran_id === a.id),
       dRes.rows.filter(d => d.albaran_id === a.id),
       actRes.rows.filter(ev => ev.albaran_id === a.id),
+      empresaFirmaMap,
     )
   )
   res.json(result)
