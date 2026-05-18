@@ -378,8 +378,8 @@ export default function Administracion({ usuario }) {
                   ) : filtrados.length === 0 ? (
                     <tr><td colSpan={6} className="empty-row">No hay {TIPO_LABELS[tab].toLowerCase()}s registrados</td></tr>
                   ) : filtrados.map(p => (
-                    <tr key={p.id}>
-                      <td style={{ fontWeight: 500 }}>{p.nombre}</td>
+                    <tr key={p.id} onClick={() => abrirEditar(p)} style={{cursor:'pointer'}}>
+                      <td style={{ fontWeight: 500, color:'var(--blue-700)', textDecoration:'underline', textDecorationColor:'var(--gray-200)' }}>{p.nombre}</td>
                       <td style={{ color: 'var(--gray-600)' }}>{p.contacto || <span style={{ color: 'var(--gray-300)' }}>—</span>}</td>
                       <td style={{ color: 'var(--blue-700)' }}>
                         {p.email
@@ -397,7 +397,7 @@ export default function Administracion({ usuario }) {
                         </button>
                       </td>
                       <td>
-                        <div style={{ display: 'flex', gap: 6 }}>
+                        <div style={{ display: 'flex', gap: 6 }} onClick={e => e.stopPropagation()}>
                           <button className="btn btn-ghost" style={{ padding: '4px 8px', fontSize: 11 }} onClick={() => abrirEditar(p)}>
                             <Pencil size={12} /> Editar
                           </button>

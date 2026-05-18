@@ -44,11 +44,20 @@ router.post('/upload/:albaranId/doc', requireAuth, upload.single('file'), async 
   })
   const url = getPublicUrl(req, bucket, path)
 
-  await pool.query(
+  // UPSERT manual: actualiza si existe, inserta si no (adjunto masivo puede enviar
+  // tipos de doc que no están en el template del albarán, ej. SURE en Op1)
+  const upd = await pool.query(
     `UPDATE docs SET adjunto=true, url=$1, nombre_fichero=$2, tipo_fichero=$3, tamanyo=$4
      WHERE albaran_id=$5 AND nombre=$6`,
     [url, fichero.originalname, fichero.mimetype, fichero.size, albaranId, docNombre]
   )
+  if (upd.rowCount === 0) {
+    await pool.query(
+      `INSERT INTO docs (albaran_id, nombre, adjunto, url, nombre_fichero, tipo_fichero, tamanyo)
+       VALUES ($1, $2, true, $3, $4, $5, $6)`,
+      [albaranId, docNombre, url, fichero.originalname, fichero.mimetype, fichero.size]
+    )
+  }
   const fecha = new Date().toLocaleString('es-ES')
   await pool.query(
     'INSERT INTO actividad (albaran_id,ts,texto,actor) VALUES ($1,$2,$3,$4)',

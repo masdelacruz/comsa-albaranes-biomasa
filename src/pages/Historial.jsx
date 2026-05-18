@@ -269,23 +269,7 @@ export default function Historial({ albaranes, usuario, refetch }) {
           )}
         </div>
 
-        {/* Barra de acciones masivas */}
-        {seleccionados.size > 0 && (
-          <div style={{display:'flex',alignItems:'center',gap:8,marginBottom:8,padding:'10px 14px',background:'var(--green-50)',border:'1px solid var(--green-100)',borderRadius:'var(--radius-md)'}}>
-            <span style={{fontSize:13,fontWeight:600,color:'var(--green-700)',marginRight:4}}>{seleccionados.size} albaranes seleccionados</span>
-            <button className="btn btn-primary" style={{fontSize:12}} onClick={() => setModalAdjuntar(true)}>
-              <Upload size={13} /> Adjuntar documento
-            </button>
-            <button className="btn" style={{fontSize:12}} onClick={handleDescargarPDFs} disabled={descargando}>
-              <Download size={13} /> {descargando ? 'Descargando...' : 'Descargar PDFs'}
-            </button>
-            {esSuperadmin && (
-              <button className="btn" style={{fontSize:12,color:'var(--red-400)',borderColor:'var(--red-200)'}} onClick={() => setConfirmEliminar(true)}>
-                <Trash2 size={13} /> Eliminar
-              </button>
-            )}
-          </div>
-        )}
+        {/* Acciones masivas — pill flotante al fondo, no desplaza el layout */}
 
         <div className="card" style={{padding:0}}>
           <table className="historial-table">
@@ -311,8 +295,8 @@ export default function Historial({ albaranes, usuario, refetch }) {
                 <tr key={a.id} onClick={() => seleccionando ? toggleSeleccion(a.id) : navigate(`/albaran/${a.id}`)}
                   style={{cursor:'pointer', background: seleccionados.has(a.id) ? 'var(--green-50)' : undefined}}>
                   {seleccionando && (
-                    <td style={{textAlign:'center',width:36}} onClick={e => e.stopPropagation()}>
-                      <input type="checkbox" checked={seleccionados.has(a.id)} onChange={() => toggleSeleccion(a.id)} style={{cursor:'pointer'}} />
+                    <td style={{textAlign:'center',width:36}} onClick={e => { e.stopPropagation(); toggleSeleccion(a.id) }}>
+                      <input type="checkbox" checked={seleccionados.has(a.id)} onChange={() => {}} style={{cursor:'pointer',pointerEvents:'none'}} />
                     </td>
                   )}
                   <td className="albaran-id">{a.id}</td>
@@ -331,6 +315,31 @@ export default function Historial({ albaranes, usuario, refetch }) {
           </table>
         </div>
       </div>
+
+      {/* Pill flotante de acciones masivas — posición fija, no afecta al layout */}
+      {seleccionados.size > 0 && (
+        <div style={{position:'fixed',bottom:28,left:'50%',transform:'translateX(-50%)',display:'flex',alignItems:'center',gap:6,padding:'10px 16px',background:'var(--gray-900)',borderRadius:999,boxShadow:'0 8px 32px rgba(0,0,0,0.28)',zIndex:200,whiteSpace:'nowrap'}}>
+          <span style={{fontSize:13,fontWeight:600,color:'rgba(255,255,255,0.75)',marginRight:6}}>{seleccionados.size} seleccionados</span>
+          <button onClick={() => setModalAdjuntar(true)}
+            style={{display:'inline-flex',alignItems:'center',gap:5,padding:'6px 12px',borderRadius:20,border:'1px solid rgba(255,255,255,0.15)',background:'rgba(255,255,255,0.1)',color:'#fff',fontSize:12,fontWeight:500,cursor:'pointer'}}>
+            <Upload size={13}/> Adjuntar doc
+          </button>
+          <button onClick={handleDescargarPDFs} disabled={descargando}
+            style={{display:'inline-flex',alignItems:'center',gap:5,padding:'6px 12px',borderRadius:20,border:'1px solid rgba(255,255,255,0.15)',background:'rgba(255,255,255,0.1)',color:'#fff',fontSize:12,fontWeight:500,cursor:'pointer',opacity:descargando?0.6:1}}>
+            <Download size={13}/> {descargando ? 'Descargando...' : 'PDFs'}
+          </button>
+          {esSuperadmin && (
+            <button onClick={() => setConfirmEliminar(true)}
+              style={{display:'inline-flex',alignItems:'center',gap:5,padding:'6px 12px',borderRadius:20,border:'1px solid rgba(231,75,74,0.4)',background:'rgba(231,75,74,0.15)',color:'#ff8080',fontSize:12,fontWeight:500,cursor:'pointer'}}>
+              <Trash2 size={13}/> Eliminar
+            </button>
+          )}
+          <button onClick={cancelarSeleccion}
+            style={{display:'inline-flex',alignItems:'center',gap:4,padding:'6px 10px',borderRadius:20,border:'1px solid rgba(255,255,255,0.15)',background:'transparent',color:'rgba(255,255,255,0.5)',fontSize:12,cursor:'pointer',marginLeft:4}}>
+            × Cancelar
+          </button>
+        </div>
+      )}
 
       {/* Modal adjuntar documento */}
       {modalAdjuntar && (
