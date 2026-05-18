@@ -115,6 +115,13 @@ router.post('/', requireAuth, async (req, res) => {
     ? ['Autodeclaración', 'Acuerdo de cesión', 'Contrato prestación servicios', 'Permiso de corta']
     : ['Autodeclaración', 'Certificado SURE', 'Permiso de obra', 'Contrato prestación servicios']
 
+  // Normalizar certificacion: puede llegar como string 'SURE,PEFC' o array o vacío
+  const certArray = Array.isArray(f.certificacion)
+    ? f.certificacion
+    : (typeof f.certificacion === 'string' && f.certificacion
+        ? f.certificacion.split(',').filter(Boolean)
+        : [])
+
   const client = await pool.connect()
   try {
     await client.query('BEGIN')
@@ -129,7 +136,7 @@ router.post('/', requireAuth, async (req, res) => {
        f.transportista, f.instalacion, f.especie, f.tipoBiomasa, f.origen,
        f.permiso, f.observaciones, f.mapsOrigen, f.mapsDestino,
        f.matriculaTractora, f.matriculaRemolque, f.chofer,
-       f.certificacion || []]
+       certArray]
     )
 
     // Firmas — orden: proveedor → astilladora (Op1) → transportista (Op1) → instalacion → oficina
@@ -180,6 +187,12 @@ router.patch('/:id', requireAuth, async (req, res) => {
   const actorNombre = req.user.nombre || 'Oficina'
 
   if (campos && Object.keys(campos).length) {
+    // Normalizar certificacion si viene como string
+    if ('certificacion' in campos) {
+      const c = campos.certificacion
+      campos.certificacion = Array.isArray(c) ? c
+        : (typeof c === 'string' && c ? c.split(',').filter(Boolean) : [])
+    }
     const sets  = Object.keys(campos).map((k, i) => `${k} = $${i+2}`).join(', ')
     const vals  = Object.values(campos)
     await pool.query(`UPDATE albaranes SET ${sets} WHERE id = $1`, [id, ...vals])
