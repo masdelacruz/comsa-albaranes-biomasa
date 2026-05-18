@@ -94,7 +94,7 @@ export default function Dashboard({ albaranes, usuario, borrarAlbaran }) {
                   <td>{a.instalacion}</td>
                   <td>{a.especie}</td>
                   <td><Badge estado={a.estado} /></td>
-                  <td><FirmaSteps firmas={a.firmas} /></td>
+                  <td><FirmaSteps firmas={a.firmas} estado={a.estado} /></td>
                   {esSuperadmin && (
                     <td onClick={e => e.stopPropagation()}>
                       <button

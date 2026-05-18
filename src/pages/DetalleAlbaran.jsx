@@ -20,7 +20,7 @@ const FIRMA_LABELS = {
 
 const TIPOS_OP = ['Opció 1 — Compra en monte / plataforma', 'Opció 2 — Proveedor directo']
 
-export default function DetalleAlbaran({ albaranes, simularFirma, subirDocumento, subirTicketPesada, actualizarAlbaran, borrarAlbaran, usuario }) {
+export default function DetalleAlbaran({ albaranes, simularFirma, updateFirma, subirDocumento, subirTicketPesada, actualizarAlbaran, borrarAlbaran, usuario }) {
   const { id } = useParams()
   const navigate = useNavigate()
   const fileRefs    = useRef({})
@@ -39,7 +39,9 @@ export default function DetalleAlbaran({ albaranes, simularFirma, subirDocumento
   const [formPesada, setFormPesada] = useState({})
   const [guardando,  setGuardando]  = useState(false)
   const [toast,      setToast]      = useState('')
-  const [confirmBorrar, setConfirmBorrar] = useState(false)
+  const [confirmBorrar, setConfirmBorrar]   = useState(false)
+  const [firmaOficinaModal, setFirmaOficinaModal] = useState(false)
+  const [firmandoOficina, setFirmandoOficina]     = useState(false)
 
   const mostrarToast = (msg) => {
     setToast(msg)
@@ -116,6 +118,19 @@ export default function DetalleAlbaran({ albaranes, simularFirma, subirDocumento
     const todasAFirmar = [...getFirmasASimular(rol), rol]
     for (const r of todasAFirmar) await simularFirma(a.id, r)
     setConfirmModal(null)
+  }
+
+  const handleFirmarOficina = async () => {
+    setFirmandoOficina(true)
+    try {
+      await updateFirma(a.id, 'oficina', usuario?.nombre || 'Oficina', usuario?.nombre || null)
+      setFirmaOficinaModal(false)
+      mostrarToast('Albarán firmado y cerrado ✓')
+    } catch {
+      mostrarToast('Error al firmar. Inténtalo de nuevo.')
+    } finally {
+      setFirmandoOficina(false)
+    }
   }
 
   const subirDoc = async (docNombre, fichero) => {
@@ -613,8 +628,10 @@ export default function DetalleAlbaran({ albaranes, simularFirma, subirDocumento
           </div>
 
           <div className="detalle-right">
-            <div className="card" style={{marginBottom:14}}>
-              <div className="section-label">Estado de firmas</div>
+            <div className="card" style={{marginBottom:14, ...(a.estado==='cerrado' ? {border:'2px solid var(--green-400)',background:'var(--green-50)'} : {})}}>
+              <div className="section-label" style={a.estado==='cerrado' ? {color:'var(--green-600)'} : {}}>
+                {a.estado === 'cerrado' ? '✓ Albarán cerrado — todas las firmas completadas' : 'Estado de firmas'}
+              </div>
               {firmasOrdenadas.map((key) => {
                 const firma = a.firmas[key]
                 if (!firma) return null
@@ -644,9 +661,14 @@ export default function DetalleAlbaran({ albaranes, simularFirma, subirDocumento
                     )}
                     {!firma.firmado && a.estado !== 'cerrado' && key === 'oficina' && puedeOficinaFirmar && (
                       <button className="btn btn-primary" style={{fontSize:12,marginTop:8,width:'100%'}}
-                        onClick={() => setConfirmModal('oficina')}>
-                        ✓ Firmar como Oficina
+                        onClick={() => setFirmaOficinaModal(true)}>
+                        <CheckCircle size={13} /> Firmar y cerrar albarán
                       </button>
+                    )}
+                    {!firma.firmado && a.estado !== 'cerrado' && key === 'oficina' && !puedeOficinaFirmar && (
+                      <div style={{fontSize:11,color:'var(--gray-400)',marginTop:6,fontStyle:'italic'}}>
+                        Pendiente de firmas anteriores
+                      </div>
                     )}
                     {!firma.firmado && a.estado !== 'cerrado' && key !== 'oficina' && esSuperadmin && (
                       <button className="btn" style={{fontSize:12,marginTop:8,width:'100%'}}
@@ -707,6 +729,39 @@ export default function DetalleAlbaran({ albaranes, simularFirma, subirDocumento
         </div>
       </div>
     </div>
+
+    {firmaOficinaModal && (
+      <div style={{position:'fixed',inset:0,background:'rgba(0,0,0,0.4)',display:'flex',alignItems:'center',justifyContent:'center',zIndex:200,padding:20}}>
+        <div style={{background:'#fff',borderRadius:'var(--radius-xl)',padding:28,width:'100%',maxWidth:400,boxShadow:'0 20px 60px rgba(0,0,0,0.15)'}}>
+          <div style={{display:'flex',alignItems:'center',gap:10,marginBottom:12}}>
+            <CheckCircle size={22} color='var(--green-400)' />
+            <span style={{fontSize:16,fontWeight:600}}>Firmar y cerrar albarán</span>
+          </div>
+          <p style={{fontSize:13,color:'var(--gray-600)',marginBottom:8}}>
+            Vas a firmar como <strong>{usuario?.nombre || 'Oficina'}</strong> en nombre de la oficina.
+          </p>
+          <p style={{fontSize:13,color:'var(--gray-600)',marginBottom:20}}>
+            Todas las firmas externas están completadas. Al confirmar, el albarán <strong>{a.id}</strong> quedará <strong>cerrado definitivamente</strong>.
+          </p>
+          <div style={{background:'var(--green-50)',border:'1px solid var(--green-100)',borderRadius:'var(--radius-md)',padding:'10px 12px',marginBottom:20,fontSize:12,color:'var(--green-700)'}}>
+            Se registrará: actor, fecha, hora e IP de origen (firma electrónica simple eIDAS).
+          </div>
+          <div style={{display:'flex',gap:8,justifyContent:'flex-end'}}>
+            <button className="btn" onClick={() => setFirmaOficinaModal(false)} disabled={firmandoOficina}>Cancelar</button>
+            <button
+              className="btn btn-primary"
+              onClick={handleFirmarOficina}
+              disabled={firmandoOficina}
+            >
+              {firmandoOficina
+                ? <><div style={{width:12,height:12,border:'2px solid #fff',borderTopColor:'transparent',borderRadius:'50%',animation:'spin 0.6s linear infinite'}} /> Firmando...</>
+                : <><CheckCircle size={14} /> Confirmar y cerrar</>
+              }
+            </button>
+          </div>
+        </div>
+      </div>
+    )}
 
     {confirmBorrar && (
       <div style={{position:'fixed',inset:0,background:'rgba(0,0,0,0.4)',display:'flex',alignItems:'center',justifyContent:'center',zIndex:200,padding:20}}>

@@ -12,46 +12,29 @@ export function Badge({ estado }) {
 
 const LINE_W = 16
 
-export function FirmaSteps({ firmas }) {
+const PASOS_OP1 = ['proveedor', 'astilladora', 'transportista', 'instalacion', 'oficina']
+const PASOS_OP2 = ['proveedor', 'instalacion', 'oficina']
+
+export function FirmaSteps({ firmas, estado }) {
   const keys = Object.keys(firmas)
   const esOp2 = !keys.includes('astilladora') && !keys.includes('transportista')
+  const cerrado = estado === 'cerrado'
 
-  if (esOp2) {
-    const pasos = [{ key: 'oficina' }, { key: 'instalacion' }]
-    return (
-      <div className="firma-steps">
-        {pasos.map((s, i) => {
-          const firma = firmas[s.key]
-          const estado = firma?.firmado ? 'done' : 'pending'
-          return (
-            <div key={s.key} className="firma-step-wrap">
-              <div className={`firma-dot ${estado}`}>{firma?.firmado ? '✓' : i + 1}</div>
-              {i < pasos.length - 1 && <div className="firma-line" style={{width: LINE_W * 3 + 20 * 2}} />}
-            </div>
-          )
-        })}
-      </div>
-    )
-  }
-
-  const pasos = [
-    { key: 'oficina' },
-    { key: 'astilladora' },
-    { key: 'transportista' },
-    { key: 'instalacion' },
-  ].filter(s => keys.includes(s.key))
+  const pasos = (esOp2 ? PASOS_OP2 : PASOS_OP1)
+    .filter(k => keys.includes(k))
+    .map(k => ({ key: k }))
 
   const primeroSinFirmar = pasos.findIndex(s => !firmas[s.key]?.firmado)
 
   return (
-    <div className="firma-steps">
+    <div className={`firma-steps${cerrado ? ' firma-steps-cerrado' : ''}`}>
       {pasos.map((s, i) => {
         const firma = firmas[s.key]
-        const estado = firma?.firmado ? 'done' : i === primeroSinFirmar ? 'active' : 'pending'
+        const dotEstado = firma?.firmado ? (cerrado ? 'cerrado' : 'done') : i === primeroSinFirmar ? 'active' : 'pending'
         return (
           <div key={s.key} className="firma-step-wrap">
-            <div className={`firma-dot ${estado}`}>{firma?.firmado ? '✓' : i + 1}</div>
-            {i < pasos.length - 1 && <div className="firma-line" style={{width: LINE_W}} />}
+            <div className={`firma-dot ${dotEstado}`}>{firma?.firmado ? '✓' : i + 1}</div>
+            {i < pasos.length - 1 && <div className={`firma-line${cerrado ? ' firma-line-cerrado' : ''}`} style={{width: LINE_W}} />}
           </div>
         )
       })}

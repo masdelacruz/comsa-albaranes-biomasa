@@ -4,13 +4,16 @@
 .badge-red    { background:var(--red-100);   color:var(--red-700);   }
 .badge-blue   { background:var(--blue-100);  color:var(--blue-700);  }
 .badge-gray   { background:var(--gray-100);  color:var(--gray-600);  }
-.firma-steps  { display:flex; align-items:center; }
+.firma-steps  { display:flex; align-items:center; padding:3px 5px; border-radius:20px; border:1.5px solid transparent; }
+.firma-steps-cerrado { border-color:var(--green-400); background:var(--green-50); }
 .firma-step-wrap { display:flex; align-items:center; }
 .firma-dot { width:20px; height:20px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:10px; font-weight:600; flex-shrink:0; }
 .firma-dot.done    { background:var(--green-100); color:var(--green-600); }
+.firma-dot.cerrado { background:var(--green-400); color:#fff; }
 .firma-dot.active  { background:var(--blue-100);  color:var(--blue-700); border:2px solid var(--blue-400); }
 .firma-dot.pending { background:var(--gray-100);  color:var(--gray-400); }
 .firma-line { width:16px; height:1px; background:var(--gray-200); }
+.firma-line-cerrado { background:var(--green-400); }
 .card { background:#fff; border:var(--border); border-radius:var(--radius-lg); padding:18px 20px; }
 .page-header { padding:24px 28px 0; margin-bottom:24px; }
 .page-title { font-size:20px; font-weight:600; letter-spacing:-0.3px; }

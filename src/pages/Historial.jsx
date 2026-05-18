@@ -310,7 +310,7 @@ export default function Historial({ albaranes, usuario, refetch }) {
                   <td>{a.pesada.entrada && a.pesada.salida ? ((a.pesada.entrada-a.pesada.salida)/1000).toFixed(1)+' t' : <span style={{color:'var(--gray-300)'}}>—</span>}</td>
                   <td>{a.pesada.humedad != null ? `${a.pesada.humedad}%` : <span style={{color:'var(--gray-300)'}}>—</span>}</td>
                   <td><Badge estado={a.estado} /></td>
-                  <td><FirmaSteps firmas={a.firmas} /></td>
+                  <td><FirmaSteps firmas={a.firmas} estado={a.estado} /></td>
                 </tr>
               ))}
             </tbody>
