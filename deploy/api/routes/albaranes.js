@@ -36,6 +36,7 @@ function buildAlbaran(a, firmas, pesada, docs, actividad, empresaFirmaMap = {}) 
       firmado: f.firmado, fecha: f.fecha, actor: f.actor,
       nombrePersona: f.nombre_persona || null,
       firmaImagen: f.firma_imagen || null,
+      ipOrigen: f.ip_origen || null,
     }
   })
   const p = pesada || {}
@@ -220,13 +221,18 @@ router.post('/:id/firmas/:rol', async (req, res) => {
   const fecha = new Date().toLocaleString('es-ES')
   const ROL_LABEL = { oficina:'Oficina', proveedor:'Proveedor', astilladora:'Astilladora', transportista:'Transportista', instalacion:'Instalación' }
 
+  // Captura IP real (Apache reenvía X-Forwarded-For)
+  const ip = (req.headers['x-forwarded-for'] || '').split(',')[0].trim()
+          || req.socket?.remoteAddress
+          || 'desconocida'
+
   await pool.query(
-    'UPDATE firmas SET firmado=true, fecha=$1, actor=$2, nombre_persona=$3, firma_imagen=$4 WHERE albaran_id=$5 AND rol=$6',
-    [fecha, actor, nombrePersona || null, firmaImagen || null, id, rol]
+    'UPDATE firmas SET firmado=true, fecha=$1, actor=$2, nombre_persona=$3, firma_imagen=$4, ip_origen=$5 WHERE albaran_id=$6 AND rol=$7',
+    [fecha, actor, nombrePersona || null, firmaImagen || null, ip, id, rol]
   )
   await pool.query(
     'INSERT INTO actividad (albaran_id,ts,texto,actor) VALUES ($1,$2,$3,$4)',
-    [id, fecha, `${ROL_LABEL[rol] || rol} confirmó y firmó`, actor]
+    [id, fecha, `${ROL_LABEL[rol] || rol} confirmó y firmó${nombrePersona ? ' ('+nombrePersona+')' : ''} · IP: ${ip}`, actor]
   )
 
   if (pesadaData) {

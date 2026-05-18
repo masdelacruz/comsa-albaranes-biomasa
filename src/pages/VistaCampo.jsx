@@ -1,8 +1,67 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { CheckCircle, Upload, Leaf, ArrowLeft, Truck, Factory, Building2, User } from 'lucide-react'
 import '../components/shared.css'
 import './VistaCampo.css'
+
+// ── SignaturePad — fallback cuando la empresa no tiene sello registrado ──────
+function SignaturePad({ onChange }) {
+  const canvasRef = useRef(null)
+  const dibujando = useRef(false)
+  const [tieneTrazo, setTieneTrazo] = useState(false)
+
+  const getPos = (e, canvas) => {
+    const rect = canvas.getBoundingClientRect()
+    const src  = e.touches ? e.touches[0] : e
+    return {
+      x: (src.clientX - rect.left) * (canvas.width  / rect.width),
+      y: (src.clientY - rect.top)  * (canvas.height / rect.height),
+    }
+  }
+  const iniciar = (e) => {
+    e.preventDefault()
+    dibujando.current = true
+    const cv = canvasRef.current, ctx = cv.getContext('2d')
+    const p = getPos(e, cv)
+    ctx.beginPath(); ctx.moveTo(p.x, p.y)
+  }
+  const dibujar = (e) => {
+    e.preventDefault()
+    if (!dibujando.current) return
+    const cv = canvasRef.current, ctx = cv.getContext('2d')
+    const p = getPos(e, cv)
+    ctx.lineWidth = 2.5; ctx.lineCap = 'round'; ctx.strokeStyle = '#1a3a8f'
+    ctx.lineTo(p.x, p.y); ctx.stroke()
+    if (!tieneTrazo) setTieneTrazo(true)
+    onChange(cv.toDataURL('image/png'))
+  }
+  const parar = (e) => { e.preventDefault(); dibujando.current = false }
+  const limpiar = () => {
+    const cv = canvasRef.current
+    cv.getContext('2d').clearRect(0, 0, cv.width, cv.height)
+    setTieneTrazo(false); onChange(null)
+  }
+
+  return (
+    <div>
+      <canvas ref={canvasRef} width={600} height={160}
+        style={{border:'2px dashed #3b82f6',borderRadius:8,background:'#fff',
+          touchAction:'none',cursor:'crosshair',display:'block',width:'100%'}}
+        onMouseDown={iniciar} onMouseMove={dibujar} onMouseUp={parar} onMouseLeave={parar}
+        onTouchStart={iniciar} onTouchMove={dibujar} onTouchEnd={parar}
+      />
+      <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginTop:6}}>
+        {tieneTrazo
+          ? <button type="button" onClick={limpiar}
+              style={{fontSize:12,color:'var(--gray-400)',background:'none',border:'none',cursor:'pointer',padding:0}}>
+              × Borrar y repetir
+            </button>
+          : <span style={{fontSize:12,color:'#3b82f6'}}>✍ Firma aquí con el dedo o el ratón</span>
+        }
+      </div>
+    </div>
+  )
+}
 
 const ROLES_CONFIG = {
   proveedor:     { label: 'Proveedor',    sub: 'Confirma carga y firma',     icon: <User     size={18} color="#8b5cf6" />, color: '#8b5cf6', bg: '#f5f3ff' },
@@ -28,6 +87,9 @@ function PasoFirma({ rol, a, updateFirma, subirTicketPesada, onCompletado, total
   const empresaFirmaUrl = a.empresaFirmaMap?.[empresaNombre] || null
   const requiereFirma   = ROL_REQUIERE_FIRMA[rol]
 
+  // Firma dibujada (fallback cuando no hay sello registrado)
+  const [firmaCanvas, setFirmaCanvas] = useState(null)
+
   // Campos comunes
   const [nombrePersona,     setNombrePersona]    = useState('')
   const [matriculaTractora, setMatriculaTractora]= useState(a.matriculaTractora || '')
@@ -43,8 +105,12 @@ function PasoFirma({ rol, a, updateFirma, subirTicketPesada, onCompletado, total
   const pesoNeto = pesoBruto && tara
     ? (parseFloat(pesoBruto) - parseFloat(tara)).toLocaleString('es-ES') + ' kg' : null
 
+  // Firma válida: tiene sello registrado O ha dibujado en el canvas
+  const firmaOk = !requiereFirma || !!empresaFirmaUrl || !!firmaCanvas
+
   // Validación por rol
   const puedeConfirmar = (() => {
+    if (!firmaOk) return false
     if (rol === 'proveedor')     return nombrePersona.trim().length > 0
     if (rol === 'astilladora')   return nombrePersona.trim().length > 0 && matriculaTractora.trim().length > 0
     if (rol === 'transportista') return chofer.trim().length > 0
@@ -54,7 +120,7 @@ function PasoFirma({ rol, a, updateFirma, subirTicketPesada, onCompletado, total
 
   const handleFirmar = async () => {
     setFirmando(true)
-    const firmaImagen = requiereFirma ? (empresaFirmaUrl || null) : null
+    const firmaImagen = requiereFirma ? (empresaFirmaUrl || firmaCanvas || null) : null
     const pesadaData  = (rol === 'transportista' || rol === 'instalacion') && (pesoBruto || tara) ? {
       entrada: parseFloat(pesoBruto) || null,
       salida:  parseFloat(tara)      || null,
@@ -226,21 +292,31 @@ function PasoFirma({ rol, a, updateFirma, subirTicketPesada, onCompletado, total
         </>
       )}
 
-      {/* ── FIRMA EMPRESA (proveedor, astilladora, instalacion) ─── */}
+      {/* ── FIRMA / SELLO EMPRESA ─────────────────────────────────── */}
       {requiereFirma && (
         <div style={{marginBottom:14}}>
           <div style={{fontSize:12,fontWeight:600,color:'var(--gray-500)',textTransform:'uppercase',letterSpacing:'0.5px',marginBottom:10}}>
-            Firma de {empresaNombre}
+            Sello / Firma de {empresaNombre}
           </div>
           {empresaFirmaUrl ? (
-            <div style={{border:'1px solid var(--gray-200)',borderRadius:'var(--radius-md)',padding:12,textAlign:'center',background:'var(--gray-50)'}}>
-              <img src={empresaFirmaUrl} alt="Firma" style={{maxHeight:80,maxWidth:'100%',objectFit:'contain'}} />
-              <div style={{fontSize:11,color:'var(--gray-400)',marginTop:6}}>Se adjuntará al confirmar</div>
+            /* Sello digital registrado */
+            <div style={{border:'1px solid var(--gray-200)',borderRadius:'var(--radius-md)',padding:'12px 16px',textAlign:'center',background:'#fafafa'}}>
+              <img
+                src={empresaFirmaUrl} alt="Sello"
+                style={{maxHeight:100,maxWidth:'100%',objectFit:'contain',
+                  filter:'drop-shadow(0 1px 3px rgba(0,0,0,0.15))'}}
+              />
+              <div style={{fontSize:11,color:'var(--green-600)',marginTop:8,fontWeight:500}}>
+                ✓ Sello digital registrado · Se estampará al confirmar
+              </div>
             </div>
           ) : (
-            <div style={{border:'1px dashed var(--amber-300)',borderRadius:'var(--radius-md)',padding:12,textAlign:'center',background:'var(--amber-50)'}}>
-              <div style={{fontSize:13,color:'var(--amber-700)'}}>Esta empresa no tiene firma registrada.</div>
-              <div style={{fontSize:11,color:'var(--amber-600)',marginTop:4}}>Contacta con la oficina de Comsa Service.</div>
+            /* Fallback — SignaturePad */
+            <div>
+              <div style={{fontSize:13,color:'var(--gray-600)',marginBottom:10,padding:'8px 12px',background:'var(--blue-50)',border:'1px solid var(--blue-100)',borderRadius:8}}>
+                Esta empresa no tiene sello digital. Por favor, firma a continuación para confirmar.
+              </div>
+              <SignaturePad onChange={setFirmaCanvas} />
             </div>
           )}
         </div>
@@ -248,7 +324,7 @@ function PasoFirma({ rol, a, updateFirma, subirTicketPesada, onCompletado, total
 
       <button
         className="campo-btn-primary"
-        disabled={!puedeConfirmar || firmando || (requiereFirma && !empresaFirmaUrl)}
+        disabled={!puedeConfirmar || firmando}
         onClick={handleFirmar}
       >
         {firmando

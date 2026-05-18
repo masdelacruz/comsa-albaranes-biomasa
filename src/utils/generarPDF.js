@@ -300,15 +300,52 @@ export async function generarPDF(a, options = {}) {
     doc.text(label, bx + sigW / 2, by + imgAreaH + footerH / 2 + 2.5, { align: 'center' })
   }
 
-  const firmaOrigen  = a.firmas?.astilladora?.firmado ? a.firmas.astilladora
-                     : a.firmas?.camionero?.firmado    ? a.firmas.camionero
+  const firmaOrigen  = a.firmas?.proveedor?.firmado    ? a.firmas.proveedor
+                     : a.firmas?.astilladora?.firmado  ? a.firmas.astilladora
                      : null
-  const firmaDestino = a.firmas?.instalacion?.firmado ? a.firmas.instalacion : null
+  const firmaDestino = a.firmas?.instalacion?.firmado  ? a.firmas.instalacion : null
 
   drawSigBox(margen,             y, 'Firma y/o sello Origen',  firmaOrigen)
   drawSigBox(margen + sigW + 4,  y, 'Firma y/o sello Destino', firmaDestino)
 
-  y += sigH + 6
+  y += sigH + 4
+
+  // ── BLOQUE DE AUDITORÍA DIGITAL ─────────────────────────────────────────────
+  const ORDEN_AUDIT = ['proveedor','astilladora','transportista','instalacion','oficina']
+  const firmasAudit = ORDEN_AUDIT
+    .map(r => ({ rol: r, ...a.firmas?.[r] }))
+    .filter(f => f?.firmado)
+
+  if (firmasAudit.length) {
+    const auditH = 5 + firmasAudit.length * 5 + 4
+    doc.setFillColor(248, 248, 246)
+    doc.setDrawColor(220, 220, 220)
+    doc.setLineWidth(0.2)
+    doc.rect(margen, y, contentW, auditH, 'FD')
+
+    doc.setFont('helvetica', 'bold')
+    doc.setFontSize(5.5)
+    doc.setTextColor(100, 100, 100)
+    doc.text('REGISTRO DIGITAL DE FIRMAS', margen + 3, y + 4)
+
+    const ROL_LABELS = { proveedor:'Proveedor', astilladora:'Astilladora', transportista:'Transportista', instalacion:'Instalación destino', oficina:'Oficina' }
+    firmasAudit.forEach((f, i) => {
+      const ly = y + 4 + (i + 1) * 5
+      doc.setFont('helvetica', 'bold')
+      doc.setFontSize(5)
+      doc.setTextColor(60, 60, 60)
+      doc.text(`${ROL_LABELS[f.rol] || f.rol}:`, margen + 3, ly)
+      doc.setFont('helvetica', 'normal')
+      doc.setTextColor(80, 80, 80)
+      const persona = f.nombrePersona ? ` ${f.nombrePersona} ·` : ''
+      const ip      = f.ipOrigen ? ` IP ${f.ipOrigen}` : ''
+      doc.text(`${f.actor || ''}${persona} ${f.fecha || ''}${ip}`, margen + 28, ly)
+    })
+
+    y += auditH + 4
+  } else {
+    y += 4
+  }
 
   // ── PIE DE PÁGINA ───────────────────────────────────────────────────────────
   const pageH   = 297

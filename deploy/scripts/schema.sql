@@ -42,6 +42,7 @@ CREATE TABLE IF NOT EXISTS firmas (
   fecha          TEXT,
   firma_imagen   TEXT,
   created_at     TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  ip_origen      TEXT,
   UNIQUE (albaran_id, rol)
 );
 
