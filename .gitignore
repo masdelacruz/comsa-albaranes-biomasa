@@ -17,6 +17,10 @@ dist
 dist-ssr
 *.local
 
+# Server-side deployment artifacts
+deploy/docker-compose.server.yml
+*.tar.gz
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json
