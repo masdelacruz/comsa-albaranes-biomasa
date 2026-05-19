@@ -9,10 +9,10 @@ export async function notificarNuevoAlbaran(albaran) {
 }
 
 const ROL_LABELS = {
-  proveedor:     'Proveedor — Origen',
+  proveedor:     'Proveedor',
   astilladora:   'Astilladora',
   transportista: 'Transportista',
-  instalacion:   'Receptor — Instalación destino',
+  instalacion:   'Instalación',
   oficina:       'Oficina',
 }
 

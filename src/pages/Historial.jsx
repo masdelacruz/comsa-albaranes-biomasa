@@ -122,7 +122,7 @@ export default function Historial({ albaranes, usuario, refetch, borrarAlbaran }
       { key: 'id',          header: 'Nº Albarán',         width: 13 },
       { key: 'origen',      header: 'Origen',             width: 32 },
       { key: 'permiso',     header: 'Permiso / Ref.',     width: 20 },
-      { key: 'instalacion', header: 'Instalación destino',width: 26 },
+      { key: 'instalacion', header: 'Instalación',        width: 26 },
       { key: 'proveedor',   header: 'Proveedor',          width: 22 },
       { key: 'astilladora', header: 'Astilladora',        width: 22 },
       { key: 'transportista',header:'Transportista',      width: 22 },

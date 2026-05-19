@@ -230,10 +230,6 @@ function PasoFirma({ rol, a, updateFirma, subirTicketPesada, onCompletado, total
               <div style={{fontSize:18,fontWeight:600,color:'var(--green-600)'}}>{pesoNeto}</div>
             </div>
           )}
-          <div className="campo-field">
-            <label>Humedad (%)</label>
-            <input type="number" step="0.1" placeholder="Ej: 28.4" value={humedad} onChange={e => setHumedad(e.target.value)} />
-          </div>
           <label className="upload-zona" style={{cursor:'pointer',marginBottom:10}}>
             <Upload size={16} />
             <span>{ticketNombre || 'Adjuntar ticket de pesada (opcional)'}</span>
@@ -275,7 +271,7 @@ function PasoFirma({ rol, a, updateFirma, subirTicketPesada, onCompletado, total
             </div>
           )}
           <div className="campo-field">
-            <label>Humedad (%)</label>
+            <label>Humedad (%) <span style={{fontWeight:400,color:'var(--gray-400)'}}>(opcional — se puede completar después)</span></label>
             <input type="number" step="0.1" placeholder="Ej: 28.4" value={humedad} onChange={e => setHumedad(e.target.value)} />
           </div>
           <label className="upload-zona" style={{cursor:'pointer',marginBottom:14}}>

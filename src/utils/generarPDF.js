@@ -305,8 +305,8 @@ export async function generarPDF(a, options = {}) {
                      : null
   const firmaDestino = a.firmas?.instalacion?.firmado  ? a.firmas.instalacion : null
 
-  drawSigBox(margen,             y, 'Firma y/o sello Origen',  firmaOrigen)
-  drawSigBox(margen + sigW + 4,  y, 'Firma y/o sello Destino', firmaDestino)
+  drawSigBox(margen,             y, 'Firma y/o sello Proveedor',   firmaOrigen)
+  drawSigBox(margen + sigW + 4,  y, 'Firma y/o sello Instalación', firmaDestino)
 
   y += sigH + 4
 
@@ -328,7 +328,7 @@ export async function generarPDF(a, options = {}) {
     doc.setTextColor(100, 100, 100)
     doc.text('REGISTRO DIGITAL DE FIRMAS', margen + 3, y + 4)
 
-    const ROL_LABELS = { proveedor:'Proveedor', astilladora:'Astilladora', transportista:'Transportista', instalacion:'Instalación destino', oficina:'Oficina' }
+    const ROL_LABELS = { proveedor:'Proveedor', astilladora:'Astilladora', transportista:'Transportista', instalacion:'Instalación', oficina:'Oficina' }
     firmasAudit.forEach((f, i) => {
       const ly = y + 4 + (i + 1) * 5
       doc.setFont('helvetica', 'bold')

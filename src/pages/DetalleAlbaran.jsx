@@ -11,10 +11,10 @@ import './DetalleAlbaran.css'
 const ORDEN_FIRMAS = ['proveedor', 'astilladora', 'transportista', 'instalacion', 'oficina']
 
 const FIRMA_LABELS = {
-  proveedor:     'Proveedor — Origen',
+  proveedor:     'Proveedor',
   astilladora:   'Astilladora',
   transportista: 'Transportista',
-  instalacion:   'Receptor — Instalación destino',
+  instalacion:   'Instalación',
   oficina:       'Oficina',
 }
 
@@ -483,7 +483,7 @@ export default function DetalleAlbaran({ albaranes, simularFirma, updateFirma, s
                     </select>
                   </div>
                   <div className="edit-field">
-                    <label className="edit-label">Instalación destino</label>
+                    <label className="edit-label">Instalación</label>
                     <select className="edit-input" value={formDatos.instalacion} onChange={e => setD('instalacion', e.target.value)}>
                       <option value="">—</option>
                       {instalaciones.map(o => <option key={o} value={o}>{o}</option>)}
@@ -543,7 +543,7 @@ export default function DetalleAlbaran({ albaranes, simularFirma, updateFirma, s
                     ['Proveedor',           a.proveedor || '—'],
                     ['Astilladora',         a.astilladora || '—'],
                     ['Transportista',       a.transportista || '—'],
-                    ['Instalación destino', a.instalacion],
+                    ['Instalación', a.instalacion],
                     ['Especie',             `${a.especie} · ${a.tipoBiomasa}`],
                     ['Origen',              a.origen || '—'],
                     ['Permiso / Ref.',      a.permiso || '—'],

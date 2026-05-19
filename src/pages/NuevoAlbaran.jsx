@@ -126,7 +126,7 @@ export default function NuevoAlbaran({ addAlbaran }) {
               </div>
             )}
             <div className="form-field">
-              <label>Instalación destino *</label>
+              <label>Instalación *</label>
               <select value={form.instalacion} onChange={e => set('instalacion', e.target.value)}>
                 <option value="">Selecciona instalación...</option>
                 {instalaciones.map(i => <option key={i}>{i}</option>)}
