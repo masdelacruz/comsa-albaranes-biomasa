@@ -103,6 +103,12 @@ router.post('/', async (req, res) => {
     </table>
   `
 
+  // ── Helper fecha ───────────────────────────────────────────────
+  const fmtFecha = (f) => f ? String(f).slice(0,10).split('-').reverse().join('/') : '—'
+  const fechaHora = albaran.fecha
+    ? `${fmtFecha(albaran.fecha)}${albaran.hora ? ' · ' + albaran.hora + ' h' : ''}`
+    : '—'
+
   // ── Templates por tipo ─────────────────────────────────────────
 
   if (tipo === 'nuevo_albaran') {
@@ -113,11 +119,9 @@ router.post('/', async (req, res) => {
             <td style="background-color:#e8f5ef;padding:12px 40px;border-bottom:1px solid #c9e8d9;">
               <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
                 <tr>
-                  <td>
-                    ${badgeHtml('Nuevo albarán')}
-                  </td>
+                  <td>${badgeHtml('Nuevo albarán')}</td>
                   <td align="right">
-                    <span style="font-family:Arial,Helvetica,sans-serif;font-size:12px;color:#3a7a58;">${albaran.fecha || new Date().toLocaleDateString('es-ES')}</span>
+                    <span style="font-family:Arial,Helvetica,sans-serif;font-size:12px;color:#3a7a58;">${fechaHora}</span>
                   </td>
                 </tr>
               </table>
@@ -141,14 +145,17 @@ router.post('/', async (req, res) => {
             <td style="padding:0 40px 24px;">
               <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="border-radius:6px;overflow:hidden;border:1px solid #edf0ed;">
                 ${dataRow('Identificador', `#${albaran.id}`)}
+                ${dataRow('Fecha / Hora', fechaHora)}
+                ${dataRow('Proveedor', albaran.proveedor)}
                 ${dataRow('Astilladora', albaran.astilladora)}
+                ${dataRow('Transportista', albaran.transportista)}
                 ${dataRow('Instalación', albaran.instalacion)}
                 ${dataRow('Especie', albaran.especie)}
-                ${dataRow('Proveedor', albaran.proveedor)}
-                ${dataRow('Transportista', albaran.transportista)}
+                ${albaran.tipoBiomasa ? dataRow('Tipo de biomasa', albaran.tipoBiomasa) : ''}
                 ${dataRow('Origen', albaran.origen)}
-                ${dataRow('Tipo de biomasa', albaran.tipo)}
-                ${dataRow('Fecha', albaran.fecha)}
+                ${albaran.chofer ? dataRow('Chófer', albaran.chofer) : ''}
+                ${albaran.matriculaTractora ? dataRow('Matrícula tractora', albaran.matriculaTractora) : ''}
+                ${albaran.certificacion ? dataRow('Certificación', Array.isArray(albaran.certificacion) ? albaran.certificacion.join(', ') : albaran.certificacion) : ''}
               </table>
             </td>
           </tr>
@@ -215,9 +222,13 @@ router.post('/', async (req, res) => {
               <p style="margin:0 0 10px;font-family:Arial,Helvetica,sans-serif;font-size:12px;font-weight:700;color:#6b7c74;text-transform:uppercase;letter-spacing:1px;">Datos del albarán</p>
               <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="border-radius:6px;overflow:hidden;border:1px solid #edf0ed;">
                 ${dataRow('Identificador', `#${albaran.id}`)}
+                ${dataRow('Fecha', fmtFecha(albaran.fecha))}
+                ${dataRow('Proveedor', albaran.proveedor)}
                 ${dataRow('Astilladora', albaran.astilladora)}
+                ${dataRow('Transportista', albaran.transportista)}
                 ${dataRow('Instalación', albaran.instalacion)}
                 ${dataRow('Especie', albaran.especie)}
+                ${dataRow('Origen', albaran.origen)}
               </table>
             </td>
           </tr>
@@ -281,9 +292,7 @@ router.post('/', async (req, res) => {
                   <td style="width:48%;background-color:#fff8e8;border:1px solid #f0dfa0;border-radius:8px;padding:20px 24px;text-align:center;">
                     <span style="font-family:Arial,Helvetica,sans-serif;font-size:11px;color:#7a6020;text-transform:uppercase;letter-spacing:1px;font-weight:700;">Humedad</span>
                     <br>
-                    <span style="font-family:Arial,Helvetica,sans-serif;font-size:28px;font-weight:700;color:#0f2d1f;">${albaran.humedad || '—'}</span>
-                    <br>
-                    <span style="font-family:Arial,Helvetica,sans-serif;font-size:12px;color:#7a6020;">${albaran.humedad ? '%' : ''}</span>
+                    <span style="font-family:Arial,Helvetica,sans-serif;font-size:${albaran.humedad != null ? '28' : '14'}px;font-weight:700;color:${albaran.humedad != null ? '#0f2d1f' : '#9aada5'};">${albaran.humedad != null ? albaran.humedad + ' %' : 'Pendiente de análisis'}</span>
                   </td>
                 </tr>
               </table>
@@ -296,9 +305,15 @@ router.post('/', async (req, res) => {
               <p style="margin:0 0 10px;font-family:Arial,Helvetica,sans-serif;font-size:12px;font-weight:700;color:#6b7c74;text-transform:uppercase;letter-spacing:1px;">Resumen del albarán</p>
               <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="border-radius:6px;overflow:hidden;border:1px solid #edf0ed;">
                 ${dataRow('Identificador', `#${albaran.id}`)}
+                ${dataRow('Fecha', fmtFecha(albaran.fecha))}
+                ${dataRow('Proveedor', albaran.proveedor)}
                 ${dataRow('Astilladora', albaran.astilladora)}
+                ${dataRow('Transportista', albaran.transportista)}
                 ${dataRow('Instalación', albaran.instalacion)}
                 ${dataRow('Especie', albaran.especie)}
+                ${dataRow('Origen', albaran.origen)}
+                ${albaran.chofer ? dataRow('Chófer', albaran.chofer) : ''}
+                ${albaran.matriculaTractora ? dataRow('Matrícula tractora', albaran.matriculaTractora) : ''}
               </table>
             </td>
           </tr>

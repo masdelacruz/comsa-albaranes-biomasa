@@ -18,8 +18,8 @@ export function useAlbaranActions(refetch, usuario) {
       `/albaranes/${albaranId}/firmas/${rol}`,
       { actor, nombrePersona, firmaImagen, pesadaData, campoData, observacionesFirma }
     )
-    await notificarFirmaCompletada({ ...albaran, id: albaranId }, actor, rol)
-    if (cerrado) await notificarAlbaranCerrado({ ...albaran, id: albaranId })
+    if (!cerrado) await notificarFirmaCompletada({ ...albaran, id: albaranId }, actor, rol)
+    if (cerrado)  await notificarAlbaranCerrado({ ...albaran, id: albaranId })
     await refetch()
   }
 
