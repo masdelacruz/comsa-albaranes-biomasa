@@ -405,7 +405,7 @@ export default function DetalleAlbaran({ albaranes, simularFirma, updateFirma, s
             )}
           </div>
         </div>
-        <div className="page-sub">{a.astilladora || a.proveedor} → {a.instalacion} · {a.fecha?.slice(0,10).split('-').reverse().join('/')}</div>
+        <div className="page-sub">{a.astilladora || a.proveedor} → {a.instalacion} · {a.fecha?.slice(0,10).split('-').reverse().join('/')}{a.hora ? ` · ${a.hora} h` : ''}</div>
       </div>
 
       <div className="detalle-content">
@@ -538,6 +538,7 @@ export default function DetalleAlbaran({ albaranes, simularFirma, updateFirma, s
                 <>
                   {[
                     ['Tipo operación',      a.tipo],
+                    ['Fecha / Hora',        `${a.fecha?.slice(0,10).split('-').reverse().join('/')}${a.hora ? ` — ${a.hora} h` : ''}`],
                     ['Certificación',       a.certificacion || '—'],
                     ['Proveedor',           a.proveedor || '—'],
                     ['Astilladora',         a.astilladora || '—'],

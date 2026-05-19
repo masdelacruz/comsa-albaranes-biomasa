@@ -302,21 +302,10 @@ router.post('/', async (req, res) => {
             </td>
           </tr>
 
-          <!-- CTAs: Ver + Descargar PDF -->
+          <!-- CTA: Ver albarán -->
           <tr>
-            <td style="padding:8px 40px 40px;">
-              <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
-                <tr>
-                  <td align="center" style="padding-bottom:12px;">
-                    ${ctaButton('Ver albarán', `${appUrl}/albaran/${albaran.id}`, true)}
-                  </td>
-                </tr>
-                <tr>
-                  <td align="center">
-                    ${ctaButton('Descargar PDF', `${appUrl}/albaran/${albaran.id}/pdf`, false)}
-                  </td>
-                </tr>
-              </table>
+            <td style="padding:8px 40px 40px;" align="center">
+              ${ctaButton('Ver albarán', `${appUrl}/albaran/${albaran.id}`, true)}
             </td>
           </tr>
     `)
