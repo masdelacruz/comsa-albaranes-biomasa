@@ -307,24 +307,26 @@ export default function Administracion({ usuario }) {
                     {error && <div style={{ fontSize: 11, color: 'var(--red-600)', background: 'var(--red-50,#fff1f1)', border: '1px solid var(--red-100)', borderRadius: 4, padding: '4px 8px' }}>⚠ {error}</div>}
                     <input ref={fileInputRefs[cfg.id]} type="file" accept="image/*" style={{ display: 'none' }}
                       onChange={e => handleSubirLogo(cfg.id, e.target.files?.[0])} />
-                    <div style={{ display: 'flex', gap: 6 }}>
-                      <button className="btn btn-primary" style={{ flex: 1, fontSize: 11, padding: '5px 10px' }}
-                        disabled={subiendo} onClick={() => fileInputRefs[cfg.id].current?.click()}>
-                        <Upload size={12} /> {url ? 'Reemplazar' : 'Subir'}
-                      </button>
-                      {url && (confirmDelLogo === cfg.id ? (
-                        <div style={{ display: 'flex', gap: 4, alignItems: 'center' }}>
-                          <span style={{ fontSize: 11, color: 'var(--red-700)', whiteSpace: 'nowrap' }}>¿Eliminar?</span>
-                          <button className="btn" style={{ padding: '5px 8px', fontSize: 11, color: 'var(--red-700)', borderColor: 'var(--red-100)' }}
-                            onClick={() => handleEliminarLogo(cfg.id)}><Check size={11} /> Sí</button>
-                          <button className="btn btn-ghost" style={{ padding: '5px 8px', fontSize: 11 }}
-                            onClick={() => setConfirmDelLogo(null)}><X size={11} /></button>
-                        </div>
-                      ) : (
-                        <button className="btn btn-ghost" style={{ padding: '5px 8px', fontSize: 11, color: 'var(--red-400)' }}
-                          onClick={() => setConfirmDelLogo(cfg.id)}><Trash2 size={12} /></button>
-                      ))}
-                    </div>
+                    {confirmDelLogo === cfg.id ? (
+                      <div style={{ display: 'flex', gap: 6, alignItems: 'center', justifyContent: 'center', padding: '6px 4px', background: 'var(--red-50)', border: '1px solid var(--red-100)', borderRadius: 6 }}>
+                        <span style={{ fontSize: 11, color: 'var(--red-700)', fontWeight: 500 }}>¿Eliminar imagen?</span>
+                        <button className="btn" style={{ padding: '4px 10px', fontSize: 11, color: 'var(--red-700)', borderColor: 'var(--red-200)' }}
+                          onClick={() => handleEliminarLogo(cfg.id)}><Check size={11} /> Sí</button>
+                        <button className="btn btn-ghost" style={{ padding: '4px 8px', fontSize: 11 }}
+                          onClick={() => setConfirmDelLogo(null)}><X size={11} /></button>
+                      </div>
+                    ) : (
+                      <div style={{ display: 'flex', gap: 6 }}>
+                        <button className="btn btn-primary" style={{ flex: 1, fontSize: 11, padding: '5px 10px' }}
+                          disabled={subiendo} onClick={() => fileInputRefs[cfg.id].current?.click()}>
+                          <Upload size={12} /> {url ? 'Reemplazar' : 'Subir'}
+                        </button>
+                        {url && (
+                          <button className="btn btn-ghost" style={{ padding: '5px 8px', fontSize: 11, color: 'var(--red-400)' }}
+                            onClick={() => setConfirmDelLogo(cfg.id)}><Trash2 size={12} /></button>
+                        )}
+                      </div>
+                    )}
                   </div>
                 )
               }
@@ -360,7 +362,8 @@ export default function Administracion({ usuario }) {
               </div>
             </div>
 
-            <div className="card proveedor-table-wrap" style={{ padding: 0 }}>
+            <div className="card" style={{ padding: 0, overflow: 'hidden' }}>
+              <div className="proveedor-table-wrap">
               <table className="proveedor-table">
                 <thead>
                   <tr>
@@ -430,6 +433,7 @@ export default function Administracion({ usuario }) {
                   ))}
                 </tbody>
               </table>
+              </div>
             </div>
           </>
         )}

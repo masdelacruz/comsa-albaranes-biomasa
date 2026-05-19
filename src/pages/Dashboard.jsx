@@ -82,7 +82,8 @@ export default function Dashboard({ albaranes, usuario, borrarAlbaran }) {
           </div>
         </div>
 
-        <div className="table-wrap card" style={{padding:0}}>
+        <div className="card" style={{padding:0, overflow:'hidden'}}>
+          <div className="table-wrap">
           <table className="albaran-table">
             <thead>
               <tr>
@@ -118,6 +119,7 @@ export default function Dashboard({ albaranes, usuario, borrarAlbaran }) {
               ))}
             </tbody>
           </table>
+          </div>
         </div>
 
         {/* Paginación */}
