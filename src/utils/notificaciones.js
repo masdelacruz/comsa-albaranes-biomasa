@@ -1,6 +1,6 @@
 import { api } from '../lib/api'
 
-const DEST = 'mserranodelacruzfernandez@gmail.com'
+const DEST = 'marc.serrano@comsa.com'
 
 export async function notificarNuevoAlbaran(albaran) {
   try {
