@@ -196,12 +196,13 @@ router.post('/', async (req, res) => {
           <!-- Bloque de firmante destacado -->
           <tr>
             <td style="padding:0 40px 20px;">
-              <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background-color:#f0faf5;border-left:4px solid #1D9E75;border-radius:0 6px 6px 0;padding:16px 20px;">
+              <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background-color:#f0faf5;border-left:4px solid #1D9E75;border-radius:0 6px 6px 0;">
                 <tr>
                   <td style="padding:16px 20px;">
                     <span style="font-family:Arial,Helvetica,sans-serif;font-size:11px;color:#3a7a58;text-transform:uppercase;letter-spacing:1px;font-weight:700;">Firmado por</span>
                     <br>
                     <span style="font-family:Arial,Helvetica,sans-serif;font-size:18px;color:#0f2d1f;font-weight:700;">${albaran.firmante || '—'}</span>
+                    ${albaran.rolLabel ? `<br><span style="font-family:Arial,Helvetica,sans-serif;font-size:12px;color:#3a7a58;margin-top:2px;display:inline-block;">${albaran.rolLabel}</span>` : ''}
                   </td>
                 </tr>
               </table>

@@ -8,9 +8,21 @@ export async function notificarNuevoAlbaran(albaran) {
   } catch (e) { console.error('Email error:', e) }
 }
 
-export async function notificarFirmaCompletada(albaran, firmante) {
+const ROL_LABELS = {
+  proveedor:     'Proveedor — Origen',
+  astilladora:   'Astilladora',
+  transportista: 'Transportista',
+  instalacion:   'Receptor — Instalación destino',
+  oficina:       'Oficina',
+}
+
+export async function notificarFirmaCompletada(albaran, firmante, rol) {
   try {
-    await api.post('/email', { tipo: 'firma_completada', albaran: { ...albaran, firmante }, destinatario: DEST })
+    await api.post('/email', {
+      tipo: 'firma_completada',
+      albaran: { ...albaran, firmante, rolLabel: ROL_LABELS[rol] || rol },
+      destinatario: DEST,
+    })
   } catch (e) { console.error('Email error:', e) }
 }
 
