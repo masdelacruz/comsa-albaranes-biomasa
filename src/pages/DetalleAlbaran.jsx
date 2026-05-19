@@ -54,10 +54,12 @@ export default function DetalleAlbaran({ albaranes, simularFirma, updateFirma, s
   const [astilladoras,   setAstilladoras]   = useState([])
   const [transportistas, setTransportistas] = useState([])
   const [instalaciones,  setInstalaciones]  = useState([])
+  const [todasEmpresas,  setTodasEmpresas]  = useState([])
 
   useEffect(() => {
     api.get('/empresas?activo=true').then(data => {
       const d = data || []
+      setTodasEmpresas(d)
       setProveedores(   d.filter(p => p.tipo === 'proveedor'   ).map(p => p.nombre))
       setAstilladoras(  d.filter(p => p.tipo === 'astilladora' ).map(p => p.nombre))
       setTransportistas(d.filter(p => p.tipo === 'transportista').map(p => p.nombre))
@@ -274,13 +276,48 @@ export default function DetalleAlbaran({ albaranes, simularFirma, updateFirma, s
   const setD = (k, v) => setFormDatos(p => ({ ...p, [k]: v }))
   const setP = (k, v) => setFormPesada(p => ({ ...p, [k]: v }))
 
+  // Empresa del siguiente paso (para pre-rellenar destinatario en WhatsApp y Email)
+  const primerRol     = siguientePaso?.split(',')[0]
+  const actorNombre   = primerRol ? a.firmas[primerRol]?.actor : null
+  const actorEmpresa  = todasEmpresas.find(e => e.nombre === actorNombre)
+  const actorEmail    = actorEmpresa?.email    || null
+  // Limpia el teléfono a solo dígitos; si empieza por 6/7 asume España (+34)
+  const rawTel        = actorEmpresa?.telefono || ''
+  const actorTelefono = rawTel
+    ? rawTel.replace(/[\s\-().]/g, '').replace(/^\+/, '').replace(/^0034/, '34').replace(/^(?=[67])/, '34')
+    : ''
+
   const compartirUrl = (url, medio) => {
-    const texto = encodeURIComponent(`Albarán ${a.id} — ${a.astilladora || a.proveedor} → ${a.instalacion}`)
-    const enlace = encodeURIComponent(url)
-    if (medio === 'whatsapp')  window.open(`https://wa.me/?text=${texto}%20${enlace}`, '_blank')
-    if (medio === 'telegram')  window.open(`https://t.me/share/url?url=${enlace}&text=${texto}`, '_blank')
-    if (medio === 'email')     window.open(`mailto:?subject=Albarán ${a.id}&body=${decodeURIComponent(texto)}%0A%0A${url}`, '_blank')
-    if (medio === 'copiar')    copiar(url, 'siguiente')
+    const empresa = actorNombre || a.astilladora || a.proveedor || ''
+    if (medio === 'whatsapp') {
+      const msg = encodeURIComponent(
+        `Hola ${empresa},\n\n` +
+        `Te enviamos el enlace de firma para el albarán #${a.id}:\n` +
+        `• Especie: ${a.especie || '—'}\n` +
+        `• Origen: ${a.origen || '—'}\n` +
+        `• Destino: ${a.instalacion}\n\n` +
+        `Accede aquí para firmar:\n${url}`
+      )
+      window.open(`https://wa.me/${actorTelefono}?text=${msg}`, '_blank')
+    }
+    if (medio === 'email') {
+      const subject = encodeURIComponent(`Firma pendiente — Albarán #${a.id} · Comsa Service`)
+      const body    = encodeURIComponent(
+        `Hola ${empresa},\n\n` +
+        `Te solicitamos la firma del siguiente albarán de biomasa:\n\n` +
+        `   Nº albarán : #${a.id}\n` +
+        `   Especie    : ${a.especie || '—'}\n` +
+        `   Origen     : ${a.origen || '—'}\n` +
+        `   Destino    : ${a.instalacion}\n\n` +
+        `Accede al formulario de firma en el siguiente enlace:\n` +
+        `${url}\n\n` +
+        `Gracias por tu colaboración.\n\n` +
+        `Comsa Service — Gestión de Albaranes de Biomasa\n` +
+        `biomasa.cserintranet.com`
+      )
+      window.open(`mailto:${actorEmail || ''}?subject=${subject}&body=${body}`, '_blank')
+    }
+    if (medio === 'copiar') copiar(url, 'siguiente')
   }
 
   return (
