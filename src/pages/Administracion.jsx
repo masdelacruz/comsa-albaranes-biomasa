@@ -360,7 +360,7 @@ export default function Administracion({ usuario }) {
               </div>
             </div>
 
-            <div className="card" style={{ padding: 0 }}>
+            <div className="card proveedor-table-wrap" style={{ padding: 0 }}>
               <table className="proveedor-table">
                 <thead>
                   <tr>
@@ -378,25 +378,25 @@ export default function Administracion({ usuario }) {
                   ) : filtrados.length === 0 ? (
                     <tr><td colSpan={6} className="empty-row">No hay {TIPO_LABELS[tab].toLowerCase()}s registrados</td></tr>
                   ) : filtrados.map(p => (
-                    <tr key={p.id} onClick={() => abrirEditar(p)} style={{cursor:'pointer'}}>
-                      <td style={{ fontWeight: 500, color:'var(--blue-700)', textDecoration:'underline', textDecorationColor:'var(--gray-200)' }}>{p.nombre}</td>
-                      <td style={{ color: 'var(--gray-600)' }}>{p.contacto || <span style={{ color: 'var(--gray-300)' }}>—</span>}</td>
+                    <tr key={p.id} onClick={() => abrirEditar(p)}>
+                      <td className="nombre-col" style={{ fontWeight: 500, color:'var(--blue-700)', textDecoration:'underline', textDecorationColor:'var(--gray-200)' }}>{p.nombre}</td>
+                      <td className="contacto-col" style={{ color: 'var(--gray-600)' }}>{p.contacto || <span style={{ color: 'var(--gray-300)' }}>—</span>}</td>
                       <td style={{ color: 'var(--blue-700)' }}>
                         {p.email
-                          ? <a href={`mailto:${p.email}`} style={{ color: 'var(--blue-700)' }}>{p.email}</a>
+                          ? <a href={`mailto:${p.email}`} onClick={e => e.stopPropagation()} style={{ color: 'var(--blue-700)' }}>{p.email}</a>
                           : <span style={{ color: 'var(--gray-300)' }}>—</span>}
                       </td>
                       <td style={{ color: 'var(--gray-600)' }}>{p.telefono || <span style={{ color: 'var(--gray-300)' }}>—</span>}</td>
                       <td>
                         <button
-                          onClick={() => handleToggleActivo(p)}
+                          onClick={e => { e.stopPropagation(); handleToggleActivo(p) }}
                           style={{ background: 'none', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', fontSize: 12, color: p.activo ? 'var(--green-600)' : 'var(--gray-400)', padding: 0 }}
                         >
                           <span className={`activo-dot ${p.activo ? 'si' : 'no'}`} />
                           {p.activo ? 'Activo' : 'Inactivo'}
                         </button>
                       </td>
-                      <td>
+                      <td className="acciones-col">
                         <div style={{ display: 'flex', gap: 6 }} onClick={e => e.stopPropagation()}>
                           <button className="btn btn-ghost" style={{ padding: '4px 8px', fontSize: 11 }} onClick={() => abrirEditar(p)}>
                             <Pencil size={12} /> Editar

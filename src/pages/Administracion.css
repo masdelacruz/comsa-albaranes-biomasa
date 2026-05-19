@@ -7,10 +7,15 @@
 .admin-search { position:relative; display:flex; align-items:center; }
 .admin-search input { padding-left:30px; width:260px; }
 .admin-search-icon { position:absolute; left:9px; color:var(--gray-400); pointer-events:none; }
-.proveedor-table { width:100%; border-collapse:collapse; font-size:13px; }
-.proveedor-table th { text-align:left; padding:10px 14px; font-size:11px; font-weight:600; text-transform:uppercase; letter-spacing:0.5px; color:var(--gray-400); border-bottom:var(--border); background:var(--gray-50); }
-.proveedor-table td { padding:11px 14px; border-bottom:var(--border-light); color:var(--gray-800); vertical-align:middle; }
+.proveedor-table-wrap { overflow-x:auto; }
+.proveedor-table { width:100%; border-collapse:collapse; font-size:13px; min-width:640px; }
+.proveedor-table th { text-align:left; padding:10px 14px; font-size:11px; font-weight:600; text-transform:uppercase; letter-spacing:0.5px; color:var(--gray-400); border-bottom:var(--border); background:var(--gray-50); white-space:nowrap; }
+.proveedor-table td { padding:11px 14px; border-bottom:var(--border-light); color:var(--gray-800); vertical-align:middle; white-space:nowrap; }
+.proveedor-table td.nombre-col { max-width:220px; overflow:hidden; text-overflow:ellipsis; }
+.proveedor-table td.contacto-col { max-width:160px; overflow:hidden; text-overflow:ellipsis; }
+.proveedor-table td.acciones-col { width:1%; white-space:nowrap; }
 .proveedor-table tr:last-child td { border-bottom:none; }
+.proveedor-table tbody tr { cursor:pointer; transition:background 0.1s; }
 .proveedor-table tbody tr:hover td { background:var(--gray-50); }
 .activo-dot { width:8px; height:8px; border-radius:50%; display:inline-block; margin-right:6px; }
 .activo-dot.si { background:var(--green-400); }
