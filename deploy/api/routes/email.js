@@ -107,16 +107,21 @@ router.post('/', async (req, res) => {
     </table>
   `
 
-  // ── Helper fecha ───────────────────────────────────────────────
+  // ── Helpers comunes ────────────────────────────────────────────
   const fmtFecha = (f) => f ? String(f).slice(0,10).split('-').reverse().join('/') : '—'
   const fechaHora = albaran.fecha
     ? `${fmtFecha(albaran.fecha)}${albaran.hora ? ' · ' + albaran.hora + ' h' : ''}`
     : '—'
+  const esOp1 = albaran.tipo?.includes('1')
+
+  // Asunto normalizado: [Estado] #ID · Especie · Proveedor → Instalación
+  const resumen = [albaran.especie, albaran.proveedor, albaran.instalacion]
+    .filter(Boolean).join(' · ')
 
   // ── Templates por tipo ─────────────────────────────────────────
 
   if (tipo === 'nuevo_albaran') {
-    subject = `Nuevo albarán #${albaran.id} — Biomasa`
+    subject = `[Nuevo] #${albaran.id} · ${resumen}`
     html = emailWrapper(`
           <!-- Franja de estado -->
           <tr>
@@ -151,14 +156,14 @@ router.post('/', async (req, res) => {
                 ${dataRow('Identificador', `#${albaran.id}`)}
                 ${dataRow('Fecha / Hora', fechaHora)}
                 ${dataRow('Proveedor', albaran.proveedor)}
-                ${dataRow('Astilladora', albaran.astilladora)}
-                ${dataRow('Transportista', albaran.transportista)}
+                ${esOp1 ? dataRow('Astilladora', albaran.astilladora) : ''}
+                ${esOp1 ? dataRow('Transportista', albaran.transportista) : ''}
                 ${dataRow('Instalación', albaran.instalacion)}
                 ${dataRow('Especie', albaran.especie)}
                 ${albaran.tipoBiomasa ? dataRow('Tipo de biomasa', albaran.tipoBiomasa) : ''}
                 ${dataRow('Origen', albaran.origen)}
-                ${albaran.chofer ? dataRow('Chófer', albaran.chofer) : ''}
-                ${albaran.matriculaTractora ? dataRow('Matrícula tractora', albaran.matriculaTractora) : ''}
+                ${esOp1 && albaran.chofer ? dataRow('Chófer', albaran.chofer) : ''}
+                ${esOp1 && albaran.matriculaTractora ? dataRow('Matrícula tractora', albaran.matriculaTractora) : ''}
                 ${albaran.certificacion ? dataRow('Certificación', Array.isArray(albaran.certificacion) ? albaran.certificacion.join(', ') : albaran.certificacion) : ''}
               </table>
             </td>
@@ -173,7 +178,7 @@ router.post('/', async (req, res) => {
     `)
 
   } else if (tipo === 'firma_completada') {
-    subject = `Firma registrada — Albarán #${albaran.id}`
+    subject = `[Firma · ${albaran.rolLabel || 'Firma'}] #${albaran.id} · ${resumen}`
     html = emailWrapper(`
           <!-- Franja de estado -->
           <tr>
@@ -226,13 +231,16 @@ router.post('/', async (req, res) => {
               <p style="margin:0 0 10px;font-family:Arial,Helvetica,sans-serif;font-size:12px;font-weight:700;color:#6b7c74;text-transform:uppercase;letter-spacing:1px;">Datos del albarán</p>
               <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="border-radius:6px;overflow:hidden;border:1px solid #edf0ed;">
                 ${dataRow('Identificador', `#${albaran.id}`)}
-                ${dataRow('Fecha', fmtFecha(albaran.fecha))}
+                ${dataRow('Fecha / Hora', fechaHora)}
                 ${dataRow('Proveedor', albaran.proveedor)}
-                ${dataRow('Astilladora', albaran.astilladora)}
-                ${dataRow('Transportista', albaran.transportista)}
+                ${esOp1 ? dataRow('Astilladora', albaran.astilladora) : ''}
+                ${esOp1 ? dataRow('Transportista', albaran.transportista) : ''}
                 ${dataRow('Instalación', albaran.instalacion)}
                 ${dataRow('Especie', albaran.especie)}
+                ${albaran.tipoBiomasa ? dataRow('Tipo de biomasa', albaran.tipoBiomasa) : ''}
                 ${dataRow('Origen', albaran.origen)}
+                ${esOp1 && albaran.chofer ? dataRow('Chófer', albaran.chofer) : ''}
+                ${esOp1 && albaran.matriculaTractora ? dataRow('Matrícula tractora', albaran.matriculaTractora) : ''}
               </table>
             </td>
           </tr>
@@ -246,7 +254,7 @@ router.post('/', async (req, res) => {
     `)
 
   } else if (tipo === 'albaran_cerrado') {
-    subject = `Albarán cerrado #${albaran.id} — Firmas completadas`
+    subject = `[Cerrado] #${albaran.id} · ${resumen}`
     html = emailWrapper(`
           <!-- Franja de estado -->
           <tr>
@@ -309,15 +317,16 @@ router.post('/', async (req, res) => {
               <p style="margin:0 0 10px;font-family:Arial,Helvetica,sans-serif;font-size:12px;font-weight:700;color:#6b7c74;text-transform:uppercase;letter-spacing:1px;">Resumen del albarán</p>
               <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="border-radius:6px;overflow:hidden;border:1px solid #edf0ed;">
                 ${dataRow('Identificador', `#${albaran.id}`)}
-                ${dataRow('Fecha', fmtFecha(albaran.fecha))}
+                ${dataRow('Fecha / Hora', fechaHora)}
                 ${dataRow('Proveedor', albaran.proveedor)}
-                ${dataRow('Astilladora', albaran.astilladora)}
-                ${dataRow('Transportista', albaran.transportista)}
+                ${esOp1 ? dataRow('Astilladora', albaran.astilladora) : ''}
+                ${esOp1 ? dataRow('Transportista', albaran.transportista) : ''}
                 ${dataRow('Instalación', albaran.instalacion)}
                 ${dataRow('Especie', albaran.especie)}
+                ${albaran.tipoBiomasa ? dataRow('Tipo de biomasa', albaran.tipoBiomasa) : ''}
                 ${dataRow('Origen', albaran.origen)}
-                ${albaran.chofer ? dataRow('Chófer', albaran.chofer) : ''}
-                ${albaran.matriculaTractora ? dataRow('Matrícula tractora', albaran.matriculaTractora) : ''}
+                ${esOp1 && albaran.chofer ? dataRow('Chófer', albaran.chofer) : ''}
+                ${esOp1 && albaran.matriculaTractora ? dataRow('Matrícula tractora', albaran.matriculaTractora) : ''}
               </table>
             </td>
           </tr>
