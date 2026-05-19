@@ -8,7 +8,7 @@ export function useAlbaranActions(refetch, usuario) {
       ...form,
       actorNombre: usuario?.nombre || 'Oficina',
     })
-    await notificarNuevoAlbaran({ id, ...form })
+    notificarNuevoAlbaran({ id, ...form })   // fire & forget — no bloquea la UI
     await refetch()
     return id
   }
@@ -18,8 +18,9 @@ export function useAlbaranActions(refetch, usuario) {
       `/albaranes/${albaranId}/firmas/${rol}`,
       { actor, nombrePersona, firmaImagen, pesadaData, campoData, observacionesFirma }
     )
-    if (!cerrado) await notificarFirmaCompletada({ ...albaran, id: albaranId }, actor, rol)
-    if (cerrado)  await notificarAlbaranCerrado({ ...albaran, id: albaranId })
+    // fire & forget — el email sale en paralelo, no bloquea el refresco de la UI
+    if (!cerrado) notificarFirmaCompletada({ ...albaran, id: albaranId }, actor, rol)
+    if (cerrado)  notificarAlbaranCerrado({ ...albaran, id: albaranId })
     await refetch()
   }
 

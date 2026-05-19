@@ -1,24 +1,28 @@
 const router     = require('express').Router()
 const nodemailer = require('nodemailer')
 
-function getTransport() {
-  return nodemailer.createTransport({
-    host:   process.env.SMTP_HOST,
-    port:   parseInt(process.env.SMTP_PORT || '587'),
-    secure: parseInt(process.env.SMTP_PORT || '587') === 465,
-    auth: {
-      user: process.env.SMTP_USER,
-      pass: process.env.SMTP_PASS,
-    },
-  })
-}
+// Transport persistente con pooling — reutiliza la conexión SMTP
+// en lugar de reconectar en cada envío (evita overhead TCP+TLS+auth)
+const transport = nodemailer.createTransport({
+  host:           process.env.SMTP_HOST,
+  port:           parseInt(process.env.SMTP_PORT || '587'),
+  secure:         parseInt(process.env.SMTP_PORT || '587') === 465,
+  auth: {
+    user: process.env.SMTP_USER,
+    pass: process.env.SMTP_PASS,
+  },
+  pool:           true,   // reutiliza conexiones
+  maxConnections: 3,
+  maxMessages:    50,
+  socketTimeout:  10000,
+  greetingTimeout: 10000,
+})
 
 // ── POST /email ───────────────────────────────────────────────────
 // Llamado internamente desde el backend (no expuesto al frontend)
 router.post('/', async (req, res) => {
   const { tipo, albaran, destinatario } = req.body
-  const transport = getTransport()
-  const appUrl    = process.env.APP_URL || 'https://biomasa.cserintranet.com'
+  const appUrl = process.env.APP_URL || 'https://biomasa.cserintranet.com'
 
   let subject, html
 
