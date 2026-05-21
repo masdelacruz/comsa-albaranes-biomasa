@@ -84,39 +84,51 @@ export async function generarPDF(a, options = {}) {
   doc.setLineWidth(0.4)
   doc.rect(margen, cabY, contentW, cabH)
 
-  // ── Layout de 4 bloques en 156mm ──────────────────────────────────────────
-  // Anchos de bloque (slot donde se centra cada logo o grupo)
-  // ── Layout: 5 gaps iguales entre/alrededor de 4 bloques ─────────────────
-  // SURE ampliado a 44mm para que logo ancho pueda renderizarse a altura LH
-  // sin quedar width-constrained. Todos los logos usan la misma área LH.
+  // ── Layout dinámico: gaps iguales entre logos reales ─────────────────────
+  // Calculamos el ancho real de cada logo a altura LH usando getImageProperties,
+  // luego distribuimos 5 gaps iguales. Así no hay padding visual desigual.
   const logosAreaW = 156
-  const BW = { comsa: 20, applus: 56, pefc: 28, sure: 44 }  // pefc: 22→28, sure: 38→44
-  const totalBW  = BW.comsa + BW.applus + BW.pefc + BW.sure  // 148mm
-  const gapCount = 5
-  const gap      = (logosAreaW - totalBW) / gapCount          // ≈ 2.8mm c/u
+  const logoY      = cabY + (cabH - LH) / 2
+  const AslotW     = 14   // mm por cada logo Applus (4 logos × 14mm = 56mm)
 
-  const BX = {
-    comsa  : margen + gap,
-    applus : margen + gap + BW.comsa + gap,
-    pefc   : margen + gap + BW.comsa + gap + BW.applus + gap,
-    sure   : margen + gap + BW.comsa + gap + BW.applus + gap + BW.pefc + gap,
+  // Ancho real de un logo renderizado a altura LH (preservando ratio)
+  const logoW = (b64, maxW = 60) => {
+    if (!b64) return 0
+    try {
+      const p = doc.getImageProperties(b64)
+      return Math.min((p.width / p.height) * LH, maxW)
+    } catch { return maxW }
   }
-  const logoY = cabY + (cabH - LH) / 2
+
+  const wComsa = logoW(logoComsa, 22)
+  const wApplus = AslotW          // cada Applus ocupa exactamente su slot
+  const wPefc  = logoW(logoPefc,  48)
+  const wSure  = logoW(logoSure,  68)
+
+  // 5 gaps iguales: [gap] COMSA [gap] APPLUS×4 [gap] PEFC [gap] SURE [gap]
+  const totalW = wComsa + 4 * wApplus + wPefc + wSure
+  const gap    = (logosAreaW - totalW) / 5
+  const logoY0 = logoY   // alias para claridad
+
+  let cx = margen + gap
 
   // ── COMSA ─────────────────────────────────────────────────────────────────
-  addImgFit(logoComsa, BX.comsa, logoY, BW.comsa, LH)
+  addImgFit(logoComsa, cx, logoY0, wComsa, LH)
+  cx += wComsa + gap
 
   // ── 4 × APPLUS ────────────────────────────────────────────────────────────
-  const AslotW = BW.applus / 4   // 14mm por logo
-  ;[logoApplus1, logoApplus2, logoApplus3, logoApplus4].forEach((logo, i) => {
-    addImgFit(logo, BX.applus + i * AslotW, logoY, AslotW, LH)
+  ;[logoApplus1, logoApplus2, logoApplus3, logoApplus4].forEach(logo => {
+    addImgFit(logo, cx, logoY0, wApplus, LH)
+    cx += wApplus
   })
+  cx += gap
 
-  // ── PEFC — slot 22mm × LH: logo cuadrado queda height-constrained → LH ──
-  addImgFit(logoPefc, BX.pefc, logoY, BW.pefc, LH)
+  // ── PEFC ──────────────────────────────────────────────────────────────────
+  addImgFit(logoPefc, cx, logoY0, wPefc, LH)
+  cx += wPefc + gap
 
-  // ── SURE — slot 44mm × LH: logo ancho (~2:1) queda height-constrained → LH
-  addImgFit(logoSure, BX.sure, logoY, BW.sure, LH)
+  // ── SURE ──────────────────────────────────────────────────────────────────
+  addImgFit(logoSure, cx, logoY0, wSure, LH)
 
   // ── TÍTULO ─────────────────────────────────────────────────────────────────
   {
