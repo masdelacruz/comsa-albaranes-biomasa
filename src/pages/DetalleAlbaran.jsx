@@ -202,7 +202,7 @@ export default function DetalleAlbaran({ albaranes, simularFirma, updateFirma, s
   const iniciarEditDatos = () => {
     setFormDatos({
       tipo:              a.tipo              || '',
-      certificacion:     a.certificacion     || '',
+      certificacion:     Array.isArray(a.certificacion) ? a.certificacion.join(',') : (a.certificacion || ''),
       proveedor:         a.proveedor         || '',
       astilladora:       a.astilladora       || '',
       transportista:     a.transportista     || '',
