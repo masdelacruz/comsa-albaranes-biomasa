@@ -45,30 +45,6 @@ export async function generarPDF(a, options = {}) {
     }
   }
 
-  // Devuelve la altura real a la que se renderizaría una imagen en un slot aw×ah
-  const getRenderedH = (b64, aw, ah) => {
-    if (!b64) return ah
-    try {
-      const p = doc.getImageProperties(b64)
-      const r = p.width / p.height
-      return aw / ah >= r ? ah : aw / r   // height-constrained o width-constrained
-    } catch { return ah }
-  }
-
-  // Renderiza imagen fijando su altura a targetH (centrada horizontal y verticalmente en aw×LH)
-  const addImgFixedH = (b64, ax, ay, aw, areaH, targetH) => {
-    if (!b64) return
-    try {
-      const p  = doc.getImageProperties(b64)
-      const r  = p.width / p.height
-      let iw = targetH * r
-      let ih = targetH
-      if (iw > aw) { iw = aw; ih = aw / r }  // no superar ancho del slot
-      doc.addImage(b64, fmt(b64), ax + (aw - iw) / 2, ay + (areaH - ih) / 2, iw, ih)
-    } catch {
-      try { doc.addImage(b64, fmt(b64), ax, ay, aw, targetH) } catch {}
-    }
-  }
 
   // ── carga de logos ─────────────────────────────────────────────────────────
 
@@ -128,23 +104,25 @@ export async function generarPDF(a, options = {}) {
   addImgFit(logoComsa, BX.comsa, logoY, BW.comsa, LH)
 
   // ── 4 × APPLUS — slots iguales dentro del bloque ──────────────────────────
+  // AslotW = 14mm: cada logo Applus queda width-constrained en su slot,
+  // lo que lo limita a ~14mm de altura (o menos si es muy ancho).
+  // Usamos AslotW como altura de referencia para PEFC y SURE.
   const AslotW = BW.applus / 4   // 14mm por logo
   ;[logoApplus1, logoApplus2, logoApplus3, logoApplus4].forEach((logo, i) => {
     addImgFit(logo, BX.applus + i * AslotW, logoY, AslotW, LH)
   })
 
-  // Altura real a la que se renderiza cada logo Applus (width-constrained en slots de 14mm)
-  // PEFC y Sure usarán esa misma altura como referencia para mantener proporciones homogéneas
-  const applusLogos = [logoApplus1, logoApplus2, logoApplus3, logoApplus4].filter(Boolean)
-  const applusRefH  = applusLogos.length
-    ? Math.min(...applusLogos.map(l => getRenderedH(l, AslotW, LH)))
-    : LH
+  // ── PEFC y SURE — misma altura máxima que un slot Applus (AslotW = 14mm) ──
+  // addImgFit centra la imagen dentro del rectángulo pasado.
+  // Offseteamos Y para que ese rectángulo quede centrado dentro del área LH.
+  const refH   = AslotW                        // 14mm — altura de referencia
+  const refOffY = (LH - refH) / 2              // desplazamiento para centrar en LH
 
   // ── PEFC ──────────────────────────────────────────────────────────────────
-  addImgFixedH(logoPefc, BX.pefc, logoY, BW.pefc, LH, applusRefH)
+  addImgFit(logoPefc, BX.pefc, logoY + refOffY, BW.pefc, refH)
 
   // ── SURE ──────────────────────────────────────────────────────────────────
-  addImgFixedH(logoSure, BX.sure, logoY, BW.sure, LH, applusRefH)
+  addImgFit(logoSure, BX.sure, logoY + refOffY, BW.sure, refH)
 
   // ── TÍTULO ─────────────────────────────────────────────────────────────────
   {
