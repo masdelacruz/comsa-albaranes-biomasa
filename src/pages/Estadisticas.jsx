@@ -39,9 +39,9 @@ export default function Estadisticas({ albaranes }) {
 
     const porEstado = {
       'Cerrado':           albaranes.filter(a => a.estado === 'cerrado').length,
-      'En tránsito':       albaranes.filter(a => a.estado === 'en_transito').length,
-      'Pendiente campo':   albaranes.filter(a => a.estado === 'pendiente_campo').length,
+      'Pendiente oficina': albaranes.filter(a => a.estado === 'pendiente_oficina').length,
       'Humedad pendiente': albaranes.filter(a => a.estado === 'humedad_pendiente').length,
+      'Pendiente campo':   albaranes.filter(a => a.estado === 'pendiente_campo').length,
     }
 
     const semanas = ultimas4Semanas(albaranes)

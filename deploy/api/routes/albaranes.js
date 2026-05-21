@@ -241,6 +241,19 @@ router.patch('/:id', requireAuth, async (req, res) => {
       const vals = safeCols.map(k => pesadaCampos[k])
       await pool.query(`UPDATE pesada SET ${sets} WHERE albaran_id = $1`, [id, ...vals])
     }
+    // Si se registra humedad y el albarán estaba esperando análisis → pasa a pendiente_oficina
+    if ('humedad' in pesadaCampos && pesadaCampos.humedad != null) {
+      const { rowCount } = await pool.query(
+        "UPDATE albaranes SET estado='pendiente_oficina' WHERE id=$1 AND estado='humedad_pendiente'",
+        [id]
+      )
+      if (rowCount > 0) {
+        await pool.query(
+          'INSERT INTO actividad (albaran_id,ts,texto,actor) VALUES ($1,$2,$3,$4)',
+          [id, fecha, 'Humedad registrada — pendiente firma de oficina', actorNombre]
+        )
+      }
+    }
   }
 
   await pool.query(
@@ -355,14 +368,21 @@ router.post('/:id/firmas/:rol', async (req, res) => {
       [id, fecha, 'Albarán cerrado — todas las firmas completadas', 'Sistema']
     )
   } else if (externasPendientes.length === 0 && oficinaPendiente) {
-    // Todas las externas firmadas, oficina pendiente → pendiente_oficina
+    // Si no hay humedad registrada aún → humedad_pendiente; si hay → pendiente_oficina
+    const pRes = await pool.query('SELECT humedad FROM pesada WHERE albaran_id=$1', [id])
+    const sinHumedad = pRes.rows[0]?.humedad == null
+    const nuevoEstado = sinHumedad ? 'humedad_pendiente' : 'pendiente_oficina'
+
     await pool.query(
-      "UPDATE albaranes SET estado='pendiente_oficina' WHERE id=$1 AND estado != 'cerrado'",
-      [id]
+      "UPDATE albaranes SET estado=$1 WHERE id=$2 AND estado != 'cerrado'",
+      [nuevoEstado, id]
     )
+    const texto = sinHumedad
+      ? 'Todas las firmas externas completadas — humedad pendiente de análisis'
+      : 'Todas las firmas externas completadas — pendiente firma de oficina'
     await pool.query(
       'INSERT INTO actividad (albaran_id,ts,texto,actor) VALUES ($1,$2,$3,$4)',
-      [id, fecha, 'Todas las firmas externas completadas — pendiente firma de oficina', 'Sistema']
+      [id, fecha, texto, 'Sistema']
     )
   }
 

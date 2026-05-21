@@ -242,7 +242,6 @@ export default function Historial({ albaranes, usuario, refetch, borrarAlbaran }
             <option value="">Todos los estados</option>
             <option value="pendiente_campo">Pendiente campo</option>
             <option value="pendiente_oficina">Pendiente oficina</option>
-            <option value="en_transito">En tránsito</option>
             <option value="humedad_pendiente">Humedad pendiente</option>
             <option value="cerrado">Cerrado</option>
           </select>
