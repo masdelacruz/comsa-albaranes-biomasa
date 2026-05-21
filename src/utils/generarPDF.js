@@ -90,8 +90,8 @@ export async function generarPDF(a, options = {}) {
   // SURE ampliado a 44mm para que logo ancho pueda renderizarse a altura LH
   // sin quedar width-constrained. Todos los logos usan la misma área LH.
   const logosAreaW = 156
-  const BW = { comsa: 20, applus: 56, pefc: 22, sure: 44 }  // sure: 38→44
-  const totalBW  = BW.comsa + BW.applus + BW.pefc + BW.sure  // 142mm
+  const BW = { comsa: 20, applus: 56, pefc: 28, sure: 44 }  // pefc: 22→28, sure: 38→44
+  const totalBW  = BW.comsa + BW.applus + BW.pefc + BW.sure  // 148mm
   const gapCount = 5
   const gap      = (logosAreaW - totalBW) / gapCount          // ≈ 2.8mm c/u
 
