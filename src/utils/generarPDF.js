@@ -86,11 +86,14 @@ export async function generarPDF(a, options = {}) {
 
   // ── Layout de 4 bloques en 156mm ──────────────────────────────────────────
   // Anchos de bloque (slot donde se centra cada logo o grupo)
-  const logosAreaW = 156                        // mm disponibles para logos
-  const BW = { comsa: 20, applus: 56, pefc: 22, sure: 38 }
-  const totalBW    = BW.comsa + BW.applus + BW.pefc + BW.sure  // 136mm
-  const gapCount   = 5                          // antes, entre×3, después
-  const gap        = (logosAreaW - totalBW) / gapCount          // ≈ 4mm c/u
+  // ── Layout: 5 gaps iguales entre/alrededor de 4 bloques ─────────────────
+  // SURE ampliado a 44mm para que logo ancho pueda renderizarse a altura LH
+  // sin quedar width-constrained. Todos los logos usan la misma área LH.
+  const logosAreaW = 156
+  const BW = { comsa: 20, applus: 56, pefc: 22, sure: 44 }  // sure: 38→44
+  const totalBW  = BW.comsa + BW.applus + BW.pefc + BW.sure  // 142mm
+  const gapCount = 5
+  const gap      = (logosAreaW - totalBW) / gapCount          // ≈ 2.8mm c/u
 
   const BX = {
     comsa  : margen + gap,
@@ -98,31 +101,22 @@ export async function generarPDF(a, options = {}) {
     pefc   : margen + gap + BW.comsa + gap + BW.applus + gap,
     sure   : margen + gap + BW.comsa + gap + BW.applus + gap + BW.pefc + gap,
   }
-  const logoY = cabY + (cabH - LH) / 2         // Y para centrar verticalmente
+  const logoY = cabY + (cabH - LH) / 2
 
   // ── COMSA ─────────────────────────────────────────────────────────────────
   addImgFit(logoComsa, BX.comsa, logoY, BW.comsa, LH)
 
-  // ── 4 × APPLUS — slots iguales dentro del bloque ──────────────────────────
-  // AslotW = 14mm: cada logo Applus queda width-constrained en su slot,
-  // lo que lo limita a ~14mm de altura (o menos si es muy ancho).
-  // Usamos AslotW como altura de referencia para PEFC y SURE.
+  // ── 4 × APPLUS ────────────────────────────────────────────────────────────
   const AslotW = BW.applus / 4   // 14mm por logo
   ;[logoApplus1, logoApplus2, logoApplus3, logoApplus4].forEach((logo, i) => {
     addImgFit(logo, BX.applus + i * AslotW, logoY, AslotW, LH)
   })
 
-  // ── PEFC y SURE — misma altura máxima que un slot Applus (AslotW = 14mm) ──
-  // addImgFit centra la imagen dentro del rectángulo pasado.
-  // Offseteamos Y para que ese rectángulo quede centrado dentro del área LH.
-  const refH   = AslotW                        // 14mm — altura de referencia
-  const refOffY = (LH - refH) / 2              // desplazamiento para centrar en LH
+  // ── PEFC — slot 22mm × LH: logo cuadrado queda height-constrained → LH ──
+  addImgFit(logoPefc, BX.pefc, logoY, BW.pefc, LH)
 
-  // ── PEFC ──────────────────────────────────────────────────────────────────
-  addImgFit(logoPefc, BX.pefc, logoY + refOffY, BW.pefc, refH)
-
-  // ── SURE ──────────────────────────────────────────────────────────────────
-  addImgFit(logoSure, BX.sure, logoY + refOffY, BW.sure, refH)
+  // ── SURE — slot 44mm × LH: logo ancho (~2:1) queda height-constrained → LH
+  addImgFit(logoSure, BX.sure, logoY, BW.sure, LH)
 
   // ── TÍTULO ─────────────────────────────────────────────────────────────────
   {
