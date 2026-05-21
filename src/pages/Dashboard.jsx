@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { AlertTriangle, Plus, Filter, Trash2 } from 'lucide-react'
+import { AlertTriangle, Plus, Filter, Trash2, Search, History } from 'lucide-react'
 import { Badge, FirmaSteps } from '../components/Badge'
 import { labelSemanaActual, isoWeek, isoWeekYear } from '../utils/semana'
 import '../components/shared.css'
@@ -8,9 +8,11 @@ import './Dashboard.css'
 
 export default function Dashboard({ albaranes, usuario, borrarAlbaran }) {
   const navigate = useNavigate()
+  const [busqueda,          setBusqueda]          = useState('')
   const [filtroInstalacion, setFiltroInstalacion] = useState('')
-  const [filtroEstado, setFiltroEstado] = useState('')
-  const [confirmBorrar, setConfirmBorrar] = useState(null)
+  const [filtroEstado,      setFiltroEstado]      = useState('')
+  const [soloActivos,       setSoloActivos]       = useState(true)
+  const [confirmBorrar,     setConfirmBorrar]     = useState(null)
   const [pagina, setPagina] = useState(1)
   const POR_PAGINA = 25
   const esSuperadmin = usuario?.nivel === 'superadmin'
@@ -24,19 +26,30 @@ export default function Dashboard({ albaranes, usuario, borrarAlbaran }) {
     return isoWeek(d) === semanaActual && isoWeekYear(d) === anioActual
   })
 
-  const instalaciones = [...new Set(albaranes.map(a => a.instalacion))]
+  const instalaciones  = [...new Set(albaranes.map(a => a.instalacion).filter(Boolean))]
+  const totalActivos   = albaranes.filter(a => a.estado !== 'cerrado').length
   const pendienteFirma = albaranes.filter(a => a.estado !== 'cerrado').length
-  const cerrados = albaranes.filter(a => a.estado === 'cerrado').length
-  const conIncidencia = albaranes.filter(a => a.estado === 'humedad_pendiente').length
-  const alertas = albaranes.filter(a => a.estado === 'humedad_pendiente')
+  const cerrados       = albaranes.filter(a => a.estado === 'cerrado').length
+  const conIncidencia  = albaranes.filter(a => a.estado === 'humedad_pendiente').length
+  const alertas        = albaranes.filter(a => a.estado === 'humedad_pendiente')
 
   const filtrados = albaranes.filter(a => {
+    if (soloActivos && a.estado === 'cerrado') return false
+    if (busqueda) {
+      const q = busqueda.toLowerCase()
+      const hay = [a.id, a.proveedor, a.astilladora, a.transportista, a.instalacion, a.especie, a.origen]
+        .join(' ').toLowerCase()
+      if (!hay.includes(q)) return false
+    }
     if (filtroInstalacion && a.instalacion !== filtroInstalacion) return false
     if (filtroEstado && a.estado !== filtroEstado) return false
     return true
   })
 
-  useEffect(() => { setPagina(1) }, [filtroInstalacion, filtroEstado])
+  const hayFiltros = busqueda || filtroInstalacion || filtroEstado
+  const limpiarFiltros = () => { setBusqueda(''); setFiltroInstalacion(''); setFiltroEstado('') }
+
+  useEffect(() => { setPagina(1) }, [filtroInstalacion, filtroEstado, busqueda, soloActivos])
 
   const totalPaginas = Math.ceil(filtrados.length / POR_PAGINA)
   const paginados    = filtrados.slice((pagina - 1) * POR_PAGINA, pagina * POR_PAGINA)
@@ -50,9 +63,14 @@ export default function Dashboard({ albaranes, usuario, borrarAlbaran }) {
             <div className="page-title">Dashboard</div>
             <div className="page-sub">{labelSemanaActual()}</div>
           </div>
-          <button className="btn btn-primary" onClick={() => navigate('/nuevo')}>
-            <Plus size={15} /> Nuevo albarán
-          </button>
+          <div style={{display:'flex',gap:8}}>
+            <button className="btn btn-ghost" onClick={() => navigate('/historial')} style={{fontSize:12,color:'var(--gray-500)'}}>
+              <History size={13} /> Historial
+            </button>
+            <button className="btn btn-primary" onClick={() => navigate('/nuevo')}>
+              <Plus size={15} /> Nuevo albarán
+            </button>
+          </div>
         </div>
       </div>
 
@@ -73,8 +91,39 @@ export default function Dashboard({ albaranes, usuario, borrarAlbaran }) {
         ))}
 
         <div className="table-header">
-          <div className="section-label" style={{margin:0}}>Albaranes en curso</div>
-          <div style={{display:'flex',gap:8,alignItems:'center'}}>
+          <div style={{display:'flex',alignItems:'center',gap:10,flexWrap:'wrap'}}>
+            <div className="section-label" style={{margin:0}}>
+              {soloActivos ? 'Albaranes activos' : 'Todos los albaranes'}
+            </div>
+            {/* Toggle activos / todos */}
+            <div style={{display:'flex',gap:2,background:'var(--gray-100)',borderRadius:6,padding:2}}>
+              {[
+                { label: `Activos · ${totalActivos}`, val: true  },
+                { label: `Todos · ${albaranes.length}`, val: false },
+              ].map(({ label, val }) => (
+                <button key={String(val)}
+                  onClick={() => { setSoloActivos(val); if (val) setFiltroEstado('') }}
+                  style={{fontSize:11,padding:'3px 10px',borderRadius:4,border:'none',cursor:'pointer',
+                    background: soloActivos === val ? '#fff' : 'transparent',
+                    color: soloActivos === val ? 'var(--gray-800)' : 'var(--gray-400)',
+                    fontWeight: soloActivos === val ? 600 : 400,
+                    boxShadow: soloActivos === val ? '0 1px 3px rgba(0,0,0,0.1)' : 'none',
+                    transition: 'all 0.15s',
+                  }}
+                >{label}</button>
+              ))}
+            </div>
+          </div>
+          <div style={{display:'flex',gap:6,alignItems:'center',flexWrap:'wrap'}}>
+            {/* Búsqueda */}
+            <div style={{position:'relative',display:'flex',alignItems:'center'}}>
+              <Search size={12} style={{position:'absolute',left:7,color:'var(--gray-400)',pointerEvents:'none'}} />
+              <input
+                type="text" placeholder="Buscar ID, empresa, especie..."
+                value={busqueda} onChange={e => setBusqueda(e.target.value)}
+                style={{paddingLeft:24,fontSize:12,padding:'5px 8px 5px 24px',width:190}}
+              />
+            </div>
             <Filter size={13} color="var(--gray-400)" />
             <select value={filtroInstalacion} onChange={e => setFiltroInstalacion(e.target.value)} style={{width:'auto',fontSize:12,padding:'5px 8px'}}>
               <option value="">Todas las instalaciones</option>
@@ -85,8 +134,11 @@ export default function Dashboard({ albaranes, usuario, borrarAlbaran }) {
               <option value="pendiente_campo">Pendiente campo</option>
               <option value="pendiente_oficina">Pendiente oficina</option>
               <option value="humedad_pendiente">Humedad pendiente</option>
-              <option value="cerrado">Cerrado</option>
+              {!soloActivos && <option value="cerrado">Cerrado</option>}
             </select>
+            {hayFiltros && (
+              <button className="btn btn-ghost" onClick={limpiarFiltros} style={{fontSize:11}}>× Limpiar</button>
+            )}
           </div>
         </div>
 

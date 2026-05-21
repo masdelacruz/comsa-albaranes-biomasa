@@ -1,6 +1,6 @@
 import { useState, useMemo, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Download, Search, FileSpreadsheet, CheckSquare, Upload, Trash2, Square, X } from 'lucide-react'
+import { Download, Search, FileSpreadsheet, CheckSquare, Upload, Trash2, Square, X, LayoutDashboard } from 'lucide-react'
 import ExcelJS from 'exceljs'
 import { Badge, FirmaSteps } from '../components/Badge'
 import { generarPDF } from '../utils/generarPDF'
@@ -13,11 +13,13 @@ const TIPOS_DOC = ['Autodeclaración','Acuerdo de cesión','Contrato prestación
 export default function Historial({ albaranes, usuario, refetch, borrarAlbaran }) {
   const navigate = useNavigate()
   const [busqueda, setBusqueda] = useState('')
-  const [filtroInstalacion, setFiltroInstalacion] = useState('')
-  const [filtroAstilladora, setFiltroAstilladora] = useState('')
-  const [filtroEstado, setFiltroEstado] = useState('')
-  const [filtroFechaDesde, setFiltroFechaDesde] = useState('')
-  const [filtroFechaHasta, setFiltroFechaHasta] = useState('')
+  const [filtroInstalacion,  setFiltroInstalacion]  = useState('')
+  const [filtroAstilladora,  setFiltroAstilladora]  = useState('')
+  const [filtroProveedor,    setFiltroProveedor]    = useState('')
+  const [filtroTransportista,setFiltroTransportista]= useState('')
+  const [filtroEstado,       setFiltroEstado]       = useState('')
+  const [filtroFechaDesde,   setFiltroFechaDesde]   = useState('')
+  const [filtroFechaHasta,   setFiltroFechaHasta]   = useState('')
 
   // ── Selección masiva ──────────────────────────────────────────────
   const [seleccionando,   setSeleccionando]   = useState(false)
@@ -82,22 +84,30 @@ export default function Historial({ albaranes, usuario, refetch, borrarAlbaran }
     } finally { setEliminando(false) }
   }
 
-  const instalaciones = [...new Set(albaranes.map(a => a.instalacion).filter(Boolean))]
-  const astilladoras  = [...new Set(albaranes.map(a => a.astilladora).filter(Boolean))]
+  const instalaciones   = [...new Set(albaranes.map(a => a.instalacion).filter(Boolean))].sort()
+  const astilladoras    = [...new Set(albaranes.map(a => a.astilladora).filter(Boolean))].sort()
+  const proveedores     = [...new Set(albaranes.map(a => a.proveedor).filter(Boolean))].sort()
+  const transportistas  = [...new Set(albaranes.map(a => a.transportista).filter(Boolean))].sort()
 
   const filtrados = useMemo(() => albaranes.filter(a => {
-    if (busqueda && ![a.id, a.astilladora, a.transportista, a.instalacion, a.especie, a.origen, a.permiso]
-      .join(' ').toLowerCase().includes(busqueda.toLowerCase())) return false
-    if (filtroInstalacion && a.instalacion !== filtroInstalacion) return false
-    if (filtroAstilladora && a.astilladora !== filtroAstilladora) return false
-    if (filtroEstado && a.estado !== filtroEstado) return false
-    if (filtroFechaDesde && a.fecha < filtroFechaDesde) return false
-    if (filtroFechaHasta && a.fecha > filtroFechaHasta) return false
+    if (busqueda) {
+      const q = busqueda.toLowerCase()
+      const hay = [a.id, a.proveedor, a.astilladora, a.transportista, a.instalacion, a.especie, a.origen, a.permiso]
+        .join(' ').toLowerCase()
+      if (!hay.includes(q)) return false
+    }
+    if (filtroInstalacion   && a.instalacion   !== filtroInstalacion)   return false
+    if (filtroAstilladora   && a.astilladora   !== filtroAstilladora)   return false
+    if (filtroProveedor     && a.proveedor     !== filtroProveedor)     return false
+    if (filtroTransportista && a.transportista !== filtroTransportista) return false
+    if (filtroEstado        && a.estado        !== filtroEstado)        return false
+    if (filtroFechaDesde    && a.fecha         <  filtroFechaDesde)     return false
+    if (filtroFechaHasta    && a.fecha         >  filtroFechaHasta)     return false
     return true
-  }), [albaranes, busqueda, filtroInstalacion, filtroAstilladora, filtroEstado, filtroFechaDesde, filtroFechaHasta])
+  }), [albaranes, busqueda, filtroInstalacion, filtroAstilladora, filtroProveedor, filtroTransportista, filtroEstado, filtroFechaDesde, filtroFechaHasta])
 
   // Resetear página al cambiar filtros
-  useEffect(() => { setPagina(1) }, [busqueda, filtroInstalacion, filtroAstilladora, filtroEstado, filtroFechaDesde, filtroFechaHasta])
+  useEffect(() => { setPagina(1) }, [busqueda, filtroInstalacion, filtroAstilladora, filtroProveedor, filtroTransportista, filtroEstado, filtroFechaDesde, filtroFechaHasta])
 
   const totalPaginas = Math.ceil(filtrados.length / POR_PAGINA)
   const paginados    = filtrados.slice((pagina - 1) * POR_PAGINA, pagina * POR_PAGINA)
@@ -197,6 +207,7 @@ export default function Historial({ albaranes, usuario, refetch, borrarAlbaran }
 
   const limpiarFiltros = () => {
     setBusqueda(''); setFiltroInstalacion(''); setFiltroAstilladora('')
+    setFiltroProveedor(''); setFiltroTransportista('')
     setFiltroEstado(''); setFiltroFechaDesde(''); setFiltroFechaHasta('')
   }
 
@@ -209,6 +220,9 @@ export default function Historial({ albaranes, usuario, refetch, borrarAlbaran }
             <div className="page-sub">{filtrados.length} registros encontrados</div>
           </div>
           <div style={{display:'flex',gap:8}}>
+            <button className="btn btn-ghost" onClick={() => navigate('/dashboard')} style={{fontSize:12,color:'var(--gray-500)'}}>
+              <LayoutDashboard size={13} /> Dashboard
+            </button>
             <button className="btn btn-primary" onClick={exportarExcel}>
               <FileSpreadsheet size={15} /> Exportar Excel
             </button>
@@ -228,15 +242,23 @@ export default function Historial({ albaranes, usuario, refetch, borrarAlbaran }
         <div className="filtros-bar">
           <div style={{position:'relative',display:'flex',alignItems:'center'}}>
             <Search size={13} style={{position:'absolute',left:8,color:'var(--gray-400)'}} />
-            <input type="text" placeholder="Buscar por ID, astilladora, destino..." value={busqueda} onChange={e => setBusqueda(e.target.value)} style={{paddingLeft:28}} />
+            <input type="text" placeholder="Buscar por ID, empresa, especie, origen..." value={busqueda} onChange={e => setBusqueda(e.target.value)} style={{paddingLeft:28}} />
           </div>
           <select value={filtroInstalacion} onChange={e => setFiltroInstalacion(e.target.value)}>
             <option value="">Todas las instalaciones</option>
             {instalaciones.map(i => <option key={i}>{i}</option>)}
           </select>
+          <select value={filtroProveedor} onChange={e => setFiltroProveedor(e.target.value)}>
+            <option value="">Todos los proveedores</option>
+            {proveedores.map(p => <option key={p}>{p}</option>)}
+          </select>
           <select value={filtroAstilladora} onChange={e => setFiltroAstilladora(e.target.value)}>
             <option value="">Todas las astilladoras</option>
             {astilladoras.map(a => <option key={a}>{a}</option>)}
+          </select>
+          <select value={filtroTransportista} onChange={e => setFiltroTransportista(e.target.value)}>
+            <option value="">Todos los transportistas</option>
+            {transportistas.map(t => <option key={t}>{t}</option>)}
           </select>
           <select value={filtroEstado} onChange={e => setFiltroEstado(e.target.value)}>
             <option value="">Todos los estados</option>
@@ -245,9 +267,15 @@ export default function Historial({ albaranes, usuario, refetch, borrarAlbaran }
             <option value="humedad_pendiente">Humedad pendiente</option>
             <option value="cerrado">Cerrado</option>
           </select>
-          <input type="date" value={filtroFechaDesde} onChange={e => setFiltroFechaDesde(e.target.value)} title="Desde" />
-          <input type="date" value={filtroFechaHasta} onChange={e => setFiltroFechaHasta(e.target.value)} title="Hasta" />
-          {(busqueda||filtroInstalacion||filtroAstilladora||filtroEstado||filtroFechaDesde||filtroFechaHasta) && (
+          <div style={{display:'flex',alignItems:'center',gap:4}}>
+            <span style={{fontSize:11,color:'var(--gray-400)',whiteSpace:'nowrap'}}>Desde</span>
+            <input type="date" value={filtroFechaDesde} onChange={e => setFiltroFechaDesde(e.target.value)} />
+          </div>
+          <div style={{display:'flex',alignItems:'center',gap:4}}>
+            <span style={{fontSize:11,color:'var(--gray-400)',whiteSpace:'nowrap'}}>Hasta</span>
+            <input type="date" value={filtroFechaHasta} onChange={e => setFiltroFechaHasta(e.target.value)} />
+          </div>
+          {(busqueda||filtroInstalacion||filtroAstilladora||filtroProveedor||filtroTransportista||filtroEstado||filtroFechaDesde||filtroFechaHasta) && (
             <button className="btn btn-ghost" onClick={limpiarFiltros} style={{fontSize:12}}>Limpiar filtros ×</button>
           )}
         </div>
