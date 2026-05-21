@@ -320,7 +320,7 @@ export default function Historial({ albaranes, usuario, refetch, borrarAlbaran }
                 <th>Humedad</th>
                 <th>Estado</th>
                 <th>Firmas</th>
-                {esSuperadmin && <th></th>}
+                {esSuperadmin && <th style={{width:36,padding:'10px 4px'}}></th>}
               </tr>
             </thead>
             <tbody>
@@ -346,9 +346,9 @@ export default function Historial({ albaranes, usuario, refetch, borrarAlbaran }
                   <td><Badge estado={a.estado} /></td>
                   <td><FirmaSteps firmas={a.firmas} estado={a.estado} /></td>
                   {esSuperadmin && (
-                    <td onClick={e => e.stopPropagation()}>
+                    <td style={{width:36,padding:'4px',textAlign:'center'}} onClick={e => e.stopPropagation()}>
                       <button
-                        style={{background:'none',border:'none',cursor:'pointer',padding:4,color:'var(--gray-300)',display:'flex',alignItems:'center'}}
+                        style={{background:'none',border:'none',cursor:'pointer',padding:4,color:'var(--gray-300)',display:'inline-flex',alignItems:'center'}}
                         onClick={() => setConfirmBorrarFila(a.id)}
                         title="Borrar albarán"
                       >

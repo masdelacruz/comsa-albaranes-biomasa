@@ -24,6 +24,8 @@
   .dash-content { padding: 0 20px 28px; }
   .kpi-grid { gap: 10px; }
   .kpi-val { font-size: 24px; }
+  .albaran-table { min-width: 700px; }
+  .albaran-table th, .albaran-table td { padding: 10px 10px; }
 }
 @media (max-width: 1100px) {
   .dash-content { padding: 0 16px 24px; }
