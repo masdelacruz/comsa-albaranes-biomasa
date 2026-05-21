@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { AlertTriangle, Plus, Filter, Trash2, Search, History } from 'lucide-react'
+import { AlertTriangle, Plus, Filter, Trash2, Search } from 'lucide-react'
 import { Badge, FirmaSteps } from '../components/Badge'
 import { labelSemanaActual, isoWeek, isoWeekYear } from '../utils/semana'
 import '../components/shared.css'
@@ -63,14 +63,9 @@ export default function Dashboard({ albaranes, usuario, borrarAlbaran }) {
             <div className="page-title">Dashboard</div>
             <div className="page-sub">{labelSemanaActual()}</div>
           </div>
-          <div style={{display:'flex',gap:8}}>
-            <button className="btn btn-ghost" onClick={() => navigate('/historial')} style={{fontSize:12,color:'var(--gray-500)'}}>
-              <History size={13} /> Historial
-            </button>
-            <button className="btn btn-primary" onClick={() => navigate('/nuevo')}>
-              <Plus size={15} /> Nuevo albarán
-            </button>
-          </div>
+          <button className="btn btn-primary" onClick={() => navigate('/nuevo')}>
+            <Plus size={15} /> Nuevo albarán
+          </button>
         </div>
       </div>
 
@@ -148,7 +143,7 @@ export default function Dashboard({ albaranes, usuario, borrarAlbaran }) {
             <thead>
               <tr>
                 <th>Nº albarán</th><th>Fecha</th><th>Proveedor</th><th>Astilladora</th><th>Transportista</th>
-                <th>Destino</th><th>Especie</th><th>Estado</th><th>Firmas</th>
+                <th>Instalación</th><th>Especie</th><th>Estado</th><th>Firmas</th>
                 {esSuperadmin && <th></th>}
               </tr>
             </thead>

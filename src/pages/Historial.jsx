@@ -1,6 +1,6 @@
 import { useState, useMemo, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Download, Search, FileSpreadsheet, CheckSquare, Upload, Trash2, Square, X, LayoutDashboard } from 'lucide-react'
+import { Download, Search, FileSpreadsheet, CheckSquare, Upload, Trash2, Square, X } from 'lucide-react'
 import ExcelJS from 'exceljs'
 import { Badge, FirmaSteps } from '../components/Badge'
 import { generarPDF } from '../utils/generarPDF'
@@ -219,14 +219,9 @@ export default function Historial({ albaranes, usuario, refetch, borrarAlbaran }
             <div className="page-title">Historial de albaranes</div>
             <div className="page-sub">{filtrados.length} registros encontrados</div>
           </div>
-          <div style={{display:'flex',gap:8}}>
-            <button className="btn btn-ghost" onClick={() => navigate('/dashboard')} style={{fontSize:12,color:'var(--gray-500)'}}>
-              <LayoutDashboard size={13} /> Dashboard
-            </button>
-            <button className="btn btn-primary" onClick={exportarExcel}>
-              <FileSpreadsheet size={15} /> Exportar Excel
-            </button>
-          </div>
+          <button className="btn btn-primary" onClick={exportarExcel}>
+            <FileSpreadsheet size={15} /> Exportar Excel
+          </button>
         </div>
       </div>
 
@@ -244,10 +239,6 @@ export default function Historial({ albaranes, usuario, refetch, borrarAlbaran }
             <Search size={13} style={{position:'absolute',left:8,color:'var(--gray-400)'}} />
             <input type="text" placeholder="Buscar por ID, empresa, especie, origen..." value={busqueda} onChange={e => setBusqueda(e.target.value)} style={{paddingLeft:28}} />
           </div>
-          <select value={filtroInstalacion} onChange={e => setFiltroInstalacion(e.target.value)}>
-            <option value="">Todas las instalaciones</option>
-            {instalaciones.map(i => <option key={i}>{i}</option>)}
-          </select>
           <select value={filtroProveedor} onChange={e => setFiltroProveedor(e.target.value)}>
             <option value="">Todos los proveedores</option>
             {proveedores.map(p => <option key={p}>{p}</option>)}
@@ -259,6 +250,10 @@ export default function Historial({ albaranes, usuario, refetch, borrarAlbaran }
           <select value={filtroTransportista} onChange={e => setFiltroTransportista(e.target.value)}>
             <option value="">Todos los transportistas</option>
             {transportistas.map(t => <option key={t}>{t}</option>)}
+          </select>
+          <select value={filtroInstalacion} onChange={e => setFiltroInstalacion(e.target.value)}>
+            <option value="">Todas las instalaciones</option>
+            {instalaciones.map(i => <option key={i}>{i}</option>)}
           </select>
           <select value={filtroEstado} onChange={e => setFiltroEstado(e.target.value)}>
             <option value="">Todos los estados</option>
@@ -319,7 +314,7 @@ export default function Historial({ albaranes, usuario, refetch, borrarAlbaran }
                 <th>Proveedor</th>
                 <th>Astilladora</th>
                 <th>Transportista</th>
-                <th>Destino</th>
+                <th>Instalación</th>
                 <th>Especie</th>
                 <th>Peso neto</th>
                 <th>Humedad</th>

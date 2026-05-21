@@ -1,6 +1,14 @@
 .detalle-page { min-height:100vh; }
 .detalle-content { padding:0 28px 40px; }
 .detalle-cols { display:grid; grid-template-columns:1fr 1fr; gap:16px; align-items:start; }
+
+@media (max-width: 1400px) {
+  .detalle-content { padding: 0 20px 40px; }
+}
+@media (max-width: 1200px) {
+  .detalle-cols { grid-template-columns: 1fr; }
+  .detalle-content { padding: 0 16px 32px; }
+}
 .detalle-left, .detalle-right { display:flex; flex-direction:column; }
 .detalle-row { display:flex; justify-content:space-between; align-items:flex-start; gap:12px; padding:7px 0; border-bottom:var(--border-light); font-size:13px; }
 .detalle-row:last-child { border-bottom:none; }
