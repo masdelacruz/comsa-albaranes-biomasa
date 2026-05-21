@@ -102,6 +102,7 @@ function PasoFirma({ rol, a, updateFirma, subirTicketPesada, onCompletado, total
   const [ticketNombre,      setTicketNombre]     = useState('')
   const [firmando,          setFirmando]         = useState(false)
   const [firmado,           setFirmado]          = useState(false)
+  const [errorFirma,        setErrorFirma]       = useState('')
 
   const pesoNeto = pesoBruto && tara
     ? (parseFloat(pesoBruto) - parseFloat(tara)).toLocaleString('es-ES') + ' kg' : null
@@ -121,6 +122,7 @@ function PasoFirma({ rol, a, updateFirma, subirTicketPesada, onCompletado, total
 
   const handleFirmar = async () => {
     setFirmando(true)
+    setErrorFirma('')
     const firmaImagen = requiereFirma ? (empresaFirmaUrl || firmaCanvas || null) : null
     const pesadaData  = (rol === 'transportista' || rol === 'instalacion') && (pesoBruto || tara) ? {
       entrada: parseFloat(pesoBruto) || null,
@@ -132,10 +134,15 @@ function PasoFirma({ rol, a, updateFirma, subirTicketPesada, onCompletado, total
       chofer: rol === 'transportista' ? chofer : null,
     } : null
 
-    await updateFirma(a.id, rol, empresaNombre, nombrePersona || null, pesadaData, firmaImagen, campoData, observaciones.trim() || null)
-    setFirmado(true)
-    setFirmando(false)
-    setTimeout(() => onCompletado(), 1200)
+    try {
+      await updateFirma(a.id, rol, empresaNombre, nombrePersona || null, pesadaData, firmaImagen, campoData, observaciones.trim() || null)
+      setFirmado(true)
+      setTimeout(() => onCompletado(), 1200)
+    } catch {
+      setErrorFirma('Error al enviar la firma. Comprueba la conexión e inténtalo de nuevo.')
+    } finally {
+      setFirmando(false)
+    }
   }
 
   if (yaFirmado || firmado) return (
@@ -330,6 +337,11 @@ function PasoFirma({ rol, a, updateFirma, subirTicketPesada, onCompletado, total
         </div>
       )}
 
+      {errorFirma && (
+        <div style={{padding:'10px 12px',background:'#fff1f1',border:'1px solid #fca5a5',borderRadius:8,color:'#b91c1c',fontSize:13,marginBottom:12}}>
+          {errorFirma}
+        </div>
+      )}
       <button
         className="campo-btn-primary"
         disabled={!puedeConfirmar || firmando}
@@ -365,6 +377,16 @@ export default function VistaCampo({ albaranes, updateFirma, subirTicketPesada }
   }, [id, a, rolesParam])
 
   if (!a) return <div style={{padding:40,textAlign:'center',color:'#999'}}>Albarán no encontrado.</div>
+
+  if (a.estado === 'cerrado') return (
+    <div className="campo-page">
+      <div className="campo-success">
+        <div className="campo-success-icon"><CheckCircle size={36} color="var(--green-400)" /></div>
+        <div className="campo-success-title">Albarán cerrado</div>
+        <div className="campo-success-sub">Este albarán ya tiene todas las firmas completadas. No es necesaria ninguna acción.</div>
+      </div>
+    </div>
+  )
 
   const seleccionarRol = (r) => {
     setRolSeleccionado(r)

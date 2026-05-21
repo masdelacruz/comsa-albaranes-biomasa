@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { AlertTriangle, Plus, Filter, Trash2 } from 'lucide-react'
 import { Badge, FirmaSteps } from '../components/Badge'
-import { labelSemanaActual } from '../utils/semana'
+import { labelSemanaActual, isoWeek, isoWeekYear } from '../utils/semana'
 import '../components/shared.css'
 import './Dashboard.css'
 
@@ -14,6 +14,15 @@ export default function Dashboard({ albaranes, usuario, borrarAlbaran }) {
   const [pagina, setPagina] = useState(1)
   const POR_PAGINA = 25
   const esSuperadmin = usuario?.nivel === 'superadmin'
+
+  const hoy = new Date()
+  const semanaActual = isoWeek(hoy)
+  const anioActual   = isoWeekYear(hoy)
+  const albaranesSemana = albaranes.filter(a => {
+    if (!a.fecha) return false
+    const d = new Date(a.fecha)
+    return isoWeek(d) === semanaActual && isoWeekYear(d) === anioActual
+  })
 
   const instalaciones = [...new Set(albaranes.map(a => a.instalacion))]
   const pendienteFirma = albaranes.filter(a => a.estado !== 'cerrado').length
@@ -49,7 +58,7 @@ export default function Dashboard({ albaranes, usuario, borrarAlbaran }) {
 
       <div className="dash-content">
         <div className="kpi-grid">
-          <div className="kpi-card"><div className="kpi-label">Albaranes esta semana</div><div className="kpi-val">{albaranes.length}</div></div>
+          <div className="kpi-card"><div className="kpi-label">Albaranes esta semana</div><div className="kpi-val">{albaranesSemana.length}</div></div>
           <div className="kpi-card"><div className="kpi-label">Pendientes de firma</div><div className="kpi-val amber">{pendienteFirma}</div></div>
           <div className="kpi-card"><div className="kpi-label">Cerrados</div><div className="kpi-val green">{cerrados}</div></div>
           <div className="kpi-card"><div className="kpi-label">Con incidencia</div><div className="kpi-val red">{conIncidencia}</div></div>
@@ -58,7 +67,7 @@ export default function Dashboard({ albaranes, usuario, borrarAlbaran }) {
         {alertas.map(a => (
           <div key={a.id} className="alerta-bar" onClick={() => navigate(`/albaran/${a.id}`)}>
             <AlertTriangle size={14} />
-            <span><strong>{a.id}</strong> · {a.instalacion} · Humedad pendiente de análisis — muestra enviada hace 18h</span>
+            <span><strong>{a.id}</strong> · {a.instalacion} · Humedad pendiente de análisis</span>
             <span className="alerta-link">Ver →</span>
           </div>
         ))}

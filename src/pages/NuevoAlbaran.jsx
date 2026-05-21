@@ -12,6 +12,8 @@ const DOCS_OP2 = ['Certificado SURE','Permiso de obra','Contrato prestación ser
 export default function NuevoAlbaran({ addAlbaran }) {
   const navigate = useNavigate()
   const [guardado, setGuardado]             = useState(false)
+  const [guardando, setGuardando]           = useState(false)
+  const [errorGuardar, setErrorGuardar]     = useState('')
   const [numCamiones, setNumCamiones]       = useState(1)
   const [progreso, setProgreso]             = useState(0)
   const [proveedores, setProveedores]       = useState([])
@@ -30,7 +32,7 @@ export default function NuevoAlbaran({ addAlbaran }) {
   }, [])
 
   const [form, setForm] = useState({
-    tipo: 'Opció 1 — Compra en monte / plataforma',
+    tipo: 'Opción 1 — Compra en monte / plataforma',
     proveedor: '', astilladora: '', transportista: '', instalacion: '',
     especie: ESPECIES[0], tipoBiomasa: TIPOS_BIOMASA[0],
     origen: '', mapsOrigen: '', mapsDestino: '', permiso: '', observaciones: '',
@@ -45,17 +47,26 @@ export default function NuevoAlbaran({ addAlbaran }) {
   const camposObligatorios = form.proveedor && form.instalacion && (!esOp1 || (form.astilladora && form.transportista))
 
   const handleGuardar = async () => {
-    setGuardado(true)
-    if (numCamiones === 1) {
-      const id = await addAlbaran({ ...form, numCamiones: 1, grupoId: null, camionOrden: 1 })
-      setTimeout(() => navigate(`/albaran/${id}`), 1200)
-    } else {
-      const grupoId = crypto.randomUUID()
-      for (let i = 0; i < numCamiones; i++) {
-        setProgreso(i + 1)
-        await addAlbaran({ ...form, numCamiones: 1, grupoId, camionOrden: i + 1 })
+    setGuardando(true)
+    setErrorGuardar('')
+    try {
+      if (numCamiones === 1) {
+        const id = await addAlbaran({ ...form, numCamiones: 1, grupoId: null, camionOrden: 1 })
+        setGuardado(true)
+        setTimeout(() => navigate(`/albaran/${id}`), 1200)
+      } else {
+        const grupoId = crypto.randomUUID()
+        for (let i = 0; i < numCamiones; i++) {
+          setProgreso(i + 1)
+          await addAlbaran({ ...form, numCamiones: 1, grupoId, camionOrden: i + 1 })
+        }
+        setGuardado(true)
+        setTimeout(() => navigate('/dashboard'), 1200)
       }
-      setTimeout(() => navigate('/dashboard'), 1200)
+    } catch {
+      setErrorGuardar('Error al guardar. Comprueba la conexión e inténtalo de nuevo.')
+    } finally {
+      setGuardando(false)
     }
   }
 
@@ -91,7 +102,7 @@ export default function NuevoAlbaran({ addAlbaran }) {
         <div className="form-section card">
           <div className="section-label">Tipo de operación</div>
           <div className="tipo-btns">
-            {['Opció 1 — Compra en monte / plataforma','Opció 2 — Proveedor directo'].map(t => (
+            {['Opción 1 — Compra en monte / plataforma','Opción 2 — Proveedor directo'].map(t => (
               <button key={t} className={`tipo-btn ${form.tipo === t ? 'active' : ''}`} onClick={() => set('tipo', t)}>{t}</button>
             ))}
           </div>
@@ -215,10 +226,18 @@ export default function NuevoAlbaran({ addAlbaran }) {
           </div>
         </div>
 
+        {errorGuardar && (
+          <div style={{padding:'10px 14px',background:'var(--red-50)',border:'1px solid var(--red-100)',borderRadius:'var(--radius-md)',color:'var(--red-700)',fontSize:13,marginTop:8}}>
+            {errorGuardar}
+          </div>
+        )}
         <div className="form-actions">
           <button className="btn" onClick={() => navigate('/dashboard')}>Cancelar</button>
-          <button className="btn btn-primary" onClick={handleGuardar} disabled={!camposObligatorios}>
-            <CheckCircle size={15} /> Guardar y generar enlace de campo
+          <button className="btn btn-primary" onClick={handleGuardar} disabled={!camposObligatorios || guardando}>
+            {guardando
+              ? <><div style={{width:13,height:13,border:'2px solid #fff',borderTopColor:'transparent',borderRadius:'50%',animation:'spin 0.6s linear infinite'}} /> Guardando...</>
+              : <><CheckCircle size={15} /> Guardar y generar enlace de campo</>
+            }
           </button>
         </div>
 

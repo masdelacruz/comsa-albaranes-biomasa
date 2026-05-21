@@ -303,7 +303,7 @@ export default function Historial({ albaranes, usuario, refetch, borrarAlbaran }
             </thead>
             <tbody>
               {filtrados.length === 0 ? (
-                <tr><td colSpan={seleccionando ? 12 : (esSuperadmin ? 12 : 11)} className="empty-state">No hay albaranes con los filtros seleccionados</td></tr>
+                <tr><td colSpan={(seleccionando ? 1 : 0) + 11 + (esSuperadmin ? 1 : 0)} className="empty-state">No hay albaranes con los filtros seleccionados</td></tr>
               ) : paginados.map(a => (
                 <tr key={a.id} onClick={() => seleccionando ? toggleSeleccion(a.id) : navigate(`/albaran/${a.id}`)}
                   style={{cursor:'pointer', background: seleccionados.has(a.id) ? 'var(--green-50)' : undefined}}>

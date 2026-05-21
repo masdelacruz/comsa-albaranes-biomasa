@@ -18,7 +18,7 @@ const FIRMA_LABELS = {
   oficina:       'Oficina',
 }
 
-const TIPOS_OP = ['Opció 1 — Compra en monte / plataforma', 'Opció 2 — Proveedor directo']
+const TIPOS_OP = ['Opción 1 — Compra en monte / plataforma', 'Opción 2 — Proveedor directo']
 
 export default function DetalleAlbaran({ albaranes, simularFirma, updateFirma, subirDocumento, subirTicketPesada, actualizarAlbaran, borrarAlbaran, reabrirAlbaran, usuario }) {
   const { id } = useParams()

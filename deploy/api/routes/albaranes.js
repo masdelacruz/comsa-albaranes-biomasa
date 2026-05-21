@@ -83,12 +83,12 @@ router.get('/', requireAuth, async (_req, res) => {
   )
   if (!albs.length) return res.json([])
 
-  const ids = albs.map(a => `'${a.id}'`).join(',')
+  const ids = albs.map(a => a.id)
   const [fRes, pRes, dRes, actRes] = await Promise.all([
-    pool.query(`SELECT * FROM firmas WHERE albaran_id IN (${ids})`),
-    pool.query(`SELECT * FROM pesada WHERE albaran_id IN (${ids})`),
-    pool.query(`SELECT * FROM docs WHERE albaran_id IN (${ids})`),
-    pool.query(`SELECT * FROM actividad WHERE albaran_id IN (${ids}) ORDER BY created_at ASC`),
+    pool.query('SELECT * FROM firmas   WHERE albaran_id = ANY($1)', [ids]),
+    pool.query('SELECT * FROM pesada   WHERE albaran_id = ANY($1)', [ids]),
+    pool.query('SELECT * FROM docs     WHERE albaran_id = ANY($1)', [ids]),
+    pool.query('SELECT * FROM actividad WHERE albaran_id = ANY($1) ORDER BY created_at ASC', [ids]),
   ])
 
   const allNombres = [...new Set(
@@ -196,6 +196,14 @@ router.post('/', requireAuth, async (req, res) => {
   }
 })
 
+const ALLOWED_ALBARAN_COLS = new Set([
+  'tipo', 'certificacion', 'proveedor', 'astilladora', 'transportista', 'instalacion',
+  'especie', 'tipo_biomasa', 'origen', 'permiso', 'observaciones',
+  'maps_origen', 'maps_destino', 'matricula_tractora', 'matricula_remolque', 'chofer',
+  'fecha', 'hora',
+])
+const ALLOWED_PESADA_COLS = new Set(['entrada', 'salida', 'humedad'])
+
 // ── PATCH /albaranes/:id  (requiere auth) ─────────────────────────
 router.patch('/:id', requireAuth, async (req, res) => {
   const { campos, pesadaCampos, descripcion } = req.body
@@ -218,15 +226,21 @@ router.patch('/:id', requireAuth, async (req, res) => {
       campos.certificacion = Array.isArray(c) ? c
         : (typeof c === 'string' && c ? c.split(',').filter(Boolean) : [])
     }
-    const sets  = Object.keys(campos).map((k, i) => `${k} = $${i+2}`).join(', ')
-    const vals  = Object.values(campos)
-    await pool.query(`UPDATE albaranes SET ${sets} WHERE id = $1`, [id, ...vals])
+    const safeCols = Object.keys(campos).filter(k => ALLOWED_ALBARAN_COLS.has(k))
+    if (safeCols.length) {
+      const sets = safeCols.map((k, i) => `${k} = $${i+2}`).join(', ')
+      const vals = safeCols.map(k => campos[k])
+      await pool.query(`UPDATE albaranes SET ${sets} WHERE id = $1`, [id, ...vals])
+    }
   }
 
   if (pesadaCampos && Object.keys(pesadaCampos).length) {
-    const sets = Object.keys(pesadaCampos).map((k, i) => `${k} = $${i+2}`).join(', ')
-    const vals = Object.values(pesadaCampos)
-    await pool.query(`UPDATE pesada SET ${sets} WHERE albaran_id = $1`, [id, ...vals])
+    const safeCols = Object.keys(pesadaCampos).filter(k => ALLOWED_PESADA_COLS.has(k))
+    if (safeCols.length) {
+      const sets = safeCols.map((k, i) => `${k} = $${i+2}`).join(', ')
+      const vals = safeCols.map(k => pesadaCampos[k])
+      await pool.query(`UPDATE pesada SET ${sets} WHERE albaran_id = $1`, [id, ...vals])
+    }
   }
 
   await pool.query(
