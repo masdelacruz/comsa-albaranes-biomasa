@@ -468,6 +468,7 @@ export default function DetalleAlbaran({ albaranes, simularFirma, updateFirma, s
                       {proveedores.map(o => <option key={o} value={o}>{o}</option>)}
                     </select>
                   </div>
+                  {formDatos.tipo?.includes('1') && (
                   <div className="edit-field">
                     <label className="edit-label">Astilladora</label>
                     <select className="edit-input" value={formDatos.astilladora} onChange={e => setD('astilladora', e.target.value)}>
@@ -475,6 +476,8 @@ export default function DetalleAlbaran({ albaranes, simularFirma, updateFirma, s
                       {astilladoras.map(o => <option key={o} value={o}>{o}</option>)}
                     </select>
                   </div>
+                  )}
+                  {formDatos.tipo?.includes('1') && (
                   <div className="edit-field">
                     <label className="edit-label">Transportista</label>
                     <select className="edit-input" value={formDatos.transportista} onChange={e => setD('transportista', e.target.value)}>
@@ -482,6 +485,7 @@ export default function DetalleAlbaran({ albaranes, simularFirma, updateFirma, s
                       {transportistas.map(o => <option key={o} value={o}>{o}</option>)}
                     </select>
                   </div>
+                  )}
                   <div className="edit-field">
                     <label className="edit-label">Instalación</label>
                     <select className="edit-input" value={formDatos.instalacion} onChange={e => setD('instalacion', e.target.value)}>
@@ -517,18 +521,24 @@ export default function DetalleAlbaran({ albaranes, simularFirma, updateFirma, s
                     <label className="edit-label">Permiso / Ref.</label>
                     <input className="edit-input" value={formDatos.permiso} onChange={e => setD('permiso', e.target.value)} placeholder="Nº permiso o SURE" />
                   </div>
+                  {formDatos.tipo?.includes('1') && (
                   <div className="edit-field">
                     <label className="edit-label">Chófer</label>
                     <input className="edit-input" value={formDatos.chofer} onChange={e => setD('chofer', e.target.value)} placeholder="Nombre" />
                   </div>
+                  )}
+                  {formDatos.tipo?.includes('1') && (
                   <div className="edit-field">
                     <label className="edit-label">Matrícula tractora</label>
                     <input className="edit-input" value={formDatos.matriculaTractora} onChange={e => setD('matriculaTractora', e.target.value)} placeholder="Ej: 1234ABC" />
                   </div>
+                  )}
+                  {formDatos.tipo?.includes('1') && (
                   <div className="edit-field">
                     <label className="edit-label">Matrícula remolque</label>
                     <input className="edit-input" value={formDatos.matriculaRemolque} onChange={e => setD('matriculaRemolque', e.target.value)} placeholder="Ej: R-1234-ABC" />
                   </div>
+                  )}
                   <div className="edit-field" style={{gridColumn:'1/-1'}}>
                     <label className="edit-label">Observaciones</label>
                     <textarea className="edit-input" value={formDatos.observaciones} onChange={e => setD('observaciones', e.target.value)} placeholder="Observaciones..." style={{minHeight:56,resize:'vertical'}} />
@@ -541,15 +551,19 @@ export default function DetalleAlbaran({ albaranes, simularFirma, updateFirma, s
                     ['Fecha / Hora',        `${a.fecha?.slice(0,10).split('-').reverse().join('/')}${a.hora ? ` — ${a.hora} h` : ''}`],
                     ['Certificación',       a.certificacion || '—'],
                     ['Proveedor',           a.proveedor || '—'],
-                    ['Astilladora',         a.astilladora || '—'],
-                    ['Transportista',       a.transportista || '—'],
+                    ...(a.tipo?.includes('1') ? [
+                      ['Astilladora',        a.astilladora || '—'],
+                      ['Transportista',      a.transportista || '—'],
+                    ] : []),
                     ['Instalación', a.instalacion],
                     ['Especie',             `${a.especie} · ${a.tipoBiomasa}`],
                     ['Origen',              a.origen || '—'],
                     ['Permiso / Ref.',      a.permiso || '—'],
-                    ['Chófer',              a.chofer || '—'],
-                    ['Matrícula tractora',  a.matriculaTractora || '—'],
-                    ['Matrícula remolque',  a.matriculaRemolque || '—'],
+                    ...(a.tipo?.includes('1') ? [
+                      ['Chófer',             a.chofer || '—'],
+                      ['Matrícula tractora', a.matriculaTractora || '—'],
+                      ['Matrícula remolque', a.matriculaRemolque || '—'],
+                    ] : []),
                     ['Observaciones',       a.observaciones || '—'],
                   ].map(([k, v]) => (
                     <div key={k} className="detalle-row">

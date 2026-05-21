@@ -45,6 +45,31 @@ export async function generarPDF(a, options = {}) {
     }
   }
 
+  // Devuelve la altura real a la que se renderizaría una imagen en un slot aw×ah
+  const getRenderedH = (b64, aw, ah) => {
+    if (!b64) return ah
+    try {
+      const p = doc.getImageProperties(b64)
+      const r = p.width / p.height
+      return aw / ah >= r ? ah : aw / r   // height-constrained o width-constrained
+    } catch { return ah }
+  }
+
+  // Renderiza imagen fijando su altura a targetH (centrada horizontal y verticalmente en aw×LH)
+  const addImgFixedH = (b64, ax, ay, aw, areaH, targetH) => {
+    if (!b64) return
+    try {
+      const p  = doc.getImageProperties(b64)
+      const r  = p.width / p.height
+      let iw = targetH * r
+      let ih = targetH
+      if (iw > aw) { iw = aw; ih = aw / r }  // no superar ancho del slot
+      doc.addImage(b64, fmt(b64), ax + (aw - iw) / 2, ay + (areaH - ih) / 2, iw, ih)
+    } catch {
+      try { doc.addImage(b64, fmt(b64), ax, ay, aw, targetH) } catch {}
+    }
+  }
+
   // ── carga de logos ─────────────────────────────────────────────────────────
 
   let logoComsa, logoApplus1, logoApplus2, logoApplus3, logoApplus4, logoPefc, logoSure
@@ -108,11 +133,18 @@ export async function generarPDF(a, options = {}) {
     addImgFit(logo, BX.applus + i * AslotW, logoY, AslotW, LH)
   })
 
+  // Altura real a la que se renderiza cada logo Applus (width-constrained en slots de 14mm)
+  // PEFC y Sure usarán esa misma altura como referencia para mantener proporciones homogéneas
+  const applusLogos = [logoApplus1, logoApplus2, logoApplus3, logoApplus4].filter(Boolean)
+  const applusRefH  = applusLogos.length
+    ? Math.min(...applusLogos.map(l => getRenderedH(l, AslotW, LH)))
+    : LH
+
   // ── PEFC ──────────────────────────────────────────────────────────────────
-  addImgFit(logoPefc, BX.pefc, logoY, BW.pefc, LH)
+  addImgFixedH(logoPefc, BX.pefc, logoY, BW.pefc, LH, applusRefH)
 
   // ── SURE ──────────────────────────────────────────────────────────────────
-  addImgFit(logoSure, BX.sure, logoY, BW.sure, LH)
+  addImgFixedH(logoSure, BX.sure, logoY, BW.sure, LH, applusRefH)
 
   // ── TÍTULO ─────────────────────────────────────────────────────────────────
   {
