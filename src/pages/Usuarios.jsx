@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { api } from '../lib/api'
-import { Plus, Check, X, Shield, ShieldOff, Trash2, Eye, EyeOff } from 'lucide-react'
+import { Plus, Check, X, Trash2, Eye, EyeOff, BellOff, Bell } from 'lucide-react'
 import { useScrollLock } from '../hooks/useScrollLock'
 import '../components/shared.css'
 import './Usuarios.css'
@@ -16,19 +16,24 @@ const ROLES_DISPONIBLES = [
 
 const EMPTY_FORM = { nombre: '', email: '', rol: ROLES_DISPONIBLES[0], nivel: 'usuario', password: '' }
 
+// Silenciado si el flag está activo O si todas las notifs individuales están desactivadas
+const esSilenciado = (notifs) => {
+  if (notifs?.silenciado === true) return true
+  return ['nuevo', 'firma', 'cerrado', 'humedad'].every(k => notifs?.[k] === false)
+}
+
 export default function Usuarios({ usuario }) {
-  const [usuarios, setUsuarios]     = useState([])
-  const [loading, setLoading]       = useState(true)
-  const [modal, setModal]                   = useState(false)
-  const [form, setForm]                     = useState(EMPTY_FORM)
-  const [guardando, setGuardando]           = useState(false)
-  const [error, setError]                   = useState('')
-  const [perfilUsuario, setPerfilUsuario]   = useState(null)   // user object | null
-  const [confirmDesact, setConfirmDesact]   = useState(null)
-  const [confirmDelete, setConfirmDelete]   = useState(null)
-  const [deleteError, setDeleteError]       = useState('')
-  const [showPassword, setShowPassword]     = useState(false)
-  const [pwVisible, setPwVisible]           = useState({})
+  const [usuarios, setUsuarios]           = useState([])
+  const [loading, setLoading]             = useState(true)
+  const [modal, setModal]                 = useState(false)
+  const [form, setForm]                   = useState(EMPTY_FORM)
+  const [guardando, setGuardando]         = useState(false)
+  const [error, setError]                 = useState('')
+  const [perfilUsuario, setPerfilUsuario] = useState(null)
+  const [confirmDelete, setConfirmDelete] = useState(null)
+  const [deleteError, setDeleteError]     = useState('')
+  const [showPassword, setShowPassword]   = useState(false)
+  const [pwVisible, setPwVisible]         = useState({})
 
   useScrollLock(modal)
 
@@ -50,7 +55,6 @@ export default function Usuarios({ usuario }) {
   const set = (k, v) => setForm(f => ({ ...f, [k]: v }))
 
   const abrirNuevo = () => { setForm(EMPTY_FORM); setError(''); setShowPassword(false); setModal(true) }
-
   const cerrarModal = () => { setModal(false); setForm(EMPTY_FORM); setError(''); setShowPassword(false) }
 
   const handleGuardar = async () => {
@@ -74,12 +78,6 @@ export default function Usuarios({ usuario }) {
     cerrarModal()
   }
 
-  const handleToggleActivo = async (u) => {
-    await api.patch(`/usuarios/${u.id}`, { activo: !u.activo })
-    await fetchUsuarios()
-    setConfirmDesact(null)
-  }
-
   const handleDelete = async (id) => {
     setDeleteError('')
     try {
@@ -91,6 +89,8 @@ export default function Usuarios({ usuario }) {
       setConfirmDelete(null)
     }
   }
+
+  const colSpan = esSuperadmin ? 8 : 6
 
   return (
     <div className="usuarios-page">
@@ -123,110 +123,106 @@ export default function Usuarios({ usuario }) {
                 <th>Email</th>
                 <th>Rol</th>
                 <th>Nivel</th>
-                <th>Estado</th>
+                <th>Cuenta</th>
+                <th>Notificaciones</th>
                 {esSuperadmin && <th>Contraseña</th>}
                 {esSuperadmin && <th>Acciones</th>}
               </tr>
             </thead>
             <tbody>
               {loading ? (
-                <tr><td colSpan={esSuperadmin ? 7 : 5} style={{padding:32,textAlign:'center',color:'var(--gray-400)'}}>Cargando...</td></tr>
-              ) : usuarios.map(u => (
-                <tr key={u.id} className="usuarios-tr-click" onClick={() => setPerfilUsuario(u)}>
-                  <td>
-                    <div style={{display:'flex',alignItems:'center',gap:10}}>
-                      <div style={{width:32,height:32,borderRadius:'50%',background:'var(--green-100)',color:'var(--green-600)',display:'flex',alignItems:'center',justifyContent:'center',fontSize:11,fontWeight:600,flexShrink:0}}>
-                        {u.nombre.split(' ').map(n => n[0]).slice(0,2).join('').toUpperCase()}
-                      </div>
-                      <span style={{fontWeight:500}}>{u.nombre}</span>
-                      {u.id === usuario?.id && <span style={{fontSize:11,color:'var(--gray-400)'}}>(tú)</span>}
-                    </div>
-                  </td>
-                  <td style={{color:'var(--gray-600)'}}>{u.email}</td>
-                  <td>{u.rol}</td>
-                  <td>
-                    <span className={`nivel-badge ${u.nivel === 'superadmin' ? 'nivel-superadmin' : 'nivel-usuario'}`}>
-                      {u.nivel === 'superadmin' ? '★ Superadmin' : 'Usuario'}
-                    </span>
-                  </td>
-                  <td>
-                    <span style={{display:'flex',alignItems:'center',gap:5,fontSize:12,color: u.activo ? 'var(--green-600)' : 'var(--gray-400)'}}>
-                      <span style={{width:7,height:7,borderRadius:'50%',background: u.activo ? 'var(--green-400)' : 'var(--gray-300)',display:'inline-block'}} />
-                      {u.activo ? 'Activo' : 'Inactivo'}
-                    </span>
-                  </td>
-                  {esSuperadmin && (
-                    <td onClick={e => e.stopPropagation()}>
-                      {u.password_visible ? (
-                        <div style={{display:'flex',alignItems:'center',gap:6}}>
-                          <span style={{fontFamily:'monospace',fontSize:12,color:'var(--gray-700)',letterSpacing: pwVisible[u.id] ? 0 : 2}}>
-                            {pwVisible[u.id] ? u.password_visible : '••••••••'}
-                          </span>
-                          <button
-                            type="button"
-                            onClick={() => setPwVisible(v => ({...v, [u.id]: !v[u.id]}))}
-                            style={{background:'none',border:'none',cursor:'pointer',padding:2,color:'var(--gray-400)',display:'flex',alignItems:'center'}}
-                          >
-                            {pwVisible[u.id] ? <EyeOff size={13} /> : <Eye size={13} />}
-                          </button>
+                <tr><td colSpan={colSpan} style={{padding:32,textAlign:'center',color:'var(--gray-400)'}}>Cargando...</td></tr>
+              ) : usuarios.map(u => {
+                const silenciado = esSilenciado(u.notificaciones)
+                return (
+                  <tr key={u.id} className="usuarios-tr-click" onClick={() => setPerfilUsuario(u)}>
+                    <td>
+                      <div style={{display:'flex',alignItems:'center',gap:10}}>
+                        <div style={{width:32,height:32,borderRadius:'50%',background:'var(--green-100)',color:'var(--green-600)',display:'flex',alignItems:'center',justifyContent:'center',fontSize:11,fontWeight:600,flexShrink:0}}>
+                          {u.nombre.split(' ').map(n => n[0]).slice(0,2).join('').toUpperCase()}
                         </div>
-                      ) : (
-                        <span style={{fontSize:11,color:'var(--gray-300)'}}>—</span>
-                      )}
+                        <span style={{fontWeight:500}}>{u.nombre}</span>
+                        {u.id === usuario?.id && <span style={{fontSize:11,color:'var(--gray-400)'}}>(tú)</span>}
+                      </div>
                     </td>
-                  )}
-                  {esSuperadmin && (
-                    <td onClick={e => e.stopPropagation()}>
-                      <div style={{display:'flex',gap:6,flexWrap:'wrap'}}>
-                        <button className="btn btn-ghost" style={{padding:'4px 8px',fontSize:11}} onClick={() => setPerfilUsuario(u)}>
-                          Ver perfil
-                        </button>
-                        {u.id !== usuario?.id && (
-                          confirmDesact === u.id ? (
-                            <div style={{display:'flex',gap:4,alignItems:'center'}}>
-                              <span style={{fontSize:11,color:'var(--red-700)'}}>¿{u.activo ? 'Desactivar' : 'Activar'}?</span>
-                              <button className="btn" style={{padding:'4px 8px',fontSize:11,color:'var(--red-700)',borderColor:'var(--red-100)'}} onClick={() => handleToggleActivo(u)}>
-                                <Check size={11} />
-                              </button>
-                              <button className="btn btn-ghost" style={{padding:'4px 8px',fontSize:11}} onClick={() => setConfirmDesact(null)}>
-                                <X size={11} />
-                              </button>
-                            </div>
-                          ) : confirmDelete === u.id ? (
-                            <div style={{display:'flex',gap:4,alignItems:'center'}}>
-                              <span style={{fontSize:11,color:'var(--red-700)',fontWeight:500}}>¿Eliminar definitivamente?</span>
-                              <button className="btn" style={{padding:'4px 8px',fontSize:11,color:'var(--red-700)',borderColor:'var(--red-100)',background:'var(--red-50)'}} onClick={() => handleDelete(u.id)}>
-                                <Check size={11} />
-                              </button>
-                              <button className="btn btn-ghost" style={{padding:'4px 8px',fontSize:11}} onClick={() => setConfirmDelete(null)}>
-                                <X size={11} />
-                              </button>
-                            </div>
-                          ) : (
-                            <div style={{display:'flex',gap:4}}>
-                              <button
-                                className="btn btn-ghost"
-                                style={{padding:'4px 8px',fontSize:11,color: u.activo ? 'var(--red-400)' : 'var(--green-400)'}}
-                                onClick={() => { setConfirmDelete(null); setConfirmDesact(u.id) }}
-                              >
-                                {u.activo ? <><ShieldOff size={12} /> Desactivar</> : <><Shield size={12} /> Activar</>}
-                              </button>
-                              <button
-                                className="btn btn-ghost"
+                    <td style={{color:'var(--gray-600)'}}>{u.email}</td>
+                    <td>{u.rol}</td>
+                    <td>
+                      <span className={`nivel-badge ${u.nivel === 'superadmin' ? 'nivel-superadmin' : 'nivel-usuario'}`}>
+                        {u.nivel === 'superadmin' ? '★ Superadmin' : 'Usuario'}
+                      </span>
+                    </td>
+                    {/* Estado de cuenta */}
+                    <td>
+                      <span style={{display:'flex',alignItems:'center',gap:5,fontSize:12,color: u.activo ? 'var(--green-600)' : 'var(--gray-400)'}}>
+                        <span style={{width:7,height:7,borderRadius:'50%',background: u.activo ? 'var(--green-400)' : 'var(--gray-300)',display:'inline-block'}} />
+                        {u.activo ? 'Activo' : 'Inactivo'}
+                      </span>
+                    </td>
+                    {/* Badge informativo notificaciones */}
+                    <td>
+                      <span style={{display:'inline-flex',alignItems:'center',gap:5,padding:'3px 8px',borderRadius:20,fontSize:11,fontWeight:600,
+                        background: silenciado ? 'var(--gray-100)' : '#ecfdf5',
+                        color:      silenciado ? 'var(--gray-400)' : 'var(--green-600)',
+                      }}>
+                        {silenciado
+                          ? <><BellOff size={11} /> Silenciado</>
+                          : <><Bell size={11} /> Notificado</>
+                        }
+                      </span>
+                    </td>
+                    {esSuperadmin && (
+                      <td onClick={e => e.stopPropagation()}>
+                        {u.password_visible ? (
+                          <div style={{display:'flex',alignItems:'center',gap:6}}>
+                            <span style={{fontFamily:'monospace',fontSize:12,color:'var(--gray-700)',letterSpacing: pwVisible[u.id] ? 0 : 2}}>
+                              {pwVisible[u.id] ? u.password_visible : '••••••••'}
+                            </span>
+                            <button type="button" onClick={() => setPwVisible(v => ({...v, [u.id]: !v[u.id]}))}
+                              style={{background:'none',border:'none',cursor:'pointer',padding:2,color:'var(--gray-400)',display:'flex',alignItems:'center'}}>
+                              {pwVisible[u.id] ? <EyeOff size={13} /> : <Eye size={13} />}
+                            </button>
+                          </div>
+                        ) : (
+                          <span style={{fontSize:11,color:'var(--gray-300)'}}>—</span>
+                        )}
+                      </td>
+                    )}
+                    {esSuperadmin && (
+                      <td onClick={e => e.stopPropagation()}>
+                        <div style={{display:'flex',gap:6,alignItems:'center'}}>
+                          <button className="btn btn-ghost" style={{padding:'4px 8px',fontSize:11}}
+                            onClick={() => setPerfilUsuario(u)}>
+                            Ver perfil
+                          </button>
+                          {u.id !== usuario?.id && (
+                            confirmDelete === u.id ? (
+                              <div style={{display:'flex',gap:4,alignItems:'center'}}>
+                                <span style={{fontSize:11,color:'var(--red-700)',fontWeight:500}}>¿Eliminar?</span>
+                                <button className="btn" style={{padding:'4px 8px',fontSize:11,color:'var(--red-700)',borderColor:'var(--red-100)',background:'var(--red-50)'}}
+                                  onClick={() => handleDelete(u.id)}>
+                                  <Check size={11} />
+                                </button>
+                                <button className="btn btn-ghost" style={{padding:'4px 8px',fontSize:11}}
+                                  onClick={() => setConfirmDelete(null)}>
+                                  <X size={11} />
+                                </button>
+                              </div>
+                            ) : (
+                              <button className="btn btn-ghost"
                                 style={{padding:'4px 8px',fontSize:11,color:'var(--red-300)'}}
-                                onClick={() => { setConfirmDesact(null); setConfirmDelete(u.id) }}
-                                title="Eliminar usuario permanentemente"
-                              >
+                                onClick={() => setConfirmDelete(u.id)}
+                                title="Eliminar usuario permanentemente">
                                 <Trash2 size={12} />
                               </button>
-                            </div>
-                          )
-                        )}
-                      </div>
-                    </td>
-                  )}
-                </tr>
-              ))}
+                            )
+                          )}
+                        </div>
+                      </td>
+                    )}
+                  </tr>
+                )
+              })}
             </tbody>
           </table>
         </div>
@@ -282,10 +278,10 @@ export default function Usuarios({ usuario }) {
         </div>
       )}
 
-      {/* ── Perfil / notificaciones ── */}
       {perfilUsuario && (
         <PerfilUsuario
           usuario={perfilUsuario}
+          viewer={usuario}
           onClose={() => setPerfilUsuario(null)}
           onGuardado={fetchUsuarios}
         />

@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { Outlet, NavLink } from 'react-router-dom'
-import { LayoutDashboard, PlusCircle, Clock, BarChart2, Settings, LogOut, User, X, Mail, Briefcase, Shield, Users, Bell } from 'lucide-react'
+import { LayoutDashboard, PlusCircle, Clock, BarChart2, Settings, LogOut, User, X, Mail, Briefcase, Shield, Users, Bell, BellOff } from 'lucide-react'
 import { api } from '../lib/api'
 import { useScrollLock } from '../hooks/useScrollLock'
 import logoFull from '../assets/logo_biomasa_full.png'
@@ -83,9 +83,12 @@ export default function Layout({ usuario, logout, albaranes = [], actualizarUsua
 
   useScrollLock(perfilOpen)
 
-  const notifDirty = NOTIFS.some(({ key }) =>
-    getN(notifPrefs, key) !== getN(usuario?.notificaciones, key)
-  )
+  const silenciadoPropio = notifPrefs?.silenciado === true
+    || ['nuevo', 'firma', 'cerrado', 'humedad'].every(k => notifPrefs?.[k] === false)
+
+  const notifDirty =
+    (notifPrefs?.silenciado ?? false) !== (usuario?.notificaciones?.silenciado ?? false) ||
+    NOTIFS.some(({ key }) => getN(notifPrefs, key) !== getN(usuario?.notificaciones, key))
 
   return (
     <div className="layout">
@@ -183,11 +186,27 @@ export default function Layout({ usuario, logout, albaranes = [], actualizarUsua
 
               {/* ── Notificaciones ── */}
               <div style={{marginTop:16,paddingTop:16,borderTop:'var(--border)'}}>
-                <div style={{display:'flex',alignItems:'center',gap:7,marginBottom:12}}>
+                <div style={{display:'flex',alignItems:'center',gap:7,marginBottom:10}}>
                   <Bell size={13} style={{color:'var(--gray-400)'}} />
                   <span style={{fontSize:11,fontWeight:600,textTransform:'uppercase',letterSpacing:'0.5px',color:'var(--gray-400)'}}>Notificaciones</span>
                 </div>
-                <div style={{display:'flex',flexDirection:'column',gap:1}}>
+                {/* Toggle silenciar maestro */}
+                <div
+                  onClick={() => setNotifPrefs(p => ({ ...p, silenciado: !p.silenciado }))}
+                  style={{display:'flex',alignItems:'center',justifyContent:'space-between',padding:'8px 10px',marginBottom:8,background:silenciadoPropio?'var(--gray-50)':'#ecfdf5',borderRadius:'var(--radius-md)',border:silenciadoPropio?'var(--border)':'1px solid #bbf7d0',cursor:'pointer',userSelect:'none'}}
+                >
+                  <div style={{display:'flex',alignItems:'center',gap:7}}>
+                    <BellOff size={13} style={{color:silenciadoPropio?'var(--gray-400)':'var(--green-600)'}} />
+                    <span style={{fontSize:12,fontWeight:600,color:silenciadoPropio?'var(--gray-600)':'var(--green-700)'}}>
+                      {silenciadoPropio ? 'Silenciado' : 'Notificaciones activas'}
+                    </span>
+                  </div>
+                  <div style={{width:34,height:19,background:silenciadoPropio?'var(--gray-200)':'var(--green-400)',borderRadius:10,position:'relative',transition:'background 0.2s',flexShrink:0}}>
+                    <div style={{position:'absolute',top:2,left:silenciadoPropio?2:15,width:15,height:15,background:'#fff',borderRadius:'50%',transition:'left 0.2s',boxShadow:'0 1px 3px rgba(0,0,0,0.2)'}} />
+                  </div>
+                </div>
+                {/* Tipos individuales */}
+                <div style={{display:'flex',flexDirection:'column',gap:1,opacity:silenciadoPropio?0.45:1,transition:'opacity 0.2s'}}>
                   {NOTIFS.map(({ key, color, label }) => (
                     <div
                       key={key}

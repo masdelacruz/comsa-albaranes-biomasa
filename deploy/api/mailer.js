@@ -35,6 +35,7 @@ async function destinatarios(tipo) {
   const { rows } = await pool.query(
     `SELECT email FROM usuarios
      WHERE activo = true
+       AND (notificaciones->>'silenciado')::boolean IS NOT TRUE
        AND (notificaciones->$1)::boolean IS NOT FALSE`,
     [key]
   )

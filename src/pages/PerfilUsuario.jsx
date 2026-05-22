@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { X, Check, Eye, EyeOff } from 'lucide-react'
+import { X, Check, Eye, EyeOff, BellOff } from 'lucide-react'
 import { api } from '../lib/api'
 import { useScrollLock } from '../hooks/useScrollLock'
 import '../components/shared.css'
@@ -19,24 +19,35 @@ const NOTIFS = [
 
 const getN = (prefs, key) => prefs?.[key] !== false
 
-export default function PerfilUsuario({ usuario, onClose, onGuardado }) {
+export default function PerfilUsuario({ usuario, viewer, onClose, onGuardado }) {
   useScrollLock(true)
 
   const iniciales = usuario.nombre.split(' ').map(n => n[0]).slice(0, 2).join('').toUpperCase()
+  const esSuperadmin = viewer?.nivel === 'superadmin'
+  const puedeEditarActivo = esSuperadmin && usuario.id !== viewer?.id
 
   const [form, setForm] = useState({
     nombre:   usuario.nombre,
     rol:      usuario.rol || ROLES[0],
     nivel:    usuario.nivel,
+    activo:   usuario.activo,
     password: '',
   })
-  const [notifs,    setNotifs]    = useState(usuario.notificaciones || {})
+  const [notifs,    setNotifs]    = useState(usuario.notificaciones || { silenciado: true })
   const [showPw,    setShowPw]    = useState(false)
   const [guardando, setGuardando] = useState(false)
   const [error,     setError]     = useState('')
 
   const set = (k, v) => setForm(f => ({ ...f, [k]: v }))
-  const toggleN = key => setNotifs(p => ({ ...p, [key]: !getN(p, key) }))
+
+  const silenciado = notifs.silenciado === true
+    || ['nuevo', 'firma', 'cerrado', 'humedad'].every(k => notifs[k] === false)
+
+  const toggleSilenciar = () =>
+    setNotifs(p => ({ ...p, silenciado: !p.silenciado }))
+
+  const toggleN = key =>
+    setNotifs(p => ({ ...p, [key]: !getN(p, key) }))
 
   const handleGuardar = async () => {
     if (!form.nombre.trim()) return
@@ -48,6 +59,8 @@ export default function PerfilUsuario({ usuario, onClose, onGuardado }) {
         nivel:  form.nivel,
         notificaciones: notifs,
       }
+      if (puedeEditarActivo && form.activo !== usuario.activo)
+        body.activo = form.activo
       if (form.password.trim() && form.password !== (usuario.password_visible || ''))
         body.password = form.password
       await api.patch(`/usuarios/${usuario.id}`, body)
@@ -117,14 +130,52 @@ export default function PerfilUsuario({ usuario, onClose, onGuardado }) {
                   </div>
                 </div>
               </div>
+
+              {/* Estado de cuenta — solo superadmin sobre otros usuarios */}
+              {puedeEditarActivo && (
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 12px', background: 'var(--gray-50)', borderRadius: 'var(--radius-md)', border: 'var(--border)' }}>
+                  <div>
+                    <div style={{ fontSize: 13, fontWeight: 500, color: 'var(--gray-700)' }}>Cuenta activa</div>
+                    <div style={{ fontSize: 11, color: 'var(--gray-400)', marginTop: 2 }}>El usuario puede iniciar sesión</div>
+                  </div>
+                  <div
+                    onClick={() => set('activo', !form.activo)}
+                    style={{ width: 38, height: 21, background: form.activo ? 'var(--green-400)' : 'var(--gray-200)', borderRadius: 11, position: 'relative', cursor: 'pointer', transition: 'background 0.2s', flexShrink: 0 }}>
+                    <div style={{ position: 'absolute', top: 3, left: form.activo ? 18 : 3, width: 15, height: 15, background: '#fff', borderRadius: '50%', transition: 'left 0.2s', boxShadow: '0 1px 3px rgba(0,0,0,0.2)' }} />
+                  </div>
+                </div>
+              )}
             </div>
           </section>
 
           {/* Notificaciones */}
           <section className="pu-sec">
             <div className="pu-sec-lbl">Notificaciones por email</div>
-            <p className="pu-sec-desc">Selecciona qué eventos generan un correo para este usuario.</p>
-            <div className="pu-notifs">
+
+            {/* Toggle silenciar maestro */}
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 12px', marginBottom: 10, background: silenciado ? 'var(--gray-50)' : '#ecfdf5', borderRadius: 'var(--radius-md)', border: silenciado ? 'var(--border)' : '1px solid #bbf7d0', cursor: 'pointer' }}
+              onClick={toggleSilenciar}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                <BellOff size={14} style={{ color: silenciado ? 'var(--gray-400)' : 'var(--green-600)', flexShrink: 0 }} />
+                <div>
+                  <div style={{ fontSize: 13, fontWeight: 600, color: silenciado ? 'var(--gray-600)' : 'var(--green-700)' }}>
+                    {silenciado ? 'Silenciado — sin notificaciones' : 'Notificaciones activas'}
+                  </div>
+                  <div style={{ fontSize: 11, color: 'var(--gray-400)', marginTop: 1 }}>
+                    {silenciado ? 'No recibirá ningún correo' : 'Recibe los tipos seleccionados abajo'}
+                  </div>
+                </div>
+              </div>
+              <div style={{ width: 38, height: 21, background: silenciado ? 'var(--gray-200)' : 'var(--green-400)', borderRadius: 11, position: 'relative', transition: 'background 0.2s', flexShrink: 0 }}>
+                <div style={{ position: 'absolute', top: 3, left: silenciado ? 3 : 18, width: 15, height: 15, background: '#fff', borderRadius: '50%', transition: 'left 0.2s', boxShadow: '0 1px 3px rgba(0,0,0,0.2)' }} />
+              </div>
+            </div>
+
+            {/* Tipos individuales */}
+            <div className="pu-notifs" style={{ opacity: silenciado ? 0.45 : 1, transition: 'opacity 0.2s' }}>
+              <p className="pu-sec-desc" style={{ margin: '0 0 8px' }}>
+                {silenciado ? 'Configura los tipos para cuando se active.' : 'Selecciona qué eventos generan un correo.'}
+              </p>
               {NOTIFS.map(({ key, color, label, desc }) => (
                 <div key={key} className="pu-notif-row" onClick={() => toggleN(key)}>
                   <span className="pu-notif-dot" style={{ background: color }} />
@@ -140,19 +191,13 @@ export default function PerfilUsuario({ usuario, onClose, onGuardado }) {
             </div>
           </section>
 
-          {error && (
-            <div className="pu-error">{error}</div>
-          )}
+          {error && <div className="pu-error">{error}</div>}
         </div>
 
         {/* ── Footer ───────────────────────────────────────── */}
         <div className="pu-footer">
           <button className="btn" onClick={onClose}>Cancelar</button>
-          <button
-            className="btn btn-primary"
-            onClick={handleGuardar}
-            disabled={guardando || !form.nombre.trim()}
-          >
+          <button className="btn btn-primary" onClick={handleGuardar} disabled={guardando || !form.nombre.trim()}>
             {guardando ? 'Guardando...' : <><Check size={14} /> Guardar</>}
           </button>
         </div>
