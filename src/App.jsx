@@ -55,7 +55,7 @@ function VistaCampoPublica() {
   return <VistaCampo albaranes={albaran ? [albaran] : []} updateFirma={updateFirma} subirTicketPesada={subirTicketPesada} />
 }
 
-function AppConDatos({ usuario, logout }) {
+function AppConDatos({ usuario, logout, actualizarUsuario }) {
   const { albaranes, loading: dataLoading, refetch } = useAlbaranes()
   const { addAlbaran, updateFirma, simularFirmaOficina, subirDocumento, subirTicketPesada, actualizarAlbaran, borrarAlbaran, reabrirAlbaran } = useAlbaranActions(refetch, usuario)
 
@@ -63,7 +63,7 @@ function AppConDatos({ usuario, logout }) {
 
   return (
     <Routes>
-      <Route path="/" element={<Layout usuario={usuario} logout={logout} albaranes={albaranes} />}>
+      <Route path="/" element={<Layout usuario={usuario} logout={logout} albaranes={albaranes} actualizarUsuario={actualizarUsuario} />}>
         <Route index element={<Navigate to="/dashboard" replace />} />
         <Route path="dashboard"      element={<Dashboard albaranes={albaranes} usuario={usuario} borrarAlbaran={borrarAlbaran} />} />
         <Route path="nuevo"          element={<NuevoAlbaran addAlbaran={addAlbaran} usuario={usuario} />} />
@@ -78,13 +78,13 @@ function AppConDatos({ usuario, logout }) {
 }
 
 function AppInner() {
-  const { session, usuario, loading: authLoading, bloqueado, verificado, logout } = useAuth()
+  const { session, usuario, loading: authLoading, bloqueado, verificado, logout, actualizarUsuario } = useAuth()
 
   if (!verificado || authLoading) return <Spinner />
   if (bloqueado) return <Bloqueado />
   if (!session) return <Login />
 
-  return <AppConDatos usuario={usuario} logout={logout} />
+  return <AppConDatos usuario={usuario} logout={logout} actualizarUsuario={actualizarUsuario} />
 }
 
 export default function App() {

@@ -45,6 +45,7 @@ router.post('/login', async (req, res) => {
     user: {
       id: user.id, nombre: user.nombre, email: user.email,
       rol: user.rol, nivel: user.nivel, activo: user.activo,
+      notificaciones: user.notificaciones || {},
     },
   })
 })
@@ -52,13 +53,13 @@ router.post('/login', async (req, res) => {
 // ── GET /auth/me ──────────────────────────────────────────────────
 router.get('/me', requireAuth, async (req, res) => {
   const { rows } = await pool.query(
-    'SELECT id, nombre, email, rol, nivel, activo FROM usuarios WHERE id = $1',
+    'SELECT id, nombre, email, rol, nivel, activo, notificaciones FROM usuarios WHERE id = $1',
     [req.user.id]
   )
   const user = rows[0]
-  if (!user)          return res.status(404).json({ error: 'Usuario no encontrado' })
-  if (!user.activo)   return res.status(403).json({ error: 'cuenta_bloqueada' })
-  res.json({ user })
+  if (!user)        return res.status(404).json({ error: 'Usuario no encontrado' })
+  if (!user.activo) return res.status(403).json({ error: 'cuenta_bloqueada' })
+  res.json({ user: { ...user, notificaciones: user.notificaciones || {} } })
 })
 
 module.exports = router

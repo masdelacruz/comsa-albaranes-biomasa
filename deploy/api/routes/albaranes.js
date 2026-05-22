@@ -387,7 +387,8 @@ router.post('/:id/firmas/:rol', async (req, res) => {
   }
 
   const albaran = await fetchOne(id)
-  res.json({ albaran, cerrado: todasFirmadas })
+  const humedadPendiente = albaran?.estado === 'humedad_pendiente'
+  res.json({ albaran, cerrado: todasFirmadas, humedadPendiente })
 })
 
 // ── DELETE /albaranes/:id  (solo superadmin) ─────────────────────

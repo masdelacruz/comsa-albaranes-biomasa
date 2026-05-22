@@ -1,27 +1,9 @@
-const router     = require('express').Router()
-const nodemailer = require('nodemailer')
-
-// Transport persistente con pooling — reutiliza la conexión SMTP
-// en lugar de reconectar en cada envío (evita overhead TCP+TLS+auth)
-const transport = nodemailer.createTransport({
-  host:           process.env.SMTP_HOST,
-  port:           parseInt(process.env.SMTP_PORT || '587'),
-  secure:         parseInt(process.env.SMTP_PORT || '587') === 465,
-  auth: {
-    user: process.env.SMTP_USER,
-    pass: process.env.SMTP_PASS,
-  },
-  pool:           true,   // reutiliza conexiones
-  maxConnections: 3,
-  maxMessages:    50,
-  socketTimeout:  10000,
-  greetingTimeout: 10000,
-})
+const router               = require('express').Router()
+const { transport, destinatarios } = require('../mailer')
 
 // ── POST /email ───────────────────────────────────────────────────
-// Llamado internamente desde el backend (no expuesto al frontend)
 router.post('/', async (req, res) => {
-  const { tipo, albaran, destinatario } = req.body
+  const { tipo, albaran } = req.body
   const appUrl = process.env.APP_URL || 'https://biomasa.cserintranet.com'
 
   let subject, html
@@ -343,14 +325,12 @@ router.post('/', async (req, res) => {
     return res.status(400).json({ error: 'Tipo de email desconocido' })
   }
 
+  const to = await destinatarios(tipo)
+  if (!to.length) return res.json({ ok: true, sent: 0 })
+
   try {
-    await transport.sendMail({
-      from:    process.env.SMTP_FROM,
-      to:      destinatario,
-      subject,
-      html,
-    })
-    res.json({ ok: true })
+    await transport.sendMail({ from: process.env.SMTP_FROM, to: to.join(', '), subject, html })
+    res.json({ ok: true, sent: to.length })
   } catch (e) {
     console.error('Email error:', e.message)
     res.status(500).json({ error: e.message })

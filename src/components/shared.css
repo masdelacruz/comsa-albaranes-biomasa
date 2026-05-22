@@ -14,7 +14,7 @@
 .firma-dot.pending { background:var(--gray-100);  color:var(--gray-400); }
 .firma-line { width:16px; height:1px; background:var(--gray-200); }
 .firma-line-cerrado { background:var(--green-400); }
-.card { background:#fff; border:var(--border); border-radius:var(--radius-lg); padding:18px 20px; }
+.card { background:#fff; border:var(--border); border-radius:var(--radius-lg); padding:18px 20px; overflow:hidden; }
 .page-header { padding:24px 28px 0; margin-bottom:24px; }
 .page-title { font-size:20px; font-weight:600; letter-spacing:-0.3px; }
 .page-sub { font-size:13px; color:var(--gray-400); margin-top:3px; }

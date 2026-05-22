@@ -39,5 +39,9 @@ export function useAuth() {
     setBloqueado(false)
   }, [])
 
-  return { session, usuario, loading, bloqueado, verificado, logout }
+  const actualizarUsuario = useCallback((updates) => {
+    setUsuario(prev => prev ? { ...prev, ...updates } : prev)
+  }, [])
+
+  return { session, usuario, loading, bloqueado, verificado, logout, actualizarUsuario }
 }

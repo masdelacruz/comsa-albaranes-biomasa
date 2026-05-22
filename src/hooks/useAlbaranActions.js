@@ -1,5 +1,5 @@
 import { api } from '../lib/api'
-import { notificarNuevoAlbaran, notificarFirmaCompletada, notificarAlbaranCerrado } from '../utils/notificaciones'
+import { notificarNuevoAlbaran, notificarFirmaCompletada, notificarAlbaranCerrado, notificarHumedadPendiente } from '../utils/notificaciones'
 
 export function useAlbaranActions(refetch, usuario) {
 
@@ -14,13 +14,13 @@ export function useAlbaranActions(refetch, usuario) {
   }
 
   const updateFirma = async (albaranId, rol, actor, nombrePersona = null, pesadaData = null, firmaImagen = null, campoData = null, observacionesFirma = null) => {
-    const { albaran, cerrado } = await api.post(
+    const { albaran, cerrado, humedadPendiente } = await api.post(
       `/albaranes/${albaranId}/firmas/${rol}`,
       { actor, nombrePersona, firmaImagen, pesadaData, campoData, observacionesFirma }
     )
-    // fire & forget — el email sale en paralelo, no bloquea el refresco de la UI
-    if (!cerrado) notificarFirmaCompletada({ ...albaran, id: albaranId }, actor, rol)
-    if (cerrado)  notificarAlbaranCerrado({ ...albaran, id: albaranId })
+    if (cerrado)          notificarAlbaranCerrado({ ...albaran, id: albaranId })
+    else if (humedadPendiente) notificarHumedadPendiente({ ...albaran, id: albaranId })
+    else                  notificarFirmaCompletada({ ...albaran, id: albaranId }, actor, rol)
     await refetch()
   }
 

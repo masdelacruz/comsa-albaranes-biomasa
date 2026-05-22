@@ -94,6 +94,7 @@ CREATE TABLE IF NOT EXISTS usuarios (
   rol              TEXT,
   nivel            TEXT NOT NULL DEFAULT 'usuario',  -- 'usuario' | 'superadmin'
   activo           BOOLEAN NOT NULL DEFAULT TRUE,
+  notificaciones   JSONB NOT NULL DEFAULT '{}'::jsonb,
   created_at       TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
