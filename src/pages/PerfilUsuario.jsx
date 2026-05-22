@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { X, Check, Eye, EyeOff } from 'lucide-react'
 import { api } from '../lib/api'
+import { useScrollLock } from '../hooks/useScrollLock'
 import '../components/shared.css'
 import './PerfilUsuario.css'
 
@@ -19,6 +20,8 @@ const NOTIFS = [
 const getN = (prefs, key) => prefs?.[key] !== false
 
 export default function PerfilUsuario({ usuario, onClose, onGuardado }) {
+  useScrollLock(true)
+
   const iniciales = usuario.nombre.split(' ').map(n => n[0]).slice(0, 2).join('').toUpperCase()
 
   const [form, setForm] = useState({

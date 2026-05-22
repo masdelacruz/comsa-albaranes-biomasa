@@ -1,15 +1,10 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" width="32" height="32">
-  <!-- Fondo verde redondeado -->
-  <rect width="32" height="32" rx="7" fill="#1D9E75"/>
-  <!-- Hoja: apunta hacia arriba como una llama (biomasa = energía vegetal) -->
-  <path fill="white" d="M16 4C14.5 6.5 9.5 10.5 9.5 17C9.5 21.7 12.4 25.5 16 25.5C19.6 25.5 22.5 21.7 22.5 17C22.5 10.5 17.5 6.5 16 4Z"/>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">
+  <!-- Cuadrado azul (detrás, esquina inferior-derecha) -->
+  <rect x="13" y="12" width="18" height="18" rx="2.5" fill="#72C8E8"/>
+  <!-- Círculo rojo (delante, esquina superior-izquierda) -->
+  <circle cx="12" cy="12" r="12" fill="#D42027"/>
+  <!-- Hoja blanca dentro del círculo -->
+  <path d="M12 3.5C10.3 5.8 8 8.5 8 11.5C8 14.5 9.8 16.5 12 16.5C14.2 16.5 16 14.5 16 11.5C16 8.5 13.7 5.8 12 3.5Z" fill="white"/>
   <!-- Tallo -->
-  <line x1="16" y1="25.5" x2="16" y2="28.5" stroke="#0F6E56" stroke-width="1.8" stroke-linecap="round"/>
-  <!-- Vena central -->
-  <line x1="16" y1="23" x2="16" y2="9" stroke="#0F6E56" stroke-width="1.3" stroke-linecap="round"/>
-  <!-- Venas laterales -->
-  <line x1="16" y1="20" x2="12" y2="16.5" stroke="#0F6E56" stroke-width="1" stroke-linecap="round"/>
-  <line x1="16" y1="17" x2="12.5" y2="14" stroke="#0F6E56" stroke-width="1" stroke-linecap="round"/>
-  <line x1="16" y1="20" x2="20" y2="16.5" stroke="#0F6E56" stroke-width="1" stroke-linecap="round"/>
-  <line x1="16" y1="17" x2="19.5" y2="14" stroke="#0F6E56" stroke-width="1" stroke-linecap="round"/>
+  <line x1="12" y1="16.5" x2="12" y2="19" stroke="white" stroke-width="1.8" stroke-linecap="round"/>
 </svg>

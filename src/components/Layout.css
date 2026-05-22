@@ -16,63 +16,34 @@
   transition: width 0.22s ease, padding 0.22s ease;
 }
 
-/* ── Logo — altura fija para que el clic sea siempre en la misma posición */
+/* ── Logo ─────────────────────────────────────────────────────────── */
 .sidebar-logo {
   display: flex;
   align-items: center;
-  justify-content: center;
-  height: 64px;
+  gap: 10px;
+  height: 60px;
   flex-shrink: 0;
+  padding: 0 6px;
   border-bottom: 1px solid rgba(255,255,255,0.08);
   margin-bottom: 16px;
+  cursor: pointer;
   user-select: none;
+  transition: opacity 0.15s;
 }
+.sidebar-logo:hover  { opacity: 0.82; }
+.sidebar-logo:active { opacity: 0.6; }
 
-/* Logo expandido: imagen completa en contenedor blanco */
-.logo-wrap {
-  border-radius: 10px;
-  overflow: hidden;
-  transition: opacity 0.15s, box-shadow 0.2s;
-  flex-shrink: 0;
-}
-.logo-wrap:hover  { opacity: 0.88; box-shadow: 0 0 0 3px rgba(255,255,255,0.12); }
-.logo-wrap:active { opacity: 0.7; }
+.logo-marks { flex-shrink: 0; display: block; }
 
-.logo-wrap--full {
-  background: #fff;
-  padding: 7px 10px;
-  width: 148px;
-}
-.logo-wrap--full .logo-img {
-  display: block;
-  width: 128px;
-  height: auto;
-}
-
-/* Logo colapsado: recorta solo los iconos (círculo rojo + cuadrado azul) */
-.logo-wrap--sm {
-  background: #fff;
-  width: 36px;
-  height: 36px;
-  border-radius: 8px;
-  overflow: hidden;
-  display: flex;
-  align-items: flex-start;
-  justify-content: flex-start;
-}
-.logo-wrap--sm .logo-img {
-  display: block;
-  width: 88px;      /* escala la imagen para que los iconos llenen el cuadrado */
-  height: auto;
-  margin-top: -1px;
-}
+.logo-text { overflow: hidden; }
+.logo-title { font-size: 13px; font-weight: 700; color: #fff; letter-spacing: 0.2px; white-space: nowrap; }
+.logo-sub   { font-size: 10px; color: var(--gray-400); margin-top: 1px; white-space: nowrap; letter-spacing: 0.3px; text-transform: uppercase; }
 
 @keyframes logo-pulse {
-  0%   { box-shadow: 0 0 0 0px rgba(255,255,255,0.25); }
-  60%  { box-shadow: 0 0 0 6px rgba(255,255,255,0); }
-  100% { box-shadow: 0 0 0 0px rgba(255,255,255,0); }
+  0%,100% { transform: scale(1); }
+  45%     { transform: scale(1.1); }
 }
-.logo-anim .logo-wrap { animation: logo-pulse 0.4s ease-out; }
+.logo-anim .logo-marks { animation: logo-pulse 0.35s ease-out; }
 
 /* ── Navegación ────────────────────────────────────────────────────── */
 .sidebar-nav  { display: flex; flex-direction: column; gap: 2px; flex: 1; }
@@ -109,7 +80,8 @@
   padding: 20px 8px !important;   /* mismo padding-top que expandido → logo en misma posición */
   align-items: center;
 }
-.sidebar--collapsed .sidebar-logo   { padding: 0; }
+.sidebar--collapsed .sidebar-logo   { padding: 0; gap: 0; justify-content: center; }
+.sidebar--collapsed .logo-text      { display: none; }
 .sidebar--collapsed .sidebar-nav    { align-items: center; }
 .sidebar--collapsed .nav-item       { justify-content: center; padding: 9px; width: 36px; height: 36px; }
 .sidebar--collapsed .nav-item span  { display: none; }
@@ -126,7 +98,8 @@
   padding: 20px 14px !important;
   align-items: stretch !important;
 }
-.sidebar--expanded .sidebar-logo     { padding: 0 4px !important; justify-content: center !important; }
+.sidebar--expanded .sidebar-logo     { padding: 0 6px !important; justify-content: flex-start !important; gap: 10px !important; }
+.sidebar--expanded .logo-text        { display: block !important; }
 .sidebar--expanded .sidebar-nav      { align-items: stretch !important; }
 .sidebar--expanded .nav-item         { justify-content: flex-start !important; padding: 8px 10px !important; width: auto !important; height: auto !important; }
 .sidebar--expanded .nav-item span    { display: inline !important; }

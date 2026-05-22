@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { api } from '../lib/api'
 import { Plus, Check, X, Shield, ShieldOff, Trash2, Eye, EyeOff } from 'lucide-react'
+import { useScrollLock } from '../hooks/useScrollLock'
 import '../components/shared.css'
 import './Usuarios.css'
 import PerfilUsuario from './PerfilUsuario'
@@ -28,6 +29,8 @@ export default function Usuarios({ usuario }) {
   const [deleteError, setDeleteError]       = useState('')
   const [showPassword, setShowPassword]     = useState(false)
   const [pwVisible, setPwVisible]           = useState({})
+
+  useScrollLock(modal)
 
   const esSuperadmin = usuario?.nivel === 'superadmin'
 
