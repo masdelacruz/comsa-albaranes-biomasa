@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect } from 'react'
 import { Outlet, NavLink } from 'react-router-dom'
 import { LayoutDashboard, PlusCircle, Clock, BarChart2, Settings, LogOut, User, X, Mail, Briefcase, Shield, Users, Bell } from 'lucide-react'
 import { api } from '../lib/api'
@@ -24,32 +24,11 @@ export default function Layout({ usuario, logout, albaranes = [], actualizarUsua
   const [notifPrefs, setNotifPrefs]       = useState({})
   const [notifGuardando, setNotifGuardando] = useState(false)
   const [notifOk, setNotifOk]             = useState(false)
-  const [collapsed, setCollapsed]         = useState(() =>
-    localStorage.getItem('sidebar_collapsed') === 'true'
-  )
+  const [collapsed, setCollapsed]         = useState(false)
   const [logoAnim, setLogoAnim]           = useState(false)
-  const collapsedRef                      = useRef(collapsed)
-
-  useEffect(() => { collapsedRef.current = collapsed }, [collapsed])
-
-  // Auto-colapsa al reducir viewport (zoom elevado), nunca auto-expande
-  useEffect(() => {
-    const onResize = () => {
-      if (window.innerWidth <= AUTO_COLLAPSE_PX && !collapsedRef.current) {
-        setCollapsed(true)
-        localStorage.setItem('sidebar_collapsed', 'true')
-      }
-    }
-    window.addEventListener('resize', onResize)
-    return () => window.removeEventListener('resize', onResize)
-  }, [])
 
   const toggleSidebar = () => {
-    setCollapsed(v => {
-      const next = !v
-      localStorage.setItem('sidebar_collapsed', String(next))
-      return next
-    })
+    setCollapsed(v => !v)
     setLogoAnim(true)
     setTimeout(() => setLogoAnim(false), 450)
   }

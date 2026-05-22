@@ -23,12 +23,12 @@
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
+  align-self: stretch;   /* siempre ocupa el ancho del sidebar, incluso con align-items:center en el padre */
   overflow: hidden;
   border-bottom: 1px solid rgba(255,255,255,0.08);
   margin-bottom: 16px;
   cursor: pointer;
   user-select: none;
-  /* Altura y transición: al plegar, el área se reduce mostrando solo las marcas */
   height: 108px;
   transition: height 0.22s ease, opacity 0.15s;
 }
