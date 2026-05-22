@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react'
 import { Outlet, NavLink } from 'react-router-dom'
 import { LayoutDashboard, PlusCircle, Clock, BarChart2, Settings, LogOut, User, X, Mail, Briefcase, Shield, Users, Bell } from 'lucide-react'
 import { api } from '../lib/api'
+import logoImg from '../assets/logo_biomasa.png'
 import './Layout.css'
 
 const NOTIFS = [
@@ -61,12 +62,19 @@ export default function Layout({ usuario, logout, albaranes = [], actualizarUsua
 
   const pendientesOficina = albaranes.filter(a => a.estado === 'pendiente_oficina').length
 
-  // Reinicia prefs al abrir modal
+  // Reinicia prefs al abrir modal + ESC para cerrar
   useEffect(() => {
     if (perfilOpen) {
       setNotifPrefs(usuario?.notificaciones || {})
       setNotifOk(false)
     }
+  }, [perfilOpen])
+
+  useEffect(() => {
+    if (!perfilOpen) return
+    const onKey = e => { if (e.key === 'Escape') { setPerfilOpen(false); setConfirmLogout(false) } }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
   }, [perfilOpen])
 
   const handleLogout = async () => {
@@ -92,25 +100,14 @@ export default function Layout({ usuario, logout, albaranes = [], actualizarUsua
   return (
     <div className="layout">
       <aside className={`sidebar${collapsed ? ' sidebar--collapsed' : ' sidebar--expanded'}`}>
-        <div className="sidebar-logo">
-          <div
-            className={`logo-icon${logoAnim ? ' logo-icon--anim' : ''}`}
-            onClick={toggleSidebar}
-            title={collapsed ? 'Expandir panel' : 'Colapsar panel'}
-          >
-            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" width="18" height="18">
-              <path fill="white" d="M16 4C14.5 6.5 9.5 10.5 9.5 17C9.5 21.7 12.4 25.5 16 25.5C19.6 25.5 22.5 21.7 22.5 17C22.5 10.5 17.5 6.5 16 4Z"/>
-              <line x1="16" y1="25.5" x2="16" y2="28.5" stroke="rgba(255,255,255,0.6)" stroke-width="1.8" stroke-linecap="round"/>
-              <line x1="16" y1="23" x2="16" y2="9" stroke="rgba(15,110,86,0.6)" stroke-width="1.3" stroke-linecap="round"/>
-              <line x1="16" y1="20" x2="12" y2="16.5" stroke="rgba(15,110,86,0.6)" stroke-width="1" stroke-linecap="round"/>
-              <line x1="16" y1="17" x2="12.5" y2="14" stroke="rgba(15,110,86,0.6)" stroke-width="1" stroke-linecap="round"/>
-              <line x1="16" y1="20" x2="20" y2="16.5" stroke="rgba(15,110,86,0.6)" stroke-width="1" stroke-linecap="round"/>
-              <line x1="16" y1="17" x2="19.5" y2="14" stroke="rgba(15,110,86,0.6)" stroke-width="1" stroke-linecap="round"/>
-            </svg>
-          </div>
-          <div>
-            <div className="logo-title">Comsa Service</div>
-            <div className="logo-sub">Biomasa · Operaciones</div>
+        <div
+          className={`sidebar-logo${logoAnim ? ' logo-anim' : ''}`}
+          onClick={toggleSidebar}
+          title={collapsed ? 'Expandir panel' : 'Colapsar panel'}
+          style={{cursor:'pointer'}}
+        >
+          <div className={`logo-wrap${collapsed ? ' logo-wrap--sm' : ' logo-wrap--full'}`}>
+            <img src={logoImg} alt="COMSA Biomasa" className="logo-img" />
           </div>
         </div>
 
@@ -159,8 +156,11 @@ export default function Layout({ usuario, logout, albaranes = [], actualizarUsua
       <main className="main-area"><Outlet /></main>
 
       {perfilOpen && (
-        <div style={{position:'fixed',inset:0,background:'rgba(0,0,0,0.4)',display:'flex',alignItems:'center',justifyContent:'center',zIndex:200,padding:20}}>
-          <div style={{background:'#fff',borderRadius:'var(--radius-xl)',width:'100%',maxWidth:380,boxShadow:'0 20px 60px rgba(0,0,0,0.15)',overflow:'hidden'}}>
+        <div
+          style={{position:'fixed',inset:0,background:'rgba(0,0,0,0.4)',display:'flex',alignItems:'center',justifyContent:'center',zIndex:200,padding:20}}
+          onClick={() => { setPerfilOpen(false); setConfirmLogout(false) }}
+        >
+          <div style={{background:'#fff',borderRadius:'var(--radius-xl)',width:'100%',maxWidth:380,boxShadow:'0 20px 60px rgba(0,0,0,0.15)',overflow:'hidden'}} onClick={e => e.stopPropagation()}>
             <div style={{background:'var(--gray-900)',padding:'24px 24px 20px',position:'relative'}}>
               <button onClick={() => setPerfilOpen(false)} style={{position:'absolute',top:16,right:16,background:'none',border:'none',cursor:'pointer',color:'var(--gray-400)',display:'flex',alignItems:'center'}}>
                 <X size={16} />
