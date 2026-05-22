@@ -26,6 +26,16 @@ export default function Layout({ usuario, logout, albaranes = [], actualizarUsua
   const [collapsed, setCollapsed]         = useState(false)
   const [logoAnim, setLogoAnim]           = useState(false)
 
+  // Auto-colapsa si el viewport es demasiado estrecho (zoom elevado)
+  // No toca localStorage → nueva pestaña siempre arranca expandida
+  useEffect(() => {
+    const onResize = () => {
+      if (window.innerWidth <= AUTO_COLLAPSE_PX) setCollapsed(true)
+    }
+    window.addEventListener('resize', onResize)
+    return () => window.removeEventListener('resize', onResize)
+  }, [])
+
   const toggleSidebar = () => {
     setCollapsed(v => !v)
     setLogoAnim(true)
