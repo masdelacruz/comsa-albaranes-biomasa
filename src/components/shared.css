@@ -33,8 +33,14 @@
 .doc-chip.missing { background:var(--red-50);   border-color:var(--red-100);   color:var(--red-700);  }
 
 @media (max-width: 1400px) {
-  .page-header { padding: 20px 20px 0; }
+  .page-header { padding: 18px 18px 0; margin-bottom: 18px; }
+  .page-title { font-size: 18px; }
+}
+@media (max-width: 1280px) {
+  .page-header { padding: 14px 16px 0; margin-bottom: 16px; }
+  .page-title { font-size: 17px; }
+  .card { padding: 14px 16px; }
 }
 @media (max-width: 1100px) {
-  .page-header { padding: 16px 16px 0; }
+  .page-header { padding: 12px 12px 0; margin-bottom: 14px; }
 }
