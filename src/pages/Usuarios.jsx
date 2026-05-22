@@ -32,9 +32,14 @@ export default function Usuarios({ usuario }) {
   const esSuperadmin = usuario?.nivel === 'superadmin'
 
   const fetchUsuarios = async () => {
-    const data = await api.get('/usuarios')
-    setUsuarios(data || [])
-    setLoading(false)
+    try {
+      const data = await api.get('/usuarios')
+      setUsuarios(data || [])
+    } catch (e) {
+      console.error('Error cargando usuarios:', e)
+    } finally {
+      setLoading(false)
+    }
   }
 
   useEffect(() => { fetchUsuarios() }, [])
