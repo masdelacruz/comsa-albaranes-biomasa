@@ -4,7 +4,6 @@ import { LayoutDashboard, PlusCircle, Clock, BarChart2, Settings, LogOut, User, 
 import { api } from '../lib/api'
 import { useScrollLock } from '../hooks/useScrollLock'
 import logoFull from '../assets/logo_biomasa_full.png'
-import logoMini from '../assets/logo_biomasa_mini.png'
 import './Layout.css'
 
 const NOTIFS = [
@@ -87,7 +86,7 @@ export default function Layout({ usuario, logout, albaranes = [], actualizarUsua
           title={collapsed ? 'Expandir panel' : 'Colapsar panel'}
         >
           <img src={logoFull} alt="COMSA Biomasa" className="logo-img-full" />
-          <img src={logoMini} alt="COMSA Biomasa" className="logo-img-mini" />
+          <img src="/favicon.ico" alt="COMSA" className="logo-img-mini" />
         </div>
 
         <nav className="sidebar-nav">

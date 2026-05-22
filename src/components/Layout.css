@@ -29,7 +29,7 @@
   margin-bottom: 16px;
   cursor: pointer;
   user-select: none;
-  height: 108px;
+  height: 80px;
   transition: height 0.22s ease, opacity 0.15s;
 }
 .sidebar-logo:hover  { opacity: 0.82; }
@@ -39,8 +39,8 @@
 .logo-img-full {
   position: absolute;
   display: block;
-  max-width: 160px;
-  max-height: 96px;
+  max-width: 118px;
+  max-height: 68px;
   width: auto;
   height: auto;
   object-fit: contain;
@@ -49,12 +49,12 @@
   pointer-events: none;
 }
 
-/* Mini logo (solo marcas) — visible en colapsado, aspecto ratio original */
+/* Favicon — visible en colapsado, misma imagen que la pestaña del navegador */
 .logo-img-mini {
   position: absolute;
   display: block;
-  max-width: 36px;
-  max-height: 36px;
+  max-width: 32px;
+  max-height: 32px;
   width: auto;
   height: auto;
   object-fit: contain;
@@ -105,7 +105,7 @@
   align-items: center;
 }
 /* Logo colapsado: área pequeña, mini visible, full oculto */
-.sidebar--collapsed .sidebar-logo   { height: 50px !important; }
+.sidebar--collapsed .sidebar-logo   { height: 44px !important; }
 .sidebar--collapsed .logo-img-full  { opacity: 0 !important; }
 .sidebar--collapsed .logo-img-mini  { opacity: 1 !important; }
 
@@ -126,7 +126,7 @@
   align-items: stretch !important;
 }
 /* Logo expandido: área grande, full visible, mini oculto */
-.sidebar--expanded .sidebar-logo     { height: 108px !important; }
+.sidebar--expanded .sidebar-logo     { height: 80px !important; }
 .sidebar--expanded .logo-img-full    { opacity: 1 !important; }
 .sidebar--expanded .logo-img-mini    { opacity: 0 !important; }
 
