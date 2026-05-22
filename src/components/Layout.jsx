@@ -3,6 +3,8 @@ import { Outlet, NavLink } from 'react-router-dom'
 import { LayoutDashboard, PlusCircle, Clock, BarChart2, Settings, LogOut, User, X, Mail, Briefcase, Shield, Users, Bell } from 'lucide-react'
 import { api } from '../lib/api'
 import { useScrollLock } from '../hooks/useScrollLock'
+import logoFull from '../assets/logo_biomasa_full.png'
+import logoMini from '../assets/logo_biomasa_mini.png'
 import './Layout.css'
 
 const NOTIFS = [
@@ -107,18 +109,8 @@ export default function Layout({ usuario, logout, albaranes = [], actualizarUsua
           onClick={toggleSidebar}
           title={collapsed ? 'Expandir panel' : 'Colapsar panel'}
         >
-          {/* Marcas: círculo rojo + cuadrado azul — siempre visibles */}
-          <svg className="logo-marks" viewBox="0 0 38 22" xmlns="http://www.w3.org/2000/svg">
-            <circle cx="11" cy="11" r="11" fill="#D42027"/>
-            <path d="M11 3.5C9.3 5.8 7.2 8.5 7.2 11.5C7.2 14.3 8.9 16.2 11 16.2C13.1 16.2 14.8 14.3 14.8 11.5C14.8 8.5 12.7 5.8 11 3.5Z" fill="white"/>
-            <line x1="11" y1="16.2" x2="11" y2="18.8" stroke="white" strokeWidth="1.8" strokeLinecap="round"/>
-            <rect x="24" y="3" width="13" height="13" rx="1.8" fill="#72C8E8"/>
-          </svg>
-          {/* Texto — solo en sidebar expandido */}
-          <div className="logo-text">
-            <div className="logo-title">COMSA</div>
-            <div className="logo-sub">Biomasa</div>
-          </div>
+          <img src={logoFull} alt="COMSA Biomasa" className="logo-img-full" />
+          <img src={logoMini} alt="COMSA Biomasa" className="logo-img-mini" />
         </div>
 
         <nav className="sidebar-nav">

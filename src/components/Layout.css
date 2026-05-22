@@ -18,32 +18,50 @@
 
 /* ── Logo ─────────────────────────────────────────────────────────── */
 .sidebar-logo {
+  position: relative;
   display: flex;
   align-items: center;
-  gap: 10px;
-  height: 60px;
+  justify-content: center;
   flex-shrink: 0;
-  padding: 0 6px;
+  overflow: hidden;
   border-bottom: 1px solid rgba(255,255,255,0.08);
   margin-bottom: 16px;
   cursor: pointer;
   user-select: none;
-  transition: opacity 0.15s;
+  /* Altura y transición: al plegar, el área se reduce mostrando solo las marcas */
+  height: 108px;
+  transition: height 0.22s ease, opacity 0.15s;
 }
 .sidebar-logo:hover  { opacity: 0.82; }
 .sidebar-logo:active { opacity: 0.6; }
 
-.logo-marks { flex-shrink: 0; display: block; }
+/* Logo completo — visible en expandido */
+.logo-img-full {
+  position: absolute;
+  display: block;
+  width: 154px;
+  height: auto;
+  opacity: 1;
+  transition: opacity 0.18s ease;
+  pointer-events: none;
+}
 
-.logo-text { overflow: hidden; }
-.logo-title { font-size: 13px; font-weight: 700; color: #fff; letter-spacing: 0.2px; white-space: nowrap; }
-.logo-sub   { font-size: 10px; color: var(--gray-400); margin-top: 1px; white-space: nowrap; letter-spacing: 0.3px; text-transform: uppercase; }
+/* Mini logo (solo marcas) — visible en colapsado */
+.logo-img-mini {
+  position: absolute;
+  display: block;
+  width: 40px;
+  height: auto;
+  opacity: 0;
+  transition: opacity 0.18s ease 0.06s;
+  pointer-events: none;
+}
 
 @keyframes logo-pulse {
   0%,100% { transform: scale(1); }
-  45%     { transform: scale(1.1); }
+  45%     { transform: scale(1.08); }
 }
-.logo-anim .logo-marks { animation: logo-pulse 0.35s ease-out; }
+.logo-anim .logo-img-mini { animation: logo-pulse 0.35s ease-out; }
 
 /* ── Navegación ────────────────────────────────────────────────────── */
 .sidebar-nav  { display: flex; flex-direction: column; gap: 2px; flex: 1; }
@@ -80,8 +98,11 @@
   padding: 20px 8px !important;   /* mismo padding-top que expandido → logo en misma posición */
   align-items: center;
 }
-.sidebar--collapsed .sidebar-logo   { padding: 0; gap: 0; justify-content: center; }
-.sidebar--collapsed .logo-text      { display: none; }
+/* Logo colapsado: área pequeña, mini visible, full oculto */
+.sidebar--collapsed .sidebar-logo   { height: 50px !important; }
+.sidebar--collapsed .logo-img-full  { opacity: 0 !important; }
+.sidebar--collapsed .logo-img-mini  { opacity: 1 !important; }
+
 .sidebar--collapsed .sidebar-nav    { align-items: center; }
 .sidebar--collapsed .nav-item       { justify-content: center; padding: 9px; width: 36px; height: 36px; }
 .sidebar--collapsed .nav-item span  { display: none; }
@@ -98,8 +119,11 @@
   padding: 20px 14px !important;
   align-items: stretch !important;
 }
-.sidebar--expanded .sidebar-logo     { padding: 0 6px !important; justify-content: flex-start !important; gap: 10px !important; }
-.sidebar--expanded .logo-text        { display: block !important; }
+/* Logo expandido: área grande, full visible, mini oculto */
+.sidebar--expanded .sidebar-logo     { height: 108px !important; }
+.sidebar--expanded .logo-img-full    { opacity: 1 !important; }
+.sidebar--expanded .logo-img-mini    { opacity: 0 !important; }
+
 .sidebar--expanded .sidebar-nav      { align-items: stretch !important; }
 .sidebar--expanded .nav-item         { justify-content: flex-start !important; padding: 8px 10px !important; width: auto !important; height: auto !important; }
 .sidebar--expanded .nav-item span    { display: inline !important; }
