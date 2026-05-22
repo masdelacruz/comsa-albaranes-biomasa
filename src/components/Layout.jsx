@@ -24,11 +24,9 @@ export default function Layout({ usuario, logout, albaranes = [], actualizarUsua
   const [notifPrefs, setNotifPrefs]       = useState({})
   const [notifGuardando, setNotifGuardando] = useState(false)
   const [notifOk, setNotifOk]             = useState(false)
-  const [collapsed, setCollapsed]         = useState(() => {
-    const stored = localStorage.getItem('sidebar_collapsed')
-    if (stored !== null) return stored === 'true'
-    return window.innerWidth <= AUTO_COLLAPSE_PX
-  })
+  const [collapsed, setCollapsed]         = useState(() =>
+    localStorage.getItem('sidebar_collapsed') === 'true'
+  )
   const [logoAnim, setLogoAnim]           = useState(false)
   const collapsedRef                      = useRef(collapsed)
 
