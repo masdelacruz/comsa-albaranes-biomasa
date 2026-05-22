@@ -21,6 +21,9 @@ dist-ssr
 deploy/docker-compose.server.yml
 *.tar.gz
 
+# Claude Code local settings
+.claude/settings.local.json
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json
