@@ -115,7 +115,8 @@ export default function Usuarios({ usuario }) {
             <button onClick={() => setDeleteError('')} style={{background:'none',border:'none',cursor:'pointer',color:'var(--red-400)',display:'flex',alignItems:'center'}}><X size={14} /></button>
           </div>
         )}
-        <div className="card" style={{padding:0}}>
+        <div className="card" style={{padding:0, overflow:'hidden'}}>
+          <div style={{overflowX:'auto'}}>
           <table className="usuarios-table">
             <thead>
               <tr>
@@ -225,6 +226,7 @@ export default function Usuarios({ usuario }) {
               })}
             </tbody>
           </table>
+          </div>
         </div>
       </div>
 

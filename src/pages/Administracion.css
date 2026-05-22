@@ -33,3 +33,17 @@
 .tipo-badge.transportista { background:#E6F1FB; color:#0C447C; }
 .tipo-badge.instalacion  { background:#FAEEDA; color:#633806; }
 .empty-row { text-align:center; padding:32px; color:var(--gray-400); font-size:13px; }
+
+@media (max-width: 1400px) {
+  .admin-content { padding: 0 18px 32px; }
+  .proveedor-table th, .proveedor-table td { padding: 9px 10px; }
+}
+@media (max-width: 1280px) {
+  .admin-content { padding: 0 16px 28px; }
+  .proveedor-table { font-size: 12px; }
+  .proveedor-table th, .proveedor-table td { padding: 8px 8px; }
+  .admin-search input { width: 200px; }
+}
+@media (max-width: 1100px) {
+  .admin-content { padding: 0 12px 24px; }
+}
