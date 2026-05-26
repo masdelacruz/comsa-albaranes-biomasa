@@ -8,7 +8,7 @@
   background: var(--gray-900);
   display: flex;
   flex-direction: column;
-  padding: 20px 14px;
+  padding: 16px 14px;
   position: sticky;
   top: 0;
   height: 100vh;
@@ -26,7 +26,7 @@
   align-self: stretch;   /* siempre ocupa el ancho del sidebar, incluso con align-items:center en el padre */
   overflow: hidden;
   border-bottom: 1px solid rgba(255,255,255,0.08);
-  margin-bottom: 16px;
+  margin-bottom: 14px;
   cursor: pointer;
   user-select: none;
   height: 80px;
@@ -38,9 +38,12 @@
 /* Logo completo — visible en expandido, aspecto ratio original */
 .logo-img-full {
   position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
   display: block;
   max-width: 118px;
-  max-height: 68px;
+  max-height: 64px;
   width: auto;
   height: auto;
   object-fit: contain;
@@ -52,9 +55,12 @@
 /* Favicon — visible en colapsado, misma imagen que la pestaña del navegador */
 .logo-img-mini {
   position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
   display: block;
-  max-width: 32px;
-  max-height: 32px;
+  max-width: 28px;
+  max-height: 28px;
   width: auto;
   height: auto;
   object-fit: contain;
