@@ -54,9 +54,11 @@ export default function Administracion({ usuario }) {
   const [form, setForm]                   = useState(EMPTY_FORM)
   const [guardando, setGuardando]         = useState(false)
   const [confirmDelete, setConfirmDelete] = useState(null)
-  const [subiendoFirma, setSubiendoFirma]       = useState(false)
-  const [firmaUrl, setFirmaUrl]                 = useState(null)
+  const [subiendoFirma, setSubiendoFirma]         = useState(false)
+  const [firmaUrl, setFirmaUrl]                   = useState(null)
   const [firmaModalEmpresa, setFirmaModalEmpresa] = useState(null)
+  const [dragOverFirma, setDragOverFirma]         = useState(false)
+  const [confirmBorrarFirma, setConfirmBorrarFirma] = useState(false)
 
   // Logos state
   const [logos, setLogos]                   = useState({})
@@ -115,7 +117,7 @@ export default function Administracion({ usuario }) {
     setModal(true)
   }
 
-  const cerrarModal = () => { setModal(false); setEditando(null); setForm(EMPTY_FORM); setFirmaUrl(null) }
+  const cerrarModal = () => { setModal(false); setEditando(null); setForm(EMPTY_FORM); setFirmaUrl(null); setDragOverFirma(false); setConfirmBorrarFirma(false) }
 
   const handleSubirFirma = async (fichero) => {
     if (!fichero || !editando) return
@@ -155,6 +157,20 @@ export default function Administracion({ usuario }) {
     } finally {
       setSubiendoFirma(false)
     }
+  }
+
+  const handleBorrarFirma = async (empresaId, isQuickModal = false) => {
+    try {
+      await api.delete(`/storage/empresa/${empresaId}/firma`)
+      if (isQuickModal) {
+        setFirmaModalEmpresa(prev => prev ? { ...prev, firma_imagen: null } : null)
+        setProveedores(prev => prev.map(p => p.id === empresaId ? { ...p, firma_imagen: null } : p))
+      } else {
+        setFirmaUrl(null)
+        setProveedores(prev => prev.map(p => p.id === empresaId ? { ...p, firma_imagen: null } : p))
+      }
+    } catch (e) { console.error(e) }
+    setConfirmBorrarFirma(false)
   }
 
   const set = (k, v) => setForm(f => ({ ...f, [k]: v }))
@@ -441,34 +457,66 @@ export default function Administracion({ usuario }) {
 
       {/* Modal firma rápida */}
       {firmaModalEmpresa && (
-        <div className="modal-overlay" onClick={() => setFirmaModalEmpresa(null)}>
+        <div className="modal-overlay" onClick={() => { setFirmaModalEmpresa(null); setConfirmBorrarFirma(false) }}>
           <div className="modal" style={{maxWidth:360}} onClick={e => e.stopPropagation()}>
             <div className="modal-title">Firma — {firmaModalEmpresa.nombre}</div>
             <div style={{marginBottom:16}}>
-              {firmaModalEmpresa.firma_imagen ? (
-                <div style={{border:'1px solid var(--gray-200)',borderRadius:8,padding:16,background:'var(--gray-50)',textAlign:'center',marginBottom:14}}>
-                  <img src={firmaModalEmpresa.firma_imagen} alt="Firma" style={{maxHeight:90,maxWidth:'100%',objectFit:'contain'}} />
-                  <div style={{fontSize:11,color:'var(--green-600)',marginTop:6,fontWeight:500}}>✓ Firma registrada</div>
-                </div>
-              ) : (
-                <div style={{border:'1px dashed var(--gray-200)',borderRadius:8,padding:24,textAlign:'center',color:'var(--gray-400)',fontSize:13,marginBottom:14}}>
-                  Sin firma registrada
-                </div>
-              )}
-              <label style={{display:'flex',alignItems:'center',justifyContent:'center',gap:8,cursor:'pointer',fontSize:13,color:'var(--green-600)',fontWeight:500,padding:'10px 0',border:'1px solid var(--green-100)',borderRadius:8,background:'var(--green-50)'}}>
-                <Upload size={15}/>
-                {subiendoFirma ? 'Subiendo...' : firmaModalEmpresa.firma_imagen ? 'Cambiar imagen de firma' : 'Subir imagen de firma'}
-                <input type="file" accept=".png,.jpg,.jpeg,.svg" style={{display:'none'}}
-                  onChange={e => { if(e.target.files[0]) handleSubirFirmaModal(e.target.files[0]); e.target.value='' }}
-                  disabled={subiendoFirma}
-                />
-              </label>
-              <div style={{fontSize:11,color:'var(--gray-400)',textAlign:'center',marginTop:8}}>
+              {/* Zona drag-drop */}
+              <div
+                style={{
+                  border: dragOverFirma ? '2px dashed var(--green-400)' : firmaModalEmpresa.firma_imagen ? '1px solid var(--gray-200)' : '1px dashed var(--gray-200)',
+                  borderRadius:8, padding:firmaModalEmpresa.firma_imagen ? 16 : 24,
+                  background: dragOverFirma ? 'rgba(29,158,117,0.06)' : 'var(--gray-50)',
+                  textAlign:'center', marginBottom:14, cursor:'pointer', transition:'border 0.15s, background 0.15s',
+                }}
+                onClick={() => document.getElementById('firma-input-modal').click()}
+                onDragOver={e => { e.preventDefault(); setDragOverFirma(true) }}
+                onDragLeave={() => setDragOverFirma(false)}
+                onDrop={e => { e.preventDefault(); setDragOverFirma(false); if(e.dataTransfer.files[0]) handleSubirFirmaModal(e.dataTransfer.files[0]) }}
+              >
+                {dragOverFirma ? (
+                  <div style={{display:'flex',flexDirection:'column',alignItems:'center',gap:6,color:'var(--green-400)'}}>
+                    <Upload size={22}/><span style={{fontSize:12}}>Soltar aquí</span>
+                  </div>
+                ) : firmaModalEmpresa.firma_imagen ? (
+                  <>
+                    <img src={firmaModalEmpresa.firma_imagen} alt="Firma" style={{maxHeight:90,maxWidth:'100%',objectFit:'contain'}} />
+                    <div style={{fontSize:11,color:'var(--green-600)',marginTop:6,fontWeight:500}}>✓ Firma registrada · clic o arrastra para cambiar</div>
+                  </>
+                ) : (
+                  <div style={{color:'var(--gray-400)',fontSize:13}}>
+                    <Upload size={20} style={{margin:'0 auto 6px',display:'block'}}/>
+                    Sin firma · clic o arrastra para subir
+                  </div>
+                )}
+              </div>
+              <input id="firma-input-modal" type="file" accept=".png,.jpg,.jpeg,.svg" style={{display:'none'}}
+                onChange={e => { if(e.target.files[0]) handleSubirFirmaModal(e.target.files[0]); e.target.value='' }}
+                disabled={subiendoFirma}
+              />
+              {subiendoFirma && <div style={{fontSize:12,color:'var(--gray-400)',textAlign:'center',marginBottom:8}}>Subiendo...</div>}
+              <div style={{fontSize:11,color:'var(--gray-400)',textAlign:'center',marginBottom:12}}>
                 PNG, JPG o SVG · Se muestra al confirmar firma desde el campo
               </div>
+              {firmaModalEmpresa.firma_imagen && (
+                confirmBorrarFirma ? (
+                  <div style={{display:'flex',gap:6,alignItems:'center',justifyContent:'center',padding:'8px',background:'var(--red-50)',border:'1px solid var(--red-100)',borderRadius:8}}>
+                    <span style={{fontSize:12,color:'var(--red-700)',fontWeight:500}}>¿Eliminar firma?</span>
+                    <button className="btn" style={{padding:'4px 10px',fontSize:11,color:'var(--red-700)',borderColor:'var(--red-200)'}}
+                      onClick={() => handleBorrarFirma(firmaModalEmpresa.id, true)}><Check size={11}/> Sí</button>
+                    <button className="btn btn-ghost" style={{padding:'4px 8px',fontSize:11}}
+                      onClick={() => setConfirmBorrarFirma(false)}><X size={11}/></button>
+                  </div>
+                ) : (
+                  <button className="btn btn-ghost" style={{width:'100%',fontSize:12,color:'var(--red-400)',justifyContent:'center'}}
+                    onClick={() => setConfirmBorrarFirma(true)}>
+                    <Trash2 size={13}/> Eliminar firma
+                  </button>
+                )
+              )}
             </div>
             <div className="modal-actions">
-              <button className="btn btn-primary" onClick={() => setFirmaModalEmpresa(null)}>Cerrar</button>
+              <button className="btn btn-primary" onClick={() => { setFirmaModalEmpresa(null); setConfirmBorrarFirma(false) }}>Cerrar</button>
             </div>
           </div>
         </div>
@@ -505,36 +553,66 @@ export default function Administracion({ usuario }) {
                 <label>Notas internas</label>
                 <textarea placeholder="Observaciones, condiciones especiales..." value={form.notas} onChange={e => set('notas', e.target.value)} style={{ minHeight: 60 }} />
               </div>
-              <div className="modal-field full" style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
-                <input type="checkbox" id="activo" checked={form.activo} onChange={e => set('activo', e.target.checked)} style={{ width: 'auto' }} />
-                <label htmlFor="activo" style={{ margin: 0, cursor: 'pointer' }}>Activo — aparece en los desplegables de nuevos albaranes</label>
+              <div className="modal-field full" style={{ flexDirection: 'row', alignItems: 'center', gap: 10, cursor: 'pointer' }}
+                onClick={() => set('activo', !form.activo)}>
+                <div style={{width:36,height:20,background:form.activo?'var(--green-400)':'var(--gray-200)',borderRadius:10,position:'relative',transition:'background 0.2s',flexShrink:0}}>
+                  <div style={{position:'absolute',top:2,left:form.activo?16:2,width:16,height:16,background:'#fff',borderRadius:'50%',transition:'left 0.2s',boxShadow:'0 1px 3px rgba(0,0,0,0.2)'}}/>
+                </div>
+                <span style={{fontSize:13,color:'var(--gray-700)'}}>Activo — aparece en los desplegables de nuevos albaranes</span>
               </div>
 
               {editando && (
                 <div className="modal-field full">
                   <label>Firma oficial de la empresa</label>
-                  <div style={{border:'1px solid var(--gray-200)',borderRadius:'var(--radius-md)',padding:12,background:'var(--gray-50)'}}>
-                    {firmaUrl ? (
-                      <div style={{textAlign:'center',marginBottom:10}}>
+                  <div
+                    style={{
+                      border: dragOverFirma ? '2px dashed var(--green-400)' : '1px solid var(--gray-200)',
+                      borderRadius:'var(--radius-md)', padding:12, background: dragOverFirma ? 'rgba(29,158,117,0.06)' : 'var(--gray-50)',
+                      cursor:'pointer', transition:'border 0.15s, background 0.15s',
+                    }}
+                    onClick={() => document.getElementById('firma-input-edit').click()}
+                    onDragOver={e => { e.preventDefault(); setDragOverFirma(true) }}
+                    onDragLeave={() => setDragOverFirma(false)}
+                    onDrop={e => { e.preventDefault(); setDragOverFirma(false); if(e.dataTransfer.files[0]) handleSubirFirma(e.dataTransfer.files[0]) }}
+                  >
+                    {dragOverFirma ? (
+                      <div style={{display:'flex',flexDirection:'column',alignItems:'center',gap:6,color:'var(--green-400)',padding:'10px 0'}}>
+                        <Upload size={20}/><span style={{fontSize:12}}>Soltar aquí</span>
+                      </div>
+                    ) : firmaUrl ? (
+                      <div style={{textAlign:'center',marginBottom:8}}>
                         <img src={firmaUrl} alt="Firma" style={{maxHeight:70,maxWidth:'100%',objectFit:'contain'}} />
+                        <div style={{fontSize:11,color:'var(--gray-400)',marginTop:4}}>Clic o arrastra para cambiar</div>
                       </div>
                     ) : (
-                      <div style={{textAlign:'center',fontSize:12,color:'var(--gray-400)',marginBottom:10}}>
-                        Sin firma registrada
+                      <div style={{textAlign:'center',fontSize:12,color:'var(--gray-400)',marginBottom:8,padding:'8px 0'}}>
+                        <Upload size={16} style={{margin:'0 auto 4px',display:'block'}}/>
+                        Sin firma · clic o arrastra para subir
                       </div>
                     )}
-                    <label style={{display:'flex',alignItems:'center',gap:8,cursor:'pointer',justifyContent:'center',fontSize:12,color:'var(--green-600)',fontWeight:500}}>
-                      <Upload size={14} />
-                      {subiendoFirma ? 'Subiendo...' : firmaUrl ? 'Cambiar imagen de firma' : 'Subir imagen de firma'}
-                      <input type="file" accept=".png,.jpg,.jpeg,.svg" style={{display:'none'}}
-                        onChange={e => { if(e.target.files[0]) handleSubirFirma(e.target.files[0]); e.target.value='' }}
-                        disabled={subiendoFirma}
-                      />
-                    </label>
-                    <div style={{fontSize:11,color:'var(--gray-400)',textAlign:'center',marginTop:4}}>
-                      PNG, JPG o SVG · Se usará al confirmar con un clic desde el campo
-                    </div>
+                    {subiendoFirma && <div style={{fontSize:11,color:'var(--gray-400)',textAlign:'center'}}>Subiendo...</div>}
+                    <input id="firma-input-edit" type="file" accept=".png,.jpg,.jpeg,.svg" style={{display:'none'}}
+                      onChange={e => { if(e.target.files[0]) handleSubirFirma(e.target.files[0]); e.target.value='' }}
+                      disabled={subiendoFirma}
+                    />
                   </div>
+                  {firmaUrl && (
+                    confirmBorrarFirma ? (
+                      <div style={{display:'flex',gap:6,alignItems:'center',marginTop:6,padding:'6px 8px',background:'var(--red-50)',border:'1px solid var(--red-100)',borderRadius:6}}>
+                        <span style={{fontSize:11,color:'var(--red-700)',fontWeight:500,flex:1}}>¿Eliminar firma?</span>
+                        <button className="btn" style={{padding:'3px 8px',fontSize:11,color:'var(--red-700)',borderColor:'var(--red-200)'}}
+                          onClick={e => { e.stopPropagation(); handleBorrarFirma(editando) }}><Check size={11}/> Sí</button>
+                        <button className="btn btn-ghost" style={{padding:'3px 6px',fontSize:11}}
+                          onClick={e => { e.stopPropagation(); setConfirmBorrarFirma(false) }}><X size={11}/></button>
+                      </div>
+                    ) : (
+                      <button className="btn btn-ghost" style={{marginTop:6,width:'100%',fontSize:11,color:'var(--red-400)',justifyContent:'center'}}
+                        onClick={e => { e.stopPropagation(); setConfirmBorrarFirma(true) }}>
+                        <Trash2 size={12}/> Eliminar firma
+                      </button>
+                    )
+                  )}
+                  <div style={{fontSize:11,color:'var(--gray-400)',marginTop:4}}>PNG, JPG o SVG · Se usará al confirmar con un clic desde el campo</div>
                 </div>
               )}
             </div>
