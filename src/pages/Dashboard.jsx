@@ -11,7 +11,7 @@ export default function Dashboard({ albaranes, usuario, borrarAlbaran }) {
   const [busqueda,          setBusqueda]          = useState('')
   const [filtroInstalacion, setFiltroInstalacion] = useState('')
   const [filtroEstado,      setFiltroEstado]      = useState('')
-  const [soloActivos,       setSoloActivos]       = useState(true)
+  const [soloActivos,       setSoloActivos]       = useState('activos')
   const [confirmBorrar,     setConfirmBorrar]     = useState(null)
   const [pagina, setPagina] = useState(1)
   const POR_PAGINA = 25
@@ -34,7 +34,8 @@ export default function Dashboard({ albaranes, usuario, borrarAlbaran }) {
   const alertas        = albaranes.filter(a => a.estado === 'humedad_pendiente')
 
   const filtrados = albaranes.filter(a => {
-    if (soloActivos && a.estado === 'cerrado') return false
+    if (soloActivos === 'activos'  && a.estado === 'cerrado')  return false
+    if (soloActivos === 'cerrados' && a.estado !== 'cerrado')  return false
     if (busqueda) {
       const q = busqueda.toLowerCase()
       const hay = [a.id, a.proveedor, a.astilladora, a.transportista, a.instalacion, a.especie, a.origen]
@@ -88,16 +89,17 @@ export default function Dashboard({ albaranes, usuario, borrarAlbaran }) {
         <div className="table-header">
           <div style={{display:'flex',alignItems:'center',gap:10,flexWrap:'wrap'}}>
             <div className="section-label" style={{margin:0}}>
-              {soloActivos ? 'Albaranes activos' : 'Todos los albaranes'}
+              {{ activos: 'Albaranes activos', cerrados: 'Albaranes cerrados', todos: 'Todos los albaranes' }[soloActivos]}
             </div>
             {/* Toggle activos / todos */}
             <div style={{display:'flex',gap:2,background:'var(--gray-100)',borderRadius:6,padding:2}}>
               {[
-                { label: `Activos · ${totalActivos}`, val: true  },
-                { label: `Todos · ${albaranes.length}`, val: false },
+                { label: `Activos · ${totalActivos}`, val: 'activos'  },
+                { label: `Cerrados · ${cerrados}`,    val: 'cerrados' },
+                { label: `Todos · ${albaranes.length}`, val: 'todos' },
               ].map(({ label, val }) => (
-                <button key={String(val)}
-                  onClick={() => { setSoloActivos(val); if (val) setFiltroEstado('') }}
+                <button key={val}
+                  onClick={() => { setSoloActivos(val); if (val === 'activos') setFiltroEstado('') }}
                   style={{fontSize:11,padding:'3px 10px',borderRadius:4,border:'none',cursor:'pointer',
                     background: soloActivos === val ? '#fff' : 'transparent',
                     color: soloActivos === val ? 'var(--gray-800)' : 'var(--gray-400)',
@@ -129,7 +131,7 @@ export default function Dashboard({ albaranes, usuario, borrarAlbaran }) {
               <option value="pendiente_campo">Pendiente campo</option>
               <option value="pendiente_oficina">Pendiente oficina</option>
               <option value="humedad_pendiente">Humedad pendiente</option>
-              {!soloActivos && <option value="cerrado">Cerrado</option>}
+              {soloActivos === 'todos' && <option value="cerrado">Cerrado</option>}
             </select>
             {hayFiltros && (
               <button className="btn btn-ghost" onClick={limpiarFiltros} style={{fontSize:11}}>× Limpiar</button>
