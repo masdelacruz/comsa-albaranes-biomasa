@@ -10,7 +10,7 @@ import './Historial.css'
 
 const TIPOS_DOC = ['Autodeclaración','Acuerdo de cesión','Contrato prestación servicios','Permiso de corta','Certificado SURE','Permiso de obra']
 
-export default function Historial({ albaranes, usuario, refetch, borrarAlbaran }) {
+export default function Historial({ albaranes, empresas = [], usuario, refetch, borrarAlbaran }) {
   const navigate = useNavigate()
   const [busqueda, setBusqueda] = useState('')
   const [filtroInstalacion,  setFiltroInstalacion]  = useState('')
@@ -84,10 +84,11 @@ export default function Historial({ albaranes, usuario, refetch, borrarAlbaran }
     } finally { setEliminando(false) }
   }
 
-  const instalaciones   = [...new Set(albaranes.map(a => a.instalacion).filter(Boolean))].sort()
-  const astilladoras    = [...new Set(albaranes.map(a => a.astilladora).filter(Boolean))].sort()
-  const proveedores     = [...new Set(albaranes.map(a => a.proveedor).filter(Boolean))].sort()
-  const transportistas  = [...new Set(albaranes.map(a => a.transportista).filter(Boolean))].sort()
+  const empresasByTipo = (tipo) => empresas.filter(e => e.tipo === tipo).map(e => e.nombre)
+  const instalaciones   = [...new Set([...empresasByTipo('instalacion'),   ...albaranes.map(a => a.instalacion)  ].filter(Boolean))].sort()
+  const astilladoras    = [...new Set([...empresasByTipo('astilladora'),   ...albaranes.map(a => a.astilladora)  ].filter(Boolean))].sort()
+  const proveedores     = [...new Set([...empresasByTipo('proveedor'),     ...albaranes.map(a => a.proveedor)    ].filter(Boolean))].sort()
+  const transportistas  = [...new Set([...empresasByTipo('transportista'), ...albaranes.map(a => a.transportista)].filter(Boolean))].sort()
 
   const filtrados = useMemo(() => albaranes.filter(a => {
     if (busqueda) {

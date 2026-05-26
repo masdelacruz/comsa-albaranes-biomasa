@@ -11,6 +11,7 @@ import Administracion from './pages/Administracion'
 import Usuarios from './pages/Usuarios'
 import Login from './pages/Login'
 import { useAlbaranes } from './hooks/useAlbaranes'
+import { api } from './lib/api'
 import { useAlbaranActions } from './hooks/useAlbaranActions'
 import { useAuth } from './hooks/useAuth'
 
@@ -59,16 +60,19 @@ function AppConDatos({ usuario, logout, actualizarUsuario }) {
   const { albaranes, loading: dataLoading, refetch } = useAlbaranes()
   const { addAlbaran, updateFirma, simularFirmaOficina, subirDocumento, subirTicketPesada, actualizarAlbaran, borrarAlbaran, reabrirAlbaran } = useAlbaranActions(refetch, usuario)
 
+  const [empresas, setEmpresas] = useState([])
+  useEffect(() => { api.get('/empresas').then(d => setEmpresas(d || [])).catch(() => {}) }, [])
+
   if (dataLoading) return <Spinner />
 
   return (
     <Routes>
       <Route path="/" element={<Layout usuario={usuario} logout={logout} albaranes={albaranes} actualizarUsuario={actualizarUsuario} />}>
         <Route index element={<Navigate to="/dashboard" replace />} />
-        <Route path="dashboard"      element={<Dashboard albaranes={albaranes} usuario={usuario} borrarAlbaran={borrarAlbaran} />} />
+        <Route path="dashboard"      element={<Dashboard albaranes={albaranes} empresas={empresas} usuario={usuario} borrarAlbaran={borrarAlbaran} />} />
         <Route path="nuevo"          element={<NuevoAlbaran addAlbaran={addAlbaran} usuario={usuario} />} />
         <Route path="albaran/:id"    element={<DetalleAlbaran albaranes={albaranes} simularFirma={simularFirmaOficina} updateFirma={updateFirma} subirDocumento={subirDocumento} subirTicketPesada={subirTicketPesada} actualizarAlbaran={actualizarAlbaran} borrarAlbaran={borrarAlbaran} reabrirAlbaran={reabrirAlbaran} usuario={usuario} />} />
-        <Route path="historial"      element={<Historial albaranes={albaranes} usuario={usuario} refetch={refetch} borrarAlbaran={borrarAlbaran} />} />
+        <Route path="historial"      element={<Historial albaranes={albaranes} empresas={empresas} usuario={usuario} refetch={refetch} borrarAlbaran={borrarAlbaran} />} />
         <Route path="estadisticas"   element={<Estadisticas albaranes={albaranes} />} />
         <Route path="administracion" element={<Administracion usuario={usuario} />} />
         <Route path="usuarios"       element={<Usuarios usuario={usuario} />} />

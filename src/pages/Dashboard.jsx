@@ -6,7 +6,7 @@ import { labelSemanaActual, isoWeek, isoWeekYear } from '../utils/semana'
 import '../components/shared.css'
 import './Dashboard.css'
 
-export default function Dashboard({ albaranes, usuario, borrarAlbaran }) {
+export default function Dashboard({ albaranes, empresas = [], usuario, borrarAlbaran }) {
   const navigate = useNavigate()
   const [busqueda,          setBusqueda]          = useState('')
   const [filtroInstalacion, setFiltroInstalacion] = useState('')
@@ -26,7 +26,10 @@ export default function Dashboard({ albaranes, usuario, borrarAlbaran }) {
     return isoWeek(d) === semanaActual && isoWeekYear(d) === anioActual
   })
 
-  const instalaciones  = [...new Set(albaranes.map(a => a.instalacion).filter(Boolean))]
+  const instalaciones  = [...new Set([
+    ...empresas.filter(e => e.tipo === 'instalacion').map(e => e.nombre),
+    ...albaranes.map(a => a.instalacion),
+  ].filter(Boolean))].sort()
   const totalActivos   = albaranes.filter(a => a.estado !== 'cerrado').length
   const pendienteFirma = albaranes.filter(a => a.estado !== 'cerrado').length
   const cerrados       = albaranes.filter(a => a.estado === 'cerrado').length
