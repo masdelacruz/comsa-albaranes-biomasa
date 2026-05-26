@@ -10,29 +10,35 @@ export default function Estadisticas({ albaranes }) {
     const total = albaranes.length
     const cerrados = albaranes.filter(a => a.estado === 'cerrado').length
     const pendientes = albaranes.filter(a => a.estado !== 'cerrado').length
-    const conHumedad = albaranes.filter(a => a.pesada.humedad != null)
+    const conHumedad = albaranes.filter(a => {
+      const h = Number(a.pesada?.humedad)
+      return a.pesada?.humedad != null && !isNaN(h)
+    })
     const humedadMedia = conHumedad.length
-      ? (conHumedad.reduce((acc, a) => acc + a.pesada.humedad, 0) / conHumedad.length).toFixed(1)
+      ? (conHumedad.reduce((acc, a) => acc + Number(a.pesada.humedad), 0) / conHumedad.length).toFixed(1)
       : null
-    const conPeso = albaranes.filter(a => a.pesada.entrada && a.pesada.salida)
-    const pesoTotal = conPeso.reduce((acc, a) => acc + (a.pesada.entrada - a.pesada.salida), 0)
+    const conPeso = albaranes.filter(a => a.pesada?.entrada && a.pesada?.salida)
+    const pesoTotal = conPeso.reduce((acc, a) => acc + (Number(a.pesada.entrada) - Number(a.pesada.salida)), 0)
 
     const porInstalacion = {}
     albaranes.forEach(a => {
+      if (!a.instalacion) return
       if (!porInstalacion[a.instalacion]) porInstalacion[a.instalacion] = { total: 0, cerrados: 0, peso: 0 }
       porInstalacion[a.instalacion].total++
       if (a.estado === 'cerrado') porInstalacion[a.instalacion].cerrados++
-      if (a.pesada.entrada && a.pesada.salida) porInstalacion[a.instalacion].peso += (a.pesada.entrada - a.pesada.salida)
+      if (a.pesada?.entrada && a.pesada?.salida) porInstalacion[a.instalacion].peso += (Number(a.pesada.entrada) - Number(a.pesada.salida))
     })
 
     const porAstilladora = {}
     albaranes.forEach(a => {
+      if (!a.astilladora) return
       if (!porAstilladora[a.astilladora]) porAstilladora[a.astilladora] = 0
       porAstilladora[a.astilladora]++
     })
 
     const porEspecie = {}
     albaranes.forEach(a => {
+      if (!a.especie) return
       if (!porEspecie[a.especie]) porEspecie[a.especie] = 0
       porEspecie[a.especie]++
     })
@@ -70,7 +76,7 @@ export default function Estadisticas({ albaranes }) {
             <div className="kpi-big">
               <div className="kpi-big-val" style={{color:'var(--gray-900)'}}>{stats.total}</div>
               <div className="kpi-big-label">Albaranes totales</div>
-              <div className="kpi-big-sub">esta semana</div>
+              <div className="kpi-big-sub">en total</div>
             </div>
           </div>
           <div className="stat-card">

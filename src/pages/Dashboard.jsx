@@ -137,7 +137,7 @@ export default function Dashboard({ albaranes, usuario, borrarAlbaran }) {
           </div>
         </div>
 
-        <div className="card" style={{padding:0, overflow:'hidden'}}>
+        <div className="card" style={{padding:0, overflow:'clip'}}>
           <div className="table-wrap">
           <table className="albaran-table">
             <thead>

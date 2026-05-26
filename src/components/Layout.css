@@ -99,7 +99,7 @@
 .user-chip-btn:hover { background: rgba(255,255,255,0.1); }
 
 /* ── Área principal ───────────────────────────────────────────────── */
-.main-area { flex: 1; min-width: 0; overflow-y: auto; overflow-x: hidden; background: var(--gray-50); }
+.main-area { flex: 1; min-width: 0; overflow-y: auto; overflow-x: clip; background: var(--gray-50); }
 
 /* ══════════════════════════════════════════════════════════════════════
    ESTADOS JS-CONTROLLED — !important para ganar sobre cualquier media query

@@ -303,7 +303,7 @@ export default function Historial({ albaranes, usuario, refetch, borrarAlbaran }
 
         {/* Acciones masivas — pill flotante al fondo, no desplaza el layout */}
 
-        <div className="card" style={{padding:0, overflow:'hidden'}}>
+        <div className="card" style={{padding:0, overflow:'clip'}}>
           <div style={{overflowX:'auto'}}>
           <table className="historial-table">
             <thead>

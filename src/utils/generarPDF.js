@@ -156,7 +156,7 @@ export async function generarPDF(a, options = {}) {
     doc.text('Nº albarán:', sx + 2, cabY + 10.5)
 
     doc.setFont('helvetica', 'bold')
-    doc.setFontSize(13)
+    doc.setFontSize(15)
     doc.setTextColor(200, 30, 30)
     doc.text(String(a.id ?? ''), cx, cabY + 18.5, { align: 'center' })
 
