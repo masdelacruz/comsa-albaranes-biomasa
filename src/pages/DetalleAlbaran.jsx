@@ -371,35 +371,33 @@ export default function DetalleAlbaran({ albaranes, simularFirma, updateFirma, s
                 <RotateCcw size={14} /> Reabrir
               </button>
             )}
-            <div style={{position:'relative'}}>
-              <button className="btn" onClick={() => setPdfMenuOpen(o => !o)}>
-                <FileDown size={15} /> PDF ▾
-              </button>
-              {pdfMenuOpen && (
-                <div style={{position:'absolute',top:'calc(100% + 4px)',right:0,background:'#fff',border:'var(--border)',borderRadius:'var(--radius-md)',boxShadow:'0 4px 16px rgba(0,0,0,0.1)',zIndex:50,minWidth:230}}>
-                  <div style={{padding:'6px 14px 4px',fontSize:10,fontWeight:600,textTransform:'uppercase',letterSpacing:'0.5px',color:'var(--gray-400)'}}>A4 vertical</div>
-                  <button style={{display:'block',width:'100%',padding:'7px 14px',textAlign:'left',background:'none',border:'none',cursor:'pointer',fontSize:13}}
-                    onClick={() => { generarPDF(a); setPdfMenuOpen(false) }}>
-                    <FileDown size={13} style={{marginRight:6}} /> Albarán A4
-                  </button>
-                  {a.certificacion?.includes('SURE') && (
-                    <button style={{display:'block',width:'100%',padding:'7px 14px',textAlign:'left',background:'none',border:'none',fontSize:13,
+            {a.certificacion?.includes('SURE') ? (
+              <div style={{position:'relative'}}>
+                <button className="btn" onClick={() => setPdfMenuOpen(o => !o)}>
+                  <FileDown size={15} /> Descargar PDF ▾
+                </button>
+                {pdfMenuOpen && (
+                  <div style={{position:'absolute',top:'calc(100% + 4px)',right:0,background:'#fff',border:'var(--border)',borderRadius:'var(--radius-md)',boxShadow:'0 4px 16px rgba(0,0,0,0.1)',zIndex:50,minWidth:220}}>
+                    <button style={{display:'block',width:'100%',padding:'9px 14px',textAlign:'left',background:'none',border:'none',cursor:'pointer',fontSize:13}}
+                      onClick={() => { generarPDF(a); setPdfMenuOpen(false) }}>
+                      <FileDown size={13} style={{marginRight:6}} /> Solo albarán
+                    </button>
+                    <button style={{display:'block',width:'100%',padding:'9px 14px',textAlign:'left',background:'none',border:'none',fontSize:13,
                       cursor: a.pesada?.ticketAdjunto ? 'pointer' : 'not-allowed',
                       color: a.pesada?.ticketAdjunto ? 'inherit' : 'var(--gray-400)'}}
                       disabled={!a.pesada?.ticketAdjunto}
                       onClick={() => { if(a.pesada?.ticketAdjunto){ generarPDF(a, { includeTicket: true }); setPdfMenuOpen(false) } }}>
-                      <FileDown size={13} style={{marginRight:6}} /> A4 + ticket pesada
+                      <FileDown size={13} style={{marginRight:6}} /> Albarán + ticket pesada
                       {!a.pesada?.ticketAdjunto && <span style={{fontSize:11,marginLeft:6}}>(sin ticket)</span>}
                     </button>
-                  )}
-                  <div style={{borderTop:'var(--border)',margin:'4px 0',padding:'6px 14px 4px',fontSize:10,fontWeight:600,textTransform:'uppercase',letterSpacing:'0.5px',color:'var(--gray-400)'}}>A5 horizontal</div>
-                  <button style={{display:'block',width:'100%',padding:'7px 14px 10px',textAlign:'left',background:'none',border:'none',cursor:'pointer',fontSize:13}}
-                    onClick={() => { generarPDFA5(a); setPdfMenuOpen(false) }}>
-                    <FileDown size={13} style={{marginRight:6}} /> Albarán A5
-                  </button>
-                </div>
-              )}
-            </div>
+                  </div>
+                )}
+              </div>
+            ) : (
+              <button className="btn" onClick={() => generarPDF(a)}>
+                <FileDown size={15} /> Descargar PDF
+              </button>
+            )}
             {esSuperadmin && (
               <button className="btn" style={{color:'var(--red-400)',borderColor:'var(--red-100)'}} onClick={() => setConfirmBorrar(true)}>
                 <Trash2 size={15} /> Borrar
