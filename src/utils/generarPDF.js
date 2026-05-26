@@ -202,8 +202,8 @@ export async function generarPDF(a, options = {}) {
   doc.line(margen, y, W - margen, y)
   y += 7
 
-  const pb   = a.pesada?.entrada ? a.pesada.entrada.toLocaleString('es-ES') + ' kg' : '...................'
-  const tara = a.pesada?.salida  ? a.pesada.salida.toLocaleString('es-ES')  + ' kg' : '...................'
+  const pb   = a.pesada?.entrada ? Number(a.pesada.entrada).toLocaleString('es-ES') + ' kg' : '...................'
+  const tara = a.pesada?.salida  ? Number(a.pesada.salida).toLocaleString('es-ES')  + ' kg' : '...................'
   const pn   = (a.pesada?.entrada && a.pesada?.salida)
     ? (a.pesada.entrada - a.pesada.salida).toLocaleString('es-ES') + ' kg' : '...................'
 
@@ -212,11 +212,12 @@ export async function generarPDF(a, options = {}) {
 
   // ── Peso Bruto: pegado al margen izquierdo
   doc.setFont('helvetica', 'bold')
+  const pbLW = doc.getTextWidth('Peso Bruto')   // medir en bold, igual que Tara y Peso Neto
   doc.setTextColor(...grisOsc)
   doc.text('Peso Bruto', margen, y)
   doc.setFont('helvetica', 'normal')
   doc.setTextColor(...negro)
-  doc.text(pb, margen + doc.getTextWidth('Peso Bruto') + sp, y)
+  doc.text(pb, margen + pbLW + sp, y)
 
   // ── Tara: grupo centrado exactamente en W/2
   doc.setFont('helvetica', 'bold')
@@ -302,10 +303,7 @@ export async function generarPDF(a, options = {}) {
     doc.rect(bx, by, sigW, sigH, 'FD')
     const imgAreaH = sigH - footerH
     if (firmaData?.firmaImagen) {
-      try {
-        doc.addImage(firmaData.firmaImagen, fmt(firmaData.firmaImagen),
-          bx + 4, by + 4, sigW - 8, imgAreaH - 8)
-      } catch {}
+      addImgFit(firmaData.firmaImagen, bx + 4, by + 4, sigW - 8, imgAreaH - 8)
     }
     doc.setFillColor(...grisClaro)
     doc.setDrawColor(200, 200, 200)
@@ -326,42 +324,8 @@ export async function generarPDF(a, options = {}) {
 
   y += sigH + 4
 
-  // ── BLOQUE DE AUDITORÍA DIGITAL ─────────────────────────────────────────────
-  const ORDEN_AUDIT = ['proveedor','astilladora','transportista','instalacion','oficina']
-  const firmasAudit = ORDEN_AUDIT
-    .map(r => ({ rol: r, ...a.firmas?.[r] }))
-    .filter(f => f?.firmado)
-
-  if (firmasAudit.length) {
-    const auditH = 5 + firmasAudit.length * 5 + 4
-    doc.setFillColor(248, 248, 246)
-    doc.setDrawColor(220, 220, 220)
-    doc.setLineWidth(0.2)
-    doc.rect(margen, y, contentW, auditH, 'FD')
-
-    doc.setFont('helvetica', 'bold')
-    doc.setFontSize(5.5)
-    doc.setTextColor(100, 100, 100)
-    doc.text('REGISTRO DIGITAL DE FIRMAS', margen + 3, y + 4)
-
-    const ROL_LABELS = { proveedor:'Proveedor', astilladora:'Astilladora', transportista:'Transportista', instalacion:'Instalación', oficina:'Oficina' }
-    firmasAudit.forEach((f, i) => {
-      const ly = y + 4 + (i + 1) * 5
-      doc.setFont('helvetica', 'bold')
-      doc.setFontSize(5)
-      doc.setTextColor(60, 60, 60)
-      doc.text(`${ROL_LABELS[f.rol] || f.rol}:`, margen + 3, ly)
-      doc.setFont('helvetica', 'normal')
-      doc.setTextColor(80, 80, 80)
-      const persona = f.nombrePersona ? ` ${f.nombrePersona} ·` : ''
-      const ip      = f.ipOrigen ? ` IP ${f.ipOrigen}` : ''
-      doc.text(`${f.actor || ''}${persona} ${f.fecha || ''}${ip}`, margen + 28, ly)
-    })
-
-    y += auditH + 4
-  } else {
-    y += 4
-  }
+  // Registro digital de firmas: guardado en BD, consultable desde el panel — no se muestra en PDF
+  y += 4
 
   // ── PIE DE PÁGINA ───────────────────────────────────────────────────────────
   const pageH   = 297
