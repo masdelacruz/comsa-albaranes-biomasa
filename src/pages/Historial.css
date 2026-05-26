@@ -39,15 +39,18 @@
   .historial-table td:nth-child(5),
   .historial-table td:nth-child(6) { max-width: 110px; }
 }
-@media (max-width: 1280px) {
-  .historial-content { padding: 0 16px 28px; }
-  .historial-table { font-size: 12px; min-width: 560px; }
-  .historial-table th, .historial-table td { padding: 8px 8px; }
-  /* Ocultar Astilladora y Transportista — visibles en detalle */
+/* ≤1700px: ocultar Astilladora/Transportista — cubre el hueco del 90% zoom */
+@media (max-width: 1700px) {
   .historial-table th:nth-child(4),
   .historial-table td:nth-child(4),
   .historial-table th:nth-child(5),
   .historial-table td:nth-child(5) { display: none; }
+}
+
+@media (max-width: 1280px) {
+  .historial-content { padding: 0 16px 28px; }
+  .historial-table { font-size: 12px; min-width: 560px; }
+  .historial-table th, .historial-table td { padding: 8px 8px; }
 }
 @media (max-width: 1100px) {
   .historial-content { padding: 0 12px 24px; }
