@@ -119,16 +119,18 @@
 /* Nav: gap uniforme entre items */
 .sidebar--collapsed .sidebar-nav    { align-items: center; gap: 4px !important; }
 .sidebar--collapsed .nav-item       { justify-content: center; padding: 0; width: 36px; height: 36px; }
-.sidebar--collapsed .nav-item span  { max-width: 0 !important; opacity: 0 !important; }
+.sidebar--collapsed .nav-item span  { display: none !important; }
 .sidebar--collapsed .nav-item svg   { flex-shrink: 0; }
 
 /* Footer: mismo gap que entre nav-items */
 .sidebar--collapsed .sidebar-footer { width: 100%; display: flex; flex-direction: column; align-items: center; padding-top: 6px !important; }
 .sidebar--collapsed .user-chip-btn  { justify-content: center; padding: 0; width: 36px; height: 36px; border-radius: var(--radius-sm); }
 .sidebar--collapsed .user-avatar    { width: 28px; height: 28px; }
+/* Ocultar texto, rol Y el div contenedor flex:1 que desplaza el avatar */
 .sidebar--collapsed .user-name,
-.sidebar--collapsed .user-role                  { display: none; }
-.sidebar--collapsed .user-chip-btn > svg:last-child { display: none; }
+.sidebar--collapsed .user-role                       { display: none; }
+.sidebar--collapsed .user-chip-btn > div:nth-child(2){ display: none; }
+.sidebar--collapsed .user-chip-btn > svg             { display: none !important; }
 
 /* ── Expandido ────────────────────────────────────────────────────── */
 .sidebar--expanded {
