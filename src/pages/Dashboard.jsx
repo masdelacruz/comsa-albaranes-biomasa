@@ -31,7 +31,7 @@ export default function Dashboard({ albaranes, empresas = [], usuario, borrarAlb
     ...albaranes.map(a => a.instalacion),
   ].filter(Boolean))].sort()
   const totalActivos   = albaranes.filter(a => a.estado !== 'cerrado').length
-  const pendienteFirma = albaranes.filter(a => a.estado !== 'cerrado').length
+  const pendienteFirma = albaranes.filter(a => a.estado === 'pendiente_campo' || a.estado === 'pendiente_oficina').length
   const cerrados       = albaranes.filter(a => a.estado === 'cerrado').length
   const conIncidencia  = albaranes.filter(a => a.estado === 'humedad_pendiente').length
   const alertas        = albaranes.filter(a => a.estado === 'humedad_pendiente')

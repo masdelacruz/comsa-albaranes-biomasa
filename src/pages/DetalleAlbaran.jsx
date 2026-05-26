@@ -79,10 +79,10 @@ export default function DetalleAlbaran({ albaranes, simularFirma, updateFirma, s
     : []
   const esFlota = flotaAlbaranes.length > 1
 
-  const pesoNeto = a.pesada.entrada && a.pesada.salida
+  const pesoNeto = a.pesada?.entrada && a.pesada?.salida
     ? (a.pesada.entrada - a.pesada.salida).toLocaleString('es-ES') + ' kg' : '—'
 
-  const firmasOrdenadas = ORDEN_FIRMAS.filter(k => a.firmas[k])
+  const firmasOrdenadas = ORDEN_FIRMAS.filter(k => a.firmas?.[k])
 
   const getSiguientePaso = () => {
     // Solo roles externos (no oficina) pendientes
@@ -103,7 +103,7 @@ export default function DetalleAlbaran({ albaranes, simularFirma, updateFirma, s
 
   // ¿Puede la oficina firmar ahora? (todos los externos firmados, oficina pendiente)
   const puedeOficinaFirmar = a.firmas?.oficina && !a.firmas.oficina.firmado &&
-    firmasOrdenadas.filter(k => k !== 'oficina').every(k => a.firmas[k]?.firmado)
+    firmasOrdenadas.filter(k => k !== 'oficina').every(k => a.firmas?.[k]?.firmado)
 
   const siguientePaso    = getSiguientePaso()
   const urlSiguientePaso = siguientePaso ? `${window.location.origin}/campo/${a.id}/${siguientePaso}` : null
@@ -251,9 +251,9 @@ export default function DetalleAlbaran({ albaranes, simularFirma, updateFirma, s
 
   const iniciarEditPesada = () => {
     setFormPesada({
-      entrada: a.pesada.entrada ?? '',
-      salida:  a.pesada.salida  ?? '',
-      humedad: a.pesada.humedad ?? '',
+      entrada: a.pesada?.entrada ?? '',
+      salida:  a.pesada?.salida  ?? '',
+      humedad: a.pesada?.humedad ?? '',
     })
     setEditandoPesada(true)
   }
@@ -640,10 +640,10 @@ export default function DetalleAlbaran({ albaranes, simularFirma, updateFirma, s
               ) : (
                 <>
                   {[
-                    ['Peso bruto',  a.pesada.entrada ? a.pesada.entrada.toLocaleString('es-ES') + ' kg' : '—'],
-                    ['Tara',        a.pesada.salida  ? a.pesada.salida.toLocaleString('es-ES')  + ' kg' : '—'],
+                    ['Peso bruto',  a.pesada?.entrada ? a.pesada.entrada.toLocaleString('es-ES') + ' kg' : '—'],
+                    ['Tara',        a.pesada?.salida  ? a.pesada.salida.toLocaleString('es-ES')  + ' kg' : '—'],
                     ['Peso neto',   pesoNeto],
-                    ['Humedad (%)', a.pesada.humedad != null ? `${a.pesada.humedad}%` : 'Pendiente análisis'],
+                    ['Humedad (%)', a.pesada?.humedad != null ? `${a.pesada.humedad}%` : 'Pendiente análisis'],
                   ].map(([k, v]) => (
                     <div key={k} className="detalle-row">
                       <span className="detalle-key">{k}</span>
@@ -666,7 +666,7 @@ export default function DetalleAlbaran({ albaranes, simularFirma, updateFirma, s
                 <span className="detalle-key">Ticket de pesada</span>
                 <span className="detalle-val" style={{display:'flex',alignItems:'center',gap:6,justifyContent:'flex-end'}}>
                   {dragOverTicket && <span style={{fontSize:11,color:'var(--green-600)'}}>Soltar para adjuntar</span>}
-                  {a.pesada.ticketUrl && !dragOverTicket && (
+                  {a.pesada?.ticketUrl && !dragOverTicket && (
                     <a href={a.pesada.ticketUrl} target="_blank" rel="noreferrer"
                       style={{color:'var(--blue-700)',display:'flex',alignItems:'center',gap:4}}>
                       <Eye size={12} /> Ver
@@ -699,7 +699,7 @@ export default function DetalleAlbaran({ albaranes, simularFirma, updateFirma, s
             <div className="card">
               <div className="section-label">Documentación</div>
               <div style={{display:'flex',flexDirection:'column',gap:0}}>
-                {Object.entries(a.docs).map(([nombre, doc]) => {
+                {Object.entries(a.docs || {}).map(([nombre, doc]) => {
                   const isDragOver = dragOverDoc === nombre
                   return (
                     <div
@@ -875,7 +875,7 @@ export default function DetalleAlbaran({ albaranes, simularFirma, updateFirma, s
             <div className="card">
               <div className="section-label">Actividad</div>
               <div className="timeline">
-                {a.actividad.map((ev, i) => {
+                {(a.actividad || []).map((ev, i) => {
                   const externos = [a.proveedor, a.astilladora, a.transportista, a.instalacion].filter(Boolean)
                   const tipo = ev.actor === 'Sistema' ? 'sistema'
                     : externos.includes(ev.actor) ? 'externo'

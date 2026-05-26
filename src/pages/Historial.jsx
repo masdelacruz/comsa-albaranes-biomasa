@@ -119,9 +119,9 @@ export default function Historial({ albaranes, empresas = [], usuario, refetch, 
   }, 0)
 
   const cerrados = filtrados.filter(a => a.estado === 'cerrado').length
-  const humedadMedia = filtrados.filter(a => a.pesada.humedad != null)
+  const humedadMedia = filtrados.filter(a => { const h = Number(a.pesada?.humedad); return a.pesada?.humedad != null && !isNaN(h) })
   const mediaHumedad = humedadMedia.length
-    ? (humedadMedia.reduce((acc, a) => acc + a.pesada.humedad, 0) / humedadMedia.length).toFixed(1)
+    ? (humedadMedia.reduce((acc, a) => acc + Number(a.pesada.humedad), 0) / humedadMedia.length).toFixed(1)
     : '—'
 
   const exportarExcel = async () => {
