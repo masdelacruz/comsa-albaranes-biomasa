@@ -12,13 +12,14 @@ export function Badge({ estado }) {
 
 const LINE_W = 16
 
-const PASOS_OP1 = ['proveedor', 'astilladora', 'transportista', 'instalacion', 'oficina']
-const PASOS_OP2 = ['proveedor', 'instalacion', 'oficina']
+const PASOS_OP1 = ['proveedor', 'astilladora', 'transportista', 'instalacion']
+const PASOS_OP2 = ['proveedor', 'instalacion']
 
 export function FirmaSteps({ firmas, estado }) {
   const keys = Object.keys(firmas)
   const esOp2 = !keys.includes('astilladora') && !keys.includes('transportista')
   const cerrado = estado === 'cerrado'
+  const oficinaSiguiente = estado === 'pendiente_oficina' || estado === 'humedad_pendiente'
 
   const pasos = (esOp2 ? PASOS_OP2 : PASOS_OP1)
     .filter(k => keys.includes(k))
@@ -26,8 +27,12 @@ export function FirmaSteps({ firmas, estado }) {
 
   const primeroSinFirmar = pasos.findIndex(s => !firmas[s.key]?.firmado)
 
+  let wrapClass = 'firma-steps'
+  if (cerrado)           wrapClass += ' firma-steps-cerrado'
+  else if (oficinaSiguiente) wrapClass += ' firma-steps-oficina-next'
+
   return (
-    <div className={`firma-steps${cerrado ? ' firma-steps-cerrado' : ''}`}>
+    <div className={wrapClass}>
       {pasos.map((s, i) => {
         const firma = firmas[s.key]
         const dotEstado = firma?.firmado ? (cerrado ? 'cerrado' : 'done') : i === primeroSinFirmar ? 'active' : 'pending'

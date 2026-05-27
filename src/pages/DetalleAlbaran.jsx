@@ -808,7 +808,9 @@ export default function DetalleAlbaran({ albaranes, simularFirma, updateFirma, s
                 const firma = a.firmas[key]
                 if (!firma) return null
                 return (
-                  <div key={key} className={`firma-block ${firma.firmado ? 'done' : ''}`}>
+                  <div key={key} className={`firma-block ${firma.firmado ? 'done' : ''}`}
+                    style={key === 'oficina' ? {boxShadow:'0 2px 10px rgba(0,0,0,0.07)', borderColor: firma.firmado ? undefined : 'var(--gray-300)'} : {}}
+                  >
                     <div className="firma-block-header">
                       <div>
                         <div className="firma-actor">{FIRMA_LABELS[key]}</div>
