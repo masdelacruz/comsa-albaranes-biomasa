@@ -63,6 +63,26 @@ function SignaturePad({ onChange }) {
   )
 }
 
+function normalizarTelefono(raw) {
+  if (!raw) return ''
+  const trimmed = raw.trim()
+  if (!trimmed) return ''
+  const hasPrefix = trimmed.startsWith('+') || trimmed.startsWith('00')
+  const digits = trimmed.replace(/\D/g, '')
+  if (!digits) return trimmed
+  if (hasPrefix) {
+    const ccLen = digits[0] === '1' ? 1 : 2
+    const cc = digits.slice(0, ccLen)
+    const rest = digits.slice(ccLen)
+    const groups = []
+    for (let i = 0; i < rest.length; i += 3) groups.push(rest.slice(i, i + 3))
+    return `+${cc} ${groups.join(' ')}`
+  }
+  const groups = []
+  for (let i = 0; i < digits.length; i += 3) groups.push(digits.slice(i, i + 3))
+  return groups.join(' ')
+}
+
 const ROLES_CONFIG = {
   proveedor:     { label: 'Proveedor',    sub: 'Confirma carga y firma',     icon: <User     size={18} color="#8b5cf6" />, color: '#8b5cf6', bg: '#f5f3ff' },
   astilladora:   { label: 'Astilladora',  sub: 'Confirma carga y firma',     icon: <Factory  size={18} color="#1D9E75" />, color: '#1D9E75', bg: '#f0faf5' },
@@ -94,10 +114,10 @@ function PasoFirma({ rol, a, updateFirma, subirTicketPesada, onCompletado, total
   const [nombrePersona,       setNombrePersona]      = useState('')
   const [telefonoPersona,     setTelefonoPersona]    = useState('')
   const [observaciones,       setObservaciones]      = useState('')
-  const [matriculaTractora,   setMatriculaTractora]  = useState(a.matriculaTractora || '')
-  const [matriculaRemolque,   setMatriculaRemolque]  = useState(a.matriculaRemolque || '')
+  const [matriculaTractora,    setMatriculaTractora]   = useState(a.matriculaTractora || '')
+  const [matriculaRemolque,    setMatriculaRemolque]   = useState(a.matriculaRemolque || '')
   const [matriculaAstilladora, setMatriculaAstilladora] = useState(a.matriculaAstilladora || '')
-  const [chofer,              setChofer]             = useState(a.chofer || '')
+  const [chofer,               setChofer]              = useState(a.chofer || '')
   const [pesoBruto,         setPesoBruto]        = useState(a.pesada?.entrada ? String(a.pesada.entrada) : '')
   const [tara,              setTara]             = useState(a.pesada?.salida  ? String(a.pesada.salida)  : '')
   const [humedad,           setHumedad]          = useState(a.pesada?.humedad ? String(a.pesada.humedad) : '')
@@ -138,7 +158,7 @@ function PasoFirma({ rol, a, updateFirma, subirTicketPesada, onCompletado, total
     } : null
 
     try {
-      await updateFirma(a.id, rol, empresaNombre, nombrePersona || null, pesadaData, firmaImagen, campoData, observaciones.trim() || null, telefonoPersona || null)
+      await updateFirma(a.id, rol, empresaNombre, nombrePersona || null, pesadaData, firmaImagen, campoData, observaciones.trim() || null, normalizarTelefono(telefonoPersona) || null)
       setFirmado(true)
       setTimeout(() => onCompletado(), 1200)
     } catch {
@@ -230,7 +250,10 @@ function PasoFirma({ rol, a, updateFirma, subirTicketPesada, onCompletado, total
           </div>
           <div className="campo-field">
             <label>Teléfono</label>
-            <input type="tel" placeholder="Ej: 623 456 789" value={telefonoPersona} onChange={e => setTelefonoPersona(e.target.value)} />
+            <input type="tel" placeholder="Ej: 623 456 789" value={telefonoPersona}
+              onChange={e => setTelefonoPersona(e.target.value)}
+              onBlur={e => setTelefonoPersona(normalizarTelefono(e.target.value))}
+            />
           </div>
         </>
       )}

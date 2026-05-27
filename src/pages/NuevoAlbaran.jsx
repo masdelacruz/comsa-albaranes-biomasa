@@ -20,6 +20,8 @@ export default function NuevoAlbaran({ addAlbaran }) {
   const [astilladoras, setAstilladoras]     = useState([])
   const [transportistas, setTransportistas] = useState([])
   const [instalaciones, setInstalaciones]   = useState([])
+  const [tiposBiomasa, setTiposBiomasa]     = useState(TIPOS_BIOMASA)
+  const [especies, setEspecies]             = useState(ESPECIES)
 
   useEffect(() => {
     api.get('/empresas?activo=true').then(data => {
@@ -29,12 +31,16 @@ export default function NuevoAlbaran({ addAlbaran }) {
       setTransportistas(d.filter(p => p.tipo === 'transportista').map(p => p.nombre))
       setInstalaciones( d.filter(p => p.tipo === 'instalacion' ).map(p => p.nombre))
     }).catch(() => {})
+    api.get('/elementos').then(data => {
+      if (data?.tipoBiomasa?.length) setTiposBiomasa(data.tipoBiomasa.map(e => e.valor))
+      if (data?.especie?.length)     setEspecies(data.especie.map(e => e.valor))
+    }).catch(() => {})
   }, [])
 
   const [form, setForm] = useState({
     tipo: 'Opción 1 — Compra en monte / plataforma',
     proveedor: '', astilladora: '', transportista: '', instalacion: '',
-    especie: ESPECIES[0], tipoBiomasa: TIPOS_BIOMASA[0],
+    especie: '', tipoBiomasa: '',
     origen: '', mapsOrigen: '', mapsDestino: '', permiso: '', observaciones: '',
     fecha: new Date().toISOString().split('T')[0],
     hora: '08:00',
@@ -160,13 +166,15 @@ export default function NuevoAlbaran({ addAlbaran }) {
             <div className="form-field">
               <label>Tipo biomasa</label>
               <select value={form.tipoBiomasa} onChange={e => set('tipoBiomasa', e.target.value)}>
-                {TIPOS_BIOMASA.map(t => <option key={t}>{t}</option>)}
+                <option value="">Selecciona tipo biomasa...</option>
+                {tiposBiomasa.map(t => <option key={t}>{t}</option>)}
               </select>
             </div>
             <div className="form-field">
               <label>Especie</label>
               <select value={form.especie} onChange={e => set('especie', e.target.value)}>
-                {ESPECIES.map(s => <option key={s}>{s}</option>)}
+                <option value="">Selecciona especie...</option>
+                {especies.map(s => <option key={s}>{s}</option>)}
               </select>
             </div>
             <div className="form-field full">

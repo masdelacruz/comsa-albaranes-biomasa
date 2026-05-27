@@ -4,6 +4,26 @@ import { api } from '../lib/api'
 import '../components/shared.css'
 import './Administracion.css'
 
+function normalizarTelefono(raw) {
+  if (!raw) return ''
+  const trimmed = raw.trim()
+  if (!trimmed) return ''
+  const hasPrefix = trimmed.startsWith('+') || trimmed.startsWith('00')
+  const digits = trimmed.replace(/\D/g, '')
+  if (!digits) return trimmed
+  if (hasPrefix) {
+    const ccLen = digits[0] === '1' ? 1 : 2
+    const cc = digits.slice(0, ccLen)
+    const rest = digits.slice(ccLen)
+    const groups = []
+    for (let i = 0; i < rest.length; i += 3) groups.push(rest.slice(i, i + 3))
+    return `+${cc} ${groups.join(' ')}`
+  }
+  const groups = []
+  for (let i = 0; i < digits.length; i += 3) groups.push(digits.slice(i, i + 3))
+  return groups.join(' ')
+}
+
 const TIPOS = ['proveedor', 'astilladora', 'transportista', 'instalacion']
 const TIPO_LABELS = { proveedor: 'Proveedor', astilladora: 'Astilladora', transportista: 'Transportista', instalacion: 'Instalación' }
 
@@ -66,6 +86,11 @@ export default function Administracion({ usuario }) {
   const [errorLogos, setErrorLogos]         = useState({})
   const [confirmDelLogo, setConfirmDelLogo] = useState(null)
   const [dragOverLogo, setDragOverLogo]     = useState(null)
+
+  // Elementos state
+  const [elementos, setElementos]   = useState({ tipoBiomasa: [], especie: [] })
+  const [nuevoElem, setNuevoElem]   = useState({ tipoBiomasa: '', especie: '' })
+  const [agregando, setAgregando]   = useState({})
   const fileInputRefs = {
     comsa:    useRef(null),
     applus_1: useRef(null),
@@ -77,6 +102,31 @@ export default function Administracion({ usuario }) {
   }
 
   // ── data fetching ───────────────────────────────────────────────────────────
+
+  const fetchElementos = async () => {
+    try {
+      const data = await api.get('/elementos')
+      setElementos({ tipoBiomasa: data.tipoBiomasa || [], especie: data.especie || [] })
+    } catch {}
+  }
+
+  const handleAgregarElemento = async (tipo) => {
+    const valor = nuevoElem[tipo].trim()
+    if (!valor) return
+    setAgregando(s => ({ ...s, [tipo]: true }))
+    try {
+      await api.post('/elementos', { tipo, valor })
+      setNuevoElem(s => ({ ...s, [tipo]: '' }))
+      await fetchElementos()
+    } finally {
+      setAgregando(s => ({ ...s, [tipo]: false }))
+    }
+  }
+
+  const handleEliminarElemento = async (id, tipo) => {
+    await api.delete(`/elementos/${id}`)
+    setElementos(prev => ({ ...prev, [tipo]: prev[tipo].filter(e => e.id !== id) }))
+  }
 
   const fetchProveedores = async () => {
     const data = await api.get('/empresas')
@@ -94,6 +144,7 @@ export default function Administracion({ usuario }) {
   useEffect(() => {
     fetchProveedores()
     fetchLogos()
+    fetchElementos()
   }, [])
 
   // ── providers tab helpers ───────────────────────────────────────────────────
@@ -178,10 +229,11 @@ export default function Administracion({ usuario }) {
   const handleGuardar = async () => {
     if (!form.nombre.trim()) return
     setGuardando(true)
+    const datos = { ...form, telefono: normalizarTelefono(form.telefono) }
     if (editando) {
-      await api.patch(`/empresas/${editando}`, form)
+      await api.patch(`/empresas/${editando}`, datos)
     } else {
-      await api.post('/empresas', form)
+      await api.post('/empresas', datos)
     }
     await fetchProveedores()
     setGuardando(false)
@@ -242,7 +294,7 @@ export default function Administracion({ usuario }) {
             <div className="page-title">Administración</div>
             <div className="page-sub">Gestión de astilladoras, transportistas e instalaciones</div>
           </div>
-          {tab !== 'logos' && (
+          {tab !== 'logos' && tab !== 'elementos' && (
             <button className="btn btn-primary" onClick={abrirNuevo}>
               <Plus size={15} /> Nuevo
             </button>
@@ -261,6 +313,12 @@ export default function Administracion({ usuario }) {
               {TIPO_LABELS[t]} <span style={{ fontSize: 11, color: 'var(--gray-400)', marginLeft: 4 }}>({counts[t]})</span>
             </button>
           ))}
+          <button
+            className={`admin-tab ${tab === 'elementos' ? 'active' : ''}`}
+            onClick={() => setTab('elementos')}
+          >
+            Elementos
+          </button>
           {esSuperadmin && (
             <button
               className={`admin-tab ${tab === 'logos' ? 'active' : ''}`}
@@ -270,6 +328,60 @@ export default function Administracion({ usuario }) {
             </button>
           )}
         </div>
+
+        {/* ── Elementos panel ── */}
+        {tab === 'elementos' && (
+          <div style={{ marginTop: 16 }}>
+            <div style={{ fontSize: 13, color: 'var(--gray-500)', marginBottom: 20 }}>
+              Configura los valores de los desplegables de tipo de biomasa y especie en los albaranes.
+            </div>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: 16 }}>
+              {[
+                { tipo: 'tipoBiomasa', titulo: 'Tipo de biomasa' },
+                { tipo: 'especie',     titulo: 'Especie' },
+              ].map(({ tipo, titulo }) => (
+                <div key={tipo} className="card" style={{ padding: 16 }}>
+                  <div style={{ fontWeight: 600, fontSize: 14, color: 'var(--gray-800)', marginBottom: 12 }}>{titulo}</div>
+                  <div style={{ marginBottom: 12, display: 'flex', flexDirection: 'column', gap: 6 }}>
+                    {elementos[tipo].length === 0 && (
+                      <div style={{ fontSize: 12, color: 'var(--gray-400)', padding: '6px 0' }}>Sin valores configurados</div>
+                    )}
+                    {elementos[tipo].map(e => (
+                      <div key={e.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '6px 10px', background: 'var(--gray-50)', borderRadius: 'var(--radius-sm)', border: '1px solid var(--gray-200)' }}>
+                        <span style={{ fontSize: 13, color: 'var(--gray-700)' }}>{e.valor}</span>
+                        <button
+                          className="btn btn-ghost"
+                          style={{ padding: '2px 6px', color: 'var(--red-400)' }}
+                          onClick={() => handleEliminarElemento(e.id, tipo)}
+                        >
+                          <Trash2 size={12} />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                  <div style={{ display: 'flex', gap: 6 }}>
+                    <input
+                      type="text"
+                      placeholder={`Nuevo ${titulo.toLowerCase()}...`}
+                      value={nuevoElem[tipo]}
+                      onChange={e => setNuevoElem(s => ({ ...s, [tipo]: e.target.value }))}
+                      onKeyDown={e => { if (e.key === 'Enter') handleAgregarElemento(tipo) }}
+                      style={{ flex: 1, padding: '6px 10px', borderRadius: 'var(--radius-sm)', border: '1px solid var(--gray-200)', fontSize: 13 }}
+                    />
+                    <button
+                      className="btn btn-primary"
+                      style={{ padding: '6px 12px', fontSize: 13 }}
+                      onClick={() => handleAgregarElemento(tipo)}
+                      disabled={!nuevoElem[tipo].trim() || agregando[tipo]}
+                    >
+                      <Plus size={13} /> Añadir
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
 
         {/* ── Logos panel ── */}
         {tab === 'logos' ? (
@@ -360,7 +472,7 @@ export default function Administracion({ usuario }) {
               )
             })}
           </div>
-        ) : (
+        ) : tab !== 'elementos' ? (
           /* ── Providers panel ── */
           <>
             <div className="admin-toolbar">
@@ -405,7 +517,7 @@ export default function Administracion({ usuario }) {
                           ? <a href={`mailto:${p.email}`} onClick={e => e.stopPropagation()} style={{ color: 'var(--blue-700)' }}>{p.email}</a>
                           : <span style={{ color: 'var(--gray-300)' }}>—</span>}
                       </td>
-                      <td style={{ color: 'var(--gray-600)' }}>{p.telefono || <span style={{ color: 'var(--gray-300)' }}>—</span>}</td>
+                      <td style={{ color: 'var(--gray-600)' }}>{normalizarTelefono(p.telefono) || <span style={{ color: 'var(--gray-300)' }}>—</span>}</td>
                       <td>
                         <button
                           onClick={e => { e.stopPropagation(); handleToggleActivo(p) }}
@@ -452,7 +564,7 @@ export default function Administracion({ usuario }) {
               </div>
             </div>
           </>
-        )}
+        ) : null}
       </div>
 
       {/* Modal firma rápida */}
@@ -543,7 +655,10 @@ export default function Administracion({ usuario }) {
               </div>
               <div className="modal-field">
                 <label>Teléfono</label>
-                <input type="tel" placeholder="+34 600 000 000" value={form.telefono} onChange={e => set('telefono', e.target.value)} />
+                <input type="tel" placeholder="+34 600 000 000" value={form.telefono}
+                  onChange={e => set('telefono', e.target.value)}
+                  onBlur={e => set('telefono', normalizarTelefono(e.target.value))}
+                />
               </div>
               <div className="modal-field full">
                 <label>Email</label>

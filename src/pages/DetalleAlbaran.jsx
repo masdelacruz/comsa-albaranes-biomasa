@@ -8,6 +8,26 @@ import { ESPECIES, TIPOS_BIOMASA } from '../data/mockData'
 import '../components/shared.css'
 import './DetalleAlbaran.css'
 
+function normalizarTelefono(raw) {
+  if (!raw) return ''
+  const trimmed = raw.trim()
+  if (!trimmed) return ''
+  const hasPrefix = trimmed.startsWith('+') || trimmed.startsWith('00')
+  const digits = trimmed.replace(/\D/g, '')
+  if (!digits) return trimmed
+  if (hasPrefix) {
+    const ccLen = digits[0] === '1' ? 1 : 2
+    const cc = digits.slice(0, ccLen)
+    const rest = digits.slice(ccLen)
+    const groups = []
+    for (let i = 0; i < rest.length; i += 3) groups.push(rest.slice(i, i + 3))
+    return `+${cc} ${groups.join(' ')}`
+  }
+  const groups = []
+  for (let i = 0; i < digits.length; i += 3) groups.push(digits.slice(i, i + 3))
+  return groups.join(' ')
+}
+
 const ORDEN_FIRMAS = ['proveedor', 'astilladora', 'transportista', 'instalacion', 'oficina']
 
 const FIRMA_LABELS = {
@@ -793,7 +813,7 @@ export default function DetalleAlbaran({ albaranes, simularFirma, updateFirma, s
                     {firma.firmado && firma.nombrePersona && (
                       <div style={{fontSize:11,color:'var(--gray-500)',marginTop:2}}>
                         Persona: {firma.nombrePersona}
-                        {firma.telefonoPersona && <span style={{marginLeft:8}}>· Tel: {firma.telefonoPersona}</span>}
+                        {firma.telefonoPersona && <span style={{marginLeft:8}}>· Tel: {normalizarTelefono(firma.telefonoPersona)}</span>}
                       </div>
                     )}
                     {firma.firmado && <div className="firma-fecha">{firma.fecha}</div>}
@@ -900,7 +920,7 @@ export default function DetalleAlbaran({ albaranes, simularFirma, updateFirma, s
                     <div key={i} className={`tl-item tl-${tipo}`}>
                       <div className={`tl-dot tl-${tipo}`} />
                       <div>
-                        <div className="tl-texto">{ev.texto}</div>
+                        <div className="tl-texto">{ev.texto.replace(/· Tel: (\S+)/g, (_, t) => `· Tel: ${normalizarTelefono(t)}`)}</div>
                         <div className="tl-meta">{ev.ts} · {ev.actor}</div>
                       </div>
                     </div>

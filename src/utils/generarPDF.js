@@ -182,7 +182,6 @@ export async function generarPDF(a, options = {}) {
       ['Matrícula Tractora', a.matriculaTractora    || '', 'Tipos de madera', a.tipoBiomasa || ''],
       ['Matrícula Remolque', a.matriculaRemolque    || '', 'Especie',         a.especie     || ''],
       ['Chófer',             a.chofer               || '', 'Astilladora',     a.astilladora || ''],
-      ['Matr. Astilladora',  a.matriculaAstilladora || '', '',                ''],
     ],
     theme: 'grid',
     styles: { fontSize: 9, cellPadding: { top: 3, bottom: 3, left: 4, right: 4 }, textColor: negro },
