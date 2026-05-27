@@ -33,9 +33,33 @@ async function initMinio() {
 app.set('minio', minio)
 app.set('minio_bucket', BUCKET)
 
-// ── Middleware ────────────────────────────────────────────────────
-app.use(cors())
-app.use(express.json({ limit: '10mb' }))
+// ── Proxy trust (IP real del cliente tras Apache) ─────────────────
+app.set('trust proxy', 1)
+
+// ── CORS — solo origen de producción + localhost dev ──────────────
+const _allowedOrigins = [
+  process.env.APP_URL,
+  'http://localhost:5173',
+  'http://localhost:3001',
+].filter(Boolean)
+app.use(cors({
+  origin: (origin, cb) => {
+    if (!origin || _allowedOrigins.includes(origin)) return cb(null, true)
+    cb(new Error('CORS not allowed'))
+  },
+}))
+
+// ── Security headers ──────────────────────────────────────────────
+app.use((_req, res, next) => {
+  res.setHeader('X-Content-Type-Options', 'nosniff')
+  res.setHeader('X-Frame-Options', 'DENY')
+  res.setHeader('X-XSS-Protection', '1; mode=block')
+  res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin')
+  res.setHeader('Permissions-Policy', 'geolocation=(), microphone=(), camera=()')
+  next()
+})
+
+app.use(express.json({ limit: '2mb' }))
 
 // ── API routes bajo /api ──────────────────────────────────────────
 app.use('/api/auth',      require('./routes/auth'))

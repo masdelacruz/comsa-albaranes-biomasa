@@ -6,6 +6,20 @@ const pool    = require('../db')
 const SECRET  = process.env.JWT_SECRET
 const EXPIRY  = '8h'
 
+// ── Rate limit en login: máx 10 intentos / 15 min por IP ─────────
+const _loginAttempts = new Map()
+function loginRateLimit(req, res, next) {
+  const ip  = (req.headers['x-forwarded-for'] || '').split(',')[0].trim() || req.ip || 'unknown'
+  const now = Date.now()
+  const prev = (_loginAttempts.get(ip) || []).filter(t => now - t < 15 * 60 * 1000)
+  if (prev.length >= 10) {
+    return res.status(429).json({ error: 'Demasiados intentos. Espera 15 minutos.' })
+  }
+  prev.push(now)
+  _loginAttempts.set(ip, prev)
+  next()
+}
+
 // ── Middleware: verifica JWT ──────────────────────────────────────
 function requireAuth(req, res, next) {
   const header = req.headers.authorization || ''
@@ -20,7 +34,7 @@ function requireAuth(req, res, next) {
 }
 
 // ── POST /auth/login ──────────────────────────────────────────────
-router.post('/login', async (req, res) => {
+router.post('/login', loginRateLimit, async (req, res) => {
   const { email, password } = req.body
   if (!email || !password) return res.status(400).json({ error: 'Faltan campos' })
 
