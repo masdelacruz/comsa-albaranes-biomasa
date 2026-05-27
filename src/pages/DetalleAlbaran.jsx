@@ -75,6 +75,8 @@ export default function DetalleAlbaran({ albaranes, simularFirma, updateFirma, s
   const [transportistas, setTransportistas] = useState([])
   const [instalaciones,  setInstalaciones]  = useState([])
   const [todasEmpresas,  setTodasEmpresas]  = useState([])
+  const [tiposBiomasa,   setTiposBiomasa]   = useState(TIPOS_BIOMASA)
+  const [especies,       setEspecies]        = useState(ESPECIES)
 
   useEffect(() => {
     api.get('/empresas?activo=true').then(data => {
@@ -84,6 +86,10 @@ export default function DetalleAlbaran({ albaranes, simularFirma, updateFirma, s
       setAstilladoras(  d.filter(p => p.tipo === 'astilladora' ).map(p => p.nombre))
       setTransportistas(d.filter(p => p.tipo === 'transportista').map(p => p.nombre))
       setInstalaciones( d.filter(p => p.tipo === 'instalacion' ).map(p => p.nombre))
+    }).catch(() => {})
+    api.get('/elementos').then(data => {
+      if (data?.tipoBiomasa?.length) setTiposBiomasa(data.tipoBiomasa.map(e => e.valor))
+      if (data?.especie?.length)     setEspecies(data.especie.map(e => e.valor))
     }).catch(() => {})
   }, [])
 
@@ -520,14 +526,16 @@ export default function DetalleAlbaran({ albaranes, simularFirma, updateFirma, s
                   </div>
                   <div className="edit-field">
                     <label className="edit-label">Especie</label>
-                    <select className="edit-input" value={formDatos.especie} onChange={e => setD('especie', e.target.value)}>
-                      {ESPECIES.map(o => <option key={o} value={o}>{o}</option>)}
+                    <select className="edit-input" value={formDatos.especie || ''} onChange={e => setD('especie', e.target.value)}>
+                      <option value="">—</option>
+                      {especies.map(o => <option key={o} value={o}>{o}</option>)}
                     </select>
                   </div>
                   <div className="edit-field">
                     <label className="edit-label">Tipo biomasa</label>
-                    <select className="edit-input" value={formDatos.tipoBiomasa} onChange={e => setD('tipoBiomasa', e.target.value)}>
-                      {TIPOS_BIOMASA.map(o => <option key={o} value={o}>{o}</option>)}
+                    <select className="edit-input" value={formDatos.tipoBiomasa || ''} onChange={e => setD('tipoBiomasa', e.target.value)}>
+                      <option value="">—</option>
+                      {tiposBiomasa.map(o => <option key={o} value={o}>{o}</option>)}
                     </select>
                   </div>
                   <div className="edit-field">
@@ -587,7 +595,8 @@ export default function DetalleAlbaran({ albaranes, simularFirma, updateFirma, s
                       ['Transportista',      a.transportista || '—'],
                     ] : []),
                     ['Instalación', a.instalacion],
-                    ['Especie',             `${a.especie} · ${a.tipoBiomasa}`],
+                    ['Tipo biomasa',         a.tipoBiomasa || '—'],
+                    ['Especie',              a.especie     || '—'],
                     ['Origen',              a.origen || '—'],
                     ['Permiso / Ref.',      a.permiso || '—'],
                     ...(a.tipo?.includes('1') ? [

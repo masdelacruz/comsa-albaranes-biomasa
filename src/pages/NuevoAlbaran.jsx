@@ -50,7 +50,7 @@ export default function NuevoAlbaran({ addAlbaran }) {
   const esOp1 = form.tipo.includes('1')
   const set   = (k, v) => setForm(f => ({ ...f, [k]: v }))
 
-  const camposObligatorios = form.proveedor && form.instalacion && (!esOp1 || (form.astilladora && form.transportista))
+  const camposObligatorios = form.proveedor && form.instalacion && form.especie && form.tipoBiomasa && (!esOp1 || (form.astilladora && form.transportista))
 
   const handleGuardar = async () => {
     setGuardando(true)
