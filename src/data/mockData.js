@@ -10,10 +10,11 @@ export const INSTALACIONES = [
   'Piensos Nafosa','Ajuntament de Begues','Aigües de Vilafranca',
 ]
 export const ESPECIES = [
-  'Pi roig','Pi pinyer','Pi blanc','Eucaliptus','Acacia',
-  'Alzina','Roure','Faig','Pollancre','Altra espècie',
+  'Estella ACO100','Estella ACO50','Estella ACO30',
+  'Estella TRO100','Estella TRO50','Estella TRO30',
+  'Estella TRO100C','Estella TRO50C','Estella TRO30C',
 ]
-export const TIPOS_BIOMASA = ['Astilla forestal','Astilla industrial','Pellet','Troncos']
+export const TIPOS_BIOMASA = ['Forestal','Industrial','Agrícola']
 
 export const mockAlbaranes = [
   {

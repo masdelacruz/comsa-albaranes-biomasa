@@ -126,7 +126,10 @@ export default function DetalleAlbaran({ albaranes, simularFirma, updateFirma, s
 
   const handleSimularFirma = async (rol) => {
     const todasAFirmar = [...getFirmasASimular(rol), rol]
-    for (const r of todasAFirmar) await simularFirma(a.id, r)
+    for (const r of todasAFirmar) {
+      const actorEmpresa = a.firmas?.[r]?.actor || r
+      await updateFirma(a.id, r, actorEmpresa, `${usuario?.nombre || 'Oficina'} (simulado)`)
+    }
     setConfirmModal(null)
   }
 
@@ -213,9 +216,10 @@ export default function DetalleAlbaran({ albaranes, simularFirma, updateFirma, s
       mapsOrigen:        a.mapsOrigen        || '',
       mapsDestino:       a.mapsDestino       || '',
       permiso:           a.permiso           || '',
-      chofer:            a.chofer            || '',
-      matriculaTractora: a.matriculaTractora || '',
-      matriculaRemolque: a.matriculaRemolque || '',
+      chofer:               a.chofer               || '',
+      matriculaAstilladora: a.matriculaAstilladora || '',
+      matriculaTractora:    a.matriculaTractora    || '',
+      matriculaRemolque:    a.matriculaRemolque    || '',
       observaciones:     a.observaciones     || '',
     })
     setEditandoDatos(true)
@@ -237,9 +241,10 @@ export default function DetalleAlbaran({ albaranes, simularFirma, updateFirma, s
         maps_origen:        formDatos.mapsOrigen        || null,
         maps_destino:       formDatos.mapsDestino       || null,
         permiso:            formDatos.permiso           || null,
-        chofer:             formDatos.chofer            || null,
-        matricula_tractora: formDatos.matriculaTractora || null,
-        matricula_remolque: formDatos.matriculaRemolque || null,
+        chofer:                formDatos.chofer               || null,
+        matricula_astilladora: formDatos.matriculaAstilladora || null,
+        matricula_tractora:    formDatos.matriculaTractora    || null,
+        matricula_remolque:    formDatos.matriculaRemolque    || null,
         observaciones:      formDatos.observaciones     || null,
       }, null, 'Datos del albarán editados')
       setEditandoDatos(false)
@@ -523,6 +528,12 @@ export default function DetalleAlbaran({ albaranes, simularFirma, updateFirma, s
                   </div>
                   {formDatos.tipo?.includes('1') && (
                   <div className="edit-field">
+                    <label className="edit-label">Matrícula astilladora</label>
+                    <input className="edit-input" value={formDatos.matriculaAstilladora || ''} onChange={e => setD('matriculaAstilladora', e.target.value)} placeholder="Ej: CS-1234-B" />
+                  </div>
+                  )}
+                  {formDatos.tipo?.includes('1') && (
+                  <div className="edit-field">
                     <label className="edit-label">Chófer</label>
                     <input className="edit-input" value={formDatos.chofer} onChange={e => setD('chofer', e.target.value)} placeholder="Nombre" />
                   </div>
@@ -560,6 +571,7 @@ export default function DetalleAlbaran({ albaranes, simularFirma, updateFirma, s
                     ['Origen',              a.origen || '—'],
                     ['Permiso / Ref.',      a.permiso || '—'],
                     ...(a.tipo?.includes('1') ? [
+                      ['Matrícula astilladora', a.matriculaAstilladora || '—'],
                       ['Chófer',             a.chofer || '—'],
                       ['Matrícula tractora', a.matriculaTractora || '—'],
                       ['Matrícula remolque', a.matriculaRemolque || '—'],
@@ -699,7 +711,10 @@ export default function DetalleAlbaran({ albaranes, simularFirma, updateFirma, s
             <div className="card">
               <div className="section-label">Documentación</div>
               <div style={{display:'flex',flexDirection:'column',gap:0}}>
-                {Object.entries(a.docs || {}).map(([nombre, doc]) => {
+                {Object.entries({
+                  ...a.docs,
+                  ...('Albarán físico adjunto' in (a.docs || {}) ? {} : { 'Albarán físico adjunto': { adjunto: false, url: null, nombreFichero: null, tamanyo: null } })
+                }).map(([nombre, doc]) => {
                   const isDragOver = dragOverDoc === nombre
                   return (
                     <div
@@ -778,6 +793,7 @@ export default function DetalleAlbaran({ albaranes, simularFirma, updateFirma, s
                     {firma.firmado && firma.nombrePersona && (
                       <div style={{fontSize:11,color:'var(--gray-500)',marginTop:2}}>
                         Persona: {firma.nombrePersona}
+                        {firma.telefonoPersona && <span style={{marginLeft:8}}>· Tel: {firma.telefonoPersona}</span>}
                       </div>
                     )}
                     {firma.firmado && <div className="firma-fecha">{firma.fecha}</div>}

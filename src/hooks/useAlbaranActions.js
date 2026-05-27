@@ -13,10 +13,10 @@ export function useAlbaranActions(refetch, usuario) {
     return id
   }
 
-  const updateFirma = async (albaranId, rol, actor, nombrePersona = null, pesadaData = null, firmaImagen = null, campoData = null, observacionesFirma = null) => {
+  const updateFirma = async (albaranId, rol, actor, nombrePersona = null, pesadaData = null, firmaImagen = null, campoData = null, observacionesFirma = null, telefonoPersona = null) => {
     const { albaran, cerrado, humedadPendiente } = await api.post(
       `/albaranes/${albaranId}/firmas/${rol}`,
-      { actor, nombrePersona, firmaImagen, pesadaData, campoData, observacionesFirma }
+      { actor, nombrePersona, telefonoPersona, firmaImagen, pesadaData, campoData, observacionesFirma }
     )
     if (cerrado)          notificarAlbaranCerrado({ ...albaran, id: albaranId })
     else if (humedadPendiente) notificarHumedadPendiente({ ...albaran, id: albaranId })

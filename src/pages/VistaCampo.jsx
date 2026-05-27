@@ -91,11 +91,13 @@ function PasoFirma({ rol, a, updateFirma, subirTicketPesada, onCompletado, total
   const [firmaCanvas, setFirmaCanvas] = useState(null)
 
   // Campos comunes
-  const [nombrePersona,     setNombrePersona]    = useState('')
-  const [observaciones,     setObservaciones]    = useState('')
-  const [matriculaTractora, setMatriculaTractora]= useState(a.matriculaTractora || '')
-  const [matriculaRemolque, setMatriculaRemolque]= useState(a.matriculaRemolque || '')
-  const [chofer,            setChofer]           = useState(a.chofer || '')
+  const [nombrePersona,       setNombrePersona]      = useState('')
+  const [telefonoPersona,     setTelefonoPersona]    = useState('')
+  const [observaciones,       setObservaciones]      = useState('')
+  const [matriculaTractora,   setMatriculaTractora]  = useState(a.matriculaTractora || '')
+  const [matriculaRemolque,   setMatriculaRemolque]  = useState(a.matriculaRemolque || '')
+  const [matriculaAstilladora, setMatriculaAstilladora] = useState(a.matriculaAstilladora || '')
+  const [chofer,              setChofer]             = useState(a.chofer || '')
   const [pesoBruto,         setPesoBruto]        = useState(a.pesada?.entrada ? String(a.pesada.entrada) : '')
   const [tara,              setTara]             = useState(a.pesada?.salida  ? String(a.pesada.salida)  : '')
   const [humedad,           setHumedad]          = useState(a.pesada?.humedad ? String(a.pesada.humedad) : '')
@@ -116,7 +118,7 @@ function PasoFirma({ rol, a, updateFirma, subirTicketPesada, onCompletado, total
     if (rol === 'proveedor')     return nombrePersona.trim().length > 0
     if (rol === 'astilladora')   return nombrePersona.trim().length > 0 && matriculaTractora.trim().length > 0
     if (rol === 'transportista') return chofer.trim().length > 0
-    if (rol === 'instalacion')   return (pesoBruto.trim().length > 0 && tara.trim().length > 0)
+    if (rol === 'instalacion')   return pesoBruto.trim().length > 0 && tara.trim().length > 0
     return true
   })()
 
@@ -131,11 +133,12 @@ function PasoFirma({ rol, a, updateFirma, subirTicketPesada, onCompletado, total
     } : null
     const campoData = (rol === 'astilladora' || rol === 'transportista') ? {
       matriculaTractora, matriculaRemolque,
+      matriculaAstilladora: rol === 'astilladora' ? matriculaAstilladora : null,
       chofer: rol === 'transportista' ? chofer : null,
     } : null
 
     try {
-      await updateFirma(a.id, rol, empresaNombre, nombrePersona || null, pesadaData, firmaImagen, campoData, observaciones.trim() || null)
+      await updateFirma(a.id, rol, empresaNombre, nombrePersona || null, pesadaData, firmaImagen, campoData, observaciones.trim() || null, telefonoPersona || null)
       setFirmado(true)
       setTimeout(() => onCompletado(), 1200)
     } catch {
@@ -196,15 +199,22 @@ function PasoFirma({ rol, a, updateFirma, subirTicketPesada, onCompletado, total
             <input type="text" placeholder="Persona presente en la carga" value={nombrePersona} onChange={e => setNombrePersona(e.target.value)} />
           </div>
           <div style={{fontSize:12,fontWeight:600,color:'var(--gray-500)',textTransform:'uppercase',letterSpacing:'0.5px',margin:'14px 0 10px'}}>
-            Matrículas del vehículo
+            Datos astilladora
+          </div>
+          <div className="campo-field">
+            <label>Matrícula</label>
+            <input type="text" placeholder="Ej: CS-1234-B" value={matriculaAstilladora} onChange={e => setMatriculaAstilladora(e.target.value)} />
+          </div>
+          <div style={{fontSize:12,fontWeight:600,color:'var(--gray-500)',textTransform:'uppercase',letterSpacing:'0.5px',margin:'14px 0 10px'}}>
+            Datos camión
           </div>
           <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:10}}>
             <div className="campo-field">
-              <label>Tractora *</label>
+              <label>Matrícula tractora *</label>
               <input type="text" placeholder="Ej: 1234 ABC" value={matriculaTractora} onChange={e => setMatriculaTractora(e.target.value)} />
             </div>
             <div className="campo-field">
-              <label>Remolque</label>
+              <label>Matrícula remolque</label>
               <input type="text" placeholder="Ej: R-1234-ABC" value={matriculaRemolque} onChange={e => setMatriculaRemolque(e.target.value)} />
             </div>
           </div>
@@ -215,46 +225,51 @@ function PasoFirma({ rol, a, updateFirma, subirTicketPesada, onCompletado, total
       {rol === 'transportista' && (
         <>
           <div className="campo-field">
-            <label>Nombre del chófer *</label>
+            <label>Nombre *</label>
             <input type="text" placeholder="Nombre completo del conductor" value={chofer} onChange={e => setChofer(e.target.value)} />
           </div>
-          <div style={{fontSize:12,fontWeight:600,color:'var(--gray-500)',textTransform:'uppercase',letterSpacing:'0.5px',margin:'14px 0 10px'}}>
-            Datos de pesada (opcional)
+          <div className="campo-field">
+            <label>Teléfono</label>
+            <input type="tel" placeholder="Ej: 623 456 789" value={telefonoPersona} onChange={e => setTelefonoPersona(e.target.value)} />
           </div>
-          <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:10}}>
-            <div className="campo-field">
-              <label>Peso bruto (kg)</label>
-              <input type="number" placeholder="Ej: 28400" value={pesoBruto} onChange={e => setPesoBruto(e.target.value)} />
-            </div>
-            <div className="campo-field">
-              <label>Tara (kg)</label>
-              <input type="number" placeholder="Ej: 14200" value={tara} onChange={e => setTara(e.target.value)} />
-            </div>
-          </div>
-          {pesoNeto && (
-            <div style={{background:'var(--green-50)',border:'1px solid var(--green-100)',borderRadius:'var(--radius-md)',padding:'8px 12px',textAlign:'center',marginBottom:10}}>
-              <div style={{fontSize:11,color:'var(--green-600)'}}>Peso neto calculado</div>
-              <div style={{fontSize:18,fontWeight:600,color:'var(--green-600)'}}>{pesoNeto}</div>
-            </div>
-          )}
-          <label className="upload-zona" style={{cursor:'pointer',marginBottom:10}}>
-            <Upload size={16} />
-            <span>{ticketNombre || 'Adjuntar ticket de pesada (opcional)'}</span>
-            <input type="file" accept=".pdf,.jpg,.jpeg,.png" style={{display:'none'}}
-              onChange={async (e) => {
-                const f = e.target.files[0]
-                if (!f) return
-                setTicketNombre(f.name)
-                await subirTicketPesada(a.id, f, empresaNombre)
-              }}
-            />
-          </label>
         </>
       )}
 
       {/* ── INSTALACIÓN (RECEPCIÓN) ────────────────────── */}
       {rol === 'instalacion' && (
         <>
+          {/* Datos del camión — solo lectura, para revisar antes de firmar */}
+          {(a.matriculaTractora || a.matriculaRemolque || a.chofer || a.matriculaAstilladora) && (
+            <div style={{background:'#fffbf0',border:'1px solid #fde68a',borderRadius:'var(--radius-md)',padding:'12px 14px',marginBottom:14}}>
+              <div style={{fontSize:12,fontWeight:600,color:'#92400e',textTransform:'uppercase',letterSpacing:'0.5px',marginBottom:8}}>
+                ⚠ Revisa estos datos antes de firmar. Una vez confirmado no estarán visibles aquí.
+              </div>
+              {a.matriculaAstilladora && (
+                <div style={{display:'flex',justifyContent:'space-between',fontSize:13,padding:'4px 0',borderBottom:'1px solid #fde68a'}}>
+                  <span style={{color:'#92400e',fontWeight:500}}>Matrícula astilladora</span>
+                  <span style={{color:'#78350f',fontFamily:'monospace'}}>{a.matriculaAstilladora}</span>
+                </div>
+              )}
+              {a.matriculaTractora && (
+                <div style={{display:'flex',justifyContent:'space-between',fontSize:13,padding:'4px 0',borderBottom: a.matriculaRemolque || a.chofer ? '1px solid #fde68a' : 'none'}}>
+                  <span style={{color:'#92400e',fontWeight:500}}>Matrícula tractora</span>
+                  <span style={{color:'#78350f',fontFamily:'monospace'}}>{a.matriculaTractora}</span>
+                </div>
+              )}
+              {a.matriculaRemolque && (
+                <div style={{display:'flex',justifyContent:'space-between',fontSize:13,padding:'4px 0',borderBottom: a.chofer ? '1px solid #fde68a' : 'none'}}>
+                  <span style={{color:'#92400e',fontWeight:500}}>Matrícula remolque</span>
+                  <span style={{color:'#78350f',fontFamily:'monospace'}}>{a.matriculaRemolque}</span>
+                </div>
+              )}
+              {a.chofer && (
+                <div style={{display:'flex',justifyContent:'space-between',fontSize:13,padding:'4px 0'}}>
+                  <span style={{color:'#92400e',fontWeight:500}}>Conductor</span>
+                  <span style={{color:'#78350f'}}>{a.chofer}</span>
+                </div>
+              )}
+            </div>
+          )}
           <div style={{background:'var(--blue-50)',border:'1px solid var(--blue-100)',borderRadius:'var(--radius-md)',padding:'10px 12px',fontSize:13,color:'var(--blue-700)',marginBottom:14}}>
             Introduce los datos de pesada en recepción y confirma.
           </div>
