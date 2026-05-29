@@ -1,21 +1,43 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { AlertTriangle, Plus, Filter, Trash2, Search } from 'lucide-react'
+import { AlertTriangle, Plus, Trash2, Search, FileSpreadsheet, CheckSquare, Square, Upload, Download } from 'lucide-react'
+import ExcelJS from 'exceljs'
 import { Badge, FirmaSteps } from '../components/Badge'
+import { generarPDF } from '../utils/generarPDF'
+import { api } from '../lib/api'
 import { labelSemanaActual, isoWeek, isoWeekYear } from '../utils/semana'
 import '../components/shared.css'
 import './Dashboard.css'
 
-export default function Dashboard({ albaranes, empresas = [], usuario, borrarAlbaran }) {
+const TIPOS_DOC = ['Autodeclaración','Acuerdo de cesión','Contrato prestación servicios','Permiso de corta','Certificado SURE','Permiso de obra']
+
+export default function Dashboard({ albaranes, empresas = [], usuario, borrarAlbaran, refetch }) {
   const navigate = useNavigate()
-  const [busqueda,          setBusqueda]          = useState('')
-  const [filtroInstalacion, setFiltroInstalacion] = useState('')
-  const [filtroEstado,      setFiltroEstado]      = useState('')
-  const [soloActivos,       setSoloActivos]       = useState('activos')
-  const [confirmBorrar,     setConfirmBorrar]     = useState(null)
-  const [pagina, setPagina] = useState(1)
-  const POR_PAGINA = 25
   const esSuperadmin = usuario?.nivel === 'superadmin'
+
+  // ── Filtros ───────────────────────────────────────────────────────
+  const [busqueda,           setBusqueda]           = useState('')
+  const [filtroInstalacion,  setFiltroInstalacion]  = useState('')
+  const [filtroAstilladora,  setFiltroAstilladora]  = useState('')
+  const [filtroProveedor,    setFiltroProveedor]    = useState('')
+  const [filtroTransportista,setFiltroTransportista]= useState('')
+  const [filtroEstado,       setFiltroEstado]       = useState('')
+  const [filtroFechaDesde,   setFiltroFechaDesde]   = useState('')
+  const [filtroFechaHasta,   setFiltroFechaHasta]   = useState('')
+
+  // ── Selección masiva ──────────────────────────────────────────────
+  const [seleccionando,   setSeleccionando]   = useState(false)
+  const [seleccionados,   setSeleccionados]   = useState(new Set())
+  const [modalAdjuntar,   setModalAdjuntar]   = useState(false)
+  const [docTipo,         setDocTipo]         = useState('')
+  const [docFichero,      setDocFichero]      = useState(null)
+  const [adjuntando,      setAdjuntando]      = useState(false)
+  const [descargando,     setDescargando]     = useState(false)
+  const [confirmEliminar, setConfirmEliminar] = useState(false)
+  const [eliminando,      setEliminando]      = useState(false)
+  const [confirmBorrar,   setConfirmBorrar]   = useState(null)
+  const [pagina,          setPagina]          = useState(1)
+  const POR_PAGINA = 25
 
   const hoy = new Date()
   const semanaActual = isoWeek(hoy)
@@ -26,37 +48,178 @@ export default function Dashboard({ albaranes, empresas = [], usuario, borrarAlb
     return isoWeek(d) === semanaActual && isoWeekYear(d) === anioActual
   })
 
-  const instalaciones  = [...new Set([
-    ...empresas.filter(e => e.tipo === 'instalacion').map(e => e.nombre),
-    ...albaranes.map(a => a.instalacion),
-  ].filter(Boolean))].sort()
   const totalActivos   = albaranes.filter(a => a.estado !== 'cerrado').length
   const pendienteFirma = albaranes.filter(a => a.estado === 'pendiente_campo' || a.estado === 'pendiente_oficina').length
-  const cerrados       = albaranes.filter(a => a.estado === 'cerrado').length
+  const cerradosTotales= albaranes.filter(a => a.estado === 'cerrado').length
   const conIncidencia  = albaranes.filter(a => a.estado === 'humedad_pendiente').length
   const alertas        = albaranes.filter(a => a.estado === 'humedad_pendiente')
 
-  const filtrados = albaranes.filter(a => {
-    if (soloActivos === 'activos'  && a.estado === 'cerrado')  return false
-    if (soloActivos === 'cerrados' && a.estado !== 'cerrado')  return false
+  const empresasByTipo = (tipo) => empresas.filter(e => e.tipo === tipo).map(e => e.nombre)
+  const instalaciones   = [...new Set([...empresasByTipo('instalacion'),   ...albaranes.map(a => a.instalacion)  ].filter(Boolean))].sort()
+  const astilladoras    = [...new Set([...empresasByTipo('astilladora'),   ...albaranes.map(a => a.astilladora)  ].filter(Boolean))].sort()
+  const proveedores     = [...new Set([...empresasByTipo('proveedor'),     ...albaranes.map(a => a.proveedor)    ].filter(Boolean))].sort()
+  const transportistas  = [...new Set([...empresasByTipo('transportista'), ...albaranes.map(a => a.transportista)].filter(Boolean))].sort()
+
+  const filtrados = useMemo(() => albaranes.filter(a => {
     if (busqueda) {
       const q = busqueda.toLowerCase()
-      const hay = [a.id, a.proveedor, a.astilladora, a.transportista, a.instalacion, a.especie, a.origen]
+      const hay = [a.id, a.proveedor, a.astilladora, a.transportista, a.instalacion, a.especie, a.origen, a.permiso]
         .join(' ').toLowerCase()
       if (!hay.includes(q)) return false
     }
-    if (filtroInstalacion && a.instalacion !== filtroInstalacion) return false
-    if (filtroEstado && a.estado !== filtroEstado) return false
+    if (filtroInstalacion   && a.instalacion   !== filtroInstalacion)   return false
+    if (filtroAstilladora   && a.astilladora   !== filtroAstilladora)   return false
+    if (filtroProveedor     && a.proveedor     !== filtroProveedor)     return false
+    if (filtroTransportista && a.transportista !== filtroTransportista) return false
+    if (filtroEstado        && a.estado        !== filtroEstado)        return false
+    if (filtroFechaDesde    && a.fecha         <  filtroFechaDesde)     return false
+    if (filtroFechaHasta    && a.fecha         >  filtroFechaHasta)     return false
     return true
-  })
+  }), [albaranes, busqueda, filtroInstalacion, filtroAstilladora, filtroProveedor, filtroTransportista, filtroEstado, filtroFechaDesde, filtroFechaHasta])
 
-  const hayFiltros = busqueda || filtroInstalacion || filtroEstado
-  const limpiarFiltros = () => { setBusqueda(''); setFiltroInstalacion(''); setFiltroEstado('') }
-
-  useEffect(() => { setPagina(1) }, [filtroInstalacion, filtroEstado, busqueda, soloActivos])
+  useEffect(() => { setPagina(1) }, [busqueda, filtroInstalacion, filtroAstilladora, filtroProveedor, filtroTransportista, filtroEstado, filtroFechaDesde, filtroFechaHasta])
 
   const totalPaginas = Math.ceil(filtrados.length / POR_PAGINA)
   const paginados    = filtrados.slice((pagina - 1) * POR_PAGINA, pagina * POR_PAGINA)
+
+  const totalPesoNeto = filtrados.reduce((acc, a) => {
+    if (a.pesada?.entrada && a.pesada?.salida) return acc + (a.pesada.entrada - a.pesada.salida)
+    return acc
+  }, 0)
+  const cerradosFiltrados = filtrados.filter(a => a.estado === 'cerrado').length
+  const muestrasHumedad   = filtrados.filter(a => { const h = Number(a.pesada?.humedad); return a.pesada?.humedad != null && !isNaN(h) })
+  const mediaHumedad = muestrasHumedad.length
+    ? (muestrasHumedad.reduce((acc, a) => acc + Number(a.pesada.humedad), 0) / muestrasHumedad.length).toFixed(1)
+    : '—'
+
+  const hayFiltros = busqueda || filtroInstalacion || filtroAstilladora || filtroProveedor || filtroTransportista || filtroEstado || filtroFechaDesde || filtroFechaHasta
+  const limpiarFiltros = () => {
+    setBusqueda(''); setFiltroInstalacion(''); setFiltroAstilladora('')
+    setFiltroProveedor(''); setFiltroTransportista('')
+    setFiltroEstado(''); setFiltroFechaDesde(''); setFiltroFechaHasta('')
+  }
+
+  // ── Selección masiva ──────────────────────────────────────────────
+  const toggleSeleccion    = (id) => setSeleccionados(prev => { const n = new Set(prev); n.has(id) ? n.delete(id) : n.add(id); return n })
+  const seleccionarTodos   = () => setSeleccionados(new Set(filtrados.map(a => a.id)))
+  const deseleccionarTodos = () => setSeleccionados(new Set())
+  const cancelarSeleccion  = () => { setSeleccionando(false); setSeleccionados(new Set()) }
+
+  const subirDocumento = async (albaranId, docNombre, fichero) => {
+    const fd = new FormData()
+    fd.append('file', fichero)
+    fd.append('docNombre', docNombre)
+    await api.upload(`/storage/upload/${albaranId}/doc`, fd)
+  }
+
+  const handleAdjuntarDoc = async () => {
+    if (!docTipo || !docFichero) return
+    setAdjuntando(true)
+    try {
+      for (const id of seleccionados) await subirDocumento(id, docTipo, docFichero)
+      setModalAdjuntar(false); setDocTipo(''); setDocFichero(null)
+      cancelarSeleccion()
+      if (refetch) await refetch()
+    } finally { setAdjuntando(false) }
+  }
+
+  const handleDescargarPDFs = async () => {
+    setDescargando(true)
+    for (const id of seleccionados) {
+      const a = albaranes.find(x => x.id === id)
+      if (a) await generarPDF(a)
+    }
+    setDescargando(false)
+    cancelarSeleccion()
+  }
+
+  const handleEliminar = async () => {
+    setEliminando(true)
+    try {
+      for (const id of seleccionados) await api.delete(`/albaranes/${id}`)
+      setConfirmEliminar(false)
+      cancelarSeleccion()
+      if (refetch) await refetch()
+    } finally { setEliminando(false) }
+  }
+
+  // ── Excel export ──────────────────────────────────────────────────
+  const exportarExcel = async () => {
+    const wb = new ExcelJS.Workbook()
+    wb.creator = 'Comsa Service'
+    const ws = wb.addWorksheet('Albaranes', { views: [{ state: 'frozen', ySplit: 1 }] })
+    ws.columns = [
+      { key: 'fecha',       header: 'Fecha',              width: 13 },
+      { key: 'id',          header: 'Nº Albarán',         width: 13 },
+      { key: 'origen',      header: 'Origen',             width: 32 },
+      { key: 'permiso',     header: 'Permiso / Ref.',     width: 20 },
+      { key: 'instalacion', header: 'Instalación',        width: 26 },
+      { key: 'proveedor',   header: 'Proveedor',          width: 22 },
+      { key: 'astilladora', header: 'Astilladora',        width: 22 },
+      { key: 'transportista',header:'Transportista',      width: 22 },
+      { key: 'especie',     header: 'Especie',            width: 14 },
+      { key: 'biomasa',     header: 'Tipo biomasa',       width: 18 },
+      { key: 'sure',        header: 'SURE',               width: 7  },
+      { key: 'pefc',        header: 'PEFC',               width: 7  },
+      { key: 'bruto',       header: 'Peso bruto (kg)',    width: 16 },
+      { key: 'tara',        header: 'Tara (kg)',          width: 13 },
+      { key: 'neto_kg',     header: 'Peso neto (kg)',     width: 16 },
+      { key: 'neto_t',      header: 'Peso neto (t)',      width: 14 },
+      { key: 'humedad',     header: 'Humedad (%)',        width: 13 },
+      { key: 'estado',      header: 'Estado',             width: 22 },
+      { key: 'obs',         header: 'Observaciones',      width: 34 },
+    ]
+    const headerRow = ws.getRow(1)
+    headerRow.height = 22
+    headerRow.eachCell(cell => {
+      cell.fill      = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF1D9E75' } }
+      cell.font      = { bold: true, color: { argb: 'FFFFFFFF' }, size: 11, name: 'Calibri' }
+      cell.alignment = { vertical: 'middle', horizontal: 'center', wrapText: false }
+      cell.border    = { bottom: { style: 'medium', color: { argb: 'FF0F6E56' } } }
+    })
+    ws.autoFilter = { from: 'A1', to: { row: 1, column: ws.columns.length } }
+    filtrados.forEach((a, i) => {
+      const certs    = Array.isArray(a.certificacion) ? a.certificacion : (a.certificacion ? a.certificacion.split(',') : [])
+      const pesoNeto = a.pesada?.entrada && a.pesada?.salida ? a.pesada.entrada - a.pesada.salida : null
+      const esPar    = i % 2 === 0
+      const row = ws.addRow({
+        fecha: a.fecha?.slice(0,10).split('-').reverse().join('/'),
+        id: a.id, origen: a.origen||'', permiso: a.permiso||'',
+        instalacion: a.instalacion||'', proveedor: a.proveedor||'',
+        astilladora: a.astilladora||'', transportista: a.transportista||'',
+        especie: a.especie||'', biomasa: a.tipoBiomasa||'',
+        sure: certs.includes('SURE') ? '✓' : '', pefc: certs.includes('PEFC') ? '✓' : '',
+        bruto: a.pesada?.entrada??'', tara: a.pesada?.salida??'',
+        neto_kg: pesoNeto??'',
+        neto_t: pesoNeto != null ? Number((pesoNeto/1000).toFixed(3)) : '',
+        humedad: a.pesada?.humedad??'', estado: a.estado||'', obs: a.observaciones||'',
+      })
+      row.height = 18
+      const bgColor = esPar ? 'FFFFFFFF' : 'FFF4FAF7'
+      row.eachCell({ includeEmpty: true }, (cell) => {
+        cell.fill      = { type: 'pattern', pattern: 'solid', fgColor: { argb: bgColor } }
+        cell.font      = { size: 10, name: 'Calibri' }
+        cell.alignment = { vertical: 'middle' }
+        cell.border    = { bottom: { style: 'hair', color: { argb: 'FFD1D5DB' } } }
+      })
+      ;['sure','pefc'].forEach(key => {
+        const col  = ws.columns.findIndex(c => c.key === key) + 1
+        const cell = row.getCell(col)
+        cell.alignment = { vertical: 'middle', horizontal: 'center' }
+        if (cell.value === '✓') cell.font = { size: 12, bold: true, color: { argb: 'FF1D9E75' }, name: 'Calibri' }
+      })
+      ;['bruto','tara','neto_kg','neto_t','humedad'].forEach(key => {
+        const col = ws.columns.findIndex(c => c.key === key) + 1
+        row.getCell(col).alignment = { vertical: 'middle', horizontal: 'right' }
+      })
+    })
+    const buffer = await wb.xlsx.writeBuffer()
+    const blob   = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' })
+    const url    = URL.createObjectURL(blob)
+    const link   = document.createElement('a')
+    link.href = url; link.download = `comsa_albaranes_${new Date().toISOString().split('T')[0]}.xlsx`
+    link.click(); URL.revokeObjectURL(url)
+  }
 
   return (
     <>
@@ -67,20 +230,27 @@ export default function Dashboard({ albaranes, empresas = [], usuario, borrarAlb
             <div className="page-title">Dashboard</div>
             <div className="page-sub">{labelSemanaActual()}</div>
           </div>
-          <button className="btn btn-primary" onClick={() => navigate('/nuevo')}>
-            <Plus size={15} /> Nuevo albarán
-          </button>
+          <div style={{display:'flex',gap:8}}>
+            <button className="btn" onClick={exportarExcel}>
+              <FileSpreadsheet size={14} /> Excel
+            </button>
+            <button className="btn btn-primary" onClick={() => navigate('/nuevo')}>
+              <Plus size={15} /> Nuevo albarán
+            </button>
+          </div>
         </div>
       </div>
 
       <div className="dash-content">
+        {/* KPIs */}
         <div className="kpi-grid">
           <div className="kpi-card"><div className="kpi-label">Albaranes esta semana</div><div className="kpi-val">{albaranesSemana.length}</div></div>
           <div className="kpi-card"><div className="kpi-label">Pendientes de firma</div><div className="kpi-val amber">{pendienteFirma}</div></div>
-          <div className="kpi-card"><div className="kpi-label">Cerrados</div><div className="kpi-val green">{cerrados}</div></div>
+          <div className="kpi-card"><div className="kpi-label">Cerrados</div><div className="kpi-val green">{cerradosTotales}</div></div>
           <div className="kpi-card"><div className="kpi-label">Con incidencia</div><div className="kpi-val red">{conIncidencia}</div></div>
         </div>
 
+        {/* Alertas humedad */}
         {alertas.map(a => (
           <div key={a.id} className="alerta-bar" onClick={() => navigate(`/albaran/${a.id}`)}>
             <AlertTriangle size={14} />
@@ -89,96 +259,142 @@ export default function Dashboard({ albaranes, empresas = [], usuario, borrarAlb
           </div>
         ))}
 
-        <div className="table-header">
-          <div style={{display:'flex',alignItems:'center',gap:10,flexWrap:'wrap'}}>
-            <div className="section-label" style={{margin:0}}>
-              {{ activos: 'Albaranes activos', cerrados: 'Albaranes cerrados', todos: 'Todos los albaranes' }[soloActivos]}
-            </div>
-            {/* Toggle activos / todos */}
-            <div style={{display:'flex',gap:2,background:'var(--gray-100)',borderRadius:6,padding:2}}>
-              {[
-                { label: `Activos · ${totalActivos}`, val: 'activos'  },
-                { label: `Cerrados · ${cerrados}`,    val: 'cerrados' },
-                { label: `Todos · ${albaranes.length}`, val: 'todos' },
-              ].map(({ label, val }) => (
-                <button key={val}
-                  onClick={() => { setSoloActivos(val); if (val === 'activos') setFiltroEstado('') }}
-                  style={{fontSize:11,padding:'3px 10px',borderRadius:4,border:'none',cursor:'pointer',
-                    background: soloActivos === val ? '#fff' : 'transparent',
-                    color: soloActivos === val ? 'var(--gray-800)' : 'var(--gray-400)',
-                    fontWeight: soloActivos === val ? 600 : 400,
-                    boxShadow: soloActivos === val ? '0 1px 3px rgba(0,0,0,0.1)' : 'none',
-                    transition: 'all 0.15s',
-                  }}
-                >{label}</button>
-              ))}
-            </div>
-          </div>
-          <div style={{display:'flex',gap:6,alignItems:'center',flexWrap:'wrap'}}>
-            {/* Búsqueda */}
-            <div style={{position:'relative',display:'flex',alignItems:'center'}}>
-              <Search size={12} style={{position:'absolute',left:7,color:'var(--gray-400)',pointerEvents:'none'}} />
-              <input
-                type="text" placeholder="Buscar ID, empresa, especie..."
-                value={busqueda} onChange={e => setBusqueda(e.target.value)}
-                style={{paddingLeft:24,fontSize:12,padding:'5px 8px 5px 24px',width:190}}
-              />
-            </div>
-            <Filter size={13} color="var(--gray-400)" />
-            <select value={filtroInstalacion} onChange={e => setFiltroInstalacion(e.target.value)} style={{width:'auto',fontSize:12,padding:'5px 8px'}}>
-              <option value="">Todas las instalaciones</option>
-              {instalaciones.map(i => <option key={i}>{i}</option>)}
-            </select>
-            <select value={filtroEstado} onChange={e => setFiltroEstado(e.target.value)} style={{width:'auto',fontSize:12,padding:'5px 8px'}}>
-              <option value="">Todos los estados</option>
-              <option value="pendiente_campo">Pendiente campo</option>
-              <option value="pendiente_oficina">Pendiente oficina</option>
-              <option value="humedad_pendiente">Humedad pendiente</option>
-              {soloActivos === 'todos' && <option value="cerrado">Cerrado</option>}
-            </select>
-            {hayFiltros && (
-              <button className="btn btn-ghost" onClick={limpiarFiltros} style={{fontSize:11}}>× Limpiar</button>
-            )}
-          </div>
+        {/* Resumen de la selección filtrada */}
+        <div className="resumen-bar">
+          <div className="resumen-chip"><div className="label">Total albaranes</div><div className="val">{filtrados.length}</div><div className="sub">en selección actual</div></div>
+          <div className="resumen-chip"><div className="label">Cerrados</div><div className="val" style={{color:'var(--green-400)'}}>{cerradosFiltrados}</div><div className="sub">de {filtrados.length} totales</div></div>
+          <div className="resumen-chip"><div className="label">Peso neto total</div><div className="val">{totalPesoNeto > 0 ? (totalPesoNeto/1000).toFixed(1)+' t' : '—'}</div><div className="sub">con pesada registrada</div></div>
+          <div className="resumen-chip"><div className="label">Humedad media</div><div className="val">{mediaHumedad}{mediaHumedad !== '—' ? '%' : ''}</div><div className="sub">{muestrasHumedad.length} muestras</div></div>
+          <div className="resumen-chip"><div className="label">Pendientes</div><div className="val" style={{color:'var(--amber-400)'}}>{filtrados.length - cerradosFiltrados}</div><div className="sub">sin cerrar</div></div>
         </div>
 
-        <div className="card" style={{padding:0, overflow:'clip'}}>
-          <div className="table-wrap">
-          <table className="albaran-table">
-            <thead>
-              <tr>
-                <th>Nº albarán</th><th>Fecha</th><th>Proveedor</th><th>Astilladora</th><th>Transportista</th>
-                <th>Instalación</th><th>Especie</th><th>Estado</th><th>Firmas</th>
-                {esSuperadmin && <th style={{width:36,padding:'11px 4px'}}></th>}
-              </tr>
-            </thead>
-            <tbody>
-              {paginados.map(a => (
-                <tr key={a.id} onClick={() => navigate(`/albaran/${a.id}`)}>
-                  <td className="albaran-id">{a.id}</td>
-                  <td>{a.fecha?.slice(0,10).split('-').reverse().join('/')}</td>
-                  <td>{a.proveedor}</td>
-                  <td>{a.astilladora}</td>
-                  <td>{a.transportista}</td>
-                  <td>{a.instalacion}</td>
-                  <td>{a.especie}</td>
-                  <td><Badge estado={a.estado} /></td>
-                  <td><FirmaSteps firmas={a.firmas} estado={a.estado} /></td>
-                  {esSuperadmin && (
-                    <td style={{width:36,padding:'4px',textAlign:'center'}} onClick={e => e.stopPropagation()}>
-                      <button
-                        style={{background:'none',border:'none',cursor:'pointer',padding:4,color:'var(--gray-300)',display:'inline-flex',alignItems:'center'}}
-                        onClick={() => setConfirmBorrar(a.id)}
-                        title="Borrar albarán"
-                      >
-                        <Trash2 size={14} />
-                      </button>
-                    </td>
-                  )}
+        {/* Filtros */}
+        <div className="filtros-bar">
+          <div style={{position:'relative',display:'flex',alignItems:'center'}}>
+            <Search size={13} style={{position:'absolute',left:8,color:'var(--gray-400)'}} />
+            <input type="text" placeholder="Buscar ID, empresa, especie, origen..." value={busqueda} onChange={e => setBusqueda(e.target.value)} style={{paddingLeft:28}} />
+          </div>
+          <select value={filtroProveedor} onChange={e => setFiltroProveedor(e.target.value)}>
+            <option value="">Todos los proveedores</option>
+            {proveedores.map(p => <option key={p}>{p}</option>)}
+          </select>
+          <select value={filtroAstilladora} onChange={e => setFiltroAstilladora(e.target.value)}>
+            <option value="">Todas las astilladoras</option>
+            {astilladoras.map(a => <option key={a}>{a}</option>)}
+          </select>
+          <select value={filtroTransportista} onChange={e => setFiltroTransportista(e.target.value)}>
+            <option value="">Todos los transportistas</option>
+            {transportistas.map(t => <option key={t}>{t}</option>)}
+          </select>
+          <select value={filtroInstalacion} onChange={e => setFiltroInstalacion(e.target.value)}>
+            <option value="">Todas las instalaciones</option>
+            {instalaciones.map(i => <option key={i}>{i}</option>)}
+          </select>
+          <select value={filtroEstado} onChange={e => setFiltroEstado(e.target.value)}>
+            <option value="">Todos los estados</option>
+            <option value="pendiente_campo">Pendiente campo</option>
+            <option value="pendiente_oficina">Pendiente oficina</option>
+            <option value="humedad_pendiente">Humedad pendiente</option>
+            <option value="cerrado">Cerrado</option>
+          </select>
+          <div style={{display:'flex',alignItems:'center',gap:4}}>
+            <span style={{fontSize:11,color:'var(--gray-400)',whiteSpace:'nowrap'}}>Desde</span>
+            <input type="date" value={filtroFechaDesde} onChange={e => setFiltroFechaDesde(e.target.value)} />
+          </div>
+          <div style={{display:'flex',alignItems:'center',gap:4}}>
+            <span style={{fontSize:11,color:'var(--gray-400)',whiteSpace:'nowrap'}}>Hasta</span>
+            <input type="date" value={filtroFechaHasta} onChange={e => setFiltroFechaHasta(e.target.value)} />
+          </div>
+          {hayFiltros && (
+            <button className="btn btn-ghost" onClick={limpiarFiltros} style={{fontSize:12}}>Limpiar filtros ×</button>
+          )}
+        </div>
+
+        {/* Selección masiva */}
+        <div style={{display:'flex',alignItems:'center',gap:8,marginBottom:8}}>
+          {!seleccionando ? (
+            <button className="btn" style={{fontSize:12}} onClick={() => setSeleccionando(true)}>
+              <CheckSquare size={13} /> Seleccionar
+            </button>
+          ) : (
+            <>
+              <button className="btn btn-primary" style={{fontSize:12}} onClick={seleccionarTodos}>
+                <CheckSquare size={13} /> Todos ({filtrados.length})
+              </button>
+              <button className="btn" style={{fontSize:12}} onClick={deseleccionarTodos}>
+                <Square size={13} /> Ninguno
+              </button>
+              <button className="btn btn-ghost" style={{fontSize:12,color:'var(--gray-500)'}} onClick={cancelarSeleccion}>
+                × Cancelar
+              </button>
+              {seleccionados.size > 0 && (
+                <span style={{fontSize:12,color:'var(--green-600)',fontWeight:600,marginLeft:4}}>
+                  {seleccionados.size} seleccionados
+                </span>
+              )}
+            </>
+          )}
+        </div>
+
+        {/* Tabla */}
+        <div className="card" style={{padding:0,overflow:'clip'}}>
+          <div style={{overflowX:'auto'}}>
+            <table className="albaran-table">
+              <thead>
+                <tr>
+                  {seleccionando && <th style={{width:36}}></th>}
+                  <th>Nº albarán</th>
+                  <th>Fecha</th>
+                  <th>Proveedor</th>
+                  <th>Astilladora</th>
+                  <th>Transportista</th>
+                  <th>Instalación</th>
+                  <th>Especie</th>
+                  <th>Peso neto</th>
+                  <th>Humedad</th>
+                  <th>Estado</th>
+                  <th>Firmas</th>
+                  {esSuperadmin && <th style={{width:36,padding:'10px 4px'}}></th>}
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody>
+                {filtrados.length === 0 ? (
+                  <tr><td colSpan={(seleccionando ? 1 : 0) + 11 + (esSuperadmin ? 1 : 0)} className="empty-state">No hay albaranes con los filtros seleccionados</td></tr>
+                ) : paginados.map(a => (
+                  <tr key={a.id}
+                    onClick={() => seleccionando ? toggleSeleccion(a.id) : navigate(`/albaran/${a.id}`)}
+                    style={{cursor:'pointer', background: seleccionados.has(a.id) ? 'var(--green-50)' : undefined}}>
+                    {seleccionando && (
+                      <td style={{textAlign:'center',width:36}} onClick={e => { e.stopPropagation(); toggleSeleccion(a.id) }}>
+                        <input type="checkbox" checked={seleccionados.has(a.id)} onChange={() => {}} style={{cursor:'pointer',pointerEvents:'none'}} />
+                      </td>
+                    )}
+                    <td className="albaran-id">{a.id}</td>
+                    <td>{a.fecha?.slice(0,10).split('-').reverse().join('/')}</td>
+                    <td>{a.proveedor}</td>
+                    <td>{a.astilladora}</td>
+                    <td>{a.transportista}</td>
+                    <td>{a.instalacion}</td>
+                    <td>{a.especie}</td>
+                    <td>{a.pesada?.entrada && a.pesada?.salida ? ((a.pesada.entrada-a.pesada.salida)/1000).toFixed(1)+' t' : <span style={{color:'var(--gray-300)'}}>—</span>}</td>
+                    <td>{a.pesada?.humedad != null ? `${a.pesada.humedad}%` : <span style={{color:'var(--gray-300)'}}>—</span>}</td>
+                    <td><Badge estado={a.estado} /></td>
+                    <td><FirmaSteps firmas={a.firmas} estado={a.estado} /></td>
+                    {esSuperadmin && (
+                      <td style={{width:36,padding:'4px',textAlign:'center'}} onClick={e => e.stopPropagation()}>
+                        <button
+                          style={{background:'none',border:'none',cursor:'pointer',padding:4,color:'var(--gray-300)',display:'inline-flex',alignItems:'center'}}
+                          onClick={() => setConfirmBorrar(a.id)}
+                          title="Borrar albarán"
+                        >
+                          <Trash2 size={14} />
+                        </button>
+                      </td>
+                    )}
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
         </div>
 
@@ -207,6 +423,59 @@ export default function Dashboard({ albaranes, empresas = [], usuario, borrarAlb
       </div>
     </div>
 
+    {/* Pill flotante acciones masivas */}
+    {seleccionados.size > 0 && (
+      <div style={{position:'fixed',bottom:28,left:'50%',transform:'translateX(-50%)',display:'flex',alignItems:'center',gap:6,padding:'10px 16px',background:'var(--gray-900)',borderRadius:999,boxShadow:'0 8px 32px rgba(0,0,0,0.28)',zIndex:200,whiteSpace:'nowrap'}}>
+        <span style={{fontSize:13,fontWeight:600,color:'rgba(255,255,255,0.75)',marginRight:6}}>{seleccionados.size} seleccionados</span>
+        <button onClick={() => setModalAdjuntar(true)}
+          style={{display:'inline-flex',alignItems:'center',gap:5,padding:'6px 12px',borderRadius:20,border:'1px solid rgba(255,255,255,0.15)',background:'rgba(255,255,255,0.1)',color:'#fff',fontSize:12,fontWeight:500,cursor:'pointer'}}>
+          <Upload size={13}/> Adjuntar doc
+        </button>
+        <button onClick={handleDescargarPDFs} disabled={descargando}
+          style={{display:'inline-flex',alignItems:'center',gap:5,padding:'6px 12px',borderRadius:20,border:'1px solid rgba(255,255,255,0.15)',background:'rgba(255,255,255,0.1)',color:'#fff',fontSize:12,fontWeight:500,cursor:'pointer',opacity:descargando?0.6:1}}>
+          <Download size={13}/> {descargando ? 'Descargando...' : 'PDFs'}
+        </button>
+        {esSuperadmin && (
+          <button onClick={() => setConfirmEliminar(true)}
+            style={{display:'inline-flex',alignItems:'center',gap:5,padding:'6px 12px',borderRadius:20,border:'1px solid rgba(231,75,74,0.4)',background:'rgba(231,75,74,0.15)',color:'#ff8080',fontSize:12,fontWeight:500,cursor:'pointer'}}>
+            <Trash2 size={13}/> Eliminar
+          </button>
+        )}
+        <button onClick={cancelarSeleccion}
+          style={{display:'inline-flex',alignItems:'center',gap:4,padding:'6px 10px',borderRadius:20,border:'1px solid rgba(255,255,255,0.15)',background:'transparent',color:'rgba(255,255,255,0.5)',fontSize:12,cursor:'pointer',marginLeft:4}}>
+          × Cancelar
+        </button>
+      </div>
+    )}
+
+    {/* Modal adjuntar */}
+    {modalAdjuntar && (
+      <div style={{position:'fixed',inset:0,background:'rgba(0,0,0,0.4)',display:'flex',alignItems:'center',justifyContent:'center',zIndex:200,padding:20}}>
+        <div style={{background:'#fff',borderRadius:'var(--radius-xl)',padding:28,width:'100%',maxWidth:400,boxShadow:'0 20px 60px rgba(0,0,0,0.15)'}}>
+          <div style={{fontSize:16,fontWeight:600,marginBottom:16}}>Adjuntar documento a {seleccionados.size} albaranes</div>
+          <div style={{marginBottom:12}}>
+            <label style={{fontSize:12,fontWeight:600,color:'var(--gray-600)',display:'block',marginBottom:6}}>Tipo de documento</label>
+            <select value={docTipo} onChange={e => setDocTipo(e.target.value)} style={{width:'100%'}}>
+              <option value="">Selecciona tipo...</option>
+              {TIPOS_DOC.map(t => <option key={t}>{t}</option>)}
+            </select>
+          </div>
+          <div style={{marginBottom:20}}>
+            <label style={{fontSize:12,fontWeight:600,color:'var(--gray-600)',display:'block',marginBottom:6}}>Fichero</label>
+            <input type="file" accept=".pdf,.jpg,.jpeg,.png" onChange={e => setDocFichero(e.target.files[0])} />
+            {docFichero && <div style={{fontSize:11,color:'var(--gray-500)',marginTop:4}}>{docFichero.name}</div>}
+          </div>
+          <div style={{display:'flex',gap:8,justifyContent:'flex-end'}}>
+            <button className="btn" onClick={() => { setModalAdjuntar(false); setDocTipo(''); setDocFichero(null) }}>Cancelar</button>
+            <button className="btn btn-primary" disabled={!docTipo||!docFichero||adjuntando} onClick={handleAdjuntarDoc}>
+              {adjuntando ? 'Adjuntando...' : `Adjuntar a ${seleccionados.size} albaranes`}
+            </button>
+          </div>
+        </div>
+      </div>
+    )}
+
+    {/* Modal borrar individual */}
     {confirmBorrar && (
       <div style={{position:'fixed',inset:0,background:'rgba(0,0,0,0.4)',display:'flex',alignItems:'center',justifyContent:'center',zIndex:200,padding:20}}>
         <div style={{background:'#fff',borderRadius:'var(--radius-xl)',padding:28,width:'100%',maxWidth:380,boxShadow:'0 20px 60px rgba(0,0,0,0.15)'}}>
@@ -219,12 +488,28 @@ export default function Dashboard({ albaranes, empresas = [], usuario, borrarAlb
           </p>
           <div style={{display:'flex',gap:8,justifyContent:'flex-end'}}>
             <button className="btn" onClick={() => setConfirmBorrar(null)}>Cancelar</button>
-            <button
-              className="btn"
-              style={{background:'var(--red-400)',color:'#fff',borderColor:'var(--red-400)'}}
-              onClick={async () => { await borrarAlbaran(confirmBorrar); setConfirmBorrar(null) }}
-            >
+            <button className="btn" style={{background:'var(--red-400)',color:'#fff',borderColor:'var(--red-400)'}}
+              onClick={async () => { if (borrarAlbaran) await borrarAlbaran(confirmBorrar); setConfirmBorrar(null) }}>
               <Trash2 size={14} /> Borrar definitivamente
+            </button>
+          </div>
+        </div>
+      </div>
+    )}
+
+    {/* Modal eliminar masivo */}
+    {confirmEliminar && (
+      <div style={{position:'fixed',inset:0,background:'rgba(0,0,0,0.4)',display:'flex',alignItems:'center',justifyContent:'center',zIndex:200,padding:20}}>
+        <div style={{background:'#fff',borderRadius:'var(--radius-xl)',padding:28,width:'100%',maxWidth:380,boxShadow:'0 20px 60px rgba(0,0,0,0.15)'}}>
+          <div style={{display:'flex',alignItems:'center',gap:10,marginBottom:12}}>
+            <Trash2 size={20} color="var(--red-400)" />
+            <span style={{fontSize:16,fontWeight:600}}>Eliminar {seleccionados.size} albaranes</span>
+          </div>
+          <p style={{fontSize:13,color:'var(--gray-600)',marginBottom:20}}>Esta acción no se puede deshacer.</p>
+          <div style={{display:'flex',gap:8,justifyContent:'flex-end'}}>
+            <button className="btn" onClick={() => setConfirmEliminar(false)}>Cancelar</button>
+            <button className="btn" style={{background:'var(--red-400)',color:'#fff',borderColor:'var(--red-400)'}} disabled={eliminando} onClick={handleEliminar}>
+              {eliminando ? 'Eliminando...' : 'Eliminar todo'}
             </button>
           </div>
         </div>
