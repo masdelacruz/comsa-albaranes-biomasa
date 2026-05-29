@@ -8,7 +8,7 @@
 .firma-steps-oficina-next { border-color:var(--green-400); border-width:2px; }
 .firma-steps-cerrado      { border-color:var(--green-400); border-width:2px; background:var(--green-50); }
 .firma-step-wrap { display:flex; align-items:center; }
-.firma-dot { width:20px; height:20px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:10px; font-weight:600; flex-shrink:0; line-height:1; }
+.firma-dot { width:20px; height:20px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:10px; font-weight:600; flex-shrink:0; line-height:1; box-sizing:border-box; }
 .firma-dot.done    { background:var(--green-100); color:var(--green-600); }
 .firma-dot.cerrado { background:var(--green-400); color:#fff; }
 .firma-dot.active  { background:var(--blue-100);  color:var(--blue-700); border:2px solid var(--blue-400); }
