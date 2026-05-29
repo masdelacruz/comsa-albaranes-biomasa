@@ -76,7 +76,8 @@ export default function DetalleAlbaran({ albaranes, simularFirma, updateFirma, s
   const [instalaciones,  setInstalaciones]  = useState([])
   const [todasEmpresas,  setTodasEmpresas]  = useState([])
   const [tiposBiomasa,   setTiposBiomasa]   = useState(TIPOS_BIOMASA)
-  const [especies,       setEspecies]        = useState(ESPECIES)
+  const [especiesTipo,   setEspeciesTipo]   = useState(['Pinus SP','Otros'])
+  const [estellas,       setEstellas]       = useState(ESPECIES)
 
   useEffect(() => {
     api.get('/empresas?activo=true').then(data => {
@@ -89,7 +90,8 @@ export default function DetalleAlbaran({ albaranes, simularFirma, updateFirma, s
     }).catch(() => {})
     api.get('/elementos').then(data => {
       if (data?.tipoBiomasa?.length) setTiposBiomasa(data.tipoBiomasa.map(e => e.valor))
-      if (data?.especie?.length)     setEspecies(data.especie.map(e => e.valor))
+      if (data?.especie?.length)     setEspeciesTipo(data.especie.map(e => e.valor))
+      if (data?.estella?.length)     setEstellas(data.estella.map(e => e.valor))
     }).catch(() => {})
   }, [])
 
@@ -238,6 +240,7 @@ export default function DetalleAlbaran({ albaranes, simularFirma, updateFirma, s
       instalacion:       a.instalacion       || '',
       especie:           a.especie           || '',
       tipoBiomasa:       a.tipoBiomasa       || '',
+      estella:           a.estella           || '',
       origen:            a.origen            || '',
       mapsOrigen:        a.mapsOrigen        || '',
       mapsDestino:       a.mapsDestino       || '',
@@ -263,6 +266,7 @@ export default function DetalleAlbaran({ albaranes, simularFirma, updateFirma, s
         instalacion:        formDatos.instalacion       || null,
         especie:            formDatos.especie           || null,
         tipo_biomasa:       formDatos.tipoBiomasa       || null,
+        estella:            formDatos.estella           || null,
         origen:             formDatos.origen            || null,
         maps_origen:        formDatos.mapsOrigen        || null,
         maps_destino:       formDatos.mapsDestino       || null,
@@ -528,7 +532,7 @@ export default function DetalleAlbaran({ albaranes, simularFirma, updateFirma, s
                     <label className="edit-label">Especie</label>
                     <select className="edit-input" value={formDatos.especie || ''} onChange={e => setD('especie', e.target.value)}>
                       <option value="">—</option>
-                      {especies.map(o => <option key={o} value={o}>{o}</option>)}
+                      {especiesTipo.map(o => <option key={o} value={o}>{o}</option>)}
                     </select>
                   </div>
                   <div className="edit-field">
@@ -536,6 +540,13 @@ export default function DetalleAlbaran({ albaranes, simularFirma, updateFirma, s
                     <select className="edit-input" value={formDatos.tipoBiomasa || ''} onChange={e => setD('tipoBiomasa', e.target.value)}>
                       <option value="">—</option>
                       {tiposBiomasa.map(o => <option key={o} value={o}>{o}</option>)}
+                    </select>
+                  </div>
+                  <div className="edit-field">
+                    <label className="edit-label">Estella</label>
+                    <select className="edit-input" value={formDatos.estella || ''} onChange={e => setD('estella', e.target.value)}>
+                      <option value="">—</option>
+                      {estellas.map(o => <option key={o} value={o}>{o}</option>)}
                     </select>
                   </div>
                   <div className="edit-field">
@@ -595,8 +606,9 @@ export default function DetalleAlbaran({ albaranes, simularFirma, updateFirma, s
                       ['Transportista',      a.transportista || '—'],
                     ] : []),
                     ['Instalación', a.instalacion],
-                    ['Tipo biomasa',         a.tipoBiomasa || '—'],
                     ['Especie',              a.especie     || '—'],
+                    ['Tipo biomasa',         a.tipoBiomasa || '—'],
+                    ['Estella',              a.estella     || '—'],
                     ['Origen',              a.origen || '—'],
                     ['Permiso / Ref.',      a.permiso || '—'],
                     ...(a.tipo?.includes('1') ? [

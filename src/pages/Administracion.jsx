@@ -88,8 +88,8 @@ export default function Administracion({ usuario }) {
   const [dragOverLogo, setDragOverLogo]     = useState(null)
 
   // Elementos state
-  const [elementos, setElementos]   = useState({ tipoBiomasa: [], especie: [] })
-  const [nuevoElem, setNuevoElem]   = useState({ tipoBiomasa: '', especie: '' })
+  const [elementos, setElementos]   = useState({ especie: [], tipoBiomasa: [], estella: [] })
+  const [nuevoElem, setNuevoElem]   = useState({ especie: '', tipoBiomasa: '', estella: '' })
   const [agregando, setAgregando]   = useState({})
   const fileInputRefs = {
     comsa:    useRef(null),
@@ -106,7 +106,7 @@ export default function Administracion({ usuario }) {
   const fetchElementos = async () => {
     try {
       const data = await api.get('/elementos')
-      setElementos({ tipoBiomasa: data.tipoBiomasa || [], especie: data.especie || [] })
+      setElementos({ especie: data.especie || [], tipoBiomasa: data.tipoBiomasa || [], estella: data.estella || [] })
     } catch {}
   }
 
@@ -337,8 +337,9 @@ export default function Administracion({ usuario }) {
             </div>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: 16 }}>
               {[
-                { tipo: 'tipoBiomasa', titulo: 'Tipo de biomasa' },
                 { tipo: 'especie',     titulo: 'Especie' },
+                { tipo: 'tipoBiomasa', titulo: 'Tipo de biomasa' },
+                { tipo: 'estella',     titulo: 'Estella' },
               ].map(({ tipo, titulo }) => (
                 <div key={tipo} className="card" style={{ padding: 16 }}>
                   <div style={{ fontWeight: 600, fontSize: 14, color: 'var(--gray-800)', marginBottom: 12 }}>{titulo}</div>

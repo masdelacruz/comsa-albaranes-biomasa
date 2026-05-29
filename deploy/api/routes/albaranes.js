@@ -58,7 +58,7 @@ function buildAlbaran(a, firmas, pesada, docs, actividad, empresaFirmaMap = {}) 
     grupoId: a.grupo_id || null, camionOrden: a.camion_orden || 1,
     tipo: a.tipo, proveedor: a.proveedor, astilladora: a.astilladora,
     transportista: a.transportista, instalacion: a.instalacion,
-    especie: a.especie, tipoBiomasa: a.tipo_biomasa,
+    especie: a.especie, tipoBiomasa: a.tipo_biomasa, estella: a.estella || null,
     origen: a.origen, permiso: a.permiso, observaciones: a.observaciones,
     estado: a.estado, mapsOrigen: a.maps_origen, mapsDestino: a.maps_destino,
     matriculaTractora: a.matricula_tractora, matriculaRemolque: a.matricula_remolque,
@@ -146,12 +146,12 @@ router.post('/', requireAuth, async (req, res) => {
 
     await client.query(
       `INSERT INTO albaranes (id,fecha,hora,num_camiones,tipo,proveedor,astilladora,
-       transportista,instalacion,especie,tipo_biomasa,origen,permiso,observaciones,
+       transportista,instalacion,especie,tipo_biomasa,estella,origen,permiso,observaciones,
        estado,maps_origen,maps_destino,matricula_tractora,matricula_remolque,
        chofer,certificacion,grupo_id,camion_orden)
-       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,'pendiente_campo',$15,$16,$17,$18,$19,$20,$21,$22)`,
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,'pendiente_campo',$16,$17,$18,$19,$20,$21,$22,$23)`,
       [id, f.fecha, f.hora, f.numCamiones, f.tipo, f.proveedor, f.astilladora,
-       f.transportista, f.instalacion, f.especie, f.tipoBiomasa, f.origen,
+       f.transportista, f.instalacion, f.especie, f.tipoBiomasa, f.estella || null, f.origen,
        f.permiso, f.observaciones, f.mapsOrigen, f.mapsDestino,
        f.matriculaTractora, f.matriculaRemolque, f.chofer,
        certArray, f.grupoId || null, f.camionOrden || 1]
@@ -198,7 +198,7 @@ router.post('/', requireAuth, async (req, res) => {
 
 const ALLOWED_ALBARAN_COLS = new Set([
   'tipo', 'certificacion', 'proveedor', 'astilladora', 'transportista', 'instalacion',
-  'especie', 'tipo_biomasa', 'origen', 'permiso', 'observaciones',
+  'especie', 'tipo_biomasa', 'estella', 'origen', 'permiso', 'observaciones',
   'maps_origen', 'maps_destino', 'matricula_tractora', 'matricula_remolque', 'chofer',
   'fecha', 'hora',
 ])

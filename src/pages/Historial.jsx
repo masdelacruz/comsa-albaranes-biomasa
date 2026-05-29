@@ -93,7 +93,7 @@ export default function Historial({ albaranes, empresas = [], usuario, refetch, 
   const filtrados = useMemo(() => albaranes.filter(a => {
     if (busqueda) {
       const q = busqueda.toLowerCase()
-      const hay = [a.id, a.proveedor, a.astilladora, a.transportista, a.instalacion, a.especie, a.origen, a.permiso]
+      const hay = [a.id, a.proveedor, a.astilladora, a.transportista, a.instalacion, a.especie, a.estella, a.origen, a.permiso]
         .join(' ').toLowerCase()
       if (!hay.includes(q)) return false
     }
@@ -143,6 +143,7 @@ export default function Historial({ albaranes, empresas = [], usuario, refetch, 
       { key: 'chofer',      header: 'Chófer',             width: 16 },
       { key: 'especie',     header: 'Especie',            width: 14 },
       { key: 'biomasa',     header: 'Tipo biomasa',       width: 18 },
+      { key: 'estella',     header: 'Estella',            width: 18 },
       { key: 'sure',        header: 'SURE',               width: 7  },
       { key: 'pefc',        header: 'PEFC',               width: 7  },
       { key: 'bruto',       header: 'Peso bruto (kg)',    width: 16 },
@@ -173,7 +174,7 @@ export default function Historial({ albaranes, empresas = [], usuario, refetch, 
         astilladora: a.astilladora||'', transportista: a.transportista||'',
         ast_mat: a.matriculaAstilladora||'',
         tractora: a.matriculaTractora||'', remolque: a.matriculaRemolque||'',
-        chofer: a.chofer||'', especie: a.especie||'', biomasa: a.tipoBiomasa||'',
+        chofer: a.chofer||'', especie: a.especie||'', biomasa: a.tipoBiomasa||'', estella: a.estella||'',
         sure: certs.includes('SURE') ? '✓' : '',
         pefc: certs.includes('PEFC') ? '✓' : '',
         bruto: a.pesada.entrada??'', tara: a.pesada.salida??'',
@@ -319,6 +320,7 @@ export default function Historial({ albaranes, empresas = [], usuario, refetch, 
                 <th>Transportista</th>
                 <th>Instalación</th>
                 <th>Especie</th>
+                <th>Estella</th>
                 <th>Peso neto</th>
                 <th>Humedad</th>
                 <th>Estado</th>
@@ -344,6 +346,7 @@ export default function Historial({ albaranes, empresas = [], usuario, refetch, 
                   <td>{a.transportista}</td>
                   <td>{a.instalacion}</td>
                   <td>{a.especie}</td>
+                  <td>{a.estella}</td>
                   <td>{a.pesada.entrada && a.pesada.salida ? ((a.pesada.entrada-a.pesada.salida)/1000).toFixed(1)+' t' : <span style={{color:'var(--gray-300)'}}>—</span>}</td>
                   <td>{a.pesada.humedad != null ? `${a.pesada.humedad}%` : <span style={{color:'var(--gray-300)'}}>—</span>}</td>
                   <td><Badge estado={a.estado} /></td>

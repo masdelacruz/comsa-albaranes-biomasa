@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { ArrowLeft, CheckCircle } from 'lucide-react'
 import { api } from '../lib/api'
-import { ESPECIES, TIPOS_BIOMASA } from '../data/mockData'
+import { ESPECIES, ESPECIES_TIPO, TIPOS_BIOMASA } from '../data/mockData'
 import '../components/shared.css'
 import './NuevoAlbaran.css'
 
@@ -21,7 +21,8 @@ export default function NuevoAlbaran({ addAlbaran }) {
   const [transportistas, setTransportistas] = useState([])
   const [instalaciones, setInstalaciones]   = useState([])
   const [tiposBiomasa, setTiposBiomasa]     = useState(TIPOS_BIOMASA)
-  const [especies, setEspecies]             = useState(ESPECIES)
+  const [especiesTipo, setEspeciesTipo]     = useState(ESPECIES_TIPO)
+  const [estellas, setEstellas]             = useState(ESPECIES)
 
   useEffect(() => {
     api.get('/empresas?activo=true').then(data => {
@@ -33,14 +34,15 @@ export default function NuevoAlbaran({ addAlbaran }) {
     }).catch(() => {})
     api.get('/elementos').then(data => {
       if (data?.tipoBiomasa?.length) setTiposBiomasa(data.tipoBiomasa.map(e => e.valor))
-      if (data?.especie?.length)     setEspecies(data.especie.map(e => e.valor))
+      if (data?.especie?.length)     setEspeciesTipo(data.especie.map(e => e.valor))
+      if (data?.estella?.length)     setEstellas(data.estella.map(e => e.valor))
     }).catch(() => {})
   }, [])
 
   const [form, setForm] = useState({
     tipo: 'Opción 1 — Compra en monte / plataforma',
     proveedor: '', astilladora: '', transportista: '', instalacion: '',
-    especie: '', tipoBiomasa: '',
+    especie: '', tipoBiomasa: '', estella: '',
     origen: '', mapsOrigen: '', mapsDestino: '', permiso: '', observaciones: '',
     fecha: new Date().toISOString().split('T')[0],
     hora: '08:00',
@@ -164,17 +166,24 @@ export default function NuevoAlbaran({ addAlbaran }) {
               <input type="time" value={form.hora} onChange={e => set('hora', e.target.value)} />
             </div>
             <div className="form-field">
-              <label>Tipo biomasa</label>
+              <label>Especie *</label>
+              <select value={form.especie} onChange={e => set('especie', e.target.value)}>
+                <option value="">Selecciona especie...</option>
+                {especiesTipo.map(s => <option key={s}>{s}</option>)}
+              </select>
+            </div>
+            <div className="form-field">
+              <label>Tipo biomasa *</label>
               <select value={form.tipoBiomasa} onChange={e => set('tipoBiomasa', e.target.value)}>
                 <option value="">Selecciona tipo biomasa...</option>
                 {tiposBiomasa.map(t => <option key={t}>{t}</option>)}
               </select>
             </div>
             <div className="form-field">
-              <label>Especie</label>
-              <select value={form.especie} onChange={e => set('especie', e.target.value)}>
-                <option value="">Selecciona especie...</option>
-                {especies.map(s => <option key={s}>{s}</option>)}
+              <label>Estella</label>
+              <select value={form.estella} onChange={e => set('estella', e.target.value)}>
+                <option value="">Selecciona estella...</option>
+                {estellas.map(s => <option key={s}>{s}</option>)}
               </select>
             </div>
             <div className="form-field full">

@@ -49,7 +49,7 @@ export default function Dashboard({ albaranes, empresas = [], usuario, borrarAlb
     if (soloActivos === 'cerrados' && a.estado !== 'cerrado')  return false
     if (busqueda) {
       const q = busqueda.toLowerCase()
-      const hay = [a.id, a.proveedor, a.astilladora, a.transportista, a.instalacion, a.especie, a.origen, a.permiso]
+      const hay = [a.id, a.proveedor, a.astilladora, a.transportista, a.instalacion, a.especie, a.estella, a.origen, a.permiso]
         .join(' ').toLowerCase()
       if (!hay.includes(q)) return false
     }
@@ -194,6 +194,7 @@ export default function Dashboard({ albaranes, empresas = [], usuario, borrarAlb
                   <th>Transportista</th>
                   <th>Instalación</th>
                   <th>Especie</th>
+                  <th>Estella</th>
                   <th>Peso neto</th>
                   <th>Humedad</th>
                   <th>Estado</th>
@@ -213,6 +214,7 @@ export default function Dashboard({ albaranes, empresas = [], usuario, borrarAlb
                     <td>{a.transportista}</td>
                     <td>{a.instalacion}</td>
                     <td>{a.especie}</td>
+                    <td>{a.estella}</td>
                     <td>{a.pesada?.entrada && a.pesada?.salida ? ((a.pesada.entrada-a.pesada.salida)/1000).toFixed(1)+' t' : <span style={{color:'var(--gray-300)'}}>—</span>}</td>
                     <td>{a.pesada?.humedad != null ? `${a.pesada.humedad}%` : <span style={{color:'var(--gray-300)'}}>—</span>}</td>
                     <td><Badge estado={a.estado} /></td>

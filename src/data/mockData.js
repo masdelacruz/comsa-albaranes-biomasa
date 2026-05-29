@@ -9,6 +9,7 @@ export const INSTALACIONES = [
   'Termosolar Borges','Cromogenia','Piensos Mazana Fabardo',
   'Piensos Nafosa','Ajuntament de Begues','Aigües de Vilafranca',
 ]
+export const ESPECIES_TIPO = ['Pinus SP', 'Otros']
 export const ESPECIES = [
   'Estella ACO100','Estella ACO50','Estella ACO30',
   'Estella TRO100','Estella TRO50','Estella TRO30',
