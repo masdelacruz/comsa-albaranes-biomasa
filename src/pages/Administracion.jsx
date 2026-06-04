@@ -818,6 +818,66 @@ export default function Administracion({ usuario }) {
                   <div style={{fontSize:11,color:'var(--gray-400)',marginTop:4}}>PNG, JPG o SVG · Se usará al confirmar con un clic desde el campo</div>
                 </div>
               )}
+
+              {editando && (form.tipo === 'astilladora' || form.tipo === 'instalacion') && (() => {
+                const logoId  = `empresa_${slugify(form.nombre)}`
+                const logoUrl = logos[logoId]
+                const subiendo = !!subiendoLogo[logoId]
+                return (
+                  <div className="modal-field full">
+                    <label>Logo panel de recepción</label>
+                    <div
+                      style={{
+                        border: dragOverLogoModal ? '2px dashed var(--green-400)' : '1px solid var(--gray-200)',
+                        borderRadius:'var(--radius-md)', padding:12, background: dragOverLogoModal ? 'rgba(29,158,117,0.06)' : 'var(--gray-50)',
+                        cursor:'pointer', transition:'border 0.15s, background 0.15s',
+                      }}
+                      onClick={() => logoFileRefs.current[`modal_${logoId}`]?.click()}
+                      onDragOver={e => { e.preventDefault(); setDragOverLogoModal(true) }}
+                      onDragLeave={() => setDragOverLogoModal(false)}
+                      onDrop={e => { e.preventDefault(); setDragOverLogoModal(false); if(e.dataTransfer.files[0]) handleSubirLogo(logoId, e.dataTransfer.files[0]) }}
+                    >
+                      {dragOverLogoModal ? (
+                        <div style={{display:'flex',flexDirection:'column',alignItems:'center',gap:6,color:'var(--green-400)',padding:'10px 0'}}>
+                          <Upload size={20}/><span style={{fontSize:12}}>Soltar aquí</span>
+                        </div>
+                      ) : logoUrl ? (
+                        <div style={{textAlign:'center',marginBottom:8}}>
+                          <img src={logoUrl} alt="Logo" style={{maxHeight:70,maxWidth:'100%',objectFit:'contain'}} />
+                          <div style={{fontSize:11,color:'var(--gray-400)',marginTop:4}}>Clic o arrastra para cambiar</div>
+                        </div>
+                      ) : (
+                        <div style={{textAlign:'center',fontSize:12,color:'var(--gray-400)',marginBottom:8,padding:'8px 0'}}>
+                          <Upload size={16} style={{margin:'0 auto 4px',display:'block'}}/>
+                          Sin logo · clic o arrastra para subir
+                        </div>
+                      )}
+                      {subiendo && <div style={{fontSize:11,color:'var(--gray-400)',textAlign:'center'}}>Subiendo...</div>}
+                      <input ref={el => { logoFileRefs.current[`modal_${logoId}`] = el }} type="file" accept="image/*" style={{display:'none'}}
+                        onChange={e => { if(e.target.files[0]) handleSubirLogo(logoId, e.target.files[0]); e.target.value='' }}
+                        disabled={subiendo}
+                      />
+                    </div>
+                    {logoUrl && (
+                      confirmBorrarLogo ? (
+                        <div style={{display:'flex',gap:6,alignItems:'center',marginTop:6,padding:'6px 8px',background:'var(--red-50)',border:'1px solid var(--red-100)',borderRadius:6}}>
+                          <span style={{fontSize:11,color:'var(--red-700)',fontWeight:500,flex:1}}>¿Eliminar logo?</span>
+                          <button className="btn" style={{padding:'3px 8px',fontSize:11,color:'var(--red-700)',borderColor:'var(--red-200)'}}
+                            onClick={e => { e.stopPropagation(); handleEliminarLogo(logoId); setConfirmBorrarLogo(false) }}><Check size={11}/> Sí</button>
+                          <button className="btn btn-ghost" style={{padding:'3px 6px',fontSize:11}}
+                            onClick={e => { e.stopPropagation(); setConfirmBorrarLogo(false) }}><X size={11}/></button>
+                        </div>
+                      ) : (
+                        <button className="btn btn-ghost" style={{marginTop:6,width:'100%',fontSize:11,color:'var(--red-400)',justifyContent:'center'}}
+                          onClick={e => { e.stopPropagation(); setConfirmBorrarLogo(true) }}>
+                          <Trash2 size={12}/> Eliminar logo
+                        </button>
+                      )
+                    )}
+                    <div style={{fontSize:11,color:'var(--gray-400)',marginTop:4}}>PNG, JPG, SVG o WEBP · Se muestra en la cabecera del panel de instalación</div>
+                  </div>
+                )
+              })()}
             </div>
             <div className="modal-actions">
               <button className="btn" onClick={cerrarModal}>Cancelar</button>
