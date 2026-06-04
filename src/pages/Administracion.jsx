@@ -89,6 +89,9 @@ export default function Administracion({ usuario }) {
   const [errorLogos, setErrorLogos]         = useState({})
   const [confirmDelLogo, setConfirmDelLogo] = useState(null)
   const [dragOverLogo, setDragOverLogo]     = useState(null)
+  const [logoModalEmpresa, setLogoModalEmpresa]   = useState(null)
+  const [dragOverLogoModal, setDragOverLogoModal] = useState(false)
+  const [confirmBorrarLogo, setConfirmBorrarLogo] = useState(false)
 
   // Elementos state
   const [elementos, setElementos]   = useState({ especie: [], tipoBiomasa: [], estella: [] })
@@ -467,27 +470,10 @@ export default function Administracion({ usuario }) {
                 </div>
               )
 
-              const astilladoras = proveedores.filter(p => p.tipo === 'astilladora')
-              const instalaciones = proveedores.filter(p => p.tipo === 'instalacion')
-
               return (
                 <>
                   {LOGOS_SECTIONS.map(s =>
                     renderSection(s.key, s.titulo, s.color, s.logos)
-                  )}
-                  {renderSection('astilladoras', 'Astilladoras', '#1D9E75',
-                    astilladoras.map(p => ({
-                      id: `empresa_${slugify(p.nombre)}`,
-                      nombre: p.nombre,
-                      descripcion: `Logo panel instalación · se usa como logo de cabecera cuando la instalación destino es ${p.nombre}`,
-                    }))
-                  )}
-                  {renderSection('instalaciones', 'Instalaciones', '#1D9E75',
-                    instalaciones.map(p => ({
-                      id: `empresa_${slugify(p.nombre)}`,
-                      nombre: p.nombre,
-                      descripcion: `Logo panel instalación · se usa como logo de cabecera cuando la instalación destino es ${p.nombre}`,
-                    }))
                   )}
                 </>
               )
@@ -561,6 +547,16 @@ export default function Administracion({ usuario }) {
                           >
                             <Image size={12} /> Firma
                           </button>
+                          {(p.tipo === 'astilladora' || p.tipo === 'instalacion') && (
+                            <button
+                              className="btn btn-ghost"
+                              style={{ padding: '4px 8px', fontSize: 11, color: logos[`empresa_${slugify(p.nombre)}`] ? 'var(--green-600)' : 'var(--gray-400)' }}
+                              title={logos[`empresa_${slugify(p.nombre)}`] ? 'Logo registrado · click para cambiar' : 'Sin logo · click para añadir'}
+                              onClick={() => { setConfirmBorrarLogo(false); setLogoModalEmpresa(p) }}
+                            >
+                              <Image size={12} /> Logo
+                            </button>
+                          )}
                           {confirmDelete === p.id ? (
                             <div style={{ display: 'flex', gap: 4, alignItems: 'center' }}>
                               <span style={{ fontSize: 11, color: 'var(--red-700)' }}>¿Eliminar?</span>
@@ -654,6 +650,77 @@ export default function Administracion({ usuario }) {
           </div>
         </div>
       )}
+
+      {/* Modal logo empresa (astilladora/instalacion) */}
+      {logoModalEmpresa && (() => {
+        const logoId  = `empresa_${slugify(logoModalEmpresa.nombre)}`
+        const logoUrl = logos[logoId]
+        const subiendo = !!subiendoLogo[logoId]
+        return (
+          <div className="modal-overlay" onClick={() => { setLogoModalEmpresa(null); setConfirmBorrarLogo(false) }}>
+            <div className="modal" style={{maxWidth:360}} onClick={e => e.stopPropagation()}>
+              <div className="modal-title">Logo panel — {logoModalEmpresa.nombre}</div>
+              <div style={{marginBottom:16}}>
+                <div
+                  style={{
+                    border: dragOverLogoModal ? '2px dashed var(--green-400)' : logoUrl ? '1px solid var(--gray-200)' : '1px dashed var(--gray-200)',
+                    borderRadius:8, padding: logoUrl ? 16 : 24,
+                    background: dragOverLogoModal ? 'rgba(29,158,117,0.06)' : 'var(--gray-50)',
+                    textAlign:'center', marginBottom:14, cursor:'pointer', transition:'border 0.15s, background 0.15s',
+                  }}
+                  onClick={() => document.getElementById('logo-input-modal').click()}
+                  onDragOver={e => { e.preventDefault(); setDragOverLogoModal(true) }}
+                  onDragLeave={() => setDragOverLogoModal(false)}
+                  onDrop={e => { e.preventDefault(); setDragOverLogoModal(false); if(e.dataTransfer.files[0]) handleSubirLogo(logoId, e.dataTransfer.files[0]) }}
+                >
+                  {dragOverLogoModal ? (
+                    <div style={{display:'flex',flexDirection:'column',alignItems:'center',gap:6,color:'var(--green-400)'}}>
+                      <Upload size={22}/><span style={{fontSize:12}}>Soltar aquí</span>
+                    </div>
+                  ) : logoUrl ? (
+                    <>
+                      <img src={logoUrl} alt="Logo" style={{maxHeight:90,maxWidth:'100%',objectFit:'contain'}} />
+                      <div style={{fontSize:11,color:'var(--green-600)',marginTop:6,fontWeight:500}}>✓ Logo registrado · clic o arrastra para cambiar</div>
+                    </>
+                  ) : (
+                    <div style={{color:'var(--gray-400)',fontSize:13}}>
+                      <Upload size={20} style={{margin:'0 auto 6px',display:'block'}}/>
+                      Sin logo · clic o arrastra para subir
+                    </div>
+                  )}
+                </div>
+                <input id="logo-input-modal" type="file" accept="image/*" style={{display:'none'}}
+                  onChange={e => { if(e.target.files[0]) handleSubirLogo(logoId, e.target.files[0]); e.target.value='' }}
+                  disabled={subiendo}
+                />
+                {subiendo && <div style={{fontSize:12,color:'var(--gray-400)',textAlign:'center',marginBottom:8}}>Subiendo...</div>}
+                <div style={{fontSize:11,color:'var(--gray-400)',textAlign:'center',marginBottom:12}}>
+                  PNG, JPG, SVG, WEBP · Se muestra en la cabecera del panel de instalación
+                </div>
+                {logoUrl && (
+                  confirmBorrarLogo ? (
+                    <div style={{display:'flex',gap:6,alignItems:'center',justifyContent:'center',padding:'8px',background:'var(--red-50)',border:'1px solid var(--red-100)',borderRadius:8}}>
+                      <span style={{fontSize:12,color:'var(--red-700)',fontWeight:500}}>¿Eliminar logo?</span>
+                      <button className="btn" style={{padding:'4px 10px',fontSize:11,color:'var(--red-700)',borderColor:'var(--red-200)'}}
+                        onClick={async () => { await handleEliminarLogo(logoId); setConfirmBorrarLogo(false) }}><Check size={11}/> Sí</button>
+                      <button className="btn btn-ghost" style={{padding:'4px 8px',fontSize:11}}
+                        onClick={() => setConfirmBorrarLogo(false)}><X size={11}/></button>
+                    </div>
+                  ) : (
+                    <button className="btn btn-ghost" style={{width:'100%',fontSize:12,color:'var(--red-400)',justifyContent:'center'}}
+                      onClick={() => setConfirmBorrarLogo(true)}>
+                      <Trash2 size={13}/> Eliminar logo
+                    </button>
+                  )
+                )}
+              </div>
+              <div className="modal-actions">
+                <button className="btn btn-primary" onClick={() => { setLogoModalEmpresa(null); setConfirmBorrarLogo(false) }}>Cerrar</button>
+              </div>
+            </div>
+          </div>
+        )
+      })()}
 
       {modal && (
         <div className="modal-overlay" onClick={cerrarModal}>

@@ -502,6 +502,79 @@ router.post('/:id/firmas/:rol', async (req, res) => {
   res.json({ albaran, cerrado: todasFirmadas, humedadPendiente })
 })
 
+// ── POST /albaranes/:id/duplicar  (requiere auth) ────────────────
+router.post('/:id/duplicar', requireAuth, async (req, res) => {
+  const { id } = req.params
+  const n = Math.min(Math.max(1, parseInt(req.body.count, 10) || 1), 10)
+
+  const { rows: [orig] } = await pool.query('SELECT * FROM albaranes WHERE id=$1', [id])
+  if (!orig) return res.status(404).json({ error: 'No encontrado' })
+
+  const [{ rows: firmasOrig }, { rows: docsOrig }] = await Promise.all([
+    pool.query('SELECT rol, actor FROM firmas WHERE albaran_id=$1', [id]),
+    pool.query('SELECT nombre FROM docs WHERE albaran_id=$1', [id]),
+  ])
+
+  let maxOrden = orig.camion_orden || 1
+  if (orig.grupo_id) {
+    const { rows: [m] } = await pool.query(
+      'SELECT MAX(camion_orden) AS mx FROM albaranes WHERE grupo_id=$1', [orig.grupo_id]
+    )
+    if (m?.mx) maxOrden = m.mx
+  }
+
+  const actorNombre = req.user.nombre || 'Oficina'
+  const fecha = new Date().toLocaleString('es-ES')
+  const newIds = []
+  const client = await pool.connect()
+  try {
+    await client.query('BEGIN')
+    for (let i = 0; i < n; i++) {
+      const { rows: [idRow] } = await client.query('SELECT next_albaran_id() AS id')
+      const newId = idRow.id
+      const orden = maxOrden + i + 1
+
+      await client.query(
+        `INSERT INTO albaranes (id,fecha,hora,num_camiones,tipo,proveedor,astilladora,
+         transportista,instalacion,especie,tipo_biomasa,estella,origen,permiso,observaciones,
+         estado,maps_origen,maps_destino,matricula_tractora,matricula_remolque,
+         chofer,certificacion,grupo_id,camion_orden)
+         VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,'pendiente_campo',$16,$17,$18,$19,$20,$21,$22,$23)`,
+        [newId, orig.fecha, orig.hora, orig.num_camiones, orig.tipo,
+         orig.proveedor, orig.astilladora, orig.transportista, orig.instalacion,
+         orig.especie, orig.tipo_biomasa, orig.estella, orig.origen, orig.permiso, orig.observaciones,
+         orig.maps_origen, orig.maps_destino, orig.matricula_tractora, orig.matricula_remolque,
+         orig.chofer, orig.certificacion, orig.grupo_id, orden]
+      )
+      for (const fr of firmasOrig) {
+        await client.query(
+          'INSERT INTO firmas (albaran_id,rol,actor,firmado,fecha) VALUES ($1,$2,$3,false,null)',
+          [newId, fr.rol, fr.actor]
+        )
+      }
+      await client.query('INSERT INTO pesada (albaran_id) VALUES ($1)', [newId])
+      for (const d of docsOrig) {
+        await client.query(
+          'INSERT INTO docs (albaran_id,nombre,adjunto) VALUES ($1,$2,false)', [newId, d.nombre]
+        )
+      }
+      await client.query(
+        'INSERT INTO actividad (albaran_id,ts,texto,actor) VALUES ($1,$2,$3,$4)',
+        [newId, fecha, `Albarán duplicado desde ${id}`, actorNombre]
+      )
+      newIds.push(newId)
+    }
+    await client.query('COMMIT')
+    res.json({ ids: newIds })
+  } catch (e) {
+    await client.query('ROLLBACK')
+    console.error(e)
+    res.status(500).json({ error: 'Error al duplicar' })
+  } finally {
+    client.release()
+  }
+})
+
 // ── DELETE /albaranes/:id  (solo superadmin) ─────────────────────
 router.delete('/:id', requireAuth, async (req, res) => {
   if (req.user.nivel !== 'superadmin') return res.status(403).json({ error: 'Solo superadmin puede borrar albaranes' })

@@ -93,6 +93,9 @@ export default function DetalleAlbaran({ albaranes, simularFirma, updateFirma, s
   const [firmandoOficina, setFirmandoOficina]     = useState(false)
   const [confirmReabrir,  setConfirmReabrir]      = useState(false)
   const [reabriendo,      setReabriendo]          = useState(false)
+  const [duplicarOpen,    setDuplicarOpen]        = useState(false)
+  const [numCopias,       setNumCopias]           = useState(1)
+  const [duplicando,      setDuplicando]          = useState(false)
 
   const mostrarToast = (msg) => {
     setToast(msg)
@@ -218,6 +221,24 @@ export default function DetalleAlbaran({ albaranes, simularFirma, updateFirma, s
       mostrarToast('Error al reabrir. Inténtalo de nuevo.')
     } finally {
       setReabriendo(false)
+    }
+  }
+
+  const handleDuplicar = async () => {
+    setDuplicando(true)
+    try {
+      const { ids } = await api.post(`/albaranes/${a.id}/duplicar`, { count: numCopias })
+      await refetch?.()
+      setDuplicarOpen(false)
+      setNumCopias(1)
+      const msg = ids.length === 1
+        ? `Albarán duplicado: ${ids[0]}`
+        : `${ids.length} albaranes creados${a.grupoId ? ' y añadidos a la flota' : ''}`
+      mostrarToast(msg)
+    } catch {
+      mostrarToast('Error al duplicar el albarán')
+    } finally {
+      setDuplicando(false)
     }
   }
 
@@ -397,6 +418,40 @@ export default function DetalleAlbaran({ albaranes, simularFirma, updateFirma, s
           <CheckCircle size={14} /> {toast}
         </div>
       )}
+      {duplicarOpen && (
+        <div style={{position:'fixed',inset:0,background:'rgba(0,0,0,0.4)',display:'flex',alignItems:'center',justifyContent:'center',zIndex:100,padding:20}}
+          onClick={() => !duplicando && setDuplicarOpen(false)}>
+          <div style={{background:'#fff',borderRadius:'var(--radius-xl)',padding:28,maxWidth:360,width:'100%',boxShadow:'0 20px 60px rgba(0,0,0,0.15)'}}
+            onClick={e => e.stopPropagation()}>
+            <div style={{display:'flex',alignItems:'center',gap:10,marginBottom:6}}>
+              <Copy size={18} color="var(--gray-500)" />
+              <div style={{fontSize:15,fontWeight:600}}>Duplicar albarán</div>
+            </div>
+            <div style={{fontSize:13,color:'var(--gray-500)',marginBottom:20}}>
+              {a.grupoId
+                ? 'Los nuevos albaranes se añadirán a la flota existente.'
+                : 'Se creará una copia independiente con los mismos datos.'}
+            </div>
+            <div style={{display:'flex',alignItems:'center',gap:12,marginBottom:24}}>
+              <span style={{fontSize:13,color:'var(--gray-700)',fontWeight:500}}>Nº de copias</span>
+              <div style={{display:'flex',alignItems:'center',gap:6,marginLeft:'auto'}}>
+                <button className="btn" style={{padding:'4px 10px',fontSize:16,lineHeight:1}}
+                  onClick={() => setNumCopias(n => Math.max(1, n - 1))} disabled={numCopias <= 1}>−</button>
+                <span style={{fontSize:18,fontWeight:700,fontFamily:'var(--font-mono)',minWidth:28,textAlign:'center'}}>{numCopias}</span>
+                <button className="btn" style={{padding:'4px 10px',fontSize:16,lineHeight:1}}
+                  onClick={() => setNumCopias(n => Math.min(10, n + 1))} disabled={numCopias >= 10}>+</button>
+              </div>
+            </div>
+            <div style={{display:'flex',gap:8,justifyContent:'flex-end'}}>
+              <button className="btn" onClick={() => setDuplicarOpen(false)} disabled={duplicando}>Cancelar</button>
+              <button className="btn btn-primary" onClick={handleDuplicar} disabled={duplicando}>
+                {duplicando ? 'Creando...' : <><Copy size={13} /> Crear {numCopias === 1 ? 'copia' : `${numCopias} copias`}</>}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {confirmModal && (
         <div style={{position:'fixed',inset:0,background:'rgba(0,0,0,0.4)',display:'flex',alignItems:'center',justifyContent:'center',zIndex:100,padding:20}}>
           <div style={{background:'#fff',borderRadius:'var(--radius-xl)',padding:28,maxWidth:400,width:'100%',boxShadow:'0 20px 60px rgba(0,0,0,0.15)'}}>
@@ -467,6 +522,9 @@ export default function DetalleAlbaran({ albaranes, simularFirma, updateFirma, s
                 <FileDown size={15} /> Descargar PDF
               </button>
             )}
+            <button className="btn" onClick={() => { setDuplicarOpen(true); setNumCopias(1) }}>
+              <Copy size={14} /> Duplicar
+            </button>
             {esSuperadmin && (
               <button className="btn" style={{color:'var(--red-400)',borderColor:'var(--red-100)'}} onClick={() => setConfirmBorrar(true)}>
                 <Trash2 size={15} /> Borrar
