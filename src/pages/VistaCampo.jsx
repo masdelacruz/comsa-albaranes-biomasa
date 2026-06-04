@@ -397,12 +397,17 @@ export default function VistaCampo({ albaranes, updateFirma, subirTicketPesada }
 
   const a = albaranes.find(x => x.id === id)
 
-  // URL del panel de instalación para volver tras firmar
+  // URL del panel de origen para volver tras firmar
   const rolesDirectos = rolesParam ? rolesParam.split(',').filter(r => ROLES_CONFIG[r]) : null
   const esInstalacionSola = rolesDirectos?.length === 1 && rolesDirectos[0] === 'instalacion'
-  const panelUrl = (esInstalacionSola || rolSeleccionado === 'instalacion') && a?.instalacion
-    ? `/campo/instalacion/${encodeURIComponent(a.instalacion)}`
-    : null
+  const esAstilladoraSola = rolesDirectos?.length === 1 && rolesDirectos[0] === 'astilladora'
+  const panelUrl = (() => {
+    if ((esInstalacionSola || rolSeleccionado === 'instalacion') && a?.instalacion)
+      return `/campo/instalacion/${encodeURIComponent(a.instalacion)}?desde=${id}`
+    if ((esAstilladoraSola || rolSeleccionado === 'astilladora') && a?.astilladora)
+      return `/campo/astilladora/${encodeURIComponent(a.astilladora)}?desde=${id}`
+    return null
+  })()
 
   // Restaurar rol guardado en sessionStorage (evita re-selección si se recarga la página)
   useEffect(() => {

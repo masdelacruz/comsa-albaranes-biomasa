@@ -166,10 +166,11 @@ export default function DetalleAlbaran({ albaranes, simularFirma, updateFirma, s
     firmasOrdenadas.filter(k => k !== 'oficina').every(k => a.firmas?.[k]?.firmado)
 
   const siguientePaso    = getSiguientePaso()
-  // Instalación accede siempre al panel de flota, no a un albarán individual
   const urlSiguientePaso = siguientePaso
     ? siguientePaso === 'instalacion'
-      ? `${window.location.origin}/campo/instalacion/${encodeURIComponent(a.instalacion)}`
+      ? `${window.location.origin}/campo/instalacion/${encodeURIComponent(a.instalacion)}?desde=${a.id}`
+      : siguientePaso === 'astilladora'
+      ? `${window.location.origin}/campo/astilladora/${encodeURIComponent(a.astilladora)}?desde=${a.id}`
       : `${window.location.origin}/campo/${a.id}/${siguientePaso}`
     : null
 

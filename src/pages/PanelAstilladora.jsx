@@ -6,7 +6,6 @@ import './PanelInstalacion.css'
 const slugify = s => s.toLowerCase().replace(/\s+/g, '_').replace(/[^a-z0-9_]/g, '')
 const fmtFecha = (f) => f ? String(f).slice(0,10).split('-').reverse().join('/') : null
 
-// "4/6/2026, 8:55:57" → "04/06 · 08:55"
 function fmtFirmaTs(ts) {
   if (!ts) return ''
   const [datePart, timePart] = String(ts).split(', ')
@@ -17,21 +16,25 @@ function fmtFirmaTs(ts) {
 }
 
 function InfoCamion({ a }) {
-  const firmado = a.instalacionFirmada
-  const meta    = [a.transportista, fmtFecha(a.fecha)].filter(Boolean).join(' · ')
+  const firmado = a.astilladoraFirmada
+  const especie = [a.especie, a.estella].filter(Boolean).join(' · ')
+  const meta = [a.proveedor, fmtFecha(a.fecha)].filter(Boolean).join(' · ')
 
   return (
     <div>
       <div className="pi-camion-id">Albarán {a.id}</div>
+      {especie && (
+        <div className="pi-camion-matricula" style={{ fontFamily: 'inherit' }}>{especie}</div>
+      )}
       {a.matriculaTractora && (
-        <div className="pi-camion-matricula">
+        <div className="pi-camion-meta">
           {a.matriculaTractora}
-          {a.matriculaRemolque && <span className="pi-remolque"> · {a.matriculaRemolque}</span>}
+          {a.matriculaRemolque && <span> · {a.matriculaRemolque}</span>}
         </div>
       )}
       {meta && <div className="pi-camion-meta">{meta}</div>}
-      {firmado && a.instalacionFecha && (
-        <div className="pi-camion-meta verde">✓ Firmado · {fmtFirmaTs(a.instalacionFecha)}</div>
+      {firmado && a.astilladoraFecha && (
+        <div className="pi-camion-meta verde">✓ Firmado · {fmtFirmaTs(a.astilladoraFecha)}</div>
       )}
     </div>
   )
@@ -39,7 +42,7 @@ function InfoCamion({ a }) {
 
 function TarjetaCamion({ a, esUltimo, esDesde }) {
   const navigate = useNavigate()
-  const firmado  = a.instalacionFirmada
+  const firmado  = a.astilladoraFirmada
   const ref      = useRef(null)
 
   useEffect(() => {
@@ -50,7 +53,7 @@ function TarjetaCamion({ a, esUltimo, esDesde }) {
     <div
       ref={ref}
       className={`pi-camion ${firmado ? 'firmado' : 'pendiente'}${esDesde ? ' pi-desde-active' : ''}`}
-      onClick={() => navigate(`/campo/${a.id}/instalacion`)}
+      onClick={() => navigate(`/campo/${a.id}/astilladora`)}
       style={{ cursor: 'pointer', borderBottom: esUltimo ? 'none' : undefined }}
     >
       <div className="pi-camion-left">
@@ -69,10 +72,10 @@ function TarjetaCamion({ a, esUltimo, esDesde }) {
 
 function TarjetaFlota({ albaranes, desdeId }) {
   const primero  = albaranes[0]
-  const firmados = albaranes.filter(a => a.instalacionFirmada).length
+  const firmados = albaranes.filter(a => a.astilladoraFirmada).length
   const total    = albaranes.length
   const pct      = Math.round((firmados / total) * 100)
-  const origen   = primero.astilladora || primero.proveedor || '—'
+  const subtitulo = [primero.proveedor, primero.instalacion].filter(Boolean).join(' → ')
   const fecha    = fmtFecha(primero.fecha)
 
   return (
@@ -81,7 +84,7 @@ function TarjetaFlota({ albaranes, desdeId }) {
         <div className="pi-flota-icon"><Truck size={16} color="var(--green-600)" /></div>
         <div>
           <div className="pi-flota-title">Flota · {total} camiones</div>
-          <div className="pi-flota-sub">{origen}{fecha ? ` · ${fecha}` : ''}</div>
+          <div className="pi-flota-sub">{subtitulo}{fecha ? ` · ${fecha}` : ''}</div>
         </div>
         <div className="pi-flota-badge">{firmados}/{total}</div>
       </div>
@@ -102,7 +105,7 @@ function TarjetaFlota({ albaranes, desdeId }) {
 
 function TarjetaSuelta({ a, esDesde }) {
   const navigate = useNavigate()
-  const firmado  = a.instalacionFirmada
+  const firmado  = a.astilladoraFirmada
   const ref      = useRef(null)
 
   useEffect(() => {
@@ -114,7 +117,7 @@ function TarjetaSuelta({ a, esDesde }) {
       <div
         ref={ref}
         className={`pi-camion ${firmado ? 'firmado' : 'pendiente'}${esDesde ? ' pi-desde-active' : ''}`}
-        onClick={() => navigate(`/campo/${a.id}/instalacion`)}
+        onClick={() => navigate(`/campo/${a.id}/astilladora`)}
         style={{ cursor: 'pointer' }}
       >
         <div className="pi-camion-left">
@@ -132,11 +135,13 @@ function TarjetaSuelta({ a, esDesde }) {
   )
 }
 
-export default function PanelInstalacion() {
-  const { nombre } = useParams()
-  const location   = useLocation()
-  const desdeId    = new URLSearchParams(location.search).get('desde')
-  const nombreInstalacion = decodeURIComponent(nombre)
+const AMBER_DEFAULT = '#78350f'
+
+export default function PanelAstilladora() {
+  const { nombre }   = useParams()
+  const location     = useLocation()
+  const desdeId      = new URLSearchParams(location.search).get('desde')
+  const nombreAstilladora = decodeURIComponent(nombre)
 
   const [albaranes,     setAlbaranes]     = useState([])
   const [loading,       setLoading]       = useState(true)
@@ -148,12 +153,12 @@ export default function PanelInstalacion() {
   const showOkTimer = useRef(null)
 
   useEffect(() => {
-    const logoId = `empresa_${slugify(nombreInstalacion)}`
+    const logoId = `empresa_${slugify(nombreAstilladora)}`
     fetch(`/api/storage/logos/public/${logoId}`)
       .then(r => r.ok ? r.json() : null)
       .then(d => { if (d?.url) setLogoUrl(d.url) })
       .catch(() => {})
-  }, [nombreInstalacion])
+  }, [nombreAstilladora])
 
   useEffect(() => {
     if (!logoUrl) { setHeaderBgColor(null); return }
@@ -177,7 +182,6 @@ export default function PanelInstalacion() {
               if (data[i + 3] > 128) { r += data[i]; g += data[i+1]; b += data[i+2]; count++ }
             }
             if (count > 0) {
-              // Convertir color medio a HSL y fijar lightness=0.18, saturation ≥ 0.35
               const nr = r / count / 255, ng = g / count / 255, nb = b / count / 255
               const max = Math.max(nr, ng, nb), min = Math.min(nr, ng, nb)
               let h = 0, s = 0
@@ -216,7 +220,7 @@ export default function PanelInstalacion() {
   const fetchData = useCallback(async (manual = false) => {
     if (manual) setRefreshing(true)
     try {
-      const res  = await fetch(`/api/albaranes/instalacion/${encodeURIComponent(nombreInstalacion)}`)
+      const res  = await fetch(`/api/albaranes/astilladora/${encodeURIComponent(nombreAstilladora)}`)
       const data = await res.json()
       setAlbaranes(Array.isArray(data) ? data : [])
       setLastUpdate(new Date())
@@ -228,7 +232,7 @@ export default function PanelInstalacion() {
     } catch {}
     setLoading(false)
     if (manual) setRefreshing(false)
-  }, [nombreInstalacion])
+  }, [nombreAstilladora])
 
   useEffect(() => {
     fetchData()
@@ -247,25 +251,22 @@ export default function PanelInstalacion() {
     }
   })
   const flotasOrdenadas = Object.values(flotas)
-  const pendientes = albaranes.filter(a => !a.instalacionFirmada).length
+  const pendientes = albaranes.filter(a => !a.astilladoraFirmada).length
   const total      = albaranes.length
 
   return (
     <div className="pi-page">
-      {/* Cabecera */}
-      <div className="pi-header" style={headerBgColor ? { background: headerBgColor } : undefined}>
+      <div className="pi-header" style={{ background: headerBgColor || AMBER_DEFAULT }}>
         {logoUrl
           ? <div className="pi-header-logo-img"><img src={logoUrl} alt="Logo" /></div>
           : <div className="pi-header-logo"><Leaf size={14} color="#fff" /></div>
         }
         <div>
-          <div className="pi-header-title">Recepción</div>
-          <div className="pi-header-sub">{nombreInstalacion}</div>
+          <div className="pi-header-title">Astilladora</div>
+          <div className="pi-header-sub">{nombreAstilladora}</div>
         </div>
         <div style={{ marginLeft:'auto', display:'flex', alignItems:'center', gap:8 }}>
-          {showOk && (
-            <span className="pi-refresh-ok">✓ Actualizado</span>
-          )}
+          {showOk && <span className="pi-refresh-ok">✓ Actualizado</span>}
           <button
             className={`pi-refresh${refreshing ? ' pi-refresh-spin' : ''}`}
             onClick={() => fetchData(true)}
@@ -285,7 +286,7 @@ export default function PanelInstalacion() {
         <div className="pi-empty">
           <CheckCircle size={40} color="var(--green-400)" />
           <div className="pi-empty-title">Todo al día</div>
-          <div className="pi-empty-sub">No hay camiones pendientes de recepción.</div>
+          <div className="pi-empty-sub">No hay camiones pendientes de firma.</div>
           {lastUpdate && <div className="pi-last-update">Actualizado: {lastUpdate.toLocaleTimeString('es-ES', { hour:'2-digit', minute:'2-digit' })}</div>}
         </div>
       ) : (
