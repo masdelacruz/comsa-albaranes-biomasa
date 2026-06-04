@@ -349,7 +349,10 @@ export default function Historial({ albaranes, empresas = [], usuario, refetch, 
                   <td>{a.estella}</td>
                   <td>{a.pesada.entrada && a.pesada.salida ? ((a.pesada.entrada-a.pesada.salida)/1000).toFixed(1)+' t' : <span style={{color:'var(--gray-300)'}}>—</span>}</td>
                   <td>{a.pesada.humedad != null ? `${a.pesada.humedad}%` : <span style={{color:'var(--gray-300)'}}>—</span>}</td>
-                  <td><Badge estado={a.estado} /></td>
+                  <td style={{whiteSpace:'nowrap'}}>
+                    <Badge estado={a.estado} />
+                    {a.solicitaRevision && <span title="Solicitud de revisión desde campo" style={{marginLeft:6,color:'#d97706',fontSize:13,verticalAlign:'middle'}}>⚠</span>}
+                  </td>
                   <td><FirmaSteps firmas={a.firmas} estado={a.estado} /></td>
                   {esSuperadmin && (
                     <td style={{width:36,padding:'4px',textAlign:'center'}} onClick={e => e.stopPropagation()}>

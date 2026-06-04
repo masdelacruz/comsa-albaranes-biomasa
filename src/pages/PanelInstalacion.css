@@ -1,0 +1,341 @@
+.pi-page {
+  min-height: 100vh;
+  background: var(--gray-50);
+  max-width: 520px;
+  margin: 0 auto;
+  padding-bottom: 40px;
+  font-family: var(--font-main);
+}
+
+/* ── Header ─────────────────────────────────────── */
+.pi-header {
+  background: var(--green-900);
+  padding: 18px 20px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.pi-header-logo {
+  width: 32px; height: 32px;
+  background: var(--green-400);
+  border-radius: 8px;
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
+}
+.pi-header-title {
+  font-size: 11px;
+  color: var(--green-100);
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  font-weight: 600;
+}
+.pi-header-sub {
+  font-size: 16px;
+  font-weight: 700;
+  color: #fff;
+  margin-top: 1px;
+}
+.pi-refresh {
+  background: rgba(255,255,255,0.1);
+  border: none;
+  border-radius: 8px;
+  padding: 8px;
+  color: #fff;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  flex-shrink: 0;
+  transition: background 0.15s;
+}
+.pi-refresh:hover { background: rgba(255,255,255,0.2); }
+.pi-refresh:disabled { opacity: 0.6; cursor: default; }
+.pi-refresh-spin svg { animation: pi-spin 0.7s linear infinite; }
+@keyframes pi-spin { to { transform: rotate(360deg); } }
+
+.pi-refresh-ok {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--green-100);
+  animation: pi-fadeout 2.5s ease forwards;
+}
+@keyframes pi-fadeout {
+  0%   { opacity: 1; }
+  70%  { opacity: 1; }
+  100% { opacity: 0; }
+}
+
+/* ── Resumen ─────────────────────────────────────── */
+.pi-resumen {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0;
+  padding: 16px 20px;
+  background: #fff;
+  border-bottom: 1px solid var(--gray-100);
+}
+.pi-resumen-item {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+}
+.pi-resumen-num {
+  font-size: 26px;
+  font-weight: 700;
+  color: var(--gray-900);
+  line-height: 1;
+}
+.pi-resumen-label {
+  font-size: 11px;
+  color: var(--gray-400);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+.pi-resumen-sep {
+  width: 1px;
+  height: 32px;
+  background: var(--gray-200);
+}
+
+/* ── Sections ────────────────────────────────────── */
+.pi-section {
+  padding: 16px 16px 0;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.pi-section-label {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--gray-400);
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
+  margin-bottom: 4px;
+}
+
+/* ── Flota card ──────────────────────────────────── */
+.pi-flota {
+  background: #fff;
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--green-100);
+  overflow: hidden;
+  box-shadow: var(--shadow-sm);
+}
+.pi-flota-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 14px 16px 10px;
+}
+.pi-flota-icon {
+  width: 32px; height: 32px;
+  background: var(--green-50);
+  border-radius: 8px;
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
+}
+.pi-flota-title {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--green-600);
+}
+.pi-flota-sub {
+  font-size: 12px;
+  color: var(--gray-400);
+  margin-top: 1px;
+}
+.pi-flota-badge {
+  margin-left: auto;
+  background: var(--green-50);
+  color: var(--green-600);
+  border: 1px solid var(--green-100);
+  border-radius: 99px;
+  padding: 3px 10px;
+  font-size: 12px;
+  font-weight: 700;
+  flex-shrink: 0;
+}
+
+/* Progress bar */
+.pi-progress-bar {
+  height: 4px;
+  background: var(--gray-100);
+  margin: 0 16px 0;
+}
+.pi-progress-fill {
+  height: 100%;
+  background: var(--green-400);
+  border-radius: 99px;
+  transition: width 0.5s ease;
+}
+
+/* Camiones dentro de flota */
+.pi-camiones-list {
+  margin-top: 4px;
+}
+.pi-camion-row {
+  display: flex;
+  align-items: stretch;
+}
+.pi-camion-orden {
+  width: 36px;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--gray-400);
+  font-family: var(--font-mono);
+  border-right: 1px solid var(--gray-100);
+  padding: 0 4px;
+}
+
+/* ── Camión item ──────────────────────────────────── */
+.pi-camion {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 12px 14px;
+  border-bottom: 1px solid var(--gray-100);
+  transition: background 0.15s;
+}
+.pi-camion.pendiente:hover { background: var(--amber-50); }
+.pi-camion.firmado { opacity: 0.7; }
+.pi-camion-left {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  flex: 1;
+  min-width: 0;
+}
+.pi-camion-dot {
+  width: 8px; height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  margin-top: 5px;
+}
+.pi-camion-dot.verde  { background: var(--green-400); }
+.pi-camion-dot.amber  { background: var(--amber-400); }
+.pi-camion-id {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--gray-900);
+  font-family: var(--font-main);
+}
+.pi-camion-matricula {
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--gray-500);
+  font-family: var(--font-mono);
+  margin-top: 2px;
+}
+.pi-remolque {
+  font-size: 12px;
+  font-weight: 400;
+  color: var(--gray-400);
+}
+.pi-camion-meta {
+  font-size: 12px;
+  color: var(--gray-400);
+  margin-top: 2px;
+  font-family: var(--font-main);
+}
+.pi-camion-meta.verde { color: var(--green-600); }
+.pi-camion-right {
+  flex-shrink: 0;
+}
+
+/* ── Suelta card ──────────────────────────────────── */
+.pi-suelta {
+  background: #fff;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--gray-200);
+  padding: 14px 16px;
+  box-shadow: var(--shadow-sm);
+  transition: background 0.15s;
+}
+.pi-suelta:hover:not([style*="default"]) { background: var(--amber-50); }
+.pi-suelta-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+.pi-suelta-matricula {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--gray-900);
+  font-family: var(--font-mono);
+}
+.pi-sueltos-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+/* ── Botón firmar ─────────────────────────────────── */
+.pi-btn-firmar {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  background: var(--amber-400);
+  color: #fff;
+  font-size: 13px;
+  font-weight: 700;
+  padding: 7px 14px;
+  border-radius: var(--radius-sm);
+  white-space: nowrap;
+}
+
+/* ── Footer / Last update ────────────────────────── */
+.pi-last-update-bar {
+  text-align: center;
+  font-size: 11px;
+  color: var(--gray-400);
+  padding: 20px 16px 0;
+}
+.pi-last-update {
+  font-size: 11px;
+  color: var(--gray-400);
+  margin-top: 8px;
+}
+
+/* ── Estados vacío y carga ───────────────────────── */
+.pi-spinner-wrap {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 60px 0;
+}
+.pi-spinner {
+  width: 32px; height: 32px;
+  border: 3px solid var(--gray-200);
+  border-top-color: var(--green-400);
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+.pi-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 60px 20px;
+  text-align: center;
+  gap: 10px;
+}
+.pi-empty-title {
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--gray-900);
+}
+.pi-empty-sub {
+  font-size: 14px;
+  color: var(--gray-400);
+}

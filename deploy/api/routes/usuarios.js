@@ -12,7 +12,7 @@ function requireSuperadmin(req, res, next) {
   next()
 }
 
-const SELECT_COLS = 'id, nombre, email, rol, nivel, activo, password_visible, notificaciones'
+const SELECT_COLS = 'id, nombre, email, rol, nivel, activo, notificaciones'
 
 // ── GET /usuarios ─────────────────────────────────────────────────
 router.get('/', requireAuth, async (_req, res) => {

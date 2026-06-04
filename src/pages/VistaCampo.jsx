@@ -1,67 +1,9 @@
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { CheckCircle, Upload, Leaf, ArrowLeft, Truck, Factory, Building2, User } from 'lucide-react'
 import '../components/shared.css'
 import './VistaCampo.css'
 
-// ── SignaturePad — fallback cuando la empresa no tiene sello registrado ──────
-function SignaturePad({ onChange }) {
-  const canvasRef = useRef(null)
-  const dibujando = useRef(false)
-  const [tieneTrazo, setTieneTrazo] = useState(false)
-
-  const getPos = (e, canvas) => {
-    const rect = canvas.getBoundingClientRect()
-    const src  = e.touches ? e.touches[0] : e
-    return {
-      x: (src.clientX - rect.left) * (canvas.width  / rect.width),
-      y: (src.clientY - rect.top)  * (canvas.height / rect.height),
-    }
-  }
-  const iniciar = (e) => {
-    e.preventDefault()
-    dibujando.current = true
-    const cv = canvasRef.current, ctx = cv.getContext('2d')
-    const p = getPos(e, cv)
-    ctx.beginPath(); ctx.moveTo(p.x, p.y)
-  }
-  const dibujar = (e) => {
-    e.preventDefault()
-    if (!dibujando.current) return
-    const cv = canvasRef.current, ctx = cv.getContext('2d')
-    const p = getPos(e, cv)
-    ctx.lineWidth = 2.5; ctx.lineCap = 'round'; ctx.strokeStyle = '#1a3a8f'
-    ctx.lineTo(p.x, p.y); ctx.stroke()
-    if (!tieneTrazo) setTieneTrazo(true)
-    onChange(cv.toDataURL('image/png'))
-  }
-  const parar = (e) => { e.preventDefault(); dibujando.current = false }
-  const limpiar = () => {
-    const cv = canvasRef.current
-    cv.getContext('2d').clearRect(0, 0, cv.width, cv.height)
-    setTieneTrazo(false); onChange(null)
-  }
-
-  return (
-    <div>
-      <canvas ref={canvasRef} width={600} height={160}
-        style={{border:'2px dashed #3b82f6',borderRadius:8,background:'#fff',
-          touchAction:'none',cursor:'crosshair',display:'block',width:'100%'}}
-        onMouseDown={iniciar} onMouseMove={dibujar} onMouseUp={parar} onMouseLeave={parar}
-        onTouchStart={iniciar} onTouchMove={dibujar} onTouchEnd={parar}
-      />
-      <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginTop:6}}>
-        {tieneTrazo
-          ? <button type="button" onClick={limpiar}
-              style={{fontSize:12,color:'var(--gray-400)',background:'none',border:'none',cursor:'pointer',padding:0}}>
-              × Borrar y repetir
-            </button>
-          : <span style={{fontSize:12,color:'#3b82f6'}}>✍ Firma aquí con el dedo o el ratón</span>
-        }
-      </div>
-    </div>
-  )
-}
 
 function normalizarTelefono(raw) {
   if (!raw) return ''
@@ -95,6 +37,95 @@ const ROLES_ORDEN = ['proveedor', 'astilladora', 'transportista', 'instalacion']
 // ¿Este rol requiere firma de empresa?
 const ROL_REQUIERE_FIRMA = { proveedor: true, astilladora: true, transportista: false, instalacion: true }
 
+function Placa({ texto }) {
+  if (!texto) return null
+  return (
+    <span style={{fontFamily:'var(--font-mono)',background:'var(--gray-100)',border:'1px solid var(--gray-200)',
+      padding:'4px 10px',borderRadius:6,fontSize:14,fontWeight:600,color:'var(--gray-800)',display:'inline-block'}}>
+      {texto}
+    </span>
+  )
+}
+
+function VistaFirmadaInstalacion({ a }) {
+  const [solicitando, setSolicitando] = useState(false)
+  const [solicitado,  setSolicitado]  = useState(a.solicitaRevision || false)
+
+  const pesoNeto = (a.pesada?.entrada && a.pesada?.salida)
+    ? (a.pesada.entrada - a.pesada.salida).toLocaleString('es-ES') : null
+
+  const handleSolicitar = async () => {
+    setSolicitando(true)
+    try {
+      await fetch(`/api/albaranes/${a.id}/solicitar-revision`, { method: 'POST' })
+      setSolicitado(true)
+    } catch {}
+    setSolicitando(false)
+  }
+
+  return (
+    <>
+      {/* Confirmación */}
+      <div className="campo-card" style={{textAlign:'center',padding:'18px 16px'}}>
+        <CheckCircle size={28} color="var(--green-400)" style={{marginBottom:8}} />
+        <div style={{fontSize:14,fontWeight:600,color:'var(--green-600)'}}>Recepción confirmada</div>
+        {a.firmas?.instalacion?.fecha && (
+          <div style={{fontSize:12,color:'var(--gray-400)',marginTop:3}}>{a.firmas.instalacion.fecha}</div>
+        )}
+      </div>
+
+      {/* Pesada — lectura */}
+      {(a.pesada?.entrada || a.pesada?.salida) && (
+        <div className="campo-card">
+          <div className="campo-card-title">Datos de pesada</div>
+          {a.pesada.entrada && (
+            <div className="campo-row">
+              <span className="campo-row-key">Peso bruto</span>
+              <span className="campo-row-val">{a.pesada.entrada.toLocaleString('es-ES')} kg</span>
+            </div>
+          )}
+          {a.pesada.salida && (
+            <div className="campo-row">
+              <span className="campo-row-key">Tara</span>
+              <span className="campo-row-val">{a.pesada.salida.toLocaleString('es-ES')} kg</span>
+            </div>
+          )}
+          {pesoNeto && (
+            <div className="campo-row">
+              <span className="campo-row-key">Peso neto</span>
+              <span className="campo-row-val" style={{color:'var(--green-600)',fontWeight:700}}>{pesoNeto} kg</span>
+            </div>
+          )}
+          {a.pesada.humedad != null && (
+            <div className="campo-row">
+              <span className="campo-row-key">Humedad</span>
+              <span className="campo-row-val">{a.pesada.humedad}%</span>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Solicitar revisión */}
+      {solicitado ? (
+        <div style={{padding:'12px 14px',background:'#fffbeb',border:'1px solid #fde68a',borderRadius:'var(--radius-lg)',
+          fontSize:13,color:'#92400e',display:'flex',alignItems:'center',gap:8,marginBottom:12}}>
+          ⚠ Solicitud de revisión enviada. El equipo de oficina la gestionará en breve.
+        </div>
+      ) : (
+        <button onClick={handleSolicitar} disabled={solicitando}
+          style={{width:'100%',padding:'13px',background:'none',border:'1.5px solid var(--gray-300)',
+            borderRadius:'var(--radius-lg)',fontSize:14,color:'var(--gray-600)',cursor:'pointer',
+            display:'flex',alignItems:'center',justifyContent:'center',gap:8,transition:'all 0.15s',marginBottom:12}}
+          onMouseEnter={e => { e.currentTarget.style.borderColor='var(--amber-400)'; e.currentTarget.style.color='#92400e' }}
+          onMouseLeave={e => { e.currentTarget.style.borderColor='var(--gray-300)'; e.currentTarget.style.color='var(--gray-600)' }}
+        >
+          {solicitando ? '...' : '⚠ Notificar incidencia a oficina'}
+        </button>
+      )}
+    </>
+  )
+}
+
 function PasoFirma({ rol, a, updateFirma, subirTicketPesada, onCompletado, totalPasos, pasoActual }) {
   const config    = ROLES_CONFIG[rol]
   const yaFirmado = a.firmas?.[rol]?.firmado
@@ -106,9 +137,6 @@ function PasoFirma({ rol, a, updateFirma, subirTicketPesada, onCompletado, total
                       : a.instalacion
   const empresaFirmaUrl = a.empresaFirmaMap?.[empresaNombre] || null
   const requiereFirma   = ROL_REQUIERE_FIRMA[rol]
-
-  // Firma dibujada (fallback cuando no hay sello registrado)
-  const [firmaCanvas, setFirmaCanvas] = useState(null)
 
   // Campos comunes
   const [nombrePersona,       setNombrePersona]      = useState('')
@@ -129,8 +157,8 @@ function PasoFirma({ rol, a, updateFirma, subirTicketPesada, onCompletado, total
   const pesoNeto = pesoBruto && tara
     ? (parseFloat(pesoBruto) - parseFloat(tara)).toLocaleString('es-ES') + ' kg' : null
 
-  // Firma válida: tiene sello registrado O ha dibujado en el canvas
-  const firmaOk = !requiereFirma || !!empresaFirmaUrl || !!firmaCanvas
+  // Firma válida: tiene sello registrado, o no se requiere (se confirma con IP)
+  const firmaOk = !requiereFirma || !!empresaFirmaUrl
 
   // Validación por rol
   const puedeConfirmar = (() => {
@@ -145,7 +173,7 @@ function PasoFirma({ rol, a, updateFirma, subirTicketPesada, onCompletado, total
   const handleFirmar = async () => {
     setFirmando(true)
     setErrorFirma('')
-    const firmaImagen = requiereFirma ? (empresaFirmaUrl || firmaCanvas || null) : null
+    const firmaImagen = requiereFirma ? (empresaFirmaUrl || null) : null
     const pesadaData  = (rol === 'transportista' || rol === 'instalacion') && (pesoBruto || tara) ? {
       entrada: parseFloat(pesoBruto) || null,
       salida:  parseFloat(tara)      || null,
@@ -154,18 +182,23 @@ function PasoFirma({ rol, a, updateFirma, subirTicketPesada, onCompletado, total
     const campoData = (rol === 'astilladora' || rol === 'transportista') ? {
       matriculaTractora, matriculaRemolque,
       matriculaAstilladora: rol === 'astilladora' ? matriculaAstilladora : null,
-      chofer: rol === 'transportista' ? chofer : null,
+      chofer: chofer || null,
     } : null
 
     try {
       await updateFirma(a.id, rol, empresaNombre, nombrePersona || null, pesadaData, firmaImagen, campoData, observaciones.trim() || null, normalizarTelefono(telefonoPersona) || null)
       setFirmado(true)
-      setTimeout(() => onCompletado(), 1200)
+      if (rol !== 'instalacion') setTimeout(() => onCompletado(), 1200)
     } catch {
       setErrorFirma('Error al enviar la firma. Comprueba la conexión e inténtalo de nuevo.')
     } finally {
       setFirmando(false)
     }
+  }
+
+  // Instalación firmada → vista lectura + solicitar revisión
+  if (rol === 'instalacion' && (yaFirmado || firmado)) {
+    return <VistaFirmadaInstalacion a={a} />
   }
 
   if (yaFirmado || firmado) return (
@@ -238,6 +271,10 @@ function PasoFirma({ rol, a, updateFirma, subirTicketPesada, onCompletado, total
               <input type="text" placeholder="Ej: R-1234-ABC" value={matriculaRemolque} onChange={e => setMatriculaRemolque(e.target.value)} />
             </div>
           </div>
+          <div className="campo-field" style={{marginTop:4}}>
+            <label>Conductor <span style={{fontWeight:400,color:'var(--gray-400)'}}>(opcional)</span></label>
+            <input type="text" placeholder="Nombre completo del conductor" value={chofer} onChange={e => setChofer(e.target.value)} />
+          </div>
         </>
       )}
 
@@ -261,38 +298,6 @@ function PasoFirma({ rol, a, updateFirma, subirTicketPesada, onCompletado, total
       {/* ── INSTALACIÓN (RECEPCIÓN) ────────────────────── */}
       {rol === 'instalacion' && (
         <>
-          {/* Datos del camión — solo lectura, para revisar antes de firmar */}
-          {(a.matriculaTractora || a.matriculaRemolque || a.chofer || a.matriculaAstilladora) && (
-            <div style={{background:'#fffbf0',border:'1px solid #fde68a',borderRadius:'var(--radius-md)',padding:'12px 14px',marginBottom:14}}>
-              <div style={{fontSize:12,fontWeight:600,color:'#92400e',textTransform:'uppercase',letterSpacing:'0.5px',marginBottom:8}}>
-                ⚠ Revisa estos datos antes de firmar. Una vez confirmado no estarán visibles aquí.
-              </div>
-              {a.matriculaAstilladora && (
-                <div style={{display:'flex',justifyContent:'space-between',fontSize:13,padding:'4px 0',borderBottom:'1px solid #fde68a'}}>
-                  <span style={{color:'#92400e',fontWeight:500}}>Matrícula astilladora</span>
-                  <span style={{color:'#78350f',fontFamily:'monospace'}}>{a.matriculaAstilladora}</span>
-                </div>
-              )}
-              {a.matriculaTractora && (
-                <div style={{display:'flex',justifyContent:'space-between',fontSize:13,padding:'4px 0',borderBottom: a.matriculaRemolque || a.chofer ? '1px solid #fde68a' : 'none'}}>
-                  <span style={{color:'#92400e',fontWeight:500}}>Matrícula tractora</span>
-                  <span style={{color:'#78350f',fontFamily:'monospace'}}>{a.matriculaTractora}</span>
-                </div>
-              )}
-              {a.matriculaRemolque && (
-                <div style={{display:'flex',justifyContent:'space-between',fontSize:13,padding:'4px 0',borderBottom: a.chofer ? '1px solid #fde68a' : 'none'}}>
-                  <span style={{color:'#92400e',fontWeight:500}}>Matrícula remolque</span>
-                  <span style={{color:'#78350f',fontFamily:'monospace'}}>{a.matriculaRemolque}</span>
-                </div>
-              )}
-              {a.chofer && (
-                <div style={{display:'flex',justifyContent:'space-between',fontSize:13,padding:'4px 0'}}>
-                  <span style={{color:'#92400e',fontWeight:500}}>Conductor</span>
-                  <span style={{color:'#78350f'}}>{a.chofer}</span>
-                </div>
-              )}
-            </div>
-          )}
           <div style={{background:'var(--blue-50)',border:'1px solid var(--blue-100)',borderRadius:'var(--radius-md)',padding:'10px 12px',fontSize:13,color:'var(--blue-700)',marginBottom:14}}>
             Introduce los datos de pesada en recepción y confirma.
           </div>
@@ -345,33 +350,20 @@ function PasoFirma({ rol, a, updateFirma, subirTicketPesada, onCompletado, total
         />
       </div>
 
-      {/* ── FIRMA / SELLO EMPRESA ─────────────────────────────────── */}
-      {requiereFirma && (
+      {/* ── SELLO EMPRESA (solo si está registrado) ───────────────── */}
+      {requiereFirma && empresaFirmaUrl && (
         <div style={{marginBottom:14}}>
           <div style={{fontSize:12,fontWeight:600,color:'var(--gray-500)',textTransform:'uppercase',letterSpacing:'0.5px',marginBottom:10}}>
-            Sello / Firma de {empresaNombre}
+            Sello de {empresaNombre}
           </div>
-          {empresaFirmaUrl ? (
-            /* Sello digital registrado */
-            <div style={{border:'1px solid var(--gray-200)',borderRadius:'var(--radius-md)',padding:'12px 16px',textAlign:'center',background:'#fafafa'}}>
-              <img
-                src={empresaFirmaUrl} alt="Sello"
-                style={{maxHeight:100,maxWidth:'100%',objectFit:'contain',
-                  filter:'drop-shadow(0 1px 3px rgba(0,0,0,0.15))'}}
-              />
-              <div style={{fontSize:11,color:'var(--green-600)',marginTop:8,fontWeight:500}}>
-                ✓ Sello digital registrado · Se estampará al confirmar
-              </div>
+          <div style={{border:'1px solid var(--gray-200)',borderRadius:'var(--radius-md)',padding:'12px 16px',textAlign:'center',background:'#fafafa'}}>
+            <img src={empresaFirmaUrl} alt="Sello"
+              style={{maxHeight:100,maxWidth:'100%',objectFit:'contain',filter:'drop-shadow(0 1px 3px rgba(0,0,0,0.15))'}}
+            />
+            <div style={{fontSize:11,color:'var(--green-600)',marginTop:8,fontWeight:500}}>
+              ✓ Sello digital · Se estampará al confirmar
             </div>
-          ) : (
-            /* Fallback — SignaturePad */
-            <div>
-              <div style={{fontSize:13,color:'var(--gray-600)',marginBottom:10,padding:'8px 12px',background:'var(--blue-50)',border:'1px solid var(--blue-100)',borderRadius:8}}>
-                Esta empresa no tiene sello digital. Por favor, firma a continuación para confirmar.
-              </div>
-              <SignaturePad onChange={setFirmaCanvas} />
-            </div>
-          )}
+          </div>
         </div>
       )}
 
@@ -405,6 +397,13 @@ export default function VistaCampo({ albaranes, updateFirma, subirTicketPesada }
 
   const a = albaranes.find(x => x.id === id)
 
+  // URL del panel de instalación para volver tras firmar
+  const rolesDirectos = rolesParam ? rolesParam.split(',').filter(r => ROLES_CONFIG[r]) : null
+  const esInstalacionSola = rolesDirectos?.length === 1 && rolesDirectos[0] === 'instalacion'
+  const panelUrl = (esInstalacionSola || rolSeleccionado === 'instalacion') && a?.instalacion
+    ? `/campo/instalacion/${encodeURIComponent(a.instalacion)}`
+    : null
+
   // Restaurar rol guardado en sessionStorage (evita re-selección si se recarga la página)
   useEffect(() => {
     if (!a || rolesParam) return
@@ -431,10 +430,6 @@ export default function VistaCampo({ albaranes, updateFirma, subirTicketPesada }
     sessionStorage.setItem(`campo_rol_${id}`, r)
   }
 
-  const rolesDirectos = rolesParam
-    ? rolesParam.split(',').filter(r => ROLES_CONFIG[r])
-    : null
-
   const ROLES_SELECTOR = ROLES_ORDEN.filter(r => a.firmas?.[r] !== undefined)
 
   const handleCompletadoPaso = (rolCompletado) => {
@@ -442,30 +437,60 @@ export default function VistaCampo({ albaranes, updateFirma, subirTicketPesada }
     setPasosCompletados(prev => [...prev, rolCompletado])
     if (rolesDirectos && pasoActual < rolesDirectos.length - 1) {
       setTimeout(() => setPasoActual(prev => prev + 1), 1400)
-    } else {
+    } else if (rolCompletado !== 'instalacion') {
       setTimeout(() => setTodoCompletado(true), 1400)
     }
+    // instalacion: se queda en la vista de lectura (yaFirmado)
   }
 
   const DatosAlbaran = () => (
-    <div className="campo-card">
-      <div className="campo-card-title">Datos del albarán</div>
-      {[
-        ['Proveedor',      a.proveedor     || '—'],
-        ['Astilladora',    a.astilladora   || '—'],
-        ['Transportista',  a.transportista || '—'],
-        ['Especie',        a.especie       || '—'],
-        ['Tipo biomasa',   a.tipoBiomasa   || '—'],
-        ['Estella',        a.estella       || '—'],
-        ['Origen',         a.origen        || '—'],
-        ['Destino',        a.instalacion   || '—'],
-        ['Permiso',        a.permiso       || '—'],
-      ].filter(([, v]) => v !== '—').map(([k, v]) => (
-        <div key={k} className="campo-row">
-          <span className="campo-row-key">{k}</span>
-          <span className="campo-row-val">{v}</span>
+    <div style={{marginBottom:12}}>
+      {/* Bloque transporte — protagonista */}
+      <div className="campo-card" style={{marginBottom:8}}>
+        <div className="campo-card-title">Transporte</div>
+        {a.transportista && (
+          <div style={{fontSize:16,fontWeight:700,color:'var(--gray-900)',marginBottom:10}}>{a.transportista}</div>
+        )}
+        <div style={{display:'flex',gap:8,flexWrap:'wrap',marginBottom: a.chofer ? 8 : 0}}>
+          <Placa texto={a.matriculaTractora} />
+          <Placa texto={a.matriculaRemolque} />
         </div>
-      ))}
+        {a.chofer && (
+          <div style={{fontSize:13,color:'var(--gray-500)',marginTop:6}}>Conductor: {a.chofer}</div>
+        )}
+        {!a.transportista && !a.matriculaTractora && (
+          <div style={{fontSize:13,color:'var(--gray-400)'}}>Datos de transporte pendientes de confirmar</div>
+        )}
+      </div>
+
+      {/* Ruta */}
+      <div className="campo-card" style={{marginBottom:8}}>
+        <div style={{display:'flex',alignItems:'center',gap:10}}>
+          <div style={{flex:1,minWidth:0}}>
+            <div style={{fontSize:10,fontWeight:600,color:'var(--gray-400)',textTransform:'uppercase',letterSpacing:'0.5px',marginBottom:2}}>Origen</div>
+            <div style={{fontSize:13,fontWeight:500,color:'var(--gray-800)',overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>
+              {a.astilladora || a.proveedor || a.origen || '—'}
+            </div>
+          </div>
+          <div style={{color:'var(--gray-300)',fontSize:18,flexShrink:0}}>→</div>
+          <div style={{flex:1,minWidth:0,textAlign:'right'}}>
+            <div style={{fontSize:10,fontWeight:600,color:'var(--green-600)',textTransform:'uppercase',letterSpacing:'0.5px',marginBottom:2}}>Destino</div>
+            <div style={{fontSize:13,fontWeight:500,color:'var(--gray-800)',overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>
+              {a.instalacion || '—'}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Biomasa — compacto */}
+      {(a.especie || a.tipoBiomasa || a.estella) && (
+        <div className="campo-card">
+          <div style={{fontSize:11,fontWeight:600,color:'var(--gray-400)',textTransform:'uppercase',letterSpacing:'0.5px',marginBottom:4}}>Biomasa</div>
+          <div style={{fontSize:13,color:'var(--gray-700)'}}>
+            {[a.especie, a.tipoBiomasa, a.estella].filter(Boolean).join(' · ')}
+          </div>
+        </div>
+      )}
     </div>
   )
 
@@ -482,21 +507,27 @@ export default function VistaCampo({ albaranes, updateFirma, subirTicketPesada }
     </div>
   )
 
-  if (todoCompletado) return (
-    <div className="campo-page">
-      <div className="campo-success">
-        <div className="campo-success-icon"><CheckCircle size={36} color="var(--green-400)" /></div>
-        <div className="campo-success-title">¡Todo completado!</div>
-        <div className="campo-success-sub">El equipo de Comsa Service ha sido notificado. Gracias.</div>
+  if (todoCompletado) {
+    if (panelUrl) {
+      navigate(panelUrl, { replace: true })
+      return null
+    }
+    return (
+      <div className="campo-page">
+        <div className="campo-success">
+          <div className="campo-success-icon"><CheckCircle size={36} color="var(--green-400)" /></div>
+          <div className="campo-success-title">¡Todo completado!</div>
+          <div className="campo-success-sub">El equipo de Comsa Service ha sido notificado. Gracias.</div>
+        </div>
       </div>
-    </div>
-  )
+    )
+  }
 
   // Flujo directo con roles en la URL
   if (rolesDirectos && rolesDirectos.length > 0) {
     return (
       <div className="campo-page">
-        <Topbar />
+        <Topbar onBack={panelUrl ? () => navigate(panelUrl) : undefined} />
         {rolesDirectos.length > 1 && (
           <div style={{display:'flex',gap:6,marginBottom:14}}>
             {rolesDirectos.map((r, i) => {
@@ -581,7 +612,7 @@ export default function VistaCampo({ albaranes, updateFirma, subirTicketPesada }
       <PasoFirma
         rol={rolSeleccionado} a={a}
         updateFirma={updateFirma} subirTicketPesada={subirTicketPesada}
-        onCompletado={() => setTodoCompletado(true)}
+        onCompletado={() => rolSeleccionado !== 'instalacion' && setTodoCompletado(true)}
         totalPasos={1} pasoActual={1}
       />
     </div>

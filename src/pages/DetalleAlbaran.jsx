@@ -40,7 +40,36 @@ const FIRMA_LABELS = {
 
 const TIPOS_OP = ['Opción 1 — Compra en monte / plataforma', 'Opción 2 — Proveedor directo']
 
-export default function DetalleAlbaran({ albaranes, simularFirma, updateFirma, subirDocumento, subirTicketPesada, actualizarAlbaran, borrarAlbaran, reabrirAlbaran, usuario }) {
+function BannerRevision({ albaranId, onReabrir }) {
+  const [reabriendo, setReabriendo] = useState(false)
+
+  const handleReabrir = async () => {
+    setReabriendo(true)
+    try {
+      await api.delete(`/albaranes/${albaranId}/solicitar-revision`)
+      await onReabrir()
+    } catch {}
+    setReabriendo(false)
+  }
+
+  return (
+    <div style={{margin:'0 0 16px',padding:'12px 16px',background:'#fffbeb',border:'1px solid #fde68a',
+      borderRadius:'var(--radius-lg)',display:'flex',alignItems:'center',gap:12}}>
+      <span style={{fontSize:18,flexShrink:0}}>⚠</span>
+      <div style={{flex:1}}>
+        <div style={{fontSize:13,fontWeight:600,color:'#92400e'}}>Solicitud de revisión desde campo</div>
+        <div style={{fontSize:12,color:'#a16207',marginTop:2}}>El equipo de campo ha notificado una incidencia. Reabre el albarán para que puedan corregirlo.</div>
+      </div>
+      <button onClick={handleReabrir} disabled={reabriendo}
+        style={{padding:'6px 12px',background:'#92400e',color:'#fff',border:'none',borderRadius:'var(--radius-md)',
+          fontSize:12,fontWeight:600,cursor:'pointer',flexShrink:0,opacity:reabriendo?0.6:1,whiteSpace:'nowrap'}}>
+        {reabriendo ? '...' : 'Reabrir para campo'}
+      </button>
+    </div>
+  )
+}
+
+export default function DetalleAlbaran({ albaranes, simularFirma, updateFirma, subirDocumento, subirTicketPesada, actualizarAlbaran, borrarAlbaran, reabrirAlbaran, usuario, refetch }) {
   const { id } = useParams()
   const navigate = useNavigate()
   const fileRefs    = useRef({})
@@ -134,7 +163,12 @@ export default function DetalleAlbaran({ albaranes, simularFirma, updateFirma, s
     firmasOrdenadas.filter(k => k !== 'oficina').every(k => a.firmas?.[k]?.firmado)
 
   const siguientePaso    = getSiguientePaso()
-  const urlSiguientePaso = siguientePaso ? `${window.location.origin}/campo/${a.id}/${siguientePaso}` : null
+  // Instalación accede siempre al panel de flota, no a un albarán individual
+  const urlSiguientePaso = siguientePaso
+    ? siguientePaso === 'instalacion'
+      ? `${window.location.origin}/campo/instalacion/${encodeURIComponent(a.instalacion)}`
+      : `${window.location.origin}/campo/${a.id}/${siguientePaso}`
+    : null
 
   const getRolLabel = (roles) => {
     if (!roles) return ''
@@ -442,6 +476,11 @@ export default function DetalleAlbaran({ albaranes, simularFirma, updateFirma, s
         </div>
         <div className="page-sub">{a.astilladora || a.proveedor} → {a.instalacion} · {a.fecha?.slice(0,10).split('-').reverse().join('/')}{a.hora ? ` · ${a.hora} h` : ''}</div>
       </div>
+
+      {/* Banner solicitud de revisión */}
+      {a.solicitaRevision && (
+        <BannerRevision albaranId={a.id} onReabrir={async () => { await refetch?.(); mostrarToast('Albarán reabierto para campo ✓') }} />
+      )}
 
       <div className="detalle-content">
         <div className="detalle-cols">

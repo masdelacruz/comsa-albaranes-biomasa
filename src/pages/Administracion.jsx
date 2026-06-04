@@ -29,6 +29,8 @@ const TIPO_LABELS = { proveedor: 'Proveedor', astilladora: 'Astilladora', transp
 
 const EMPTY_FORM = { nombre: '', tipo: 'proveedor', contacto: '', email: '', telefono: '', notas: '', activo: true }
 
+const slugify = s => s.toLowerCase().replace(/\s+/g, '_').replace(/[^a-z0-9_]/g, '')
+
 const LOGOS_SECTIONS = [
   {
     key: 'corporativos',
@@ -36,6 +38,7 @@ const LOGOS_SECTIONS = [
     color: '#1D9E75',
     logos: [
       { id: 'comsa', nombre: 'COMSA Service', descripcion: 'Logotipo corporativo · cabecera de todos los albaranes PDF' },
+      { id: 'panel-header', nombre: 'Logo panel instalación', descripcion: 'Aparece en la cabecera del panel de recepción de camiones · reemplaza el icono de hoja' },
     ],
   },
   {
@@ -91,15 +94,7 @@ export default function Administracion({ usuario }) {
   const [elementos, setElementos]   = useState({ especie: [], tipoBiomasa: [], estella: [] })
   const [nuevoElem, setNuevoElem]   = useState({ especie: '', tipoBiomasa: '', estella: '' })
   const [agregando, setAgregando]   = useState({})
-  const fileInputRefs = {
-    comsa:    useRef(null),
-    applus_1: useRef(null),
-    applus_2: useRef(null),
-    applus_3: useRef(null),
-    applus_4: useRef(null),
-    pefc:     useRef(null),
-    sure:     useRef(null),
-  }
+  const logoFileRefs = useRef({})
 
   // ── data fetching ───────────────────────────────────────────────────────────
 
@@ -269,7 +264,7 @@ export default function Administracion({ usuario }) {
       setErrorLogos(e => ({ ...e, [id]: err.message || 'Error desconocido' }))
     } finally {
       setSubiendoLogo(s => ({ ...s, [id]: false }))
-      if (fileInputRefs[id]?.current) fileInputRefs[id].current.value = ''
+      if (logoFileRefs.current[id]) logoFileRefs.current[id].value = ''
     }
   }
 
@@ -391,7 +386,7 @@ export default function Administracion({ usuario }) {
               Logos que aparecen en la cabecera de los albaranes PDF. Formatos admitidos: PNG, JPG, SVG, WEBP.
             </div>
 
-            {LOGOS_SECTIONS.map((section, si) => {
+            {(() => {
               const renderCard = (cfg) => {
                 const url        = logos[cfg.id]
                 const subiendo   = !!subiendoLogo[cfg.id]
@@ -409,7 +404,7 @@ export default function Administracion({ usuario }) {
                         background: isDragOver ? 'rgba(29,158,117,0.06)' : 'var(--gray-50,#fafafa)',
                         overflow: 'hidden', transition: 'border 0.15s, background 0.15s',
                       }}
-                      onClick={() => fileInputRefs[cfg.id].current?.click()}
+                      onClick={() => logoFileRefs.current[cfg.id]?.click()}
                       onDragOver={e => { e.preventDefault(); setDragOverLogo(cfg.id) }}
                       onDragLeave={() => setDragOverLogo(null)}
                       onDrop={e => { e.preventDefault(); setDragOverLogo(null); handleSubirLogo(cfg.id, e.dataTransfer.files?.[0]) }}
@@ -434,7 +429,7 @@ export default function Administracion({ usuario }) {
                       )}
                     </div>
                     {error && <div style={{ fontSize: 11, color: 'var(--red-600)', background: 'var(--red-50,#fff1f1)', border: '1px solid var(--red-100)', borderRadius: 4, padding: '4px 8px' }}>⚠ {error}</div>}
-                    <input ref={fileInputRefs[cfg.id]} type="file" accept="image/*" style={{ display: 'none' }}
+                    <input ref={el => { logoFileRefs.current[cfg.id] = el }} type="file" accept="image/*" style={{ display: 'none' }}
                       onChange={e => handleSubirLogo(cfg.id, e.target.files?.[0])} />
                     {confirmDelLogo === cfg.id ? (
                       <div style={{ display: 'flex', gap: 6, alignItems: 'center', justifyContent: 'center', padding: '6px 4px', background: 'var(--red-50)', border: '1px solid var(--red-100)', borderRadius: 6 }}>
@@ -447,7 +442,7 @@ export default function Administracion({ usuario }) {
                     ) : (
                       <div style={{ display: 'flex', gap: 6 }}>
                         <button className="btn btn-primary" style={{ flex: 1, fontSize: 11, padding: '5px 10px' }}
-                          disabled={subiendo} onClick={() => fileInputRefs[cfg.id].current?.click()}>
+                          disabled={subiendo} onClick={() => logoFileRefs.current[cfg.id]?.click()}>
                           <Upload size={12} /> {url ? 'Reemplazar' : 'Subir'}
                         </button>
                         {url && (
@@ -460,18 +455,43 @@ export default function Administracion({ usuario }) {
                 )
               }
 
-              return (
-                <div key={section.key} style={{ marginBottom: si < LOGOS_SECTIONS.length - 1 ? 28 : 0 }}>
+              const renderSection = (key, titulo, color, items) => items.length === 0 ? null : (
+                <div key={key} style={{ marginBottom: 28 }}>
                   <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--gray-600)', marginBottom: 10, display: 'flex', alignItems: 'center', gap: 6 }}>
-                    <span style={{ width: 8, height: 8, borderRadius: '50%', background: section.color, display: 'inline-block', flexShrink: 0 }} />
-                    {section.titulo}
+                    <span style={{ width: 8, height: 8, borderRadius: '50%', background: color, display: 'inline-block', flexShrink: 0 }} />
+                    {titulo}
                   </div>
                   <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: 12 }}>
-                    {section.logos.map(renderCard)}
+                    {items.map(renderCard)}
                   </div>
                 </div>
               )
-            })}
+
+              const astilladoras = proveedores.filter(p => p.tipo === 'astilladora')
+              const instalaciones = proveedores.filter(p => p.tipo === 'instalacion')
+
+              return (
+                <>
+                  {LOGOS_SECTIONS.map(s =>
+                    renderSection(s.key, s.titulo, s.color, s.logos)
+                  )}
+                  {renderSection('astilladoras', 'Astilladoras', '#1D9E75',
+                    astilladoras.map(p => ({
+                      id: `empresa_${slugify(p.nombre)}`,
+                      nombre: p.nombre,
+                      descripcion: `Logo panel instalación · se usa como logo de cabecera cuando la instalación destino es ${p.nombre}`,
+                    }))
+                  )}
+                  {renderSection('instalaciones', 'Instalaciones', '#1D9E75',
+                    instalaciones.map(p => ({
+                      id: `empresa_${slugify(p.nombre)}`,
+                      nombre: p.nombre,
+                      descripcion: `Logo panel instalación · se usa como logo de cabecera cuando la instalación destino es ${p.nombre}`,
+                    }))
+                  )}
+                </>
+              )
+            })()}
           </div>
         ) : tab !== 'elementos' ? (
           /* ── Providers panel ── */

@@ -10,6 +10,8 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@fontsource/dm-mono": "^5.2.7",
+    "@fontsource/dm-sans": "^5.2.8",
     "@supabase/supabase-js": "^2.100.1",
     "date-fns": "^4.1.0",
     "exceljs": "^4.4.0",

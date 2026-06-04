@@ -1,5 +1,5 @@
 import { api } from '../lib/api'
-import { notificarNuevoAlbaran, notificarFirmaCompletada, notificarAlbaranCerrado, notificarHumedadPendiente } from '../utils/notificaciones'
+import { notificarNuevoAlbaran } from '../utils/notificaciones'
 
 export function useAlbaranActions(refetch, usuario) {
 
@@ -8,7 +8,7 @@ export function useAlbaranActions(refetch, usuario) {
       ...form,
       actorNombre: usuario?.nombre || 'Oficina',
     })
-    notificarNuevoAlbaran({ id, ...form })   // fire & forget — no bloquea la UI
+    notificarNuevoAlbaran({ id, ...form })
     await refetch()
     return id
   }
@@ -18,9 +18,7 @@ export function useAlbaranActions(refetch, usuario) {
       `/albaranes/${albaranId}/firmas/${rol}`,
       { actor, nombrePersona, telefonoPersona, firmaImagen, pesadaData, campoData, observacionesFirma }
     )
-    if (cerrado)          notificarAlbaranCerrado({ ...albaran, id: albaranId })
-    else if (humedadPendiente) notificarHumedadPendiente({ ...albaran, id: albaranId })
-    else                  notificarFirmaCompletada({ ...albaran, id: albaranId }, actor, rol)
+    // Las notificaciones de firma/cierre/humedad las envía el backend directamente
     await refetch()
   }
 

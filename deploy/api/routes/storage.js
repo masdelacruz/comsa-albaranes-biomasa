@@ -66,6 +66,8 @@ router.post('/upload/:albaranId/doc', requireAuth, upload.single('file'), async 
   res.json({ url })
 })
 
+const ALLOWED_TICKET_EXTS = new Set(['pdf', 'jpg', 'jpeg', 'png', 'webp'])
+
 // ── POST /storage/upload/:albaranId/ticket  (PÚBLICO — campo) ────
 router.post('/upload/:albaranId/ticket', upload.single('file'), async (req, res) => {
   const minio  = req.app.get('minio')
@@ -74,7 +76,12 @@ router.post('/upload/:albaranId/ticket', upload.single('file'), async (req, res)
   const actor  = req.body.actor || 'Sistema'
   const fichero = req.file
 
-  const ext  = (fichero.originalname.split('.').pop() || 'bin')
+  const { rows: exists } = await pool.query('SELECT id FROM albaranes WHERE id=$1', [albaranId])
+  if (!exists.length) return res.status(404).json({ error: 'Albarán no encontrado' })
+
+  const ext = (fichero.originalname.split('.').pop() || '').toLowerCase()
+  if (!ALLOWED_TICKET_EXTS.has(ext)) return res.status(400).json({ error: 'Tipo de fichero no permitido' })
+
   const path = `${albaranId}/ticket_pesada_${Date.now()}.${ext}`
 
   await minio.putObject(bucket, path, fichero.buffer, fichero.size, {
@@ -151,6 +158,13 @@ router.delete('/logos/:logoId', requireAuth, async (req, res) => {
   }
   await pool.query('DELETE FROM logos WHERE id=$1', [logoId])
   res.json({ ok: true })
+})
+
+// ── GET /storage/logos/public/:id  (PÚBLICO — logo panel instalación) ──
+router.get('/logos/public/:id', async (req, res) => {
+  const { rows } = await pool.query('SELECT url FROM logos WHERE id=$1', [req.params.id])
+  if (!rows[0]) return res.status(404).json({ error: 'No encontrado' })
+  res.json({ url: rows[0].url })
 })
 
 // ── GET /storage/logos  (requiere auth) ──────────────────────────

@@ -1,6 +1,7 @@
 const router = require('express').Router()
 const pool   = require('../db')
 const { requireAuth } = require('./auth')
+const { enviarNotificacion } = require('../emailSender')
 
 // ── Helper: normaliza nombre a Title Case ─────────────────────────
 function toTitleCase(str) {
@@ -73,6 +74,7 @@ function buildAlbaran(a, firmas, pesada, docs, actividad, empresaFirmaMap = {}) 
     },
     docs: docsObj,
     actividad: actividad.map(ev => ({ ts: ev.ts, texto: ev.texto, actor: ev.actor })),
+    solicitaRevision: a.solicita_revision || false,
   }
 }
 
@@ -114,6 +116,102 @@ router.get('/', requireAuth, async (_req, res) => {
     )
   )
   res.json(result)
+})
+
+// ── GET /albaranes/instalacion/:nombre  (PÚBLICO — panel instalación) ────
+router.get('/instalacion/:nombre', async (req, res) => {
+  const nombre = decodeURIComponent(req.params.nombre)
+  const { rows } = await pool.query(
+    `SELECT
+       a.id, a.fecha, a.hora, a.grupo_id, a.camion_orden, a.num_camiones,
+       a.astilladora, a.proveedor, a.transportista, a.especie, a.tipo_biomasa, a.estella,
+       a.matricula_tractora, a.matricula_remolque, a.chofer, a.estado, a.origen
+     FROM albaranes a
+     WHERE a.instalacion = $1 AND a.estado <> 'cerrado'
+     ORDER BY a.created_at ASC`,
+    [nombre]
+  )
+  if (!rows.length) return res.json([])
+
+  const ids = rows.map(a => a.id)
+  const { rows: firmas } = await pool.query(
+    `SELECT albaran_id, rol, firmado, fecha FROM firmas
+     WHERE albaran_id = ANY($1) AND rol IN ('astilladora','instalacion')`,
+    [ids]
+  )
+
+  const result = rows.map(a => {
+    const af   = firmas.filter(f => f.albaran_id === a.id)
+    const fInst = af.find(f => f.rol === 'instalacion')
+    const fAsti = af.find(f => f.rol === 'astilladora')
+    return {
+      id: a.id,
+      fecha: a.fecha ? new Date(a.fecha).toISOString().slice(0,10) : null,
+      hora: a.hora,
+      grupoId: a.grupo_id || null,
+      camionOrden: a.camion_orden || 1,
+      numCamiones: a.num_camiones || 1,
+      astilladora: a.astilladora, proveedor: a.proveedor, transportista: a.transportista,
+      especie: a.especie, tipoBiomasa: a.tipo_biomasa, estella: a.estella,
+      matriculaTractora: a.matricula_tractora,
+      matriculaRemolque: a.matricula_remolque,
+      chofer: a.chofer, estado: a.estado, origen: a.origen,
+      instalacionFirmada: fInst?.firmado || false,
+      instalacionFecha:   fInst?.fecha   || null,
+      astilladoraFirmada: fAsti?.firmado || false,
+      astilladoraFecha:   fAsti?.fecha   || null,
+    }
+  })
+
+  // Orden: primero los que astilladora ya firmó (por fecha firma asc), luego el resto
+  result.sort((a, b) => {
+    if (a.astilladoraFecha && b.astilladoraFecha)
+      return new Date(a.astilladoraFecha) - new Date(b.astilladoraFecha)
+    if (a.astilladoraFecha) return -1
+    if (b.astilladoraFecha) return 1
+    return 0
+  })
+
+  res.json(result)
+})
+
+// ── POST /albaranes/:id/solicitar-revision  (PÚBLICO — campo) ────
+router.post('/:id/solicitar-revision', async (req, res) => {
+  const { id } = req.params
+  const { rows } = await pool.query('SELECT id FROM albaranes WHERE id=$1', [id])
+  if (!rows.length) return res.status(404).json({ error: 'No encontrado' })
+  await pool.query('UPDATE albaranes SET solicita_revision=true WHERE id=$1', [id])
+  const fecha = new Date().toLocaleString('es-ES')
+  await pool.query(
+    'INSERT INTO actividad (albaran_id,ts,texto,actor) VALUES ($1,$2,$3,$4)',
+    [id, fecha, '⚠ Solicitud de revisión enviada desde campo', 'Campo']
+  )
+  res.json({ ok: true })
+})
+
+// ── DELETE /albaranes/:id/solicitar-revision  (requiere auth — oficina) ──
+// Reabre el albarán para campo: resetea firma instalacion + vuelve a pendiente_campo
+router.delete('/:id/solicitar-revision', requireAuth, async (req, res) => {
+  const { id } = req.params
+  const { rows } = await pool.query('SELECT id FROM albaranes WHERE id=$1', [id])
+  if (!rows.length) return res.status(404).json({ error: 'No encontrado' })
+
+  await pool.query(
+    `UPDATE firmas SET firmado=false, fecha=null, nombre_persona=null,
+     firma_imagen=null, ip_origen=null, observaciones_firma=null
+     WHERE albaran_id=$1 AND rol='instalacion'`,
+    [id]
+  )
+  await pool.query(
+    "UPDATE albaranes SET solicita_revision=false, estado='pendiente_campo' WHERE id=$1",
+    [id]
+  )
+  const fecha = new Date().toLocaleString('es-ES')
+  await pool.query(
+    'INSERT INTO actividad (albaran_id,ts,texto,actor) VALUES ($1,$2,$3,$4)',
+    [id, fecha, 'Albarán reabierto para campo por oficina', req.user.nombre || 'Oficina']
+  )
+  res.json({ ok: true })
 })
 
 // ── GET /albaranes/:id  (PÚBLICO — usado por vista de campo) ──────
@@ -158,10 +256,8 @@ router.post('/', requireAuth, async (req, res) => {
     )
 
     const firmasBase = []
-    if (f.proveedor)              firmasBase.push({ rol:'proveedor',     actor:f.proveedor })
-    if (esOp1 && f.astilladora)   firmasBase.push({ rol:'astilladora',   actor:f.astilladora })
-    if (esOp1 && f.transportista) firmasBase.push({ rol:'transportista', actor:f.transportista })
-    if (f.instalacion)            firmasBase.push({ rol:'instalacion',   actor:f.instalacion })
+    if (esOp1 && f.astilladora) firmasBase.push({ rol:'astilladora', actor:f.astilladora })
+    if (f.instalacion)          firmasBase.push({ rol:'instalacion',  actor:f.instalacion })
     firmasBase.push({ rol:'oficina', actor: f.actorNombre || 'Oficina' })
 
     for (const fr of firmasBase) {
@@ -190,7 +286,7 @@ router.post('/', requireAuth, async (req, res) => {
   } catch (e) {
     await client.query('ROLLBACK')
     console.error(e)
-    res.status(500).json({ error: e.message })
+    res.status(500).json({ error: 'Error interno al crear el albarán' })
   } finally {
     client.release()
   }
@@ -388,6 +484,21 @@ router.post('/:id/firmas/:rol', async (req, res) => {
 
   const albaran = await fetchOne(id)
   const humedadPendiente = albaran?.estado === 'humedad_pendiente'
+
+  // Notificaciones — fire & forget, no bloquea la respuesta
+  const ROL_LABELS = { proveedor:'Proveedor', astilladora:'Astilladora', transportista:'Transportista', instalacion:'Instalación', oficina:'Oficina' }
+  if (albaran) {
+    if (todasFirmadas) {
+      const p = albaran.pesada || {}
+      const pesoNeto = p.entrada && p.salida ? ((p.entrada - p.salida) / 1000).toFixed(1) + ' t' : null
+      enviarNotificacion('albaran_cerrado', { ...albaran, pesoNeto, humedad: p.humedad }).catch(() => {})
+    } else if (humedadPendiente) {
+      enviarNotificacion('humedad_pendiente', albaran).catch(() => {})
+    } else {
+      enviarNotificacion('firma_completada', { ...albaran, firmante: actor, rolLabel: ROL_LABELS[rol] || rol }).catch(() => {})
+    }
+  }
+
   res.json({ albaran, cerrado: todasFirmadas, humedadPendiente })
 })
 

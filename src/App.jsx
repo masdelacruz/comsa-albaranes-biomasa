@@ -5,6 +5,7 @@ import Dashboard from './pages/Dashboard'
 import NuevoAlbaran from './pages/NuevoAlbaran'
 import DetalleAlbaran from './pages/DetalleAlbaran'
 import VistaCampo from './pages/VistaCampo'
+import PanelInstalacion from './pages/PanelInstalacion'
 import Historial from './pages/Historial'
 import Estadisticas from './pages/Estadisticas'
 import Administracion from './pages/Administracion'
@@ -71,7 +72,7 @@ function AppConDatos({ usuario, logout, actualizarUsuario }) {
         <Route index element={<Navigate to="/dashboard" replace />} />
         <Route path="dashboard"      element={<Dashboard albaranes={albaranes} empresas={empresas} usuario={usuario} borrarAlbaran={borrarAlbaran} refetch={refetch} />} />
         <Route path="nuevo"          element={<NuevoAlbaran addAlbaran={addAlbaran} usuario={usuario} />} />
-        <Route path="albaran/:id"    element={<DetalleAlbaran albaranes={albaranes} simularFirma={simularFirmaOficina} updateFirma={updateFirma} subirDocumento={subirDocumento} subirTicketPesada={subirTicketPesada} actualizarAlbaran={actualizarAlbaran} borrarAlbaran={borrarAlbaran} reabrirAlbaran={reabrirAlbaran} usuario={usuario} />} />
+        <Route path="albaran/:id"    element={<DetalleAlbaran albaranes={albaranes} simularFirma={simularFirmaOficina} updateFirma={updateFirma} subirDocumento={subirDocumento} subirTicketPesada={subirTicketPesada} actualizarAlbaran={actualizarAlbaran} borrarAlbaran={borrarAlbaran} reabrirAlbaran={reabrirAlbaran} usuario={usuario} refetch={refetch} />} />
         <Route path="historial"      element={<Historial albaranes={albaranes} empresas={empresas} usuario={usuario} refetch={refetch} borrarAlbaran={borrarAlbaran} />} />
         <Route path="estadisticas"   element={<Estadisticas albaranes={albaranes} />} />
         <Route path="administracion" element={<Administracion usuario={usuario} />} />
@@ -95,6 +96,7 @@ export default function App() {
   return (
     <BrowserRouter>
       <Routes>
+        <Route path="/campo/instalacion/:nombre" element={<PanelInstalacion />} />
         <Route path="/campo/:id" element={<VistaCampoPublica />} />
         <Route path="/campo/:id/:roles" element={<VistaCampoPublica />} />
         <Route path="/*" element={<AppInner />} />
