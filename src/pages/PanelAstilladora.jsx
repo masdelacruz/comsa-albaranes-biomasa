@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { useParams, useNavigate, useLocation } from 'react-router-dom'
-import { CheckCircle, Truck, ChevronRight, Leaf, RefreshCw } from 'lucide-react'
+import { CheckCircle, ChevronRight, Leaf, RefreshCw, MapPin } from 'lucide-react'
 import './PanelInstalacion.css'
 
 const slugify = s => s.toLowerCase().replace(/\s+/g, '_').replace(/[^a-z0-9_]/g, '')
@@ -23,9 +23,7 @@ function InfoCamion({ a }) {
   return (
     <div>
       <div className="pi-camion-id">Albarán {a.id}</div>
-      {especie && (
-        <div className="pi-camion-matricula" style={{ fontFamily: 'inherit' }}>{especie}</div>
-      )}
+      {especie && <div className="pi-camion-matricula" style={{ fontFamily: 'inherit' }}>{especie}</div>}
       {a.matriculaTractora && (
         <div className="pi-camion-meta">
           {a.matriculaTractora}
@@ -70,21 +68,26 @@ function TarjetaCamion({ a, esUltimo, esDesde }) {
   )
 }
 
-function TarjetaFlota({ albaranes, desdeId }) {
-  const primero  = albaranes[0]
+function GrupoInstalacion({ instalacion, albaranes, desdeId }) {
   const firmados = albaranes.filter(a => a.astilladoraFirmada).length
   const total    = albaranes.length
   const pct      = Math.round((firmados / total) * 100)
-  const subtitulo = [primero.proveedor, primero.instalacion].filter(Boolean).join(' → ')
-  const fecha    = fmtFecha(primero.fecha)
+
+  const sorted = [...albaranes].sort((a, b) => {
+    if (!a.astilladoraFirmada && b.astilladoraFirmada)  return -1
+    if (a.astilladoraFirmada  && !b.astilladoraFirmada) return 1
+    if (a.astilladoraFirmada  && b.astilladoraFirmada)
+      return new Date(a.astilladoraFecha) - new Date(b.astilladoraFecha)
+    return 0
+  })
 
   return (
     <div className="pi-flota">
       <div className="pi-flota-header">
-        <div className="pi-flota-icon"><Truck size={16} color="var(--green-600)" /></div>
-        <div>
-          <div className="pi-flota-title">Flota · {total} camiones</div>
-          <div className="pi-flota-sub">{subtitulo}{fecha ? ` · ${fecha}` : ''}</div>
+        <div className="pi-flota-icon"><MapPin size={15} color="var(--green-600)" /></div>
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <div className="pi-flota-title" style={{ overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{instalacion}</div>
+          <div className="pi-flota-sub">{total} camión{total !== 1 ? 'es' : ''}</div>
         </div>
         <div className="pi-flota-badge">{firmados}/{total}</div>
       </div>
@@ -92,44 +95,12 @@ function TarjetaFlota({ albaranes, desdeId }) {
         <div className="pi-progress-fill" style={{ width: `${pct}%` }} />
       </div>
       <div className="pi-camiones-list">
-        {albaranes.map((a, i) => (
+        {sorted.map((a, i) => (
           <div key={a.id} className="pi-camion-row">
             <span className="pi-camion-orden">#{i + 1}</span>
-            <TarjetaCamion a={a} esUltimo={i === albaranes.length - 1} esDesde={String(a.id) === desdeId} />
+            <TarjetaCamion a={a} esUltimo={i === sorted.length - 1} esDesde={String(a.id) === desdeId} />
           </div>
         ))}
-      </div>
-    </div>
-  )
-}
-
-function TarjetaSuelta({ a, esDesde }) {
-  const navigate = useNavigate()
-  const firmado  = a.astilladoraFirmada
-  const ref      = useRef(null)
-
-  useEffect(() => {
-    if (esDesde && ref.current) ref.current.scrollIntoView({ behavior: 'smooth', block: 'center' })
-  }, [esDesde])
-
-  return (
-    <div className="pi-suelta-wrap">
-      <div
-        ref={ref}
-        className={`pi-camion ${firmado ? 'firmado' : 'pendiente'}${esDesde ? ' pi-desde-active' : ''}`}
-        onClick={() => navigate(`/campo/${a.id}/astilladora`)}
-        style={{ cursor: 'pointer' }}
-      >
-        <div className="pi-camion-left">
-          <div className={`pi-camion-dot ${firmado ? 'verde' : 'amber'}`} />
-          <InfoCamion a={a} />
-        </div>
-        <div className="pi-camion-right">
-          {firmado
-            ? <CheckCircle size={20} color="var(--green-400)" />
-            : <div className="pi-btn-firmar">Firmar <ChevronRight size={14} /></div>
-          }
-        </div>
       </div>
     </div>
   )
@@ -138,14 +109,15 @@ function TarjetaSuelta({ a, esDesde }) {
 const AMBER_DEFAULT = '#78350f'
 
 export default function PanelAstilladora() {
-  const { nombre }   = useParams()
-  const location     = useLocation()
-  const desdeId      = new URLSearchParams(location.search).get('desde')
+  const { nombre }  = useParams()
+  const location    = useLocation()
+  const navigate    = useNavigate()
   const nombreAstilladora = decodeURIComponent(nombre).replace(/-/g, ' ')
 
+  const [desdeId] = useState(() => new URLSearchParams(location.search).get('desde'))
   useEffect(() => {
-    if (desdeId) window.history.replaceState({}, '', window.location.pathname)
-  }, [])
+    if (desdeId) navigate(location.pathname, { replace: true })
+  }, []) // eslint-disable-line
 
   const [albaranes,     setAlbaranes]     = useState([])
   const [loading,       setLoading]       = useState(true)
@@ -244,17 +216,22 @@ export default function PanelAstilladora() {
     return () => clearInterval(id)
   }, [fetchData])
 
-  const flotas  = {}
-  const sueltos = []
+  // Agrupar por instalación destino
+  const grupos = {}
   albaranes.forEach(a => {
-    if (a.grupoId) {
-      if (!flotas[a.grupoId]) flotas[a.grupoId] = []
-      flotas[a.grupoId].push(a)
-    } else {
-      sueltos.push(a)
-    }
+    const key = a.instalacion || '—'
+    if (!grupos[key]) grupos[key] = []
+    grupos[key].push(a)
   })
-  const flotasOrdenadas = Object.values(flotas)
+  // Grupos con pendientes primero; dentro de cada grupo: pendientes primero
+  const gruposOrdenados = Object.entries(grupos).sort(([, a], [, b]) => {
+    const aPend = a.some(x => !x.astilladoraFirmada)
+    const bPend = b.some(x => !x.astilladoraFirmada)
+    if (aPend && !bPend) return -1
+    if (!aPend && bPend) return 1
+    return 0
+  })
+
   const pendientes = albaranes.filter(a => !a.astilladoraFirmada).length
   const total      = albaranes.length
 
@@ -283,9 +260,7 @@ export default function PanelAstilladora() {
       </div>
 
       {loading ? (
-        <div className="pi-spinner-wrap">
-          <div className="pi-spinner" />
-        </div>
+        <div className="pi-spinner-wrap"><div className="pi-spinner" /></div>
       ) : total === 0 ? (
         <div className="pi-empty">
           <CheckCircle size={40} color="var(--green-400)" />
@@ -319,24 +294,16 @@ export default function PanelAstilladora() {
             </div>
           )}
 
-          {flotasOrdenadas.length > 0 && (
-            <div className="pi-section">
-              {flotasOrdenadas.map((camiones) => (
-                <TarjetaFlota key={camiones[0].grupoId} albaranes={camiones} desdeId={desdeId} />
-              ))}
-            </div>
-          )}
-
-          {sueltos.length > 0 && (
-            <div className="pi-section">
-              {sueltos.length > 0 && flotasOrdenadas.length > 0 && (
-                <div className="pi-section-label">Camiones individuales</div>
-              )}
-              <div className="pi-sueltos-list">
-                {sueltos.map(a => <TarjetaSuelta key={a.id} a={a} esDesde={String(a.id) === desdeId} />)}
-              </div>
-            </div>
-          )}
+          <div className="pi-section">
+            {gruposOrdenados.map(([instalacion, albs]) => (
+              <GrupoInstalacion
+                key={instalacion}
+                instalacion={instalacion}
+                albaranes={albs}
+                desdeId={desdeId}
+              />
+            ))}
+          </div>
 
           {lastUpdate && (
             <div className="pi-last-update-bar">
