@@ -175,6 +175,60 @@ router.get('/instalacion/:nombre', async (req, res) => {
   res.json(result)
 })
 
+// ── GET /albaranes/astilladora/:nombre  (PÚBLICO — panel astilladora) ────
+router.get('/astilladora/:nombre', async (req, res) => {
+  const nombre = decodeURIComponent(req.params.nombre)
+  const { rows } = await pool.query(
+    `SELECT
+       a.id, a.fecha, a.hora, a.grupo_id, a.camion_orden, a.num_camiones,
+       a.astilladora, a.proveedor, a.instalacion, a.transportista,
+       a.especie, a.tipo_biomasa, a.estella,
+       a.matricula_tractora, a.matricula_remolque, a.chofer, a.estado, a.origen
+     FROM albaranes a
+     WHERE a.astilladora = $1 AND a.estado <> 'cerrado'
+     ORDER BY a.created_at ASC`,
+    [nombre]
+  )
+  if (!rows.length) return res.json([])
+
+  const ids = rows.map(a => a.id)
+  const { rows: firmas } = await pool.query(
+    `SELECT albaran_id, rol, firmado, fecha FROM firmas
+     WHERE albaran_id = ANY($1) AND rol = 'astilladora'`,
+    [ids]
+  )
+
+  const result = rows.map(a => {
+    const fAsti = firmas.find(f => f.albaran_id === a.id)
+    return {
+      id: a.id,
+      fecha: a.fecha ? new Date(a.fecha).toISOString().slice(0,10) : null,
+      hora: a.hora,
+      grupoId: a.grupo_id || null,
+      camionOrden: a.camion_orden || 1,
+      numCamiones: a.num_camiones || 1,
+      astilladora: a.astilladora, proveedor: a.proveedor,
+      instalacion: a.instalacion, transportista: a.transportista,
+      especie: a.especie, tipoBiomasa: a.tipo_biomasa, estella: a.estella,
+      matriculaTractora: a.matricula_tractora,
+      matriculaRemolque: a.matricula_remolque,
+      chofer: a.chofer, estado: a.estado, origen: a.origen,
+      astilladoraFirmada: fAsti?.firmado || false,
+      astilladoraFecha:   fAsti?.fecha   || null,
+    }
+  })
+
+  // Pendientes primero, luego firmados desc por fecha
+  result.sort((a, b) => {
+    if (!a.astilladoraFirmada && !b.astilladoraFirmada) return 0
+    if (!a.astilladoraFirmada) return -1
+    if (!b.astilladoraFirmada) return 1
+    return new Date(b.astilladoraFecha) - new Date(a.astilladoraFecha)
+  })
+
+  res.json(result)
+})
+
 // ── POST /albaranes/:id/solicitar-revision  (PÚBLICO — campo) ────
 router.post('/:id/solicitar-revision', async (req, res) => {
   const { id } = req.params
