@@ -69,7 +69,7 @@ function BannerRevision({ albaranId, onReabrir }) {
   )
 }
 
-export default function DetalleAlbaran({ albaranes, simularFirma, updateFirma, subirDocumento, subirTicketPesada, actualizarAlbaran, borrarAlbaran, reabrirAlbaran, usuario, refetch }) {
+export default function DetalleAlbaran({ albaranes, simularFirma, updateFirma, subirDocumento, subirTicketPesada, actualizarAlbaran, borrarAlbaran, reabrirAlbaran, enviarACampoAlbaran, usuario, refetch }) {
   const { id } = useParams()
   const navigate = useNavigate()
   const fileRefs    = useRef({})
@@ -91,8 +91,9 @@ export default function DetalleAlbaran({ albaranes, simularFirma, updateFirma, s
   const [confirmBorrar, setConfirmBorrar]   = useState(false)
   const [firmaOficinaModal, setFirmaOficinaModal] = useState(false)
   const [firmandoOficina, setFirmandoOficina]     = useState(false)
-  const [confirmReabrir,  setConfirmReabrir]      = useState(false)
-  const [reabriendo,      setReabriendo]          = useState(false)
+  const [confirmReabrir,    setConfirmReabrir]      = useState(false)
+  const [reabriendo,        setReabriendo]          = useState(false)
+  const [enviandoACampo,    setEnviandoACampo]      = useState(false)
   const [duplicarOpen,    setDuplicarOpen]        = useState(false)
   const [numCopias,       setNumCopias]           = useState(1)
   const [duplicando,      setDuplicando]          = useState(false)
@@ -541,6 +542,30 @@ export default function DetalleAlbaran({ albaranes, simularFirma, updateFirma, s
         <BannerRevision albaranId={a.id} onReabrir={async () => { await refetch?.(); mostrarToast('Albarán reabierto para campo ✓') }} />
       )}
 
+      {/* Banner programado — pendiente de enviar a campo */}
+      {a.estado === 'programado' && (
+        <div style={{margin:'0 0 16px',padding:'12px 16px',background:'#f5f3ff',border:'1px solid #ddd6fe',
+          borderRadius:'var(--radius-lg)',display:'flex',alignItems:'center',gap:12}}>
+          <span style={{fontSize:18,flexShrink:0}}>📋</span>
+          <div style={{flex:1}}>
+            <div style={{fontSize:13,fontWeight:600,color:'#5b21b6'}}>Albarán programado — no enviado a campo</div>
+            <div style={{fontSize:12,color:'#7c3aed',marginTop:2}}>El equipo de campo no puede ver ni firmar este albarán hasta que lo envíes.</div>
+          </div>
+          <button
+            onClick={async () => {
+              setEnviandoACampo(true)
+              try { await enviarACampoAlbaran?.([a.id]); mostrarToast('Enviado a campo ✓') }
+              catch {}
+              setEnviandoACampo(false)
+            }}
+            disabled={enviandoACampo}
+            style={{padding:'6px 14px',background:'#7c3aed',color:'#fff',border:'none',borderRadius:'var(--radius-md)',
+              fontSize:12,fontWeight:600,cursor:'pointer',flexShrink:0,opacity:enviandoACampo?0.6:1,whiteSpace:'nowrap'}}>
+            {enviandoACampo ? '...' : 'Enviar a campo'}
+          </button>
+        </div>
+      )}
+
       <div className="detalle-content">
         <div className="detalle-cols">
           <div className="detalle-left">
@@ -970,7 +995,7 @@ export default function DetalleAlbaran({ albaranes, simularFirma, updateFirma, s
               <div className="section-label" style={{display:'flex',alignItems:'center',gap:5}}>
                 <Share2 size={12} /> Enlace de campo
               </div>
-              {urlSiguientePaso ? (
+              {urlSiguientePaso && a.estado !== 'programado' ? (
                 <div style={{background:'var(--green-50)',border:'1px solid var(--green-100)',borderRadius:'var(--radius-md)',padding:'10px 12px'}}>
                   <div style={{fontSize:11,fontWeight:600,color:'var(--green-600)',marginBottom:4}}>
                     Siguiente paso — {getRolLabel(siguientePaso)}
@@ -1024,7 +1049,11 @@ export default function DetalleAlbaran({ albaranes, simularFirma, updateFirma, s
                 </div>
               ) : (
                 <div style={{fontSize:12,color:'var(--gray-400)',fontStyle:'italic'}}>
-                  {a.estado === 'cerrado' ? 'Todas las firmas completadas' : 'Todas las firmas externas completadas — pendiente de firma oficina'}
+                  {a.estado === 'programado'
+                    ? 'Envía el albarán a campo para generar el enlace de firma'
+                    : a.estado === 'cerrado'
+                    ? 'Todas las firmas completadas'
+                    : 'Todas las firmas externas completadas — pendiente de firma oficina'}
                 </div>
               )}
             </div>

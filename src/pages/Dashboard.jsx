@@ -33,6 +33,7 @@ export default function Dashboard({ albaranes, empresas = [], usuario, borrarAlb
   })
 
   const totalActivos   = albaranes.filter(a => a.estado !== 'cerrado').length
+  const programados    = albaranes.filter(a => a.estado === 'programado').length
   const pendienteFirma = albaranes.filter(a => a.estado === 'pendiente_campo' || a.estado === 'pendiente_oficina').length
   const cerrados       = albaranes.filter(a => a.estado === 'cerrado').length
   const conIncidencia  = albaranes.filter(a => a.estado === 'humedad_pendiente').length
@@ -94,6 +95,7 @@ export default function Dashboard({ albaranes, empresas = [], usuario, borrarAlb
         {/* KPIs */}
         <div className="kpi-grid">
           <div className="kpi-card"><div className="kpi-label">Albaranes esta semana</div><div className="kpi-val">{albaranesSemana.length}</div></div>
+          <div className="kpi-card" style={{cursor: programados > 0 ? 'pointer' : 'default'}} onClick={() => programados > 0 && setFiltroEstado('programado')}><div className="kpi-label">Programados</div><div className="kpi-val" style={{color: programados > 0 ? 'var(--gray-600)' : undefined}}>{programados}</div></div>
           <div className="kpi-card"><div className="kpi-label">Pendientes de firma</div><div className="kpi-val amber">{pendienteFirma}</div></div>
           <div className="kpi-card"><div className="kpi-label">Cerrados</div><div className="kpi-val green">{cerrados}</div></div>
           <div className="kpi-card"><div className="kpi-label">Con incidencia</div><div className="kpi-val red">{conIncidencia}</div></div>
@@ -163,6 +165,7 @@ export default function Dashboard({ albaranes, empresas = [], usuario, borrarAlb
           </select>
           <select value={filtroEstado} onChange={e => setFiltroEstado(e.target.value)}>
             <option value="">Todos los estados</option>
+            <option value="programado">Programado</option>
             <option value="pendiente_campo">Pendiente campo</option>
             <option value="pendiente_oficina">Pendiente oficina</option>
             <option value="humedad_pendiente">Humedad pendiente</option>

@@ -54,19 +54,19 @@ export default function NuevoAlbaran({ addAlbaran }) {
 
   const camposObligatorios = form.proveedor && form.instalacion && form.especie && form.tipoBiomasa && (!esOp1 || (form.astilladora && form.transportista))
 
-  const handleGuardar = async () => {
+  const handleGuardar = async (enviarACampo = false) => {
     setGuardando(true)
     setErrorGuardar('')
     try {
       if (numCamiones === 1) {
-        const id = await addAlbaran({ ...form, numCamiones: 1, grupoId: null, camionOrden: 1 })
+        const id = await addAlbaran({ ...form, numCamiones: 1, grupoId: null, camionOrden: 1 }, enviarACampo)
         setGuardado(true)
         setTimeout(() => navigate(`/albaran/${id}`), 1200)
       } else {
         const grupoId = crypto.randomUUID()
         for (let i = 0; i < numCamiones; i++) {
           setProgreso(i + 1)
-          await addAlbaran({ ...form, numCamiones: 1, grupoId, camionOrden: i + 1 })
+          await addAlbaran({ ...form, numCamiones: 1, grupoId, camionOrden: i + 1 }, enviarACampo)
         }
         setGuardado(true)
         setTimeout(() => navigate('/dashboard'), 1200)
@@ -250,10 +250,13 @@ export default function NuevoAlbaran({ addAlbaran }) {
         )}
         <div className="form-actions">
           <button className="btn" onClick={() => navigate('/dashboard')}>Cancelar</button>
-          <button className="btn btn-primary" onClick={handleGuardar} disabled={!camposObligatorios || guardando}>
+          <button className="btn" onClick={() => handleGuardar(false)} disabled={!camposObligatorios || guardando}>
+            {guardando ? 'Guardando...' : 'Guardar'}
+          </button>
+          <button className="btn btn-primary" onClick={() => handleGuardar(true)} disabled={!camposObligatorios || guardando}>
             {guardando
               ? <><div style={{width:13,height:13,border:'2px solid #fff',borderTopColor:'transparent',borderRadius:'50%',animation:'spin 0.6s linear infinite'}} /> Guardando...</>
-              : <><CheckCircle size={15} /> Guardar y generar enlace de campo</>
+              : <><CheckCircle size={15} /> Guardar y enviar a campo</>
             }
           </button>
         </div>

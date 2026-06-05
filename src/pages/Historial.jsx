@@ -1,6 +1,6 @@
 import { useState, useMemo, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Download, Search, FileSpreadsheet, CheckSquare, Upload, Trash2, Square, X } from 'lucide-react'
+import { Download, Search, FileSpreadsheet, CheckSquare, Upload, Trash2, Square, X, Send } from 'lucide-react'
 import ExcelJS from 'exceljs'
 import { Badge, FirmaSteps } from '../components/Badge'
 import { generarPDF } from '../utils/generarPDF'
@@ -10,7 +10,7 @@ import './Historial.css'
 
 const TIPOS_DOC = ['Autodeclaración','Acuerdo de cesión','Contrato prestación servicios','Permiso de corta','Certificado SURE','Permiso de obra']
 
-export default function Historial({ albaranes, empresas = [], usuario, refetch, borrarAlbaran }) {
+export default function Historial({ albaranes, empresas = [], usuario, refetch, borrarAlbaran, enviarACampoAlbaran }) {
   const navigate = useNavigate()
   const [busqueda, setBusqueda] = useState('')
   const [filtroInstalacion,  setFiltroInstalacion]  = useState('')
@@ -29,8 +29,9 @@ export default function Historial({ albaranes, empresas = [], usuario, refetch, 
   const [docFichero,      setDocFichero]      = useState(null)
   const [adjuntando,      setAdjuntando]      = useState(false)
   const [descargando,     setDescargando]     = useState(false)
-  const [confirmEliminar, setConfirmEliminar] = useState(false)
-  const [eliminando,      setEliminando]      = useState(false)
+  const [confirmEliminar,   setConfirmEliminar]   = useState(false)
+  const [eliminando,        setEliminando]        = useState(false)
+  const [enviandoACampo,    setEnviandoACampo]    = useState(false)
   const [confirmBorrarFila, setConfirmBorrarFila] = useState(null)  // id del albaran a borrar individualmente
   const [pagina,          setPagina]          = useState(1)
   const POR_PAGINA = 25
@@ -82,6 +83,19 @@ export default function Historial({ albaranes, empresas = [], usuario, refetch, 
       cancelarSeleccion()
       if (refetch) await refetch()
     } finally { setEliminando(false) }
+  }
+
+  const handleEnviarACampo = async () => {
+    if (!enviarACampoAlbaran) return
+    setEnviandoACampo(true)
+    try {
+      const programadosIds = [...seleccionados].filter(id => {
+        const a = albaranes.find(x => x.id === id)
+        return a?.estado === 'programado'
+      })
+      if (programadosIds.length) await enviarACampoAlbaran(programadosIds)
+      cancelarSeleccion()
+    } finally { setEnviandoACampo(false) }
   }
 
   const empresasByTipo = (tipo) => empresas.filter(e => e.tipo === tipo).map(e => e.nombre)
@@ -261,6 +275,7 @@ export default function Historial({ albaranes, empresas = [], usuario, refetch, 
           </select>
           <select value={filtroEstado} onChange={e => setFiltroEstado(e.target.value)}>
             <option value="">Todos los estados</option>
+            <option value="programado">Programado</option>
             <option value="pendiente_campo">Pendiente campo</option>
             <option value="pendiente_oficina">Pendiente oficina</option>
             <option value="humedad_pendiente">Humedad pendiente</option>
@@ -402,6 +417,12 @@ export default function Historial({ albaranes, empresas = [], usuario, refetch, 
       {seleccionados.size > 0 && (
         <div style={{position:'fixed',bottom:28,left:'50%',transform:'translateX(-50%)',display:'flex',alignItems:'center',gap:6,padding:'10px 16px',background:'var(--gray-900)',borderRadius:999,boxShadow:'0 8px 32px rgba(0,0,0,0.28)',zIndex:200,whiteSpace:'nowrap'}}>
           <span style={{fontSize:13,fontWeight:600,color:'rgba(255,255,255,0.75)',marginRight:6}}>{seleccionados.size} seleccionados</span>
+          {[...seleccionados].some(id => albaranes.find(x => x.id === id)?.estado === 'programado') && (
+            <button onClick={handleEnviarACampo} disabled={enviandoACampo}
+              style={{display:'inline-flex',alignItems:'center',gap:5,padding:'6px 12px',borderRadius:20,border:'1px solid rgba(29,158,117,0.5)',background:'rgba(29,158,117,0.2)',color:'#6ee7c7',fontSize:12,fontWeight:500,cursor:'pointer',opacity:enviandoACampo?0.6:1}}>
+              <Send size={13}/> {enviandoACampo ? 'Enviando...' : 'Enviar a campo'}
+            </button>
+          )}
           <button onClick={() => setModalAdjuntar(true)}
             style={{display:'inline-flex',alignItems:'center',gap:5,padding:'6px 12px',borderRadius:20,border:'1px solid rgba(255,255,255,0.15)',background:'rgba(255,255,255,0.1)',color:'#fff',fontSize:12,fontWeight:500,cursor:'pointer'}}>
             <Upload size={13}/> Adjuntar doc

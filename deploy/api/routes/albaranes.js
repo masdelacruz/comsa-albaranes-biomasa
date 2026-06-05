@@ -137,7 +137,7 @@ router.get('/instalacion/:nombre', async (req, res) => {
        a.astilladora, a.proveedor, a.transportista, a.especie, a.tipo_biomasa, a.estella,
        a.matricula_tractora, a.matricula_remolque, a.chofer, a.estado, a.origen
      FROM albaranes a
-     WHERE a.instalacion = $1 AND a.estado <> 'cerrado'
+     WHERE a.instalacion = $1 AND a.estado NOT IN ('cerrado','programado')
      ORDER BY a.created_at ASC`,
     [nombre]
   )
@@ -198,7 +198,7 @@ router.get('/astilladora/:nombre', async (req, res) => {
        a.especie, a.tipo_biomasa, a.estella,
        a.matricula_tractora, a.matricula_remolque, a.chofer, a.estado, a.origen
      FROM albaranes a
-     WHERE a.astilladora = $1 AND a.estado <> 'cerrado'
+     WHERE a.astilladora = $1 AND a.estado NOT IN ('cerrado','programado')
      ORDER BY a.created_at ASC`,
     [nombre]
   )
@@ -284,6 +284,45 @@ router.delete('/:id/solicitar-revision', requireAuth, async (req, res) => {
   res.json({ ok: true })
 })
 
+// ── POST /albaranes/enviar-a-campo  (bulk, requiere auth) ────────
+router.post('/enviar-a-campo', requireAuth, async (req, res) => {
+  const { ids, actorNombre } = req.body
+  if (!Array.isArray(ids) || !ids.length) return res.status(400).json({ error: 'ids requerido' })
+  const fecha = new Date().toLocaleString('es-ES')
+  const actor = actorNombre || req.user.nombre || 'Oficina'
+  for (const id of ids) {
+    const { rowCount } = await pool.query(
+      "UPDATE albaranes SET estado='pendiente_campo' WHERE id=$1 AND estado='programado'",
+      [id]
+    )
+    if (rowCount > 0) {
+      await pool.query(
+        'INSERT INTO actividad (albaran_id,ts,texto,actor) VALUES ($1,$2,$3,$4)',
+        [id, fecha, 'Enviado a campo', actor]
+      )
+    }
+  }
+  res.json({ ok: true })
+})
+
+// ── POST /albaranes/:id/enviar-a-campo  (individual, requiere auth) ─
+router.post('/:id/enviar-a-campo', requireAuth, async (req, res) => {
+  const { id } = req.params
+  const fecha = new Date().toLocaleString('es-ES')
+  const actor = req.user.nombre || 'Oficina'
+  const { rowCount } = await pool.query(
+    "UPDATE albaranes SET estado='pendiente_campo' WHERE id=$1 AND estado='programado'",
+    [id]
+  )
+  if (!rowCount) return res.status(404).json({ error: 'No encontrado o ya enviado' })
+  await pool.query(
+    'INSERT INTO actividad (albaran_id,ts,texto,actor) VALUES ($1,$2,$3,$4)',
+    [id, fecha, 'Enviado a campo', actor]
+  )
+  const albaran = await fetchOne(id)
+  res.json({ albaran })
+})
+
 // ── GET /albaranes/:id  (PÚBLICO — usado por vista de campo) ──────
 router.get('/:id', async (req, res) => {
   const albaran = await fetchOne(req.params.id)
@@ -317,10 +356,12 @@ router.post('/', requireAuth, async (req, res) => {
        transportista,instalacion,especie,tipo_biomasa,estella,origen,permiso,observaciones,
        estado,maps_origen,maps_destino,matricula_tractora,matricula_remolque,
        chofer,certificacion,grupo_id,camion_orden)
-       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,'pendiente_campo',$16,$17,$18,$19,$20,$21,$22,$23)`,
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22,$23,$24)`,
       [id, f.fecha, f.hora, f.numCamiones, f.tipo, f.proveedor, f.astilladora,
        f.transportista, f.instalacion, f.especie, f.tipoBiomasa, f.estella || null, f.origen,
-       f.permiso, f.observaciones, f.mapsOrigen, f.mapsDestino,
+       f.permiso, f.observaciones,
+       f.enviarACampo ? 'pendiente_campo' : 'programado',
+       f.mapsOrigen, f.mapsDestino,
        f.matriculaTractora, f.matriculaRemolque, f.chofer,
        certArray, f.grupoId || null, f.camionOrden || 1]
     )
@@ -609,7 +650,7 @@ router.post('/:id/duplicar', requireAuth, async (req, res) => {
          transportista,instalacion,especie,tipo_biomasa,estella,origen,permiso,observaciones,
          estado,maps_origen,maps_destino,matricula_tractora,matricula_remolque,
          chofer,certificacion,grupo_id,camion_orden)
-         VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,'pendiente_campo',$16,$17,$18,$19,$20,$21,$22,$23)`,
+         VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,'programado',$16,$17,$18,$19,$20,$21,$22,$23)`,
         [newId, orig.fecha, orig.hora, orig.num_camiones, orig.tipo,
          orig.proveedor, orig.astilladora, orig.transportista, orig.instalacion,
          orig.especie, orig.tipo_biomasa, orig.estella, orig.origen, orig.permiso, orig.observaciones,

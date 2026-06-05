@@ -3,14 +3,21 @@ import { notificarNuevoAlbaran } from '../utils/notificaciones'
 
 export function useAlbaranActions(refetch, usuario) {
 
-  const addAlbaran = async (form) => {
+  const addAlbaran = async (form, enviarACampo = false) => {
     const { id } = await api.post('/albaranes', {
       ...form,
+      enviarACampo,
       actorNombre: usuario?.nombre || 'Oficina',
     })
     notificarNuevoAlbaran({ id, ...form })
     await refetch()
     return id
+  }
+
+  const enviarACampoAlbaran = async (ids) => {
+    const arr = Array.isArray(ids) ? ids : [ids]
+    await api.post('/albaranes/enviar-a-campo', { ids: arr, actorNombre: usuario?.nombre || 'Oficina' })
+    await refetch()
   }
 
   const updateFirma = async (albaranId, rol, actor, nombrePersona = null, pesadaData = null, firmaImagen = null, campoData = null, observacionesFirma = null, telefonoPersona = null) => {
@@ -57,5 +64,5 @@ export function useAlbaranActions(refetch, usuario) {
     await refetch()
   }
 
-  return { addAlbaran, updateFirma, simularFirmaOficina, subirDocumento, subirTicketPesada, actualizarAlbaran, borrarAlbaran, reabrirAlbaran }
+  return { addAlbaran, enviarACampoAlbaran, updateFirma, simularFirmaOficina, subirDocumento, subirTicketPesada, actualizarAlbaran, borrarAlbaran, reabrirAlbaran }
 }
