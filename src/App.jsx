@@ -6,6 +6,7 @@ import NuevoAlbaran from './pages/NuevoAlbaran'
 import DetalleAlbaran from './pages/DetalleAlbaran'
 import VistaCampo from './pages/VistaCampo'
 import PanelInstalacion from './pages/PanelInstalacion'
+import PanelAstilladora from './pages/PanelAstilladora'
 import Historial from './pages/Historial'
 import Estadisticas from './pages/Estadisticas'
 import Administracion from './pages/Administracion'
@@ -97,6 +98,7 @@ export default function App() {
     <BrowserRouter>
       <Routes>
         <Route path="/campo/instalacion/:nombre" element={<PanelInstalacion />} />
+        <Route path="/campo/astilladora/:nombre" element={<PanelAstilladora />} />
         <Route path="/campo/:id" element={<VistaCampoPublica />} />
         <Route path="/campo/:id/:roles" element={<VistaCampoPublica />} />
         <Route path="/*" element={<AppInner />} />

@@ -136,7 +136,11 @@ export default function PanelInstalacion() {
   const { nombre } = useParams()
   const location   = useLocation()
   const desdeId    = new URLSearchParams(location.search).get('desde')
-  const nombreInstalacion = decodeURIComponent(nombre)
+  const nombreInstalacion = decodeURIComponent(nombre).replace(/-/g, ' ')
+
+  useEffect(() => {
+    if (desdeId) window.history.replaceState({}, '', window.location.pathname)
+  }, [])
 
   const [albaranes,     setAlbaranes]     = useState([])
   const [loading,       setLoading]       = useState(true)

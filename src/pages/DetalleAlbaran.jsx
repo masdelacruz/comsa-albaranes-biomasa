@@ -168,9 +168,9 @@ export default function DetalleAlbaran({ albaranes, simularFirma, updateFirma, s
   const siguientePaso    = getSiguientePaso()
   const urlSiguientePaso = siguientePaso
     ? siguientePaso === 'instalacion'
-      ? `${window.location.origin}/campo/instalacion/${encodeURIComponent(a.instalacion)}?desde=${a.id}`
+      ? `${window.location.origin}/campo/instalacion/${a.instalacion.replace(/\s+/g, '-')}?desde=${a.id}`
       : siguientePaso === 'astilladora'
-      ? `${window.location.origin}/campo/astilladora/${encodeURIComponent(a.astilladora)}?desde=${a.id}`
+      ? `${window.location.origin}/campo/astilladora/${a.astilladora.replace(/\s+/g, '-')}?desde=${a.id}`
       : `${window.location.origin}/campo/${a.id}/${siguientePaso}`
     : null
 

@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react'
-import { Plus, Search, Pencil, Trash2, X, Check, Upload, Image } from 'lucide-react'
+import { Plus, Search, Pencil, Trash2, X, Check, Upload, Image, ExternalLink } from 'lucide-react'
 import { api } from '../lib/api'
 import '../components/shared.css'
 import './Administracion.css'
@@ -557,6 +557,21 @@ export default function Administracion({ usuario }) {
                               <Image size={12} /> Logo
                             </button>
                           )}
+                          {(p.tipo === 'astilladora' || p.tipo === 'instalacion') && (
+                            <a
+                              className="btn btn-ghost"
+                              style={{ padding: '4px 8px', fontSize: 11, color: 'var(--gray-500)', textDecoration: 'none' }}
+                              href={p.tipo === 'astilladora'
+                                ? `/campo/astilladora/${p.nombre.replace(/\s+/g, '-')}`
+                                : `/campo/instalacion/${p.nombre.replace(/\s+/g, '-')}`}
+                              target="_blank"
+                              rel="noreferrer"
+                              onClick={e => e.stopPropagation()}
+                              title="Abrir panel externo"
+                            >
+                              <ExternalLink size={12} /> Panel
+                            </a>
+                          )}
                           {confirmDelete === p.id ? (
                             <div style={{ display: 'flex', gap: 4, alignItems: 'center' }}>
                               <span style={{ fontSize: 11, color: 'var(--red-700)' }}>¿Eliminar?</span>
@@ -695,7 +710,7 @@ export default function Administracion({ usuario }) {
                 />
                 {subiendo && <div style={{fontSize:12,color:'var(--gray-400)',textAlign:'center',marginBottom:8}}>Subiendo...</div>}
                 <div style={{fontSize:11,color:'var(--gray-400)',textAlign:'center',marginBottom:12}}>
-                  PNG, JPG, SVG, WEBP · Se muestra en la cabecera del panel de instalación
+                  PNG, JPG, SVG, WEBP · Se muestra en la cabecera del panel externo
                 </div>
                 {logoUrl && (
                   confirmBorrarLogo ? (

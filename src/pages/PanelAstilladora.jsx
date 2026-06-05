@@ -141,7 +141,11 @@ export default function PanelAstilladora() {
   const { nombre }   = useParams()
   const location     = useLocation()
   const desdeId      = new URLSearchParams(location.search).get('desde')
-  const nombreAstilladora = decodeURIComponent(nombre)
+  const nombreAstilladora = decodeURIComponent(nombre).replace(/-/g, ' ')
+
+  useEffect(() => {
+    if (desdeId) window.history.replaceState({}, '', window.location.pathname)
+  }, [])
 
   const [albaranes,     setAlbaranes]     = useState([])
   const [loading,       setLoading]       = useState(true)

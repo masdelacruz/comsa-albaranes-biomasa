@@ -120,7 +120,7 @@ router.get('/', requireAuth, async (_req, res) => {
 
 // ── GET /albaranes/instalacion/:nombre  (PÚBLICO — panel instalación) ────
 router.get('/instalacion/:nombre', async (req, res) => {
-  const nombre = decodeURIComponent(req.params.nombre)
+  const nombre = decodeURIComponent(req.params.nombre).replace(/-/g, ' ')
   const { rows } = await pool.query(
     `SELECT
        a.id, a.fecha, a.hora, a.grupo_id, a.camion_orden, a.num_camiones,
@@ -177,7 +177,7 @@ router.get('/instalacion/:nombre', async (req, res) => {
 
 // ── GET /albaranes/astilladora/:nombre  (PÚBLICO — panel astilladora) ────
 router.get('/astilladora/:nombre', async (req, res) => {
-  const nombre = decodeURIComponent(req.params.nombre)
+  const nombre = decodeURIComponent(req.params.nombre).replace(/-/g, ' ')
   const { rows } = await pool.query(
     `SELECT
        a.id, a.fecha, a.hora, a.grupo_id, a.camion_orden, a.num_camiones,

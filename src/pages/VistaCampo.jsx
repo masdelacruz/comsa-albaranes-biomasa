@@ -403,9 +403,9 @@ export default function VistaCampo({ albaranes, updateFirma, subirTicketPesada }
   const esAstilladoraSola = rolesDirectos?.length === 1 && rolesDirectos[0] === 'astilladora'
   const panelUrl = (() => {
     if ((esInstalacionSola || rolSeleccionado === 'instalacion') && a?.instalacion)
-      return `/campo/instalacion/${encodeURIComponent(a.instalacion)}?desde=${id}`
+      return `/campo/instalacion/${a.instalacion.replace(/\s+/g, '-')}?desde=${id}`
     if ((esAstilladoraSola || rolSeleccionado === 'astilladora') && a?.astilladora)
-      return `/campo/astilladora/${encodeURIComponent(a.astilladora)}?desde=${id}`
+      return `/campo/astilladora/${a.astilladora.replace(/\s+/g, '-')}?desde=${id}`
     return null
   })()
 
