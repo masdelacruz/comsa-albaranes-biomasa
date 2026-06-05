@@ -35,7 +35,7 @@ const ROLES_CONFIG = {
 const ROLES_ORDEN = ['proveedor', 'astilladora', 'transportista', 'instalacion']
 
 // ¿Este rol requiere firma de empresa?
-const ROL_REQUIERE_FIRMA = { proveedor: true, astilladora: true, transportista: false, instalacion: true }
+const ROL_REQUIERE_FIRMA = { proveedor: true, astilladora: false, transportista: false, instalacion: true }
 
 function Placa({ texto }) {
   if (!texto) return null

@@ -18,19 +18,18 @@ function fmtFirmaTs(ts) {
 function InfoCamion({ a }) {
   const firmado = a.astilladoraFirmada
   const especie = [a.especie, a.estella].filter(Boolean).join(' · ')
-  const meta = [a.proveedor, fmtFecha(a.fecha)].filter(Boolean).join(' · ')
 
   return (
     <div>
       <div className="pi-camion-id">Albarán {a.id}</div>
-      {especie && <div className="pi-camion-matricula" style={{ fontFamily: 'inherit' }}>{especie}</div>}
+      {a.transportista && <div className="pi-camion-matricula" style={{ fontFamily: 'inherit' }}>{a.transportista}</div>}
       {a.matriculaTractora && (
         <div className="pi-camion-meta">
           {a.matriculaTractora}
           {a.matriculaRemolque && <span> · {a.matriculaRemolque}</span>}
         </div>
       )}
-      {meta && <div className="pi-camion-meta">{meta}</div>}
+      {especie && <div className="pi-camion-meta">{especie}</div>}
       {firmado && a.astilladoraFecha && (
         <div className="pi-camion-meta verde">✓ Firmado · {fmtFirmaTs(a.astilladoraFecha)}</div>
       )}
