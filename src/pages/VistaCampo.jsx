@@ -41,7 +41,7 @@ function Placa({ texto }) {
   if (!texto) return null
   return (
     <span style={{fontFamily:'var(--font-mono)',background:'var(--gray-100)',border:'1px solid var(--gray-200)',
-      padding:'4px 10px',borderRadius:6,fontSize:14,fontWeight:600,color:'var(--gray-800)',display:'inline-block'}}>
+      padding:'3px 8px',borderRadius:5,fontSize:12,fontWeight:600,color:'var(--gray-800)',display:'inline-block'}}>
       {texto}
     </span>
   )
@@ -448,56 +448,63 @@ export default function VistaCampo({ albaranes, updateFirma, subirTicketPesada }
     // instalacion: se queda en la vista de lectura (yaFirmado)
   }
 
-  const DatosAlbaran = () => (
-    <div style={{marginBottom:12}}>
-      {/* Bloque transporte — protagonista */}
-      <div className="campo-card" style={{marginBottom:8}}>
-        <div className="campo-card-title">Transporte</div>
-        {a.transportista && (
-          <div style={{fontSize:16,fontWeight:700,color:'var(--gray-900)',marginBottom:10}}>{a.transportista}</div>
-        )}
-        <div style={{display:'flex',gap:8,flexWrap:'wrap',marginBottom: a.chofer ? 8 : 0}}>
-          <Placa texto={a.matriculaTractora} />
-          <Placa texto={a.matriculaRemolque} />
-        </div>
-        {a.chofer && (
-          <div style={{fontSize:13,color:'var(--gray-500)',marginTop:6}}>Conductor: {a.chofer}</div>
-        )}
-        {!a.transportista && !a.matriculaTractora && (
-          <div style={{fontSize:13,color:'var(--gray-400)'}}>Datos de transporte pendientes de confirmar</div>
-        )}
-      </div>
+  const DIV = <div style={{height:1,background:'var(--gray-100)',margin:'0 12px'}} />
 
-      {/* Ruta */}
-      <div className="campo-card" style={{marginBottom:8}}>
-        <div style={{display:'flex',alignItems:'center',gap:10}}>
+  const DatosAlbaran = () => {
+    const hasBiomasa = a.especie || a.tipoBiomasa || a.estella
+    const hasTransporte = a.transportista || a.matriculaTractora
+    return (
+      <div style={{marginBottom:14,background:'var(--gray-50)',border:'1px solid var(--gray-150,#ebebeb)',borderRadius:'var(--radius-lg)',overflow:'hidden'}}>
+        {/* Ruta */}
+        <div style={{display:'flex',alignItems:'center',padding:'9px 12px',gap:8}}>
           <div style={{flex:1,minWidth:0}}>
-            <div style={{fontSize:10,fontWeight:600,color:'var(--gray-400)',textTransform:'uppercase',letterSpacing:'0.5px',marginBottom:2}}>Origen</div>
-            <div style={{fontSize:13,fontWeight:500,color:'var(--gray-800)',overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>
+            <div style={{fontSize:9,fontWeight:700,color:'var(--gray-400)',textTransform:'uppercase',letterSpacing:'0.6px',marginBottom:1}}>Origen</div>
+            <div style={{fontSize:12,fontWeight:600,color:'var(--gray-800)',overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>
               {a.astilladora || a.proveedor || a.origen || '—'}
             </div>
           </div>
-          <div style={{color:'var(--gray-300)',fontSize:18,flexShrink:0}}>→</div>
+          <div style={{color:'var(--gray-300)',fontSize:13,flexShrink:0}}>→</div>
           <div style={{flex:1,minWidth:0,textAlign:'right'}}>
-            <div style={{fontSize:10,fontWeight:600,color:'var(--green-600)',textTransform:'uppercase',letterSpacing:'0.5px',marginBottom:2}}>Destino</div>
-            <div style={{fontSize:13,fontWeight:500,color:'var(--gray-800)',overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>
+            <div style={{fontSize:9,fontWeight:700,color:'var(--green-600)',textTransform:'uppercase',letterSpacing:'0.6px',marginBottom:1}}>Destino</div>
+            <div style={{fontSize:12,fontWeight:600,color:'var(--gray-800)',overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>
               {a.instalacion || '—'}
             </div>
           </div>
         </div>
-      </div>
 
-      {/* Biomasa — compacto */}
-      {(a.especie || a.tipoBiomasa || a.estella) && (
-        <div className="campo-card">
-          <div style={{fontSize:11,fontWeight:600,color:'var(--gray-400)',textTransform:'uppercase',letterSpacing:'0.5px',marginBottom:4}}>Biomasa</div>
-          <div style={{fontSize:13,color:'var(--gray-700)'}}>
-            {[a.especie, a.tipoBiomasa, a.estella].filter(Boolean).join(' · ')}
-          </div>
+        {DIV}
+
+        {/* Transporte */}
+        <div style={{padding:'9px 12px'}}>
+          <div style={{fontSize:9,fontWeight:700,color:'var(--gray-400)',textTransform:'uppercase',letterSpacing:'0.6px',marginBottom:3}}>Transporte</div>
+          {hasTransporte ? (
+            <>
+              {a.transportista && <div style={{fontSize:12,fontWeight:600,color:'var(--gray-800)',marginBottom:4}}>{a.transportista}</div>}
+              <div style={{display:'flex',gap:5,flexWrap:'wrap'}}>
+                <Placa texto={a.matriculaTractora} />
+                <Placa texto={a.matriculaRemolque} />
+              </div>
+              {a.chofer && <div style={{fontSize:11,color:'var(--gray-500)',marginTop:4}}>Conductor: {a.chofer}</div>}
+            </>
+          ) : (
+            <div style={{fontSize:12,color:'var(--gray-400)',fontStyle:'italic'}}>Pendiente de confirmar</div>
+          )}
         </div>
-      )}
-    </div>
-  )
+
+        {hasBiomasa && DIV}
+
+        {/* Biomasa */}
+        {hasBiomasa && (
+          <div style={{padding:'9px 12px'}}>
+            <div style={{fontSize:9,fontWeight:700,color:'var(--gray-400)',textTransform:'uppercase',letterSpacing:'0.6px',marginBottom:3}}>Biomasa</div>
+            <div style={{fontSize:12,color:'var(--gray-700)'}}>
+              {[a.especie, a.tipoBiomasa, a.estella].filter(Boolean).join(' · ')}
+            </div>
+          </div>
+        )}
+      </div>
+    )
+  }
 
   const Topbar = ({ onBack }) => (
     <div className="campo-topbar">
@@ -507,7 +514,7 @@ export default function VistaCampo({ albaranes, updateFirma, subirTicketPesada }
       }
       <div>
         <div className="campo-title">Albarán {a.id}</div>
-        <div className="campo-sub">{a.astilladora || a.proveedor} → {a.instalacion} · {a.fecha?.slice(0,10).split('-').reverse().join('/')}</div>
+        {a.fecha && <div className="campo-sub">{a.fecha.slice(0,10).split('-').reverse().join('/')}</div>}
       </div>
     </div>
   )
