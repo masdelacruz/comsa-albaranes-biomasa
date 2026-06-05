@@ -9,6 +9,16 @@ function toTitleCase(str) {
   return str.toLowerCase().replace(/\b\w/g, c => c.toUpperCase())
 }
 
+// ── Helper: ¿la firma se hizo hoy? (fecha formato "d/m/yyyy, hh:mm:ss") ──
+function esFirmaHoy(fechaStr) {
+  if (!fechaStr) return false
+  const datePart = String(fechaStr).split(', ')[0]
+  const [d, m, y] = datePart.split('/')
+  if (!y) return false
+  const hoy = new Date()
+  return +d === hoy.getDate() && +m === (hoy.getMonth() + 1) && +y === hoy.getFullYear()
+}
+
 // ── Helper: arma el objeto completo de un albarán ─────────────────
 async function fetchOne(id) {
   const [aRes, fRes, pRes, dRes, actRes] = await Promise.all([
@@ -163,8 +173,11 @@ router.get('/instalacion/:nombre', async (req, res) => {
     }
   })
 
+  // Ocultar firmados de días anteriores; mostrar solo pendientes + firmados hoy
+  const visible = result.filter(a => !a.instalacionFirmada || esFirmaHoy(a.instalacionFecha))
+
   // Orden: primero los que astilladora ya firmó (por fecha firma asc), luego el resto
-  result.sort((a, b) => {
+  visible.sort((a, b) => {
     if (a.astilladoraFecha && b.astilladoraFecha)
       return new Date(a.astilladoraFecha) - new Date(b.astilladoraFecha)
     if (a.astilladoraFecha) return -1
@@ -172,7 +185,7 @@ router.get('/instalacion/:nombre', async (req, res) => {
     return 0
   })
 
-  res.json(result)
+  res.json(visible)
 })
 
 // ── GET /albaranes/astilladora/:nombre  (PÚBLICO — panel astilladora) ────
@@ -218,15 +231,18 @@ router.get('/astilladora/:nombre', async (req, res) => {
     }
   })
 
-  // Pendientes primero, luego firmados desc por fecha
-  result.sort((a, b) => {
+  // Ocultar firmados de días anteriores; mostrar solo pendientes + firmados hoy
+  const visible = result.filter(a => !a.astilladoraFirmada || esFirmaHoy(a.astilladoraFecha))
+
+  // Pendientes primero, luego firmados hoy desc por fecha
+  visible.sort((a, b) => {
     if (!a.astilladoraFirmada && !b.astilladoraFirmada) return 0
     if (!a.astilladoraFirmada) return -1
     if (!b.astilladoraFirmada) return 1
     return new Date(b.astilladoraFecha) - new Date(a.astilladoraFecha)
   })
 
-  res.json(result)
+  res.json(visible)
 })
 
 // ── POST /albaranes/:id/solicitar-revision  (PÚBLICO — campo) ────
