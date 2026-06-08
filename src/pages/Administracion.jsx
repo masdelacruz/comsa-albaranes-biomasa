@@ -4,6 +4,11 @@ import { api } from '../lib/api'
 import '../components/shared.css'
 import './Administracion.css'
 
+function toTitleCase(str) {
+  if (!str) return str
+  return str.toLowerCase().replace(/\b\w/g, c => c.toUpperCase())
+}
+
 function normalizarTelefono(raw) {
   if (!raw) return ''
   const trimmed = raw.trim()
@@ -27,7 +32,7 @@ function normalizarTelefono(raw) {
 const TIPOS = ['proveedor', 'astilladora', 'transportista', 'instalacion']
 const TIPO_LABELS = { proveedor: 'Proveedor', astilladora: 'Astilladora', transportista: 'Transportista', instalacion: 'Instalación' }
 
-const EMPTY_FORM = { nombre: '', tipo: 'proveedor', contacto: '', email: '', telefono: '', notas: '', activo: true }
+const EMPTY_FORM = { nombre: '', tipo: 'proveedor', contacto: '', email: '', telefono: '', notas: '', activo: true, trabajadores: [], maquinas: [] }
 
 const slugify = s => s.toLowerCase().replace(/\s+/g, '_').replace(/[^a-z0-9_]/g, '')
 
@@ -161,7 +166,7 @@ export default function Administracion({ usuario }) {
 
   const abrirEditar = (p) => {
     setEditando(p.id)
-    setForm({ nombre: p.nombre, tipo: p.tipo, contacto: p.contacto || '', email: p.email || '', telefono: p.telefono || '', notas: p.notas || '', activo: p.activo })
+    setForm({ nombre: p.nombre, tipo: p.tipo, contacto: p.contacto || '', email: p.email || '', telefono: p.telefono || '', notas: p.notas || '', activo: p.activo, trabajadores: p.trabajadores || [], maquinas: p.maquinas || [] })
     setFirmaUrl(p.firma_imagen || null)
     setModal(true)
   }
@@ -227,7 +232,14 @@ export default function Administracion({ usuario }) {
   const handleGuardar = async () => {
     if (!form.nombre.trim()) return
     setGuardando(true)
-    const datos = { ...form, telefono: normalizarTelefono(form.telefono) }
+    const datos = {
+      ...form,
+      nombre:      toTitleCase(form.nombre.trim()),
+      contacto:    form.contacto ? toTitleCase(form.contacto.trim()) : '',
+      telefono:    normalizarTelefono(form.telefono),
+      trabajadores: (form.trabajadores || []).map(t => toTitleCase(t.trim())).filter(Boolean),
+      maquinas:    (form.maquinas || []).filter(m => m.matricula?.trim()).map(m => ({ nombre: m.nombre?.trim() || '', matricula: m.matricula.trim().toUpperCase() })),
+    }
     if (editando) {
       await api.patch(`/empresas/${editando}`, datos)
     } else {
@@ -750,11 +762,11 @@ export default function Administracion({ usuario }) {
               </div>
               <div className="modal-field full">
                 <label>Nombre *</label>
-                <input type="text" placeholder="Nombre de la empresa" value={form.nombre} onChange={e => set('nombre', e.target.value)} autoFocus />
+                <input type="text" placeholder="Nombre de la empresa" value={form.nombre} onChange={e => set('nombre', e.target.value)} onBlur={e => set('nombre', toTitleCase(e.target.value))} autoFocus />
               </div>
               <div className="modal-field">
                 <label>Persona de contacto</label>
-                <input type="text" placeholder="Nombre y apellido" value={form.contacto} onChange={e => set('contacto', e.target.value)} />
+                <input type="text" placeholder="Nombre y apellido" value={form.contacto} onChange={e => set('contacto', e.target.value)} onBlur={e => set('contacto', toTitleCase(e.target.value))} />
               </div>
               <div className="modal-field">
                 <label>Teléfono</label>
@@ -893,6 +905,53 @@ export default function Administracion({ usuario }) {
                   </div>
                 )
               })()}
+
+              {/* ── Trabajadores y máquinas (solo astilladora) ── */}
+              {form.tipo === 'astilladora' && (
+                <>
+                  <div className="modal-field full" style={{borderTop:'1px solid var(--gray-100)',paddingTop:14,marginTop:4}}>
+                    <label style={{marginBottom:8,display:'block'}}>Trabajadores</label>
+                    {(form.trabajadores || []).map((t, i) => (
+                      <div key={i} style={{display:'flex',gap:6,marginBottom:6,alignItems:'center'}}>
+                        <input type="text" placeholder="Nombre y apellidos" value={t} style={{flex:1}}
+                          onChange={e => set('trabajadores', form.trabajadores.map((x,j) => j===i ? e.target.value : x))}
+                          onBlur={e => set('trabajadores', form.trabajadores.map((x,j) => j===i ? toTitleCase(e.target.value) : x))}
+                        />
+                        <button className="btn btn-ghost" style={{padding:'4px 6px',color:'var(--gray-400)'}}
+                          onClick={() => set('trabajadores', form.trabajadores.filter((_,j) => j!==i))}>
+                          <X size={12}/>
+                        </button>
+                      </div>
+                    ))}
+                    <button className="btn btn-ghost" style={{fontSize:12,width:'100%',justifyContent:'center',marginTop:2}}
+                      onClick={() => set('trabajadores', [...(form.trabajadores||[]), ''])}>
+                      <Plus size={12}/> Añadir trabajador
+                    </button>
+                  </div>
+
+                  <div className="modal-field full">
+                    <label style={{marginBottom:8,display:'block'}}>Máquinas astilladoras</label>
+                    {(form.maquinas || []).map((m, i) => (
+                      <div key={i} style={{display:'flex',gap:6,marginBottom:6,alignItems:'center'}}>
+                        <input type="text" placeholder="Nombre / descripción" value={m.nombre||''} style={{flex:2}}
+                          onChange={e => set('maquinas', form.maquinas.map((x,j) => j===i ? {...x, nombre: e.target.value} : x))}
+                        />
+                        <input type="text" placeholder="Matrícula" value={m.matricula||''} style={{flex:1,fontFamily:'var(--font-mono)',fontSize:12}}
+                          onChange={e => set('maquinas', form.maquinas.map((x,j) => j===i ? {...x, matricula: e.target.value.toUpperCase()} : x))}
+                        />
+                        <button className="btn btn-ghost" style={{padding:'4px 6px',color:'var(--gray-400)'}}
+                          onClick={() => set('maquinas', form.maquinas.filter((_,j) => j!==i))}>
+                          <X size={12}/>
+                        </button>
+                      </div>
+                    ))}
+                    <button className="btn btn-ghost" style={{fontSize:12,width:'100%',justifyContent:'center',marginTop:2}}
+                      onClick={() => set('maquinas', [...(form.maquinas||[]), {nombre:'', matricula:''}])}>
+                      <Plus size={12}/> Añadir máquina
+                    </button>
+                  </div>
+                </>
+              )}
             </div>
             <div className="modal-actions">
               <button className="btn" onClick={cerrarModal}>Cancelar</button>

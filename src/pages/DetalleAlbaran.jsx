@@ -1135,10 +1135,6 @@ export default function DetalleAlbaran({ albaranes, simularFirma, updateFirma, s
                             onClick={() => compartirPanel(panel, 'copiar')}>
                             {copiado === `panel-${panel.rol}` ? <><CheckCircle size={11} /> Copiado</> : <><Copy size={11} /> Copiar</>}
                           </button>
-                          <button className="btn" style={{fontSize:11,padding:'4px 8px'}}
-                            onClick={() => window.open(panel.url, '_blank')}>
-                            <ExternalLink size={11} />
-                          </button>
                           {panel.tel ? (
                             <button
                               style={{flex:1,display:'inline-flex',alignItems:'center',justifyContent:'center',gap:4,padding:'4px 8px',borderRadius:'var(--radius-sm)',border:'1px solid #d1fae5',background:'#ecfdf5',color:'#065f46',fontSize:11,fontWeight:500,cursor:'pointer'}}
@@ -1153,6 +1149,10 @@ export default function DetalleAlbaran({ albaranes, simularFirma, updateFirma, s
                               WhatsApp
                             </div>
                           )}
+                          <button className="btn" style={{fontSize:11,padding:'4px 8px'}}
+                            onClick={() => window.open(panel.url, '_blank')}>
+                            <ExternalLink size={11} />
+                          </button>
                         </div>
                       </div>
                     ))}

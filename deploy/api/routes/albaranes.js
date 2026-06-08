@@ -33,17 +33,24 @@ async function fetchOne(id) {
   if (!a) return null
   const empresasNombres = [a.proveedor, a.astilladora, a.transportista, a.instalacion].filter(Boolean)
   const empresaFirmaMap = {}
+  const empresaDataMap  = {}
   if (empresasNombres.length) {
     const eRes = await pool.query(
-      'SELECT nombre, firma_imagen FROM proveedores WHERE nombre = ANY($1)',
+      'SELECT nombre, firma_imagen, trabajadores, maquinas FROM proveedores WHERE nombre = ANY($1)',
       [empresasNombres]
     )
-    eRes.rows.forEach(e => { if (e.firma_imagen) empresaFirmaMap[e.nombre] = e.firma_imagen })
+    eRes.rows.forEach(e => {
+      if (e.firma_imagen) empresaFirmaMap[e.nombre] = e.firma_imagen
+      empresaDataMap[e.nombre] = {
+        trabajadores: e.trabajadores || [],
+        maquinas:     e.maquinas     || [],
+      }
+    })
   }
-  return buildAlbaran(a, fRes.rows, pRes.rows[0], dRes.rows, actRes.rows, obsRes.rows, empresaFirmaMap)
+  return buildAlbaran(a, fRes.rows, pRes.rows[0], dRes.rows, actRes.rows, obsRes.rows, empresaFirmaMap, empresaDataMap)
 }
 
-function buildAlbaran(a, firmas, pesada, docs, actividad, observacionesPost, empresaFirmaMap = {}) {
+function buildAlbaran(a, firmas, pesada, docs, actividad, observacionesPost, empresaFirmaMap = {}, empresaDataMap = {}) {
   const firmasObj = {}
   firmas.forEach(f => {
     const obsExtra = (observacionesPost || [])
@@ -81,6 +88,7 @@ function buildAlbaran(a, firmas, pesada, docs, actividad, observacionesPost, emp
     chofer: a.chofer, certificacion: a.certificacion || [],
     firmas: firmasObj,
     empresaFirmaMap,
+    empresaDataMap,
     pesada: {
       entrada: p.entrada || null, salida: p.salida || null,
       humedad: p.humedad || null,
@@ -113,12 +121,16 @@ router.get('/', requireAuth, async (_req, res) => {
     albs.flatMap(a => [a.proveedor, a.astilladora, a.transportista, a.instalacion].filter(Boolean))
   )]
   const empresaFirmaMap = {}
+  const empresaDataMap  = {}
   if (allNombres.length) {
     const eRes = await pool.query(
-      'SELECT nombre, firma_imagen FROM proveedores WHERE nombre = ANY($1) AND firma_imagen IS NOT NULL',
+      'SELECT nombre, firma_imagen, trabajadores, maquinas FROM proveedores WHERE nombre = ANY($1)',
       [allNombres]
     )
-    eRes.rows.forEach(e => { empresaFirmaMap[e.nombre] = e.firma_imagen })
+    eRes.rows.forEach(e => {
+      if (e.firma_imagen) empresaFirmaMap[e.nombre] = e.firma_imagen
+      empresaDataMap[e.nombre] = { trabajadores: e.trabajadores || [], maquinas: e.maquinas || [] }
+    })
   }
 
   const result = albs.map(a =>
@@ -130,6 +142,7 @@ router.get('/', requireAuth, async (_req, res) => {
       actRes.rows.filter(ev => ev.albaran_id === a.id),
       obsRes.rows.filter(o => o.albaran_id === a.id),
       empresaFirmaMap,
+      empresaDataMap,
     )
   )
   res.json(result)

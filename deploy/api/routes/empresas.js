@@ -3,6 +3,11 @@ const { v4: uuidv4 } = require('uuid')
 const pool   = require('../db')
 const { requireAuth } = require('./auth')
 
+function toTitleCase(str) {
+  if (!str || typeof str !== 'string') return str
+  return str.toLowerCase().replace(/\b\w/g, c => c.toUpperCase())
+}
+
 // ── GET /empresas?tipo=astilladora ────────────────────────────────
 router.get('/', requireAuth, async (req, res) => {
   const { tipo, activo } = req.query
@@ -17,12 +22,13 @@ router.get('/', requireAuth, async (req, res) => {
 
 // ── POST /empresas ────────────────────────────────────────────────
 router.post('/', requireAuth, async (req, res) => {
-  const { nombre, tipo, contacto, email, telefono, notas, activo } = req.body
+  const { nombre, tipo, contacto, email, telefono, notas, activo, trabajadores, maquinas } = req.body
   const id = uuidv4()
   await pool.query(
-    `INSERT INTO proveedores (id,nombre,tipo,contacto,email,telefono,notas,activo)
-     VALUES ($1,$2,$3,$4,$5,$6,$7,$8)`,
-    [id, nombre, tipo, contacto||null, email||null, telefono||null, notas||null, activo??true]
+    `INSERT INTO proveedores (id,nombre,tipo,contacto,email,telefono,notas,activo,trabajadores,maquinas)
+     VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)`,
+    [id, toTitleCase(nombre), tipo, toTitleCase(contacto)||null, email||null, telefono||null, notas||null, activo??true,
+     JSON.stringify(trabajadores||[]), JSON.stringify(maquinas||[])]
   )
   const { rows } = await pool.query('SELECT * FROM proveedores WHERE id=$1', [id])
   res.json(rows[0])
@@ -30,7 +36,9 @@ router.post('/', requireAuth, async (req, res) => {
 
 // ── PATCH /empresas/:id ───────────────────────────────────────────
 router.patch('/:id', requireAuth, async (req, res) => {
-  const fields = ['nombre','tipo','contacto','email','telefono','notas','activo','firma_imagen']
+  if (req.body.nombre) req.body.nombre = toTitleCase(req.body.nombre)
+  if (req.body.contacto) req.body.contacto = toTitleCase(req.body.contacto)
+  const fields = ['nombre','tipo','contacto','email','telefono','notas','activo','firma_imagen','trabajadores','maquinas']
   const updates = [], vals = []
   let idx = 1
   for (const f of fields) {

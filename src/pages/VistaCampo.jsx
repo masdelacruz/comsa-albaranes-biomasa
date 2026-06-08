@@ -233,13 +233,17 @@ function PasoFirma({ rol, a, updateFirma, subirTicketPesada, onCompletado, total
   const empresaFirmaUrl = a.empresaFirmaMap?.[empresaNombre] || null
   const requiereFirma   = ROL_REQUIERE_FIRMA[rol]
 
+  const astiData     = rol === 'astilladora' ? (a.empresaDataMap?.[empresaNombre] || {}) : {}
+  const trabajadores = (astiData.trabajadores || []).filter(t => t?.trim())
+  const maquinas     = (astiData.maquinas     || []).filter(m => m?.matricula?.trim())
+
   // Campos comunes
-  const [nombrePersona,       setNombrePersona]      = useState('')
+  const [nombrePersona,       setNombrePersona]      = useState(trabajadores.length === 1 ? trabajadores[0] : '')
   const [telefonoPersona,     setTelefonoPersona]    = useState('')
   const [observaciones,       setObservaciones]      = useState('')
   const [matriculaTractora,    setMatriculaTractora]   = useState(a.matriculaTractora || '')
   const [matriculaRemolque,    setMatriculaRemolque]   = useState(a.matriculaRemolque || '')
-  const [matriculaAstilladora, setMatriculaAstilladora] = useState(a.matriculaAstilladora || '')
+  const [matriculaAstilladora, setMatriculaAstilladora] = useState(a.matriculaAstilladora || (maquinas.length === 1 ? maquinas[0].matricula : ''))
   const [chofer,               setChofer]              = useState(a.chofer || '')
   const [pesoBruto,         setPesoBruto]        = useState(a.pesada?.entrada ? String(a.pesada.entrada) : '')
   const [tara,              setTara]             = useState(a.pesada?.salida  ? String(a.pesada.salida)  : '')
@@ -349,14 +353,26 @@ function PasoFirma({ rol, a, updateFirma, subirTicketPesada, onCompletado, total
         <>
           <div className="campo-field">
             <label>Nombre y apellidos *</label>
-            <input type="text" placeholder="Persona presente en la carga" value={nombrePersona} onChange={e => setNombrePersona(e.target.value)} />
+            <input type="text" list="trabajadores-list" placeholder="Persona presente en la carga" value={nombrePersona} onChange={e => setNombrePersona(e.target.value)} />
+            {trabajadores.length > 0 && (
+              <datalist id="trabajadores-list">
+                {trabajadores.map((t, i) => <option key={i} value={t} />)}
+              </datalist>
+            )}
           </div>
           <div style={{fontSize:12,fontWeight:600,color:'var(--gray-500)',textTransform:'uppercase',letterSpacing:'0.5px',margin:'14px 0 10px'}}>
             Datos astilladora
           </div>
           <div className="campo-field">
             <label>Matrícula</label>
-            <input type="text" placeholder="Ej: CS-1234-B" value={matriculaAstilladora} onChange={e => setMatriculaAstilladora(e.target.value)} />
+            <input type="text" list="maquinas-list" placeholder="Ej: CS-1234-B" value={matriculaAstilladora} onChange={e => setMatriculaAstilladora(e.target.value)} />
+            {maquinas.length > 0 && (
+              <datalist id="maquinas-list">
+                {maquinas.map((m, i) => (
+                  <option key={i} value={m.matricula}>{m.nombre ? `${m.nombre} · ${m.matricula}` : m.matricula}</option>
+                ))}
+              </datalist>
+            )}
           </div>
           <div style={{fontSize:12,fontWeight:600,color:'var(--gray-500)',textTransform:'uppercase',letterSpacing:'0.5px',margin:'14px 0 10px'}}>
             Datos camión
