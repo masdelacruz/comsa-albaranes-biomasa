@@ -389,6 +389,9 @@
   outline-offset: -2px;
   animation: pi-camion-desde-fade 4.5s ease forwards;
 }
+.pi-camion.pi-desde-active:first-child { border-radius: 16px 16px 0 0; }
+.pi-camion.pi-desde-active:last-child  { border-radius: 0 0 16px 16px; }
+.pi-camion.pi-desde-active:only-child  { border-radius: 16px; }
 @keyframes pi-camion-desde-fade {
   0%, 65% { outline-color: #f59e0b; }
   100%    { outline-color: transparent; }
