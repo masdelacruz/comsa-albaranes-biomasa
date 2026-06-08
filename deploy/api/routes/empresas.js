@@ -39,10 +39,14 @@ router.patch('/:id', requireAuth, async (req, res) => {
   if (req.body.nombre) req.body.nombre = toTitleCase(req.body.nombre)
   if (req.body.contacto) req.body.contacto = toTitleCase(req.body.contacto)
   const fields = ['nombre','tipo','contacto','email','telefono','notas','activo','firma_imagen','trabajadores','maquinas']
+  const jsonbFields = new Set(['trabajadores', 'maquinas'])
   const updates = [], vals = []
   let idx = 1
   for (const f of fields) {
-    if (req.body[f] !== undefined) { updates.push(`${f}=$${idx++}`); vals.push(req.body[f]) }
+    if (req.body[f] !== undefined) {
+      updates.push(`${f}=$${idx++}`)
+      vals.push(jsonbFields.has(f) ? JSON.stringify(req.body[f]) : req.body[f])
+    }
   }
   if (!updates.length) return res.status(400).json({ error: 'Sin cambios' })
   vals.push(req.params.id)

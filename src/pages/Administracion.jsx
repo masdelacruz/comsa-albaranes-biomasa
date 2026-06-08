@@ -232,22 +232,27 @@ export default function Administracion({ usuario }) {
   const handleGuardar = async () => {
     if (!form.nombre.trim()) return
     setGuardando(true)
-    const datos = {
-      ...form,
-      nombre:      toTitleCase(form.nombre.trim()),
-      contacto:    form.contacto ? toTitleCase(form.contacto.trim()) : '',
-      telefono:    normalizarTelefono(form.telefono),
-      trabajadores: (form.trabajadores || []).map(t => toTitleCase(t.trim())).filter(Boolean),
-      maquinas:    (form.maquinas || []).filter(m => m.matricula?.trim()).map(m => ({ nombre: m.nombre?.trim() || '', matricula: m.matricula.trim().toUpperCase() })),
+    try {
+      const datos = {
+        ...form,
+        nombre:      toTitleCase(form.nombre.trim()),
+        contacto:    form.contacto ? toTitleCase(form.contacto.trim()) : '',
+        telefono:    normalizarTelefono(form.telefono),
+        trabajadores: (form.trabajadores || []).map(t => toTitleCase(t.trim())).filter(Boolean),
+        maquinas:    (form.maquinas || []).filter(m => m.matricula?.trim()).map(m => ({ nombre: m.nombre?.trim() || '', matricula: m.matricula.trim().toUpperCase() })),
+      }
+      if (editando) {
+        await api.patch(`/empresas/${editando}`, datos)
+      } else {
+        await api.post('/empresas', datos)
+      }
+      await fetchProveedores()
+      cerrarModal()
+    } catch (e) {
+      console.error('Error guardando empresa:', e)
+    } finally {
+      setGuardando(false)
     }
-    if (editando) {
-      await api.patch(`/empresas/${editando}`, datos)
-    } else {
-      await api.post('/empresas', datos)
-    }
-    await fetchProveedores()
-    setGuardando(false)
-    cerrarModal()
   }
 
   const handleToggleActivo = async (p) => {
