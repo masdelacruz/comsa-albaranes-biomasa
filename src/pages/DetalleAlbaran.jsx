@@ -381,26 +381,53 @@ export default function DetalleAlbaran({ albaranes, simularFirma, updateFirma, s
 
   const compartirUrl = (url, medio) => {
     const empresa = actorNombre || a.astilladora || a.proveedor || ''
+    const esInstalacion = siguientePaso === 'instalacion'
+    const lineaBiomasa = [a.especie, a.tipoBiomasa, a.estella].filter(Boolean).join(' · ') || '—'
+    const intro = `Ya puedes trabajar con el Albarán ${a.id}.`
+
+    const cuerpoWA = esInstalacion
+      ? [
+          `*Transportista:* ${a.transportista || '—'}`,
+          ...(a.chofer ? [`*Conductor:* ${a.chofer}`] : []),
+          `*Matrícula:* ${[a.matriculaTractora, a.matriculaRemolque].filter(Boolean).join(' · ') || '—'}`,
+          lineaBiomasa,
+        ].join('\n')
+      : [
+          `*Transportista:* ${a.transportista || '—'}`,
+          `*Especie:* ${a.especie || '—'}`,
+          `*Biomasa:* ${[a.tipoBiomasa, a.estella].filter(Boolean).join(' · ') || '—'}`,
+          `*Instalación destino:* ${a.instalacion || '—'}`,
+        ].join('\n')
+
+    const cuerpoEmail = esInstalacion
+      ? [
+          `   Transportista : ${a.transportista || '—'}`,
+          ...(a.chofer ? [`   Conductor     : ${a.chofer}`] : []),
+          `   Matrícula     : ${[a.matriculaTractora, a.matriculaRemolque].filter(Boolean).join(' · ') || '—'}`,
+          `   Biomasa       : ${lineaBiomasa}`,
+        ].join('\n')
+      : [
+          `   Transportista : ${a.transportista || '—'}`,
+          `   Especie       : ${a.especie || '—'}`,
+          `   Biomasa       : ${[a.tipoBiomasa, a.estella].filter(Boolean).join(' · ') || '—'}`,
+          `   Instalación   : ${a.instalacion || '—'}`,
+        ].join('\n')
+
     if (medio === 'whatsapp') {
       const msg = encodeURIComponent(
         `Hola ${empresa},\n\n` +
-        `Te enviamos el enlace de firma para el albarán #${a.id}:\n` +
-        `• Especie: ${a.especie || '—'}\n` +
-        `• Origen: ${a.origen || '—'}\n` +
-        `• Destino: ${a.instalacion}\n\n` +
-        `Accede aquí para firmar:\n${url}`
+        `${intro}\n\n` +
+        `${cuerpoWA}\n\n` +
+        `Firma aquí:\n${url}`
       )
       window.open(`https://wa.me/${actorTelefono}?text=${msg}`, '_blank')
     }
     if (medio === 'email') {
-      const subject = encodeURIComponent(`Firma pendiente — Albarán #${a.id} · Comsa Service`)
+      const subject = encodeURIComponent(`Firma pendiente — Albarán ${a.id} · Comsa Service`)
       const body    = encodeURIComponent(
         `Hola ${empresa},\n\n` +
-        `Te solicitamos la firma del siguiente albarán de biomasa:\n\n` +
-        `   Nº albarán : #${a.id}\n` +
-        `   Especie    : ${a.especie || '—'}\n` +
-        `   Origen     : ${a.origen || '—'}\n` +
-        `   Destino    : ${a.instalacion}\n\n` +
+        `${intro}\n\n` +
+        `${cuerpoEmail}\n\n` +
         `Accede al formulario de firma en el siguiente enlace:\n` +
         `${url}\n\n` +
         `Gracias por tu colaboración.\n\n` +
