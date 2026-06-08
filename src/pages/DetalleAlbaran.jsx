@@ -439,6 +439,37 @@ export default function DetalleAlbaran({ albaranes, simularFirma, updateFirma, s
     if (medio === 'copiar') copiar(url, 'siguiente')
   }
 
+  // Links de panel permanente para astilladora e instalación
+  const normalTel = (raw) => raw
+    ? raw.replace(/[\s\-().]/g, '').replace(/^\+/, '').replace(/^0034/, '34').replace(/^(?=[67])/, '34')
+    : ''
+  const astiEmpresa = todasEmpresas.find(e => e.nombre === a.astilladora)
+  const instEmpresa = todasEmpresas.find(e => e.nombre === a.instalacion)
+  const paneles = [
+    a.astilladora && {
+      rol: 'astilladora', nombre: a.astilladora,
+      url: `${window.location.origin}/campo/astilladora/${a.astilladora.replace(/\s+/g, '-')}`,
+      tel: normalTel(astiEmpresa?.telefono || ''),
+    },
+    a.instalacion && {
+      rol: 'instalacion', nombre: a.instalacion,
+      url: `${window.location.origin}/campo/instalacion/${a.instalacion.replace(/\s+/g, '-')}`,
+      tel: normalTel(instEmpresa?.telefono || ''),
+    },
+  ].filter(Boolean)
+
+  const compartirPanel = (panel, medio) => {
+    if (medio === 'whatsapp') {
+      const msg = encodeURIComponent(
+        `Hola ${panel.nombre},\n\n` +
+        `Este es tu enlace de acceso al panel diario de albaranes de Comsa Service.\n\n` +
+        `Accede aquí:\n${panel.url}`
+      )
+      window.open(`https://wa.me/${panel.tel}?text=${msg}`, '_blank')
+    }
+    if (medio === 'copiar') copiar(panel.url, `panel-${panel.rol}`)
+  }
+
   return (
     <>
     <div className="detalle-page">
@@ -1082,6 +1113,51 @@ export default function DetalleAlbaran({ albaranes, simularFirma, updateFirma, s
                     ? 'Todas las firmas completadas'
                     : 'Todas las firmas externas completadas — pendiente de firma oficina'}
                 </div>
+              )}
+
+              {paneles.length > 0 && (
+                <>
+                  <div style={{borderTop:'var(--border)',margin:'12px 0 10px'}} />
+                  <div style={{fontSize:10,fontWeight:700,textTransform:'uppercase',letterSpacing:'0.5px',color:'var(--gray-400)',marginBottom:8}}>
+                    Paneles diarios
+                  </div>
+                  <div style={{display:'flex',flexDirection:'column',gap:8}}>
+                    {paneles.map(panel => (
+                      <div key={panel.rol} style={{background:'var(--gray-50)',border:'var(--border)',borderRadius:'var(--radius-md)',padding:'8px 10px'}}>
+                        <div style={{fontSize:11,fontWeight:600,color:'var(--gray-600)',marginBottom:3}}>
+                          {panel.rol === 'astilladora' ? 'Astilladora' : 'Instalación'} · {panel.nombre}
+                        </div>
+                        <code style={{fontSize:10,color:'var(--gray-500)',wordBreak:'break-all',display:'block',marginBottom:6}}>
+                          {panel.url}
+                        </code>
+                        <div style={{display:'flex',gap:5}}>
+                          <button className="btn btn-primary" style={{flex:1,fontSize:11,padding:'4px 8px'}}
+                            onClick={() => compartirPanel(panel, 'copiar')}>
+                            {copiado === `panel-${panel.rol}` ? <><CheckCircle size={11} /> Copiado</> : <><Copy size={11} /> Copiar</>}
+                          </button>
+                          <button className="btn" style={{fontSize:11,padding:'4px 8px'}}
+                            onClick={() => window.open(panel.url, '_blank')}>
+                            <ExternalLink size={11} />
+                          </button>
+                          {panel.tel ? (
+                            <button
+                              style={{flex:1,display:'inline-flex',alignItems:'center',justifyContent:'center',gap:4,padding:'4px 8px',borderRadius:'var(--radius-sm)',border:'1px solid #d1fae5',background:'#ecfdf5',color:'#065f46',fontSize:11,fontWeight:500,cursor:'pointer'}}
+                              onClick={() => compartirPanel(panel, 'whatsapp')}>
+                              <svg width="11" height="11" viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/><path d="M11.99 2C6.477 2 2 6.477 2 11.99c0 1.762.476 3.411 1.305 4.83L2 22l5.335-1.391A9.953 9.953 0 0011.99 22C17.523 22 22 17.523 22 12.01 22 6.477 17.523 2 11.99 2zm0 18.002a7.966 7.966 0 01-4.073-1.113l-.29-.173-3.017.787.81-2.945-.19-.302A7.96 7.96 0 014.002 12c0-4.406 3.583-7.998 7.988-7.998 4.406 0 7.998 3.592 7.998 7.998 0 4.406-3.592 7.998-7.998 8.002z"/></svg>
+                              WhatsApp
+                            </button>
+                          ) : (
+                            <div title="Sin teléfono registrado"
+                              style={{flex:1,display:'inline-flex',alignItems:'center',justifyContent:'center',gap:4,padding:'4px 8px',borderRadius:'var(--radius-sm)',border:'1px solid var(--gray-100)',background:'var(--gray-50)',color:'var(--gray-300)',fontSize:11,cursor:'not-allowed'}}>
+                              <svg width="11" height="11" viewBox="0 0 24 24" fill="currentColor" opacity="0.4"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/><path d="M11.99 2C6.477 2 2 6.477 2 11.99c0 1.762.476 3.411 1.305 4.83L2 22l5.335-1.391A9.953 9.953 0 0011.99 22C17.523 22 22 17.523 22 12.01 22 6.477 17.523 2 11.99 2zm0 18.002a7.966 7.966 0 01-4.073-1.113l-.29-.173-3.017.787.81-2.945-.19-.302A7.96 7.96 0 014.002 12c0-4.406 3.583-7.998 7.988-7.998 4.406 0 7.998 3.592 7.998 7.998 0 4.406-3.592 7.998-7.998 8.002z"/></svg>
+                              WhatsApp
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </>
               )}
             </div>
 
