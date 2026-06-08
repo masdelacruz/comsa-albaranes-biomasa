@@ -21,12 +21,13 @@ function esFirmaHoy(fechaStr) {
 
 // ── Helper: arma el objeto completo de un albarán ─────────────────
 async function fetchOne(id) {
-  const [aRes, fRes, pRes, dRes, actRes] = await Promise.all([
+  const [aRes, fRes, pRes, dRes, actRes, obsRes] = await Promise.all([
     pool.query('SELECT * FROM albaranes WHERE id = $1', [id]),
     pool.query('SELECT * FROM firmas WHERE albaran_id = $1', [id]),
     pool.query('SELECT * FROM pesada WHERE albaran_id = $1', [id]),
     pool.query('SELECT * FROM docs WHERE albaran_id = $1', [id]),
     pool.query('SELECT * FROM actividad WHERE albaran_id = $1 ORDER BY created_at ASC', [id]),
+    pool.query('SELECT * FROM observaciones_albaran WHERE albaran_id=$1 ORDER BY created_at ASC', [id]),
   ])
   const a = aRes.rows[0]
   if (!a) return null
@@ -39,18 +40,22 @@ async function fetchOne(id) {
     )
     eRes.rows.forEach(e => { if (e.firma_imagen) empresaFirmaMap[e.nombre] = e.firma_imagen })
   }
-  return buildAlbaran(a, fRes.rows, pRes.rows[0], dRes.rows, actRes.rows, empresaFirmaMap)
+  return buildAlbaran(a, fRes.rows, pRes.rows[0], dRes.rows, actRes.rows, obsRes.rows, empresaFirmaMap)
 }
 
-function buildAlbaran(a, firmas, pesada, docs, actividad, empresaFirmaMap = {}) {
+function buildAlbaran(a, firmas, pesada, docs, actividad, observacionesPost, empresaFirmaMap = {}) {
   const firmasObj = {}
   firmas.forEach(f => {
+    const obsExtra = (observacionesPost || [])
+      .filter(o => o.rol === f.rol)
+      .map(o => ({ texto: o.texto, fecha: o.fecha }))
     firmasObj[f.rol] = {
       firmado: f.firmado, fecha: f.fecha, actor: f.actor,
       nombrePersona: f.nombre_persona || null,
       firmaImagen: f.firma_imagen || null,
       ipOrigen: f.ip_origen || null,
       observacionesFirma: f.observaciones_firma || null,
+      observacionesExtra: obsExtra,
     }
   })
   const p = pesada || {}
@@ -96,11 +101,12 @@ router.get('/', requireAuth, async (_req, res) => {
   if (!albs.length) return res.json([])
 
   const ids = albs.map(a => a.id)
-  const [fRes, pRes, dRes, actRes] = await Promise.all([
+  const [fRes, pRes, dRes, actRes, obsRes] = await Promise.all([
     pool.query('SELECT * FROM firmas   WHERE albaran_id = ANY($1)', [ids]),
     pool.query('SELECT * FROM pesada   WHERE albaran_id = ANY($1)', [ids]),
     pool.query('SELECT * FROM docs     WHERE albaran_id = ANY($1)', [ids]),
     pool.query('SELECT * FROM actividad WHERE albaran_id = ANY($1) ORDER BY created_at ASC', [ids]),
+    pool.query('SELECT * FROM observaciones_albaran WHERE albaran_id = ANY($1) ORDER BY created_at ASC', [ids]),
   ])
 
   const allNombres = [...new Set(
@@ -122,6 +128,7 @@ router.get('/', requireAuth, async (_req, res) => {
       pRes.rows.find(p => p.albaran_id === a.id),
       dRes.rows.filter(d => d.albaran_id === a.id),
       actRes.rows.filter(ev => ev.albaran_id === a.id),
+      obsRes.rows.filter(o => o.albaran_id === a.id),
       empresaFirmaMap,
     )
   )
@@ -611,6 +618,22 @@ router.post('/:id/firmas/:rol', async (req, res) => {
   }
 
   res.json({ albaran, cerrado: todasFirmadas, humedadPendiente })
+})
+
+// ── POST /albaranes/:id/observaciones  (PÚBLICO — campo astilladora) ────
+router.post('/:id/observaciones', async (req, res) => {
+  const { id } = req.params
+  const { rol, texto } = req.body
+  if (!rol || !texto?.trim()) return res.status(400).json({ error: 'Faltan datos' })
+  const { rows } = await pool.query('SELECT id FROM albaranes WHERE id=$1', [id])
+  if (!rows.length) return res.status(404).json({ error: 'No encontrado' })
+  const fecha = new Date().toLocaleString('es-ES')
+  await pool.query(
+    'INSERT INTO observaciones_albaran (albaran_id, rol, texto, fecha) VALUES ($1,$2,$3,$4)',
+    [id, rol, texto.trim(), fecha]
+  )
+  const albaran = await fetchOne(id)
+  res.json({ albaran })
 })
 
 // ── POST /albaranes/:id/duplicar  (requiere auth) ────────────────

@@ -47,6 +47,85 @@ function Placa({ texto }) {
   )
 }
 
+function ListaObservaciones({ obs }) {
+  if (!obs.length) return (
+    <div style={{fontSize:12,color:'var(--gray-400)',fontStyle:'italic',marginBottom:12}}>Sin observaciones</div>
+  )
+  return obs.map((o, i) => (
+    <div key={i} style={{padding:'8px 10px',background:'var(--gray-50)',borderRadius:8,marginBottom:8}}>
+      <div style={{fontSize:11,color:'var(--gray-400)',marginBottom:2}}>{o.fecha}</div>
+      <div style={{fontSize:13,color:'var(--gray-800)',lineHeight:1.4}}>{o.texto}</div>
+    </div>
+  ))
+}
+
+function VistaFirmadaAstilladora({ a }) {
+  const firma = a.firmas?.astilladora
+  const [texto,   setTexto]   = useState('')
+  const [enviando, setEnviando] = useState(false)
+  const [errorEnvio, setErrorEnvio] = useState('')
+  const [obsExtra, setObsExtra] = useState(firma?.observacionesExtra || [])
+
+  const obsOrdenadas = [
+    ...(firma?.observacionesFirma ? [{ texto: firma.observacionesFirma, fecha: firma.fecha }] : []),
+    ...obsExtra,
+  ]
+
+  const handleEnviar = async () => {
+    if (!texto.trim()) return
+    setEnviando(true)
+    setErrorEnvio('')
+    try {
+      const res  = await fetch(`/api/albaranes/${a.id}/observaciones`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ rol: 'astilladora', texto: texto.trim() }),
+      })
+      const data = await res.json()
+      setObsExtra(data.albaran?.firmas?.astilladora?.observacionesExtra || [])
+      setTexto('')
+    } catch {
+      setErrorEnvio('Error al enviar. Comprueba la conexión.')
+    }
+    setEnviando(false)
+  }
+
+  return (
+    <>
+      <div className="campo-card" style={{textAlign:'center',padding:'18px 16px'}}>
+        <CheckCircle size={28} color="var(--green-400)" style={{marginBottom:8}} />
+        <div style={{fontSize:14,fontWeight:600,color:'var(--green-600)'}}>Ya confirmado</div>
+        {firma?.fecha && (
+          <div style={{fontSize:12,color:'var(--gray-400)',marginTop:3}}>{firma.fecha}</div>
+        )}
+      </div>
+      <div className="campo-card">
+        <div className="campo-card-title">Observaciones</div>
+        <ListaObservaciones obs={obsOrdenadas} />
+        <textarea
+          value={texto}
+          onChange={e => setTexto(e.target.value)}
+          placeholder="Añadir una observación..."
+          rows={3}
+          style={{width:'100%',border:'1px solid var(--gray-200)',borderRadius:8,padding:'10px 12px',
+            fontSize:13,color:'var(--gray-800)',resize:'vertical',boxSizing:'border-box',
+            marginTop:4,marginBottom:8,outline:'none',fontFamily:'inherit'}}
+        />
+        {errorEnvio && (
+          <div style={{fontSize:12,color:'#b91c1c',marginBottom:8}}>{errorEnvio}</div>
+        )}
+        <button
+          className="campo-btn-primary"
+          disabled={!texto.trim() || enviando}
+          onClick={handleEnviar}
+        >
+          {enviando ? 'Enviando...' : 'Enviar observación'}
+        </button>
+      </div>
+    </>
+  )
+}
+
 function VistaFirmadaInstalacion({ a }) {
   const [solicitando, setSolicitando] = useState(false)
   const [solicitado,  setSolicitado]  = useState(a.solicitaRevision || false)
@@ -73,6 +152,22 @@ function VistaFirmadaInstalacion({ a }) {
           <div style={{fontSize:12,color:'var(--gray-400)',marginTop:3}}>{a.firmas.instalacion.fecha}</div>
         )}
       </div>
+
+      {/* Observaciones de la astilladora — lectura */}
+      {(() => {
+        const firma = a.firmas?.astilladora
+        const obs = [
+          ...(firma?.observacionesFirma ? [{ texto: firma.observacionesFirma, fecha: firma.fecha }] : []),
+          ...(firma?.observacionesExtra || []),
+        ]
+        if (!obs.length) return null
+        return (
+          <div className="campo-card">
+            <div className="campo-card-title">Observaciones</div>
+            <ListaObservaciones obs={obs} />
+          </div>
+        )
+      })()}
 
       {/* Pesada — lectura */}
       {(a.pesada?.entrada || a.pesada?.salida) && (
@@ -199,6 +294,11 @@ function PasoFirma({ rol, a, updateFirma, subirTicketPesada, onCompletado, total
   // Instalación firmada → vista lectura + solicitar revisión
   if (rol === 'instalacion' && (yaFirmado || firmado)) {
     return <VistaFirmadaInstalacion a={a} />
+  }
+
+  // Astilladora ya firmada → vista lectura + observaciones
+  if (rol === 'astilladora' && yaFirmado) {
+    return <VistaFirmadaAstilladora a={a} />
   }
 
   if (yaFirmado || firmado) return (
