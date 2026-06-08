@@ -398,6 +398,25 @@ function PasoFirma({ rol, a, updateFirma, subirTicketPesada, onCompletado, total
       {/* ── INSTALACIÓN (RECEPCIÓN) ────────────────────── */}
       {rol === 'instalacion' && (
         <>
+          {/* Observaciones del astillador — lectura */}
+          {(() => {
+            const firma = a.firmas?.astilladora
+            const obs = [
+              ...(firma?.observacionesFirma ? [{ texto: firma.observacionesFirma, fecha: firma.fecha }] : []),
+              ...(firma?.observacionesExtra || []),
+            ]
+            if (!obs.length) return null
+            return (
+              <div style={{marginBottom:14,border:'1px solid var(--amber-200,#fde68a)',borderRadius:'var(--radius-md)',overflow:'hidden'}}>
+                <div style={{padding:'8px 12px',background:'#fffbeb',borderBottom:'1px solid var(--amber-200,#fde68a)',fontSize:11,fontWeight:700,color:'#92400e',textTransform:'uppercase',letterSpacing:'0.5px'}}>
+                  Observaciones del astillador
+                </div>
+                <div style={{padding:'10px 12px'}}>
+                  <ListaObservaciones obs={obs} />
+                </div>
+              </div>
+            )
+          })()}
           <div style={{background:'var(--blue-50)',border:'1px solid var(--blue-100)',borderRadius:'var(--radius-md)',padding:'10px 12px',fontSize:13,color:'var(--blue-700)',marginBottom:14}}>
             Introduce los datos de pesada en recepción y confirma.
           </div>
