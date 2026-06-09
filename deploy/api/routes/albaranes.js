@@ -19,6 +19,15 @@ function esFirmaHoy(fechaStr) {
   return +d === hoy.getDate() && +m === (hoy.getMonth() + 1) && +y === hoy.getFullYear()
 }
 
+// ── Helper: ¿el albarán sigue visible en el panel externo? ───────────
+// Visible hasta el final del 2º día después de la fecha programada.
+function esVisibleEnPanel(fechaISO) {
+  if (!fechaISO) return true
+  const [y, m, d] = String(fechaISO).slice(0, 10).split('-').map(Number)
+  const limite = new Date(y, m - 1, d + 2, 23, 59, 59, 999)
+  return Date.now() <= limite.getTime()
+}
+
 // ── Helper: arma el objeto completo de un albarán ─────────────────
 async function fetchOne(id) {
   const [aRes, fRes, pRes, dRes, actRes, obsRes] = await Promise.all([
@@ -193,8 +202,8 @@ router.get('/instalacion/:nombre', async (req, res) => {
     }
   })
 
-  // Ocultar firmados de días anteriores; mostrar solo pendientes + firmados hoy
-  const visible = result.filter(a => !a.instalacionFirmada || esFirmaHoy(a.instalacionFecha))
+  // Visible hasta el final del 2º día después de la fecha programada del albarán
+  const visible = result.filter(a => esVisibleEnPanel(a.fecha))
 
   // Orden: primero los que astilladora ya firmó (por fecha firma asc), luego el resto
   visible.sort((a, b) => {
@@ -251,8 +260,8 @@ router.get('/astilladora/:nombre', async (req, res) => {
     }
   })
 
-  // Ocultar firmados de días anteriores; mostrar solo pendientes + firmados hoy
-  const visible = result.filter(a => !a.astilladoraFirmada || esFirmaHoy(a.astilladoraFecha))
+  // Visible hasta el final del 2º día después de la fecha programada del albarán
+  const visible = result.filter(a => esVisibleEnPanel(a.fecha))
 
   // Pendientes primero, luego firmados hoy desc por fecha
   visible.sort((a, b) => {
