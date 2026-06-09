@@ -600,6 +600,34 @@ export default function DetalleAlbaran({ albaranes, simularFirma, updateFirma, s
         <BannerRevision albaranId={a.id} onReabrir={async () => { await refetch?.(); mostrarToast('Albarán reabierto para campo ✓') }} />
       )}
 
+      {/* Banner rechazado desde campo */}
+      {(a.estado === 'rechazado_campo_astilladora' || a.estado === 'rechazado_campo_instalacion') && (
+        <div style={{margin:'0 0 16px',padding:'12px 16px',background:'#fff1f2',border:'1px solid #fecdd3',
+          borderRadius:'var(--radius-lg)',display:'flex',alignItems:'center',gap:12}}>
+          <span style={{fontSize:18,flexShrink:0}}>⛔</span>
+          <div style={{flex:1}}>
+            <div style={{fontSize:13,fontWeight:600,color:'#991b1b'}}>
+              Rechazado desde campo · {a.estado === 'rechazado_campo_astilladora' ? 'Astilladora' : 'Instalación'}
+            </div>
+            <div style={{fontSize:12,color:'#b91c1c',marginTop:2}}>
+              El equipo de campo marcó este albarán como no gestionado.
+            </div>
+          </div>
+          <button
+            onClick={async () => {
+              setEnviandoACampo(true)
+              try { await api.post(`/albaranes/${a.id}/reenviar-campo`); await refetch?.(); mostrarToast('Reenviado a campo ✓') }
+              catch {}
+              setEnviandoACampo(false)
+            }}
+            disabled={enviandoACampo}
+            style={{padding:'6px 14px',background:'#dc2626',color:'#fff',border:'none',borderRadius:'var(--radius-md)',
+              fontSize:12,fontWeight:600,cursor:'pointer',flexShrink:0,opacity:enviandoACampo?0.6:1,whiteSpace:'nowrap'}}>
+            {enviandoACampo ? '...' : 'Reenviar a campo'}
+          </button>
+        </div>
+      )}
+
       {/* Banner programado — pendiente de enviar a campo */}
       {a.estado === 'programado' && (
         <div style={{margin:'0 0 16px',padding:'12px 16px',background:'#f5f3ff',border:'1px solid #ddd6fe',

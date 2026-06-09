@@ -37,25 +37,66 @@ function InfoCamion({ a }) {
   )
 }
 
-function TarjetaCamion({ a, esUltimo, esDesde }) {
+function TarjetaCamion({ a, esUltimo, esDesde, onRechazar }) {
   const navigate = useNavigate()
   const firmado  = a.instalacionFirmada
   const ref      = useRef(null)
+  const [confirmando, setConfirmando] = useState(false)
+  const [rechazando,  setRechazando]  = useState(false)
 
   useEffect(() => {
     if (esDesde && ref.current) ref.current.scrollIntoView({ behavior: 'smooth', block: 'center' })
   }, [esDesde])
 
+  const handleRechazar = async (e) => {
+    e.stopPropagation()
+    setRechazando(true)
+    try {
+      await fetch(`/api/albaranes/${a.id}/rechazar-campo`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ rol: 'instalacion' }),
+      })
+      onRechazar(a.id)
+    } catch {}
+    setRechazando(false)
+    setConfirmando(false)
+  }
+
   return (
     <div
       ref={ref}
       className={`pi-camion ${firmado ? 'firmado' : 'pendiente'}${esDesde ? ' pi-desde-active' : ''}`}
-      onClick={() => navigate(`/campo/${a.id}/instalacion`)}
-      style={{ cursor: 'pointer', borderBottom: esUltimo ? 'none' : undefined }}
+      onClick={() => !confirmando && navigate(`/campo/${a.id}/instalacion`)}
+      style={{ cursor: confirmando ? 'default' : 'pointer', borderBottom: esUltimo ? 'none' : undefined }}
     >
       <div className="pi-camion-left">
         <div className={`pi-camion-dot ${firmado ? 'verde' : 'amber'}`} />
-        <InfoCamion a={a} />
+        <div>
+          <InfoCamion a={a} />
+          {!firmado && (
+            <div onClick={e => e.stopPropagation()}>
+              {confirmando ? (
+                <div style={{display:'flex',gap:6,marginTop:6,alignItems:'center'}}>
+                  <span style={{fontSize:11,color:'#991b1b'}}>¿No gestionado?</span>
+                  <button onClick={handleRechazar} disabled={rechazando}
+                    style={{fontSize:11,padding:'2px 8px',background:'#fee2e2',border:'1px solid #fca5a5',borderRadius:4,color:'#991b1b',cursor:'pointer'}}>
+                    {rechazando ? '...' : 'Sí'}
+                  </button>
+                  <button onClick={() => setConfirmando(false)}
+                    style={{fontSize:11,padding:'2px 8px',background:'none',border:'1px solid #d1d5db',borderRadius:4,color:'#6b7280',cursor:'pointer'}}>
+                    No
+                  </button>
+                </div>
+              ) : (
+                <button onClick={e => { e.stopPropagation(); setConfirmando(true) }}
+                  style={{fontSize:11,color:'#9ca3af',background:'none',border:'none',cursor:'pointer',padding:'4px 0 0',textDecoration:'underline',textDecorationStyle:'dotted'}}>
+                  No gestionado
+                </button>
+              )}
+            </div>
+          )}
+        </div>
       </div>
       <div className="pi-camion-right">
         {firmado
@@ -67,7 +108,7 @@ function TarjetaCamion({ a, esUltimo, esDesde }) {
   )
 }
 
-function GrupoHora({ hora, albaranes, desdeId }) {
+function GrupoHora({ hora, albaranes, desdeId, onRechazar }) {
   const firmados = albaranes.filter(a => a.instalacionFirmada).length
   const total    = albaranes.length
   const pct      = Math.round((firmados / total) * 100)
@@ -97,7 +138,7 @@ function GrupoHora({ hora, albaranes, desdeId }) {
         {sorted.map((a, i) => (
           <div key={a.id} className="pi-camion-row">
             <span className="pi-camion-orden">#{i + 1}</span>
-            <TarjetaCamion a={a} esUltimo={i === sorted.length - 1} esDesde={String(a.id) === desdeId} />
+            <TarjetaCamion a={a} esUltimo={i === sorted.length - 1} esDesde={String(a.id) === desdeId} onRechazar={onRechazar} />
           </div>
         ))}
       </div>
@@ -302,6 +343,7 @@ export default function PanelInstalacion() {
                 hora={hora}
                 albaranes={albs}
                 desdeId={desdeId}
+                onRechazar={id => setAlbaranes(prev => prev.filter(a => a.id !== id))}
               />
             ))}
           </div>

@@ -169,6 +169,8 @@ export default function Dashboard({ albaranes, empresas = [], usuario, borrarAlb
             <option value="pendiente_campo">Pendiente campo</option>
             <option value="pendiente_oficina">Pendiente oficina</option>
             <option value="humedad_pendiente">Humedad pendiente</option>
+            <option value="rechazado_campo_astilladora">Rechazado · Astilladora</option>
+            <option value="rechazado_campo_instalacion">Rechazado · Instalación</option>
             {soloActivos === 'todos' && <option value="cerrado">Cerrado</option>}
           </select>
           <div style={{display:'flex',alignItems:'center',gap:4}}>

@@ -1,9 +1,11 @@
 export const ESTADOS = {
-  programado:        { label: 'Programado',         color: 'gray'   },
-  pendiente_campo:   { label: 'Pendiente campo',    color: 'amber'  },
-  pendiente_oficina: { label: 'Pendiente oficina',  color: 'blue'   },
-  humedad_pendiente: { label: 'Humedad pendiente',  color: 'red'    },
-  cerrado:           { label: 'Cerrado',             color: 'green'  },
+  programado:                    { label: 'Programado',              color: 'gray'   },
+  pendiente_campo:               { label: 'Pendiente campo',         color: 'amber'  },
+  pendiente_oficina:             { label: 'Pendiente oficina',       color: 'blue'   },
+  humedad_pendiente:             { label: 'Humedad pendiente',       color: 'red'    },
+  rechazado_campo_astilladora:   { label: 'Rechazado · Astilladora', color: 'red'    },
+  rechazado_campo_instalacion:   { label: 'Rechazado · Instalación', color: 'red'    },
+  cerrado:                       { label: 'Cerrado',                 color: 'green'  },
 }
 
 export function Badge({ estado }) {

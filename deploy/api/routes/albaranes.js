@@ -166,7 +166,7 @@ router.get('/instalacion/:nombre', async (req, res) => {
        a.astilladora, a.proveedor, a.transportista, a.especie, a.tipo_biomasa, a.estella,
        a.matricula_tractora, a.matricula_remolque, a.chofer, a.estado, a.origen
      FROM albaranes a
-     WHERE a.instalacion = $1 AND a.estado NOT IN ('cerrado','programado')
+     WHERE a.instalacion = $1 AND a.estado NOT IN ('cerrado','programado','rechazado_campo_instalacion')
      ORDER BY a.created_at ASC`,
     [nombre]
   )
@@ -202,8 +202,8 @@ router.get('/instalacion/:nombre', async (req, res) => {
     }
   })
 
-  // Visible hasta el final del 2º día después de la fecha programada del albarán
-  const visible = result.filter(a => esVisibleEnPanel(a.fecha))
+  // Sin límite de tiempo para instalación — se muestra mientras esté pendiente
+  const visible = result
 
   // Orden: primero los que astilladora ya firmó (por fecha firma asc), luego el resto
   visible.sort((a, b) => {
@@ -227,7 +227,7 @@ router.get('/astilladora/:nombre', async (req, res) => {
        a.especie, a.tipo_biomasa, a.estella,
        a.matricula_tractora, a.matricula_remolque, a.chofer, a.estado, a.origen
      FROM albaranes a
-     WHERE a.astilladora = $1 AND a.estado NOT IN ('cerrado','programado')
+     WHERE a.astilladora = $1 AND a.estado NOT IN ('cerrado','programado','rechazado_campo_astilladora')
      ORDER BY a.created_at ASC`,
     [nombre]
   )
@@ -311,6 +311,44 @@ router.delete('/:id/solicitar-revision', requireAuth, async (req, res) => {
     [id, fecha, 'Albarán reabierto para campo por oficina', req.user.nombre || 'Oficina']
   )
   res.json({ ok: true })
+})
+
+// ── POST /albaranes/:id/rechazar-campo  (PÚBLICO — campo) ────────
+router.post('/:id/rechazar-campo', async (req, res) => {
+  const { id } = req.params
+  const { rol } = req.body
+  if (!['astilladora', 'instalacion'].includes(rol)) return res.status(400).json({ error: 'rol inválido' })
+  const nuevoEstado = `rechazado_campo_${rol}`
+  const { rowCount } = await pool.query(
+    "UPDATE albaranes SET estado=$1 WHERE id=$2 AND estado NOT IN ('cerrado')",
+    [nuevoEstado, id]
+  )
+  if (!rowCount) return res.status(404).json({ error: 'No encontrado o cerrado' })
+  const fecha = new Date().toLocaleString('es-ES')
+  const label = rol === 'astilladora' ? 'Astilladora' : 'Instalación'
+  await pool.query(
+    'INSERT INTO actividad (albaran_id,ts,texto,actor) VALUES ($1,$2,$3,$4)',
+    [id, fecha, `Rechazado desde campo por ${label}`, 'Campo']
+  )
+  res.json({ ok: true })
+})
+
+// ── POST /albaranes/:id/reenviar-campo  (requiere auth — oficina) ────
+router.post('/:id/reenviar-campo', requireAuth, async (req, res) => {
+  const { id } = req.params
+  const { rowCount } = await pool.query(
+    "UPDATE albaranes SET estado='pendiente_campo' WHERE id=$1 AND estado LIKE 'rechazado_campo_%'",
+    [id]
+  )
+  if (!rowCount) return res.status(404).json({ error: 'No encontrado o no está rechazado' })
+  const fecha = new Date().toLocaleString('es-ES')
+  const actor = req.user.nombre || 'Oficina'
+  await pool.query(
+    'INSERT INTO actividad (albaran_id,ts,texto,actor) VALUES ($1,$2,$3,$4)',
+    [id, fecha, 'Reenviado a campo por oficina', actor]
+  )
+  const albaran = await fetchOne(id)
+  res.json({ albaran })
 })
 
 // ── POST /albaranes/enviar-a-campo  (bulk, requiere auth) ────────
