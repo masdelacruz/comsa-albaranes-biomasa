@@ -107,6 +107,7 @@ function buildAlbaran(a, firmas, pesada, docs, actividad, observacionesPost, emp
     docs: docsObj,
     actividad: actividad.map(ev => ({ ts: ev.ts, texto: ev.texto, actor: ev.actor })),
     solicitaRevision: a.solicita_revision || false,
+    motivoRechazoCampo: a.motivo_rechazo_campo || null,
   }
 }
 
@@ -316,19 +317,23 @@ router.delete('/:id/solicitar-revision', requireAuth, async (req, res) => {
 // ── POST /albaranes/:id/rechazar-campo  (PÚBLICO — campo) ────────
 router.post('/:id/rechazar-campo', async (req, res) => {
   const { id } = req.params
-  const { rol } = req.body
+  const { rol, motivo } = req.body
   if (!['astilladora', 'instalacion'].includes(rol)) return res.status(400).json({ error: 'rol inválido' })
   const nuevoEstado = `rechazado_campo_${rol}`
+  const motivoTrimmed = motivo?.trim() || null
   const { rowCount } = await pool.query(
-    "UPDATE albaranes SET estado=$1 WHERE id=$2 AND estado NOT IN ('cerrado')",
-    [nuevoEstado, id]
+    "UPDATE albaranes SET estado=$1, motivo_rechazo_campo=$2 WHERE id=$3 AND estado NOT IN ('cerrado')",
+    [nuevoEstado, motivoTrimmed, id]
   )
   if (!rowCount) return res.status(404).json({ error: 'No encontrado o cerrado' })
   const fecha = new Date().toLocaleString('es-ES')
   const label = rol === 'astilladora' ? 'Astilladora' : 'Instalación'
+  const textoActividad = motivoTrimmed
+    ? `Rechazado desde campo por ${label}: ${motivoTrimmed}`
+    : `Rechazado desde campo por ${label}`
   await pool.query(
     'INSERT INTO actividad (albaran_id,ts,texto,actor) VALUES ($1,$2,$3,$4)',
-    [id, fecha, `Rechazado desde campo por ${label}`, 'Campo']
+    [id, fecha, textoActividad, 'Campo']
   )
   res.json({ ok: true })
 })

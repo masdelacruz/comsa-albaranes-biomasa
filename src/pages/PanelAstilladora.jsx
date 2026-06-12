@@ -43,6 +43,7 @@ function TarjetaCamion({ a, esUltimo, esDesde, onRechazar }) {
   const ref      = useRef(null)
   const [confirmando, setConfirmando] = useState(false)
   const [rechazando,  setRechazando]  = useState(false)
+  const [motivo,      setMotivo]      = useState('')
 
   useEffect(() => {
     if (esDesde && ref.current) ref.current.scrollIntoView({ behavior: 'smooth', block: 'center' })
@@ -55,12 +56,19 @@ function TarjetaCamion({ a, esUltimo, esDesde, onRechazar }) {
       await fetch(`/api/albaranes/${a.id}/rechazar-campo`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ rol: 'astilladora' }),
+        body: JSON.stringify({ rol: 'astilladora', motivo }),
       })
       onRechazar(a.id)
     } catch {}
     setRechazando(false)
     setConfirmando(false)
+    setMotivo('')
+  }
+
+  const handleCancelar = (e) => {
+    e.stopPropagation()
+    setConfirmando(false)
+    setMotivo('')
   }
 
   return (
@@ -72,26 +80,50 @@ function TarjetaCamion({ a, esUltimo, esDesde, onRechazar }) {
     >
       <div className="pi-camion-left">
         <div className={`pi-camion-dot ${firmado ? 'verde' : 'amber'}`} />
-        <div>
+        <div style={{ flex: 1, minWidth: 0 }}>
           <InfoCamion a={a} />
           {!firmado && (
             <div onClick={e => e.stopPropagation()}>
               {confirmando ? (
-                <div style={{display:'flex',gap:6,marginTop:6,alignItems:'center'}}>
-                  <span style={{fontSize:11,color:'#991b1b'}}>¿No gestionado?</span>
-                  <button onClick={handleRechazar} disabled={rechazando}
-                    style={{fontSize:11,padding:'2px 8px',background:'#fee2e2',border:'1px solid #fca5a5',borderRadius:4,color:'#991b1b',cursor:'pointer'}}>
-                    {rechazando ? '...' : 'Sí'}
-                  </button>
-                  <button onClick={() => setConfirmando(false)}
-                    style={{fontSize:11,padding:'2px 8px',background:'none',border:'1px solid #d1d5db',borderRadius:4,color:'#6b7280',cursor:'pointer'}}>
-                    No
-                  </button>
+                <div style={{marginTop:10,background:'#fff5f5',border:'1px solid #fecaca',borderRadius:8,padding:'10px 12px'}}>
+                  <div style={{fontSize:12,fontWeight:600,color:'#991b1b',marginBottom:6}}>
+                    ¿Marcar como no gestionado?
+                  </div>
+                  <textarea
+                    autoFocus
+                    value={motivo}
+                    onChange={e => setMotivo(e.target.value)}
+                    placeholder="Motivo (opcional): camión no llegó, problema técnico…"
+                    rows={2}
+                    style={{
+                      width:'100%', fontSize:12, padding:'6px 8px', borderRadius:6,
+                      border:'1px solid #fca5a5', resize:'none', outline:'none',
+                      background:'#fff', color:'#374151', boxSizing:'border-box',
+                      fontFamily:'inherit',
+                    }}
+                  />
+                  <div style={{display:'flex',gap:8,marginTop:8}}>
+                    <button onClick={handleRechazar} disabled={rechazando}
+                      style={{flex:1,fontSize:12,fontWeight:600,padding:'7px 0',background:'#dc2626',
+                        border:'none',borderRadius:6,color:'#fff',cursor:'pointer',opacity:rechazando?0.6:1}}>
+                      {rechazando ? 'Enviando…' : 'Confirmar'}
+                    </button>
+                    <button onClick={handleCancelar}
+                      style={{flex:1,fontSize:12,padding:'7px 0',background:'none',
+                        border:'1px solid #d1d5db',borderRadius:6,color:'#6b7280',cursor:'pointer'}}>
+                      Cancelar
+                    </button>
+                  </div>
                 </div>
               ) : (
                 <button onClick={e => { e.stopPropagation(); setConfirmando(true) }}
-                  style={{fontSize:11,color:'#9ca3af',background:'none',border:'none',cursor:'pointer',padding:'4px 0 0',textDecoration:'underline',textDecorationStyle:'dotted'}}>
-                  No gestionado
+                  style={{
+                    display:'inline-flex', alignItems:'center', gap:4, marginTop:6,
+                    fontSize:11, fontWeight:500, padding:'3px 9px',
+                    background:'#fff5f5', border:'1px solid #fca5a5',
+                    borderRadius:20, color:'#dc2626', cursor:'pointer',
+                  }}>
+                  <span style={{fontSize:10}}>✕</span> No gestionado
                 </button>
               )}
             </div>

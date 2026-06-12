@@ -610,7 +610,9 @@ export default function DetalleAlbaran({ albaranes, simularFirma, updateFirma, s
               Rechazado desde campo · {a.estado === 'rechazado_campo_astilladora' ? 'Astilladora' : 'Instalación'}
             </div>
             <div style={{fontSize:12,color:'#b91c1c',marginTop:2}}>
-              El equipo de campo marcó este albarán como no gestionado.
+              {a.motivoRechazoCampo
+                ? a.motivoRechazoCampo
+                : 'El equipo de campo marcó este albarán como no gestionado.'}
             </div>
           </div>
           <button
