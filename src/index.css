@@ -36,6 +36,14 @@
   --blue-100: #dbeafe;
   --blue-400: #3b82f6;
   --blue-700: #1d4ed8;
+  --orange-50:  #fff7ed;
+  --orange-100: #ffedd5;
+  --orange-400: #f97316;
+  --orange-700: #c2410c;
+  --purple-50:  #f5f3ff;
+  --purple-100: #ede9fe;
+  --purple-400: #8b5cf6;
+  --purple-700: #6d28d9;
   --border: 1px solid var(--gray-200);
   --border-light: 1px solid var(--gray-100);
   --radius-sm: 6px;

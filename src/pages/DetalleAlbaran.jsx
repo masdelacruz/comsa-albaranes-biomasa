@@ -94,6 +94,9 @@ export default function DetalleAlbaran({ albaranes, simularFirma, updateFirma, s
   const [confirmReabrir,    setConfirmReabrir]      = useState(false)
   const [reabriendo,        setReabriendo]          = useState(false)
   const [enviandoACampo,    setEnviandoACampo]      = useState(false)
+  const [anulando,          setAnulando]            = useState(false)
+  const [anularOpen,        setAnularOpen]          = useState(false)
+  const [motivoAnulacion,   setMotivoAnulacion]     = useState('')
   const [duplicarOpen,    setDuplicarOpen]        = useState(false)
   const [numCopias,       setNumCopias]           = useState(1)
   const [duplicando,      setDuplicando]          = useState(false)
@@ -585,6 +588,12 @@ export default function DetalleAlbaran({ albaranes, simularFirma, updateFirma, s
             <button className="btn" onClick={() => { setDuplicarOpen(true); setNumCopias(1) }}>
               <Copy size={14} /> Duplicar
             </button>
+            {a.estado !== 'cerrado' && a.estado !== 'cancelado' && (
+              <button className="btn" style={{color:'var(--orange-700)',borderColor:'var(--orange-100)'}}
+                onClick={() => { setAnularOpen(true); setMotivoAnulacion('') }}>
+                <X size={15} /> Anular
+              </button>
+            )}
             {esSuperadmin && (
               <button className="btn" style={{color:'var(--red-400)',borderColor:'var(--red-100)'}} onClick={() => setConfirmBorrar(true)}>
                 <Trash2 size={15} /> Borrar
@@ -598,6 +607,20 @@ export default function DetalleAlbaran({ albaranes, simularFirma, updateFirma, s
       {/* Banner solicitud de revisión */}
       {a.solicitaRevision && (
         <BannerRevision albaranId={a.id} onReabrir={async () => { await refetch?.(); mostrarToast('Albarán reabierto para campo ✓') }} />
+      )}
+
+      {/* Banner anulado por oficina */}
+      {a.estado === 'cancelado' && (
+        <div style={{margin:'0 0 16px',padding:'12px 16px',background:'var(--red-50)',border:'1px solid var(--red-100)',
+          borderRadius:'var(--radius-lg)',display:'flex',alignItems:'center',gap:12}}>
+          <span style={{fontSize:18,flexShrink:0}}>🚫</span>
+          <div style={{flex:1}}>
+            <div style={{fontSize:13,fontWeight:600,color:'var(--red-700)'}}>Albarán anulado</div>
+            <div style={{fontSize:12,color:'var(--red-700)',marginTop:2,opacity:0.8}}>
+              {a.motivoRechazoCampo || 'Anulado desde oficina sin motivo especificado.'}
+            </div>
+          </div>
+        </div>
       )}
 
       {/* Banner rechazado desde campo */}
@@ -1243,6 +1266,50 @@ export default function DetalleAlbaran({ albaranes, simularFirma, updateFirma, s
                 ? <><div style={{width:12,height:12,border:'2px solid #fff',borderTopColor:'transparent',borderRadius:'50%',animation:'spin 0.6s linear infinite'}} /> Firmando...</>
                 : <><CheckCircle size={14} /> Confirmar y cerrar</>
               }
+            </button>
+          </div>
+        </div>
+      </div>
+    )}
+
+    {anularOpen && (
+      <div style={{position:'fixed',inset:0,background:'rgba(0,0,0,0.4)',display:'flex',alignItems:'center',justifyContent:'center',zIndex:200,padding:20}}>
+        <div style={{background:'#fff',borderRadius:'var(--radius-xl)',padding:28,width:'100%',maxWidth:400,boxShadow:'0 20px 60px rgba(0,0,0,0.15)'}}>
+          <div style={{display:'flex',alignItems:'center',gap:10,marginBottom:12}}>
+            <X size={20} color='var(--orange-700)' />
+            <span style={{fontSize:16,fontWeight:600}}>Anular albarán</span>
+          </div>
+          <p style={{fontSize:14,color:'var(--gray-600)',marginBottom:14}}>
+            El albarán <strong>{a.id}</strong> quedará marcado como <em>anulado</em>. Podrá consultarse en el historial pero no se podrá firmar.
+          </p>
+          <textarea
+            autoFocus
+            value={motivoAnulacion}
+            onChange={e => setMotivoAnulacion(e.target.value)}
+            placeholder="Motivo de la anulación (opcional): camión extraviado, error de asignación…"
+            rows={3}
+            style={{width:'100%',fontSize:13,padding:'8px 10px',borderRadius:'var(--radius-sm)',
+              border:'1px solid var(--gray-200)',resize:'none',outline:'none',
+              fontFamily:'inherit',marginBottom:16,boxSizing:'border-box'}}
+          />
+          <div style={{display:'flex',gap:8,justifyContent:'flex-end'}}>
+            <button className="btn" onClick={() => setAnularOpen(false)}>Cancelar</button>
+            <button
+              className="btn"
+              disabled={anulando}
+              style={{background:'var(--orange-400)',color:'#fff',borderColor:'var(--orange-400)',opacity:anulando?0.6:1}}
+              onClick={async () => {
+                setAnulando(true)
+                try {
+                  await api.post(`/albaranes/${a.id}/cancelar`, { motivo: motivoAnulacion })
+                  await refetch?.()
+                  mostrarToast('Albarán anulado ✓')
+                } catch {}
+                setAnulando(false)
+                setAnularOpen(false)
+              }}
+            >
+              <X size={14} /> {anulando ? 'Anulando…' : 'Confirmar anulación'}
             </button>
           </div>
         </div>

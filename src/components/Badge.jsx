@@ -1,10 +1,11 @@
 export const ESTADOS = {
   programado:                    { label: 'Programado',              color: 'gray'   },
-  pendiente_campo:               { label: 'Pendiente campo',         color: 'amber'  },
-  pendiente_oficina:             { label: 'Pendiente oficina',       color: 'blue'   },
-  humedad_pendiente:             { label: 'Humedad pendiente',       color: 'red'    },
-  rechazado_campo_astilladora:   { label: 'Rechazado · Astilladora', color: 'red'    },
-  rechazado_campo_instalacion:   { label: 'Rechazado · Instalación', color: 'red'    },
+  pendiente_campo:               { label: 'En campo',                color: 'amber'  },
+  pendiente_oficina:             { label: 'En oficina',              color: 'blue'   },
+  humedad_pendiente:             { label: 'Humedad pendiente',       color: 'purple' },
+  rechazado_campo_astilladora:   { label: 'No gestionado · Asti.',   color: 'orange' },
+  rechazado_campo_instalacion:   { label: 'No gestionado · Inst.',   color: 'orange' },
+  cancelado:                     { label: 'Anulado',                 color: 'red'    },
   cerrado:                       { label: 'Cerrado',                 color: 'green'  },
 }
 

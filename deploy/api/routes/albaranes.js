@@ -169,7 +169,7 @@ router.get('/instalacion/:nombre', async (req, res) => {
        a.motivo_rechazo_campo
      FROM albaranes a
      WHERE a.instalacion = $1
-       AND a.estado NOT IN ('cerrado','programado','rechazado_campo_instalacion')
+       AND a.estado NOT IN ('cerrado','programado','rechazado_campo_instalacion','cancelado')
        AND (
          NOT EXISTS (SELECT 1 FROM firmas f2 WHERE f2.albaran_id = a.id AND f2.rol = 'astilladora')
          OR  EXISTS (SELECT 1 FROM firmas f2 WHERE f2.albaran_id = a.id AND f2.rol = 'astilladora' AND f2.firmado = true)
@@ -210,17 +210,14 @@ router.get('/instalacion/:nombre', async (req, res) => {
     }
   })
 
-  // Aplicar ventana de visibilidad (mismo criterio que panel astilladora)
-  const visible = result.filter(a => esVisibleEnPanel(a.fecha))
-
-  // Orden: primero pendientes, luego por fecha firma astilladora asc
-  visible.sort((a, b) => {
+  // Orden: primero pendientes (no firmados), luego por fecha firma astilladora asc
+  result.sort((a, b) => {
     if (!a.instalacionFirmada && b.instalacionFirmada) return -1
     if (a.instalacionFirmada && !b.instalacionFirmada) return 1
     return new Date(a.astilladoraFecha || 0) - new Date(b.astilladoraFecha || 0)
   })
 
-  res.json(visible)
+  res.json(result)
 })
 
 // ── GET /albaranes/astilladora/:nombre  (PÚBLICO — panel astilladora) ────
@@ -233,7 +230,7 @@ router.get('/astilladora/:nombre', async (req, res) => {
        a.especie, a.tipo_biomasa, a.estella,
        a.matricula_tractora, a.matricula_remolque, a.chofer, a.estado, a.origen
      FROM albaranes a
-     WHERE a.astilladora = $1 AND a.estado NOT IN ('cerrado','programado','rechazado_campo_astilladora','rechazado_campo_instalacion')
+     WHERE a.astilladora = $1 AND a.estado NOT IN ('cerrado','programado','rechazado_campo_astilladora','rechazado_campo_instalacion','cancelado')
      ORDER BY a.created_at ASC`,
     [nombre]
   )
@@ -266,18 +263,15 @@ router.get('/astilladora/:nombre', async (req, res) => {
     }
   })
 
-  // Visible hasta el final del 2º día después de la fecha programada del albarán
-  const visible = result.filter(a => esVisibleEnPanel(a.fecha))
-
-  // Pendientes primero, luego firmados hoy desc por fecha
-  visible.sort((a, b) => {
+  // Pendientes primero, luego firmados desc por fecha
+  result.sort((a, b) => {
     if (!a.astilladoraFirmada && !b.astilladoraFirmada) return 0
     if (!a.astilladoraFirmada) return -1
     if (!b.astilladoraFirmada) return 1
     return new Date(b.astilladoraFecha) - new Date(a.astilladoraFecha)
   })
 
-  res.json(visible)
+  res.json(result)
 })
 
 // ── POST /albaranes/:id/solicitar-revision  (PÚBLICO — campo) ────
@@ -360,6 +354,29 @@ router.post('/:id/reenviar-campo', requireAuth, async (req, res) => {
   const textoActividad = prev.motivo_rechazo_campo
     ? `Reenviado a campo por ${actor} (motivo anterior: ${prev.motivo_rechazo_campo})`
     : `Reenviado a campo por ${actor}`
+  await pool.query(
+    'INSERT INTO actividad (albaran_id,ts,texto,actor) VALUES ($1,$2,$3,$4)',
+    [id, fecha, textoActividad, actor]
+  )
+  const albaran = await fetchOne(id)
+  res.json({ albaran })
+})
+
+// ── POST /albaranes/:id/cancelar  (requiere auth — oficina) ─────────
+router.post('/:id/cancelar', requireAuth, async (req, res) => {
+  const { id } = req.params
+  const { motivo } = req.body
+  const motivoTrimmed = motivo?.trim() || null
+  const { rowCount } = await pool.query(
+    "UPDATE albaranes SET estado='cancelado', motivo_rechazo_campo=$1 WHERE id=$2 AND estado NOT IN ('cerrado','cancelado')",
+    [motivoTrimmed, id]
+  )
+  if (!rowCount) return res.status(404).json({ error: 'No encontrado, ya cerrado o ya cancelado' })
+  const fecha = new Date().toLocaleString('es-ES')
+  const actor = req.user.nombre || 'Oficina'
+  const textoActividad = motivoTrimmed
+    ? `Albarán anulado por ${actor}: ${motivoTrimmed}`
+    : `Albarán anulado por ${actor}`
   await pool.query(
     'INSERT INTO actividad (albaran_id,ts,texto,actor) VALUES ($1,$2,$3,$4)',
     [id, fecha, textoActividad, actor]

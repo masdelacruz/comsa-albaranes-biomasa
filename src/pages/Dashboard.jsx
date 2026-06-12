@@ -32,7 +32,10 @@ export default function Dashboard({ albaranes, empresas = [], usuario, borrarAlb
     return isoWeek(d) === semanaActual && isoWeekYear(d) === anioActual
   })
 
-  const totalActivos   = albaranes.filter(a => a.estado !== 'cerrado').length
+  const ESTADOS_TERMINAL  = ['cerrado', 'cancelado']
+  const ESTADOS_RECHAZADO = ['rechazado_campo_astilladora', 'rechazado_campo_instalacion', 'cancelado']
+  const totalActivos   = albaranes.filter(a => !ESTADOS_TERMINAL.includes(a.estado) && !ESTADOS_RECHAZADO.includes(a.estado)).length
+  const totalRechazados = albaranes.filter(a => ESTADOS_RECHAZADO.includes(a.estado)).length
   const programados    = albaranes.filter(a => a.estado === 'programado').length
   const pendienteFirma = albaranes.filter(a => a.estado === 'pendiente_campo' || a.estado === 'pendiente_oficina').length
   const cerrados       = albaranes.filter(a => a.estado === 'cerrado').length
@@ -46,8 +49,9 @@ export default function Dashboard({ albaranes, empresas = [], usuario, borrarAlb
   const transportistas  = [...new Set([...empresasByTipo('transportista'), ...albaranes.map(a => a.transportista)].filter(Boolean))].sort()
 
   const filtrados = useMemo(() => albaranes.filter(a => {
-    if (soloActivos === 'activos'  && a.estado === 'cerrado')  return false
-    if (soloActivos === 'cerrados' && a.estado !== 'cerrado')  return false
+    if (soloActivos === 'activos'    && (ESTADOS_TERMINAL.includes(a.estado) || ESTADOS_RECHAZADO.includes(a.estado))) return false
+    if (soloActivos === 'cerrados'   && a.estado !== 'cerrado')                return false
+    if (soloActivos === 'rechazados' && !ESTADOS_RECHAZADO.includes(a.estado)) return false
     if (busqueda) {
       const q = busqueda.toLowerCase()
       const hay = [a.id, a.proveedor, a.astilladora, a.transportista, a.instalacion, a.especie, a.estella, a.origen, a.permiso]
@@ -64,6 +68,7 @@ export default function Dashboard({ albaranes, empresas = [], usuario, borrarAlb
     return true
   }), [albaranes, soloActivos, busqueda, filtroInstalacion, filtroAstilladora, filtroProveedor, filtroTransportista, filtroEstado, filtroFechaDesde, filtroFechaHasta])
 
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => { setPagina(1) }, [soloActivos, busqueda, filtroInstalacion, filtroAstilladora, filtroProveedor, filtroTransportista, filtroEstado, filtroFechaDesde, filtroFechaHasta])
 
   const totalPaginas = Math.ceil(filtrados.length / POR_PAGINA)
@@ -114,13 +119,14 @@ export default function Dashboard({ albaranes, empresas = [], usuario, borrarAlb
         <div className="table-header">
           <div style={{display:'flex',alignItems:'center',gap:10,flexWrap:'wrap'}}>
             <div className="section-label" style={{margin:0}}>
-              {{ activos:'Albaranes activos', cerrados:'Albaranes cerrados', todos:'Todos los albaranes' }[soloActivos]}
+              {{ activos:'Albaranes activos', cerrados:'Albaranes cerrados', rechazados:'Rechazados y anulados', todos:'Todos los albaranes' }[soloActivos]}
             </div>
             <div style={{display:'flex',gap:2,background:'var(--gray-100)',borderRadius:6,padding:2}}>
               {[
-                { label:`Activos · ${totalActivos}`,      val:'activos'  },
-                { label:`Cerrados · ${cerrados}`,         val:'cerrados' },
-                { label:`Todos · ${albaranes.length}`,    val:'todos'    },
+                { label:`Activos · ${totalActivos}`,        val:'activos'    },
+                { label:`Cerrados · ${cerrados}`,           val:'cerrados'   },
+                { label:`Rechazados · ${totalRechazados}`,  val:'rechazados' },
+                { label:`Todos · ${albaranes.length}`,      val:'todos'      },
               ].map(({ label, val }) => (
                 <button key={val}
                   onClick={() => { setSoloActivos(val); if (val === 'activos') setFiltroEstado('') }}
@@ -169,8 +175,9 @@ export default function Dashboard({ albaranes, empresas = [], usuario, borrarAlb
             <option value="pendiente_campo">Pendiente campo</option>
             <option value="pendiente_oficina">Pendiente oficina</option>
             <option value="humedad_pendiente">Humedad pendiente</option>
-            <option value="rechazado_campo_astilladora">Rechazado · Astilladora</option>
-            <option value="rechazado_campo_instalacion">Rechazado · Instalación</option>
+            <option value="rechazado_campo_astilladora">No gestionado · Astilladora</option>
+            <option value="rechazado_campo_instalacion">No gestionado · Instalación</option>
+            <option value="cancelado">Anulado</option>
             {soloActivos === 'todos' && <option value="cerrado">Cerrado</option>}
           </select>
           <div style={{display:'flex',alignItems:'center',gap:4}}>
