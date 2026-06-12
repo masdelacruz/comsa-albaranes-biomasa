@@ -221,7 +221,8 @@ function VistaFirmadaInstalacion({ a }) {
   )
 }
 
-function PasoFirma({ rol, a, updateFirma, subirTicketPesada, onCompletado, totalPasos, pasoActual }) {
+function PasoFirma({ rol, a, updateFirma, subirTicketPesada, onCompletado, totalPasos, pasoActual, panelUrl }) {
+  const navigate  = useNavigate()
   const config    = ROLES_CONFIG[rol]
   const yaFirmado = a.firmas?.[rol]?.firmado
 
@@ -252,6 +253,10 @@ function PasoFirma({ rol, a, updateFirma, subirTicketPesada, onCompletado, total
   const [firmando,          setFirmando]         = useState(false)
   const [firmado,           setFirmado]          = useState(false)
   const [errorFirma,        setErrorFirma]       = useState('')
+  const [rechazando,        setRechazando]       = useState(false)
+  const [motivoRejOpen,     setMotivoRejOpen]    = useState(false)
+  const [motivoRej,         setMotivoRej]        = useState('')
+  const [enviandoRechazo,   setEnviandoRechazo]  = useState(false)
 
   const pesoNeto = pesoBruto && tara
     ? (parseFloat(pesoBruto) - parseFloat(tara)).toLocaleString('es-ES') + ' kg' : null
@@ -517,6 +522,71 @@ function PasoFirma({ rol, a, updateFirma, subirTicketPesada, onCompletado, total
           : <><CheckCircle size={16} /> {rol === 'instalacion' ? 'Confirmar recepción' : 'Confirmar y firmar'}</>
         }
       </button>
+
+      {(rol === 'astilladora' || rol === 'instalacion') && (
+        motivoRejOpen ? (
+          <div style={{marginTop:12,padding:'14px',background:'#fff5f5',border:'1px solid #fecaca',borderRadius:'var(--radius-lg)'}}>
+            <div style={{fontSize:13,fontWeight:600,color:'#991b1b',marginBottom:8}}>
+              ¿Por qué no se puede gestionar?
+            </div>
+            <textarea
+              autoFocus
+              value={motivoRej}
+              onChange={e => setMotivoRej(e.target.value)}
+              placeholder="Ej: el camión no ha llegado, problema en la máquina, error de asignación…"
+              rows={3}
+              style={{
+                width:'100%', fontSize:13, padding:'8px 10px', borderRadius:'var(--radius-sm)',
+                border:'1px solid #fca5a5', resize:'none', outline:'none',
+                background:'#fff', color:'var(--gray-800)', boxSizing:'border-box',
+                fontFamily:'inherit', marginBottom:10,
+              }}
+            />
+            <div style={{display:'flex',gap:8}}>
+              <button
+                disabled={enviandoRechazo}
+                onClick={async () => {
+                  setEnviandoRechazo(true)
+                  try {
+                    await fetch(`/api/albaranes/${a.id}/rechazar-campo`, {
+                      method: 'POST',
+                      headers: { 'Content-Type': 'application/json' },
+                      body: JSON.stringify({ rol, motivo: motivoRej }),
+                    })
+                    if (panelUrl) navigate(panelUrl, { replace: true })
+                  } catch {}
+                  setEnviandoRechazo(false)
+                }}
+                style={{flex:1,padding:'11px 0',background:'#dc2626',border:'none',
+                  borderRadius:'var(--radius-lg)',fontSize:14,fontWeight:600,
+                  color:'#fff',cursor:'pointer',opacity:enviandoRechazo?0.6:1}}
+              >
+                {enviandoRechazo ? 'Enviando…' : 'Confirmar'}
+              </button>
+              <button
+                onClick={() => { setMotivoRejOpen(false); setMotivoRej('') }}
+                style={{flex:1,padding:'11px 0',background:'none',
+                  border:'1.5px solid var(--gray-300)',borderRadius:'var(--radius-lg)',
+                  fontSize:14,color:'var(--gray-600)',cursor:'pointer'}}
+              >
+                Cancelar
+              </button>
+            </div>
+          </div>
+        ) : (
+          <button
+            onClick={() => setMotivoRejOpen(true)}
+            style={{width:'100%',marginTop:10,padding:'13px',background:'none',
+              border:'1.5px solid var(--gray-300)',borderRadius:'var(--radius-lg)',
+              fontSize:14,color:'var(--gray-500)',cursor:'pointer',
+              display:'flex',alignItems:'center',justifyContent:'center',gap:8,transition:'all 0.15s'}}
+            onMouseEnter={e => { e.currentTarget.style.borderColor='#fca5a5'; e.currentTarget.style.color='#dc2626' }}
+            onMouseLeave={e => { e.currentTarget.style.borderColor='var(--gray-300)'; e.currentTarget.style.color='var(--gray-500)' }}
+          >
+            No he podido gestionar este albarán
+          </button>
+        )
+      )}
     </div>
   )
 }
@@ -698,6 +768,7 @@ export default function VistaCampo({ albaranes, updateFirma, subirTicketPesada }
               updateFirma={updateFirma} subirTicketPesada={subirTicketPesada}
               onCompletado={() => handleCompletadoPaso(r)}
               totalPasos={rolesDirectos.length} pasoActual={i + 1}
+              panelUrl={panelUrl}
             />
           ) : pasosCompletados.includes(r) ? (
             <div key={r} className="campo-card" style={{display:'flex',alignItems:'center',gap:10,padding:'14px 16px'}}>
@@ -761,6 +832,7 @@ export default function VistaCampo({ albaranes, updateFirma, subirTicketPesada }
         updateFirma={updateFirma} subirTicketPesada={subirTicketPesada}
         onCompletado={() => rolSeleccionado !== 'instalacion' && setTodoCompletado(true)}
         totalPasos={1} pasoActual={1}
+        panelUrl={panelUrl}
       />
     </div>
   )

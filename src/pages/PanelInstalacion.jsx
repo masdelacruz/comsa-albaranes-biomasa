@@ -37,97 +37,26 @@ function InfoCamion({ a }) {
   )
 }
 
-function TarjetaCamion({ a, esUltimo, esDesde, onRechazar }) {
+function TarjetaCamion({ a, esUltimo, esDesde }) {
   const navigate = useNavigate()
   const firmado  = a.instalacionFirmada
   const ref      = useRef(null)
-  const [confirmando, setConfirmando] = useState(false)
-  const [rechazando,  setRechazando]  = useState(false)
-  const [motivo,      setMotivo]      = useState('')
 
   useEffect(() => {
     if (esDesde && ref.current) ref.current.scrollIntoView({ behavior: 'smooth', block: 'center' })
   }, [esDesde])
 
-  const handleRechazar = async (e) => {
-    e.stopPropagation()
-    setRechazando(true)
-    try {
-      await fetch(`/api/albaranes/${a.id}/rechazar-campo`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ rol: 'instalacion', motivo }),
-      })
-      onRechazar(a.id)
-    } catch {}
-    setRechazando(false)
-    setConfirmando(false)
-    setMotivo('')
-  }
-
-  const handleCancelar = (e) => {
-    e.stopPropagation()
-    setConfirmando(false)
-    setMotivo('')
-  }
-
   return (
     <div
       ref={ref}
       className={`pi-camion ${firmado ? 'firmado' : 'pendiente'}${esDesde ? ' pi-desde-active' : ''}`}
-      onClick={() => !confirmando && navigate(`/campo/${a.id}/instalacion`)}
-      style={{ cursor: confirmando ? 'default' : 'pointer', borderBottom: esUltimo ? 'none' : undefined }}
+      onClick={() => navigate(`/campo/${a.id}/instalacion`)}
+      style={{ cursor: 'pointer', borderBottom: esUltimo ? 'none' : undefined }}
     >
       <div className="pi-camion-left">
         <div className={`pi-camion-dot ${firmado ? 'verde' : 'amber'}`} />
-        <div style={{ flex: 1, minWidth: 0 }}>
+        <div>
           <InfoCamion a={a} />
-          {!firmado && (
-            <div onClick={e => e.stopPropagation()}>
-              {confirmando ? (
-                <div style={{marginTop:10,background:'#fff5f5',border:'1px solid #fecaca',borderRadius:8,padding:'10px 12px'}}>
-                  <div style={{fontSize:12,fontWeight:600,color:'#991b1b',marginBottom:6}}>
-                    ¿Marcar como no gestionado?
-                  </div>
-                  <textarea
-                    autoFocus
-                    value={motivo}
-                    onChange={e => setMotivo(e.target.value)}
-                    placeholder="Motivo (opcional): camión no llegó, problema técnico…"
-                    rows={2}
-                    style={{
-                      width:'100%', fontSize:12, padding:'6px 8px', borderRadius:6,
-                      border:'1px solid #fca5a5', resize:'none', outline:'none',
-                      background:'#fff', color:'#374151', boxSizing:'border-box',
-                      fontFamily:'inherit',
-                    }}
-                  />
-                  <div style={{display:'flex',gap:8,marginTop:8}}>
-                    <button onClick={handleRechazar} disabled={rechazando}
-                      style={{flex:1,fontSize:12,fontWeight:600,padding:'7px 0',background:'#dc2626',
-                        border:'none',borderRadius:6,color:'#fff',cursor:'pointer',opacity:rechazando?0.6:1}}>
-                      {rechazando ? 'Enviando…' : 'Confirmar'}
-                    </button>
-                    <button onClick={handleCancelar}
-                      style={{flex:1,fontSize:12,padding:'7px 0',background:'none',
-                        border:'1px solid #d1d5db',borderRadius:6,color:'#6b7280',cursor:'pointer'}}>
-                      Cancelar
-                    </button>
-                  </div>
-                </div>
-              ) : (
-                <button onClick={e => { e.stopPropagation(); setConfirmando(true) }}
-                  style={{
-                    display:'inline-flex', alignItems:'center', gap:4, marginTop:6,
-                    fontSize:11, fontWeight:500, padding:'3px 9px',
-                    background:'#fff5f5', border:'1px solid #fca5a5',
-                    borderRadius:20, color:'#dc2626', cursor:'pointer',
-                  }}>
-                  <span style={{fontSize:10}}>✕</span> No gestionado
-                </button>
-              )}
-            </div>
-          )}
         </div>
       </div>
       <div className="pi-camion-right">
@@ -140,7 +69,7 @@ function TarjetaCamion({ a, esUltimo, esDesde, onRechazar }) {
   )
 }
 
-function GrupoHora({ hora, albaranes, desdeId, onRechazar }) {
+function GrupoHora({ hora, albaranes, desdeId }) {
   const firmados = albaranes.filter(a => a.instalacionFirmada).length
   const total    = albaranes.length
   const pct      = Math.round((firmados / total) * 100)
@@ -170,7 +99,7 @@ function GrupoHora({ hora, albaranes, desdeId, onRechazar }) {
         {sorted.map((a, i) => (
           <div key={a.id} className="pi-camion-row">
             <span className="pi-camion-orden">#{i + 1}</span>
-            <TarjetaCamion a={a} esUltimo={i === sorted.length - 1} esDesde={String(a.id) === desdeId} onRechazar={onRechazar} />
+            <TarjetaCamion a={a} esUltimo={i === sorted.length - 1} esDesde={String(a.id) === desdeId} />
           </div>
         ))}
       </div>
@@ -375,7 +304,6 @@ export default function PanelInstalacion() {
                 hora={hora}
                 albaranes={albs}
                 desdeId={desdeId}
-                onRechazar={id => setAlbaranes(prev => prev.filter(a => a.id !== id))}
               />
             ))}
           </div>
