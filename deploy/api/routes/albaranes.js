@@ -167,7 +167,12 @@ router.get('/instalacion/:nombre', async (req, res) => {
        a.astilladora, a.proveedor, a.transportista, a.especie, a.tipo_biomasa, a.estella,
        a.matricula_tractora, a.matricula_remolque, a.chofer, a.estado, a.origen
      FROM albaranes a
-     WHERE a.instalacion = $1 AND a.estado NOT IN ('cerrado','programado','rechazado_campo_instalacion')
+     WHERE a.instalacion = $1
+       AND a.estado NOT IN ('cerrado','programado','rechazado_campo_instalacion')
+       AND EXISTS (
+         SELECT 1 FROM firmas f
+         WHERE f.albaran_id = a.id AND f.rol = 'astilladora' AND f.firmado = true
+       )
      ORDER BY a.created_at ASC`,
     [nombre]
   )
@@ -203,19 +208,10 @@ router.get('/instalacion/:nombre', async (req, res) => {
     }
   })
 
-  // Sin límite de tiempo para instalación — se muestra mientras esté pendiente
-  const visible = result
+  // Orden por fecha de firma astilladora asc (todos la tienen por la query)
+  result.sort((a, b) => new Date(a.astilladoraFecha) - new Date(b.astilladoraFecha))
 
-  // Orden: primero los que astilladora ya firmó (por fecha firma asc), luego el resto
-  visible.sort((a, b) => {
-    if (a.astilladoraFecha && b.astilladoraFecha)
-      return new Date(a.astilladoraFecha) - new Date(b.astilladoraFecha)
-    if (a.astilladoraFecha) return -1
-    if (b.astilladoraFecha) return 1
-    return 0
-  })
-
-  res.json(visible)
+  res.json(result)
 })
 
 // ── GET /albaranes/astilladora/:nombre  (PÚBLICO — panel astilladora) ────
