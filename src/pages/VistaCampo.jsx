@@ -591,7 +591,7 @@ function PasoFirma({ rol, a, updateFirma, subirTicketPesada, onCompletado, total
   )
 }
 
-export default function VistaCampo({ albaranes, updateFirma, subirTicketPesada }) {
+export default function VistaCampo({ albaranes, updateFirma, subirTicketPesada, hayActualizacion, onAplicarActualizacion }) {
   const { id, roles: rolesParam } = useParams()
   const navigate = useNavigate()
 
@@ -721,6 +721,20 @@ export default function VistaCampo({ albaranes, updateFirma, subirTicketPesada }
         <div className="campo-title">Albarán {a.id}</div>
         {a.fecha && <div className="campo-sub">{a.fecha.slice(0,10).split('-').reverse().join('/')}</div>}
       </div>
+      {hayActualizacion && (
+        <button
+          onClick={onAplicarActualizacion}
+          style={{
+            marginLeft:'auto', flexShrink:0,
+            display:'flex', alignItems:'center', gap:5,
+            padding:'5px 10px', background:'#fef3c7',
+            border:'1px solid #fbbf24', borderRadius:20,
+            fontSize:12, fontWeight:600, color:'#92400e', cursor:'pointer',
+          }}
+        >
+          <span style={{fontSize:14, lineHeight:1}}>↻</span> Actualizar
+        </button>
+      )}
     </div>
   )
 

@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import { BrowserRouter, Routes, Route, Navigate, useParams } from 'react-router-dom'
 import Layout from './components/Layout'
 import Dashboard from './pages/Dashboard'
@@ -36,15 +36,22 @@ const Bloqueado = () => (
 
 function VistaCampoPublica() {
   const { id } = useParams()
-  const [albaran, setAlbaran] = useState(null)
-  const [loading, setLoading] = useState(true)
+  const [albaran,          setAlbaran]          = useState(null)
+  const [loading,          setLoading]          = useState(true)
+  const [hayActualizacion, setHayActualizacion] = useState(false)
+  const pendingRef = useRef(null)
+  const currentRef = useRef(null)
 
-  // Carga el albarán desde el endpoint PÚBLICO (sin auth, incluye empresaFirmaMap)
   const refetchAlbaran = useCallback(async () => {
     try {
       const res  = await fetch(`/api/albaranes/${id}`)
       const data = await res.json()
-      if (data?.id) setAlbaran(data)
+      if (data?.id) {
+        setAlbaran(data)
+        currentRef.current = JSON.stringify(data)
+        setHayActualizacion(false)
+        pendingRef.current = null
+      }
     } catch {}
   }, [id])
 
@@ -52,10 +59,44 @@ function VistaCampoPublica() {
     refetchAlbaran().finally(() => setLoading(false))
   }, [refetchAlbaran])
 
+  // Polling: detecta cambios sin aplicarlos hasta que el usuario lo pida
+  useEffect(() => {
+    const check = async () => {
+      try {
+        const res  = await fetch(`/api/albaranes/${id}`)
+        const data = await res.json()
+        if (!data?.id) return
+        if (currentRef.current && JSON.stringify(data) !== currentRef.current) {
+          pendingRef.current = data
+          setHayActualizacion(true)
+        }
+      } catch {}
+    }
+    const timer = setInterval(check, 30000)
+    return () => clearInterval(timer)
+  }, [id])
+
+  const aplicarActualizacion = () => {
+    if (pendingRef.current) {
+      setAlbaran(pendingRef.current)
+      currentRef.current = JSON.stringify(pendingRef.current)
+      pendingRef.current = null
+      setHayActualizacion(false)
+    }
+  }
+
   const { updateFirma, subirTicketPesada } = useAlbaranActions(refetchAlbaran, null)
 
   if (loading) return <Spinner />
-  return <VistaCampo albaranes={albaran ? [albaran] : []} updateFirma={updateFirma} subirTicketPesada={subirTicketPesada} />
+  return (
+    <VistaCampo
+      albaranes={albaran ? [albaran] : []}
+      updateFirma={updateFirma}
+      subirTicketPesada={subirTicketPesada}
+      hayActualizacion={hayActualizacion}
+      onAplicarActualizacion={aplicarActualizacion}
+    />
+  )
 }
 
 function AppConDatos({ usuario, logout, actualizarUsuario }) {

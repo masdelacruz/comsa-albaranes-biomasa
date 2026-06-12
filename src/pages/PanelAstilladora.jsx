@@ -125,9 +125,12 @@ export default function PanelAstilladora() {
   const [lastUpdate,    setLastUpdate]    = useState(null)
   const [refreshing,    setRefreshing]    = useState(false)
   const [showOk,        setShowOk]        = useState(false)
+  const [hayCambios,    setHayCambios]    = useState(false)
   const [logoUrl,       setLogoUrl]       = useState(null)
   const [headerBgColor, setHeaderBgColor] = useState(null)
-  const showOkTimer = useRef(null)
+  const showOkTimer    = useRef(null)
+  const hayCambiosTimer = useRef(null)
+  const signaturaRef   = useRef(null)
 
   useEffect(() => {
     const logoId = `empresa_${slugify(nombreAstilladora)}`
@@ -199,9 +202,18 @@ export default function PanelAstilladora() {
     try {
       const res  = await fetch(`/api/albaranes/astilladora/${encodeURIComponent(nombreAstilladora)}`)
       const data = await res.json()
-      setAlbaranes(Array.isArray(data) ? data : [])
+      const arr  = Array.isArray(data) ? data : []
+      const sig  = arr.map(a => `${a.id}:${a.astilladoraFirmada}:${a.estado}`).join('|')
+      if (!manual && signaturaRef.current !== null && sig !== signaturaRef.current) {
+        clearTimeout(hayCambiosTimer.current)
+        setHayCambios(true)
+        hayCambiosTimer.current = setTimeout(() => setHayCambios(false), 6000)
+      }
+      signaturaRef.current = sig
+      setAlbaranes(arr)
       setLastUpdate(new Date())
       if (manual) {
+        setHayCambios(false)
         clearTimeout(showOkTimer.current)
         setShowOk(true)
         showOkTimer.current = setTimeout(() => setShowOk(false), 2500)
@@ -249,6 +261,16 @@ export default function PanelAstilladora() {
         </div>
         <div style={{ marginLeft:'auto', display:'flex', alignItems:'center', gap:8 }}>
           {showOk && <span className="pi-refresh-ok">✓ Actualizado</span>}
+          {hayCambios && !showOk && (
+            <span style={{
+              fontSize:11, fontWeight:600, color:'#92400e',
+              background:'#fef3c7', border:'1px solid #fbbf24',
+              borderRadius:20, padding:'3px 8px', display:'flex', alignItems:'center', gap:4,
+            }}>
+              <span style={{width:6,height:6,borderRadius:'50%',background:'#f59e0b',display:'inline-block'}} />
+              Cambios
+            </span>
+          )}
           <button
             className={`pi-refresh${refreshing ? ' pi-refresh-spin' : ''}`}
             onClick={() => fetchData(true)}
