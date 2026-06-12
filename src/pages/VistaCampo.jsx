@@ -625,6 +625,33 @@ export default function VistaCampo({ albaranes, updateFirma, subirTicketPesada, 
 
   if (!a) return <div style={{padding:40,textAlign:'center',color:'#999'}}>Albarán no encontrado.</div>
 
+  const Topbar = ({ onBack }) => (
+    <div className="campo-topbar">
+      {onBack
+        ? <button onClick={onBack} style={{background:'none',border:'none',cursor:'pointer',color:'var(--gray-600)'}}><ArrowLeft size={18} /></button>
+        : <div className="campo-topbar-logo"><Leaf size={14} color="#fff" /></div>
+      }
+      <div>
+        <div className="campo-title">Albarán {a.id}</div>
+        {a.fecha && <div className="campo-sub">{a.fecha.slice(0,10).split('-').reverse().join('/')}</div>}
+      </div>
+      {hayActualizacion && (
+        <button
+          onClick={onAplicarActualizacion}
+          style={{
+            marginLeft:'auto', flexShrink:0,
+            display:'flex', alignItems:'center', gap:5,
+            padding:'5px 10px', background:'#fef3c7',
+            border:'1px solid #fbbf24', borderRadius:20,
+            fontSize:12, fontWeight:600, color:'#92400e', cursor:'pointer',
+          }}
+        >
+          <span style={{fontSize:14, lineHeight:1}}>↻</span> Actualizar
+        </button>
+      )}
+    </div>
+  )
+
   if (a.estado === 'cerrado') return (
     <div className="campo-page">
       <div className="campo-success">
@@ -632,6 +659,62 @@ export default function VistaCampo({ albaranes, updateFirma, subirTicketPesada, 
         <div className="campo-success-title">Albarán cerrado</div>
         <div className="campo-success-sub">Este albarán ya tiene todas las firmas completadas. No es necesaria ninguna acción.</div>
       </div>
+    </div>
+  )
+
+  if (a.estado === 'rechazado_campo_astilladora' || a.estado === 'rechazado_campo_instalacion') {
+    const quienRechazó = a.estado === 'rechazado_campo_astilladora' ? 'La astilladora' : 'La instalación'
+    return (
+      <div className="campo-page">
+        <Topbar />
+        <div className="campo-card" style={{textAlign:'center',padding:'24px 16px'}}>
+          <div style={{fontSize:32,marginBottom:10}}>⏸</div>
+          <div style={{fontSize:15,fontWeight:600,color:'var(--gray-800)',marginBottom:6}}>
+            Albarán en espera
+          </div>
+          <div style={{fontSize:13,color:'var(--gray-500)',lineHeight:1.5,marginBottom: a.motivoRechazoCampo ? 12 : 0}}>
+            {quienRechazó} marcó este albarán como no gestionado. La oficina deberá reactivarlo.
+          </div>
+          {a.motivoRechazoCampo && (
+            <div style={{marginTop:4,padding:'8px 12px',background:'var(--gray-50)',border:'1px solid var(--gray-200)',borderRadius:'var(--radius-md)',fontSize:12,color:'var(--gray-600)',fontStyle:'italic',textAlign:'left'}}>
+              Motivo: {a.motivoRechazoCampo}
+            </div>
+          )}
+        </div>
+        {panelUrl && (
+          <button onClick={() => navigate(panelUrl)}
+            style={{width:'100%',padding:'13px',background:'none',border:'1.5px solid var(--gray-300)',
+              borderRadius:'var(--radius-lg)',fontSize:14,color:'var(--gray-600)',cursor:'pointer',
+              display:'flex',alignItems:'center',justifyContent:'center',gap:8}}>
+            ← Volver al panel
+          </button>
+        )}
+      </div>
+    )
+  }
+
+  if (a.estado === 'pendiente_oficina' || a.estado === 'humedad_pendiente') return (
+    <div className="campo-page">
+      <Topbar />
+      <div className="campo-card" style={{textAlign:'center',padding:'24px 16px'}}>
+        <CheckCircle size={32} color="var(--green-400)" style={{marginBottom:10}} />
+        <div style={{fontSize:15,fontWeight:600,color:'var(--green-600)',marginBottom:6}}>
+          {a.estado === 'humedad_pendiente' ? 'Pendiente de registro de humedad' : 'Firmas de campo completadas'}
+        </div>
+        <div style={{fontSize:13,color:'var(--gray-500)',lineHeight:1.5}}>
+          {a.estado === 'humedad_pendiente'
+            ? 'Todas las firmas de campo están hechas. La oficina está pendiente de registrar la humedad.'
+            : 'Todas las firmas de campo están completadas. La oficina está procesando este albarán.'}
+        </div>
+      </div>
+      {panelUrl && (
+        <button onClick={() => navigate(panelUrl)}
+          style={{width:'100%',padding:'13px',background:'none',border:'1.5px solid var(--gray-300)',
+            borderRadius:'var(--radius-lg)',fontSize:14,color:'var(--gray-600)',cursor:'pointer',
+            display:'flex',alignItems:'center',justifyContent:'center',gap:8}}>
+          ← Volver al panel
+        </button>
+      )}
     </div>
   )
 
@@ -710,33 +793,6 @@ export default function VistaCampo({ albaranes, updateFirma, subirTicketPesada, 
       </div>
     )
   }
-
-  const Topbar = ({ onBack }) => (
-    <div className="campo-topbar">
-      {onBack
-        ? <button onClick={onBack} style={{background:'none',border:'none',cursor:'pointer',color:'var(--gray-600)'}}><ArrowLeft size={18} /></button>
-        : <div className="campo-topbar-logo"><Leaf size={14} color="#fff" /></div>
-      }
-      <div>
-        <div className="campo-title">Albarán {a.id}</div>
-        {a.fecha && <div className="campo-sub">{a.fecha.slice(0,10).split('-').reverse().join('/')}</div>}
-      </div>
-      {hayActualizacion && (
-        <button
-          onClick={onAplicarActualizacion}
-          style={{
-            marginLeft:'auto', flexShrink:0,
-            display:'flex', alignItems:'center', gap:5,
-            padding:'5px 10px', background:'#fef3c7',
-            border:'1px solid #fbbf24', borderRadius:20,
-            fontSize:12, fontWeight:600, color:'#92400e', cursor:'pointer',
-          }}
-        >
-          <span style={{fontSize:14, lineHeight:1}}>↻</span> Actualizar
-        </button>
-      )}
-    </div>
-  )
 
   if (todoCompletado) {
     if (panelUrl) {

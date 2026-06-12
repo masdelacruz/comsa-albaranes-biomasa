@@ -165,13 +165,14 @@ router.get('/instalacion/:nombre', async (req, res) => {
     `SELECT
        a.id, a.fecha, a.hora, a.grupo_id, a.camion_orden, a.num_camiones,
        a.astilladora, a.proveedor, a.transportista, a.especie, a.tipo_biomasa, a.estella,
-       a.matricula_tractora, a.matricula_remolque, a.chofer, a.estado, a.origen
+       a.matricula_tractora, a.matricula_remolque, a.chofer, a.estado, a.origen,
+       a.motivo_rechazo_campo
      FROM albaranes a
      WHERE a.instalacion = $1
        AND a.estado NOT IN ('cerrado','programado','rechazado_campo_instalacion')
-       AND EXISTS (
-         SELECT 1 FROM firmas f
-         WHERE f.albaran_id = a.id AND f.rol = 'astilladora' AND f.firmado = true
+       AND (
+         NOT EXISTS (SELECT 1 FROM firmas f2 WHERE f2.albaran_id = a.id AND f2.rol = 'astilladora')
+         OR  EXISTS (SELECT 1 FROM firmas f2 WHERE f2.albaran_id = a.id AND f2.rol = 'astilladora' AND f2.firmado = true)
        )
      ORDER BY a.created_at ASC`,
     [nombre]
@@ -201,6 +202,7 @@ router.get('/instalacion/:nombre', async (req, res) => {
       matriculaTractora: a.matricula_tractora,
       matriculaRemolque: a.matricula_remolque,
       chofer: a.chofer, estado: a.estado, origen: a.origen,
+      motivoRechazoCampo: a.motivo_rechazo_campo || null,
       instalacionFirmada: fInst?.firmado || false,
       instalacionFecha:   fInst?.fecha   || null,
       astilladoraFirmada: fAsti?.firmado || false,
@@ -208,10 +210,17 @@ router.get('/instalacion/:nombre', async (req, res) => {
     }
   })
 
-  // Orden por fecha de firma astilladora asc (todos la tienen por la query)
-  result.sort((a, b) => new Date(a.astilladoraFecha) - new Date(b.astilladoraFecha))
+  // Aplicar ventana de visibilidad (mismo criterio que panel astilladora)
+  const visible = result.filter(a => esVisibleEnPanel(a.fecha))
 
-  res.json(result)
+  // Orden: primero pendientes, luego por fecha firma astilladora asc
+  visible.sort((a, b) => {
+    if (!a.instalacionFirmada && b.instalacionFirmada) return -1
+    if (a.instalacionFirmada && !b.instalacionFirmada) return 1
+    return new Date(a.astilladoraFecha || 0) - new Date(b.astilladoraFecha || 0)
+  })
+
+  res.json(visible)
 })
 
 // ── GET /albaranes/astilladora/:nombre  (PÚBLICO — panel astilladora) ────
@@ -224,7 +233,7 @@ router.get('/astilladora/:nombre', async (req, res) => {
        a.especie, a.tipo_biomasa, a.estella,
        a.matricula_tractora, a.matricula_remolque, a.chofer, a.estado, a.origen
      FROM albaranes a
-     WHERE a.astilladora = $1 AND a.estado NOT IN ('cerrado','programado','rechazado_campo_astilladora')
+     WHERE a.astilladora = $1 AND a.estado NOT IN ('cerrado','programado','rechazado_campo_astilladora','rechazado_campo_instalacion')
      ORDER BY a.created_at ASC`,
     [nombre]
   )
@@ -337,16 +346,23 @@ router.post('/:id/rechazar-campo', async (req, res) => {
 // ── POST /albaranes/:id/reenviar-campo  (requiere auth — oficina) ────
 router.post('/:id/reenviar-campo', requireAuth, async (req, res) => {
   const { id } = req.params
-  const { rowCount } = await pool.query(
-    "UPDATE albaranes SET estado='pendiente_campo' WHERE id=$1 AND estado LIKE 'rechazado_campo_%'",
+  const { rows: [prev] } = await pool.query(
+    "SELECT estado, motivo_rechazo_campo FROM albaranes WHERE id=$1 AND estado LIKE 'rechazado_campo_%'",
     [id]
   )
-  if (!rowCount) return res.status(404).json({ error: 'No encontrado o no está rechazado' })
+  if (!prev) return res.status(404).json({ error: 'No encontrado o no está rechazado' })
+  await pool.query(
+    "UPDATE albaranes SET estado='pendiente_campo', motivo_rechazo_campo=NULL WHERE id=$1",
+    [id]
+  )
   const fecha = new Date().toLocaleString('es-ES')
   const actor = req.user.nombre || 'Oficina'
+  const textoActividad = prev.motivo_rechazo_campo
+    ? `Reenviado a campo por ${actor} (motivo anterior: ${prev.motivo_rechazo_campo})`
+    : `Reenviado a campo por ${actor}`
   await pool.query(
     'INSERT INTO actividad (albaran_id,ts,texto,actor) VALUES ($1,$2,$3,$4)',
-    [id, fecha, 'Reenviado a campo por oficina', actor]
+    [id, fecha, textoActividad, actor]
   )
   const albaran = await fetchOne(id)
   res.json({ albaran })
