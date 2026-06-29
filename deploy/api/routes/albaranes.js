@@ -172,10 +172,7 @@ router.get('/instalacion/:nombre', async (req, res) => {
      WHERE a.instalacion = $1
        AND a.estado NOT IN ('cerrado','rechazado_campo_instalacion','cancelado')
        AND (
-         (a.estado != 'programado' AND (
-           NOT EXISTS (SELECT 1 FROM firmas f2 WHERE f2.albaran_id = a.id AND f2.rol = 'astilladora')
-           OR  EXISTS (SELECT 1 FROM firmas f2 WHERE f2.albaran_id = a.id AND f2.rol = 'astilladora' AND f2.firmado = true)
-         ))
+         a.estado != 'programado'
          OR (a.estado = 'programado' AND a.fecha >= CURRENT_DATE)
        )
      ORDER BY a.created_at ASC`,
