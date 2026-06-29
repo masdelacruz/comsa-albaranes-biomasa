@@ -481,6 +481,54 @@
   font-weight: 500;
 }
 .pi-semana-dia.hoy .pi-semana-count.vacio { color: var(--gray-300); }
+.pi-semana-dia.seleccionado .pi-semana-num {
+  background: var(--green-700);
+  color: #fff;
+  font-weight: 700;
+}
+.pi-semana-dia.seleccionado:not(.hoy) .pi-semana-dow { color: var(--green-600); }
+
+/* ── Badge en camino ─────────────────────────────── */
+.pi-camion-encamino-tag {
+  font-size: 9px;
+  font-weight: 700;
+  color: var(--green-700);
+  background: var(--green-50);
+  border: 1px solid var(--green-200);
+  border-radius: 10px;
+  padding: 2px 7px;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+  white-space: nowrap;
+}
+.pi-camion.encamino {
+  border-left-color: var(--green-400) !important;
+  background: #f0fdf4 !important;
+}
+
+/* ── Banner filtro por día ───────────────────────── */
+.pi-filtro-dia-banner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: var(--green-50);
+  border: 1px solid var(--green-100);
+  border-radius: 10px;
+  padding: 8px 14px;
+  margin: 0 0 12px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--green-700);
+}
+.pi-filtro-dia-banner button {
+  background: none;
+  border: none;
+  font-size: 11px;
+  color: var(--green-600);
+  cursor: pointer;
+  font-weight: 600;
+  padding: 0;
+}
 
 /* ── Separador de fecha (multi-día) ─────────────── */
 .pi-fecha-sep {

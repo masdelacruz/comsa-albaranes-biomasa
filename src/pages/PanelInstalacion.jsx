@@ -43,7 +43,7 @@ function labelFechaSec(fechaISO) {
   return base
 }
 
-function CalendarioSemana({ albaranes }) {
+function CalendarioSemana({ albaranes, diaSeleccionado, onDiaClick }) {
   const hoy    = new Date()
   const hoyStr = isoLocal(hoy)
   const dow    = (hoy.getDay() + 6) % 7
@@ -75,9 +75,16 @@ function CalendarioSemana({ albaranes }) {
           barStyle.background = `linear-gradient(to top, var(--green-${d.esHoy ? '500' : '400'}) ${activoH}px, var(--green-${d.esHoy ? '200' : '100'}) ${activoH}px)`
         else if (planH > 0)
           barStyle.background = d.esHoy ? 'rgba(255,255,255,0.25)' : 'var(--green-100)'
-        const empty = d.countActivo === 0 && d.countPlan === 0
+        const empty     = d.countActivo === 0 && d.countPlan === 0
+        const clickable = !empty && onDiaClick
+        const selected  = d.key === diaSeleccionado
         return (
-          <div key={d.key} className={`pi-semana-dia${d.esHoy ? ' hoy' : ''}${d.esPasado ? ' pasado' : ''}`}>
+          <div
+            key={d.key}
+            className={`pi-semana-dia${d.esHoy ? ' hoy' : ''}${d.esPasado ? ' pasado' : ''}${selected ? ' seleccionado' : ''}`}
+            onClick={clickable ? () => onDiaClick(selected ? null : d.key) : undefined}
+            style={{ cursor: clickable ? 'pointer' : 'default' }}
+          >
             <span className="pi-semana-dow">{d.dow}</span>
             <span className="pi-semana-num">{d.diaN}</span>
             <div className="pi-semana-bar-wrap">
@@ -116,9 +123,11 @@ function InfoCamion({ a }) {
 }
 
 function TarjetaCamion({ a, esUltimo, esDesde }) {
-  const navigate = useNavigate()
-  const firmado  = a.instalacionFirmada
-  const ref      = useRef(null)
+  const navigate    = useNavigate()
+  const firmado     = a.instalacionFirmada
+  const planificado = a.planificado
+  const enCamino    = !planificado && a.astilladoraFirmada && !firmado
+  const ref         = useRef(null)
 
   useEffect(() => {
     if (esDesde && ref.current) ref.current.scrollIntoView({ behavior: 'smooth', block: 'center' })
@@ -127,17 +136,22 @@ function TarjetaCamion({ a, esUltimo, esDesde }) {
   return (
     <div
       ref={ref}
-      className={`pi-camion ${firmado ? 'firmado' : 'pendiente'}${esDesde ? ' pi-desde-active' : ''}`}
-      onClick={() => navigate(`/campo/${a.id}/instalacion`)}
-      style={{ cursor: 'pointer', borderBottom: esUltimo ? 'none' : undefined }}
+      className={`pi-camion ${planificado ? 'planificado' : firmado ? 'firmado' : 'pendiente'}${enCamino ? ' encamino' : ''}${esDesde ? ' pi-desde-active' : ''}`}
+      onClick={planificado ? undefined : () => navigate(`/campo/${a.id}/instalacion`)}
+      style={{ cursor: planificado ? 'default' : 'pointer', borderBottom: esUltimo ? 'none' : undefined }}
     >
       <div className="pi-camion-left">
         <InfoCamion a={a} />
       </div>
       <div className="pi-camion-right">
-        {firmado
+        {planificado
+          ? <span className="pi-camion-plan-tag">Planificado</span>
+          : firmado
           ? <CheckCircle size={20} color="var(--green-400)" />
-          : <div className="pi-btn-firmar">Firmar <ChevronRight size={14} /></div>
+          : <div style={{ display:'flex', flexDirection:'column', alignItems:'flex-end', gap:4 }}>
+              {enCamino && <span className="pi-camion-encamino-tag">En camino</span>}
+              <div className="pi-btn-firmar">Firmar <ChevronRight size={14} /></div>
+            </div>
         }
       </div>
     </div>
@@ -145,16 +159,21 @@ function TarjetaCamion({ a, esUltimo, esDesde }) {
 }
 
 function GrupoHora({ hora, albaranes, desdeId }) {
-  const firmados = albaranes.filter(a => a.instalacionFirmada).length
-  const total    = albaranes.length
-  const pct      = Math.round((firmados / total) * 100)
+  const activos  = albaranes.filter(a => !a.planificado)
+  const planifs  = albaranes.filter(a => a.planificado)
+    .sort((a, b) => (a.fecha || '').localeCompare(b.fecha || '') || 0)
+  const firmados = activos.filter(a => a.instalacionFirmada).length
+  const total    = activos.length
+  const pct      = total > 0 ? Math.round((firmados / total) * 100) : 0
 
-  const sorted = [...albaranes].sort((a, b) => {
+  const sorted = [...activos].sort((a, b) => {
+    const aEC = a.astilladoraFirmada && !a.instalacionFirmada
+    const bEC = b.astilladoraFirmada && !b.instalacionFirmada
+    if (aEC && !bEC) return -1
+    if (!aEC && bEC) return 1
     if (!a.instalacionFirmada && b.instalacionFirmada)  return -1
     if (a.instalacionFirmada  && !b.instalacionFirmada) return 1
-    if (a.instalacionFirmada  && b.instalacionFirmada)
-      return new Date(a.instalacionFecha) - new Date(b.instalacionFecha)
-    return 0
+    return new Date(a.instalacionFecha || 0) - new Date(b.instalacionFecha || 0)
   })
 
   return (
@@ -163,7 +182,10 @@ function GrupoHora({ hora, albaranes, desdeId }) {
         <div className="pi-flota-icon"><Clock size={15} color="var(--green-600)" /></div>
         <div style={{ flex: 1, minWidth: 0 }}>
           <div className="pi-flota-title" style={{ overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{hora}</div>
-          <div className="pi-flota-sub">{total} camión{total !== 1 ? 'es' : ''}</div>
+          <div className="pi-flota-sub">
+            {total} camión{total !== 1 ? 'es' : ''}
+            {planifs.length > 0 ? ` · ${planifs.length} planificado${planifs.length !== 1 ? 's' : ''}` : ''}
+          </div>
         </div>
         <div className="pi-flota-badge">{firmados}/{total}</div>
       </div>
@@ -172,7 +194,11 @@ function GrupoHora({ hora, albaranes, desdeId }) {
       </div>
       <div className="pi-camiones-list">
         {sorted.map((a, i) => (
-          <TarjetaCamion key={a.id} a={a} esUltimo={i === sorted.length - 1} esDesde={String(a.id) === desdeId} />
+          <TarjetaCamion key={a.id} a={a} esUltimo={i === sorted.length - 1 && planifs.length === 0} esDesde={String(a.id) === desdeId} />
+        ))}
+        {planifs.length > 0 && <div className="pi-planif-sep">Planificado</div>}
+        {planifs.map((a, i) => (
+          <TarjetaCamion key={a.id} a={a} esUltimo={i === planifs.length - 1} esDesde={false} />
         ))}
       </div>
     </div>
@@ -192,14 +218,15 @@ export default function PanelInstalacion() {
     if (desdeId) navigate(location.pathname, { replace: true })
   }, []) // eslint-disable-line
 
-  const [albaranes,     setAlbaranes]     = useState([])
-  const [loading,       setLoading]       = useState(true)
-  const [lastUpdate,    setLastUpdate]    = useState(null)
-  const [refreshing,    setRefreshing]    = useState(false)
-  const [showOk,        setShowOk]        = useState(false)
-  const [hayCambios,    setHayCambios]    = useState(false)
-  const [logoUrl,       setLogoUrl]       = useState(null)
-  const [headerBgColor, setHeaderBgColor] = useState(null)
+  const [albaranes,      setAlbaranes]     = useState([])
+  const [loading,        setLoading]       = useState(true)
+  const [lastUpdate,     setLastUpdate]    = useState(null)
+  const [refreshing,     setRefreshing]    = useState(false)
+  const [showOk,         setShowOk]        = useState(false)
+  const [hayCambios,     setHayCambios]    = useState(false)
+  const [logoUrl,        setLogoUrl]       = useState(null)
+  const [headerBgColor,  setHeaderBgColor] = useState(null)
+  const [diaSeleccionado, setDiaSeleccionado] = useState(null)
   const showOkTimer     = useRef(null)
   const hayCambiosTimer = useRef(null)
   const signaturaRef    = useRef(null)
@@ -301,22 +328,26 @@ export default function PanelInstalacion() {
     return () => clearInterval(id)
   }, [fetchData])
 
+  const albaranesFiltrados = diaSeleccionado
+    ? albaranes.filter(a => a.fecha === diaSeleccionado)
+    : albaranes
+
   // Agrupar por fecha → hora
   const gruposPorFecha = {}
-  albaranes.forEach(a => {
+  albaranesFiltrados.forEach(a => {
     const fk = a.fecha || 'Sin fecha'
     const hk = a.hora ? String(a.hora).slice(0, 5) : 'Sin hora'
     if (!gruposPorFecha[fk]) gruposPorFecha[fk] = {}
     if (!gruposPorFecha[fk][hk]) gruposPorFecha[fk][hk] = []
     gruposPorFecha[fk][hk].push(a)
   })
-  const fechasOrdenadas  = Object.keys(gruposPorFecha).sort()
-  const multiplesFechas  = fechasOrdenadas.length > 1
+  const fechasOrdenadas = Object.keys(gruposPorFecha).sort()
+  const multiplesFechas = fechasOrdenadas.length > 1
 
   function sortHoras(entries) {
     return entries.sort(([ka, a], [kb, b]) => {
-      const ap = a.some(x => !x.instalacionFirmada)
-      const bp = b.some(x => !x.instalacionFirmada)
+      const ap = a.some(x => !x.planificado && !x.instalacionFirmada)
+      const bp = b.some(x => !x.planificado && !x.instalacionFirmada)
       if (ap && !bp) return -1
       if (!ap && bp) return 1
       if (ka === 'Sin hora') return 1
@@ -325,8 +356,11 @@ export default function PanelInstalacion() {
     })
   }
 
-  const pendientes = albaranes.filter(a => !a.instalacionFirmada).length
-  const total      = albaranes.length
+  const activosFiltrados = albaranesFiltrados.filter(a => !a.planificado)
+  const pendientes       = activosFiltrados.filter(a => !a.instalacionFirmada).length
+  const enCaminoCount    = activosFiltrados.filter(a => a.astilladoraFirmada && !a.instalacionFirmada).length
+  const planificadosCount = albaranesFiltrados.filter(a => a.planificado).length
+  const total            = activosFiltrados.length
 
   return (
     <div className="pi-page pi-page--recepcion">
@@ -382,6 +416,13 @@ export default function PanelInstalacion() {
                 <span className="pi-resumen-num">{pendientes}</span>
                 <span className="pi-resumen-label">pendiente{pendientes !== 1 ? 's' : ''}</span>
               </div>
+              {enCaminoCount > 0 && <>
+                <div className="pi-resumen-sep" />
+                <div className="pi-resumen-item">
+                  <span className="pi-resumen-num" style={{ color:'var(--green-400)' }}>{enCaminoCount}</span>
+                  <span className="pi-resumen-label">en camino</span>
+                </div>
+              </>}
               <div className="pi-resumen-sep" />
               <div className="pi-resumen-item">
                 <span className="pi-resumen-num">{total - pendientes}</span>
@@ -392,11 +433,28 @@ export default function PanelInstalacion() {
                 <span className="pi-resumen-num">{total}</span>
                 <span className="pi-resumen-label">total</span>
               </div>
+              {planificadosCount > 0 && <>
+                <div className="pi-resumen-sep" />
+                <div className="pi-resumen-item">
+                  <span className="pi-resumen-num" style={{ color:'var(--green-300)' }}>+{planificadosCount}</span>
+                  <span className="pi-resumen-label">planificado{planificadosCount !== 1 ? 's' : ''}</span>
+                </div>
+              </>}
             </div>
-            <CalendarioSemana albaranes={albaranes} />
+            <CalendarioSemana
+              albaranes={albaranes}
+              diaSeleccionado={diaSeleccionado}
+              onDiaClick={setDiaSeleccionado}
+            />
           </aside>
 
           <div className="pi-main">
+            {diaSeleccionado && (
+              <div className="pi-filtro-dia-banner">
+                <span>📅 {labelFechaSec(diaSeleccionado)}</span>
+                <button onClick={() => setDiaSeleccionado(null)}>× Todos los días</button>
+              </div>
+            )}
             {desdeId && (
               <div className="pi-desde-banner">
                 <span className="pi-desde-dot" />

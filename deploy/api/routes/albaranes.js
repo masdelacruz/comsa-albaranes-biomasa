@@ -166,13 +166,17 @@ router.get('/instalacion/:nombre', async (req, res) => {
        a.id, a.fecha, a.hora, a.grupo_id, a.camion_orden, a.num_camiones,
        a.astilladora, a.proveedor, a.transportista, a.especie, a.tipo_biomasa, a.estella,
        a.matricula_tractora, a.matricula_remolque, a.chofer, a.estado, a.origen,
-       a.motivo_rechazo_campo
+       a.motivo_rechazo_campo,
+       (a.estado = 'programado') AS planificado
      FROM albaranes a
      WHERE a.instalacion = $1
-       AND a.estado NOT IN ('cerrado','programado','rechazado_campo_instalacion','cancelado')
+       AND a.estado NOT IN ('cerrado','rechazado_campo_instalacion','cancelado')
        AND (
-         NOT EXISTS (SELECT 1 FROM firmas f2 WHERE f2.albaran_id = a.id AND f2.rol = 'astilladora')
-         OR  EXISTS (SELECT 1 FROM firmas f2 WHERE f2.albaran_id = a.id AND f2.rol = 'astilladora' AND f2.firmado = true)
+         (a.estado != 'programado' AND (
+           NOT EXISTS (SELECT 1 FROM firmas f2 WHERE f2.albaran_id = a.id AND f2.rol = 'astilladora')
+           OR  EXISTS (SELECT 1 FROM firmas f2 WHERE f2.albaran_id = a.id AND f2.rol = 'astilladora' AND f2.firmado = true)
+         ))
+         OR (a.estado = 'programado' AND a.fecha >= CURRENT_DATE)
        )
      ORDER BY a.created_at ASC`,
     [nombre]
@@ -203,15 +207,23 @@ router.get('/instalacion/:nombre', async (req, res) => {
       matriculaRemolque: a.matricula_remolque,
       chofer: a.chofer, estado: a.estado, origen: a.origen,
       motivoRechazoCampo: a.motivo_rechazo_campo || null,
+      planificado:        a.planificado || false,
       instalacionFirmada: fInst?.firmado || false,
       instalacionFecha:   fInst?.fecha   || null,
-      astilladoraFirmada: fAsti?.firmado || false,
+      astilladoraFirmada: a.planificado ? false : (fAsti?.firmado || false),
       astilladoraFecha:   fAsti?.fecha   || null,
     }
   })
 
-  // Orden: primero pendientes (no firmados), luego por fecha firma astilladora asc
+  // Orden: en camino (asti firmada, inst pendiente) → pendientes → firmados → planificados
   result.sort((a, b) => {
+    if (a.planificado && !b.planificado) return 1
+    if (!a.planificado && b.planificado) return -1
+    if (a.planificado) return (a.fecha || '').localeCompare(b.fecha || '') || 0
+    const aEC = a.astilladoraFirmada && !a.instalacionFirmada
+    const bEC = b.astilladoraFirmada && !b.instalacionFirmada
+    if (aEC && !bEC) return -1
+    if (!aEC && bEC) return 1
     if (!a.instalacionFirmada && b.instalacionFirmada) return -1
     if (a.instalacionFirmada && !b.instalacionFirmada) return 1
     return new Date(a.astilladoraFecha || 0) - new Date(b.astilladoraFecha || 0)

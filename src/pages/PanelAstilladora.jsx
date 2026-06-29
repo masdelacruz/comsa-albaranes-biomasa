@@ -43,7 +43,7 @@ function labelFechaSec(fechaISO) {
   return base
 }
 
-function CalendarioSemana({ albaranes }) {
+function CalendarioSemana({ albaranes, diaSeleccionado, onDiaClick }) {
   const hoy    = new Date()
   const hoyStr = isoLocal(hoy)
   const dow    = (hoy.getDay() + 6) % 7
@@ -75,9 +75,16 @@ function CalendarioSemana({ albaranes }) {
           barStyle.background = `linear-gradient(to top, var(--green-${d.esHoy ? '500' : '400'}) ${activoH}px, var(--green-${d.esHoy ? '200' : '100'}) ${activoH}px)`
         else if (planH > 0)
           barStyle.background = d.esHoy ? 'rgba(255,255,255,0.25)' : 'var(--green-100)'
-        const empty = d.countActivo === 0 && d.countPlan === 0
+        const empty     = d.countActivo === 0 && d.countPlan === 0
+        const clickable = !empty && onDiaClick
+        const selected  = d.key === diaSeleccionado
         return (
-          <div key={d.key} className={`pi-semana-dia${d.esHoy ? ' hoy' : ''}${d.esPasado ? ' pasado' : ''}`}>
+          <div
+            key={d.key}
+            className={`pi-semana-dia${d.esHoy ? ' hoy' : ''}${d.esPasado ? ' pasado' : ''}${selected ? ' seleccionado' : ''}`}
+            onClick={clickable ? () => onDiaClick(selected ? null : d.key) : undefined}
+            style={{ cursor: clickable ? 'pointer' : 'default' }}
+          >
             <span className="pi-semana-dow">{d.dow}</span>
             <span className="pi-semana-num">{d.diaN}</span>
             <div className="pi-semana-bar-wrap">
@@ -208,14 +215,15 @@ export default function PanelAstilladora() {
     if (desdeId) navigate(location.pathname, { replace: true })
   }, []) // eslint-disable-line
 
-  const [albaranes,     setAlbaranes]     = useState([])
-  const [loading,       setLoading]       = useState(true)
-  const [lastUpdate,    setLastUpdate]    = useState(null)
-  const [refreshing,    setRefreshing]    = useState(false)
-  const [showOk,        setShowOk]        = useState(false)
-  const [hayCambios,    setHayCambios]    = useState(false)
-  const [logoUrl,       setLogoUrl]       = useState(null)
-  const [headerBgColor, setHeaderBgColor] = useState(null)
+  const [albaranes,      setAlbaranes]     = useState([])
+  const [loading,        setLoading]       = useState(true)
+  const [lastUpdate,     setLastUpdate]    = useState(null)
+  const [refreshing,     setRefreshing]    = useState(false)
+  const [showOk,         setShowOk]        = useState(false)
+  const [hayCambios,     setHayCambios]    = useState(false)
+  const [logoUrl,        setLogoUrl]       = useState(null)
+  const [headerBgColor,  setHeaderBgColor] = useState(null)
+  const [diaSeleccionado, setDiaSeleccionado] = useState(null)
   const showOkTimer    = useRef(null)
   const hayCambiosTimer = useRef(null)
   const signaturaRef   = useRef(null)
@@ -317,23 +325,26 @@ export default function PanelAstilladora() {
     return () => clearInterval(id)
   }, [fetchData])
 
+  const albaranesFiltrados = diaSeleccionado
+    ? albaranes.filter(a => a.fecha === diaSeleccionado)
+    : albaranes
+
   // Agrupar por instalación destino
   const grupos = {}
-  albaranes.forEach(a => {
+  albaranesFiltrados.forEach(a => {
     const key = a.instalacion || '—'
     if (!grupos[key]) grupos[key] = []
     grupos[key].push(a)
   })
-  // Grupos con pendientes primero; dentro de cada grupo: pendientes primero
   const gruposOrdenados = Object.entries(grupos).sort(([, a], [, b]) => {
-    const aPend = a.some(x => !x.astilladoraFirmada)
-    const bPend = b.some(x => !x.astilladoraFirmada)
+    const aPend = a.some(x => !x.planificado && !x.astilladoraFirmada)
+    const bPend = b.some(x => !x.planificado && !x.astilladoraFirmada)
     if (aPend && !bPend) return -1
     if (!aPend && bPend) return 1
     return 0
   })
 
-  const activos    = albaranes.filter(a => !a.planificado)
+  const activos    = albaranesFiltrados.filter(a => !a.planificado)
   const pendientes = activos.filter(a => !a.astilladoraFirmada).length
   const total      = activos.length
 
@@ -400,8 +411,18 @@ export default function PanelAstilladora() {
             </div>
           </div>
 
-          <CalendarioSemana albaranes={albaranes} />
+          <CalendarioSemana
+            albaranes={albaranes}
+            diaSeleccionado={diaSeleccionado}
+            onDiaClick={setDiaSeleccionado}
+          />
 
+          {diaSeleccionado && (
+            <div className="pi-filtro-dia-banner">
+              <span>📅 {labelFechaSec(diaSeleccionado)}</span>
+              <button onClick={() => setDiaSeleccionado(null)}>× Todos los días</button>
+            </div>
+          )}
           {desdeId && (
             <div className="pi-desde-banner">
               <span className="pi-desde-dot" />
