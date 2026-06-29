@@ -69,7 +69,7 @@ function CalendarioSemana({ albaranes, diaSeleccionado, onDiaClick }) {
       {dias.map(d => {
         const activoH = d.countActivo > 0 ? Math.max(4, Math.round((d.countActivo / maxTotal) * 28)) : 0
         const planH   = d.countPlan   > 0 ? Math.max(3, Math.round((d.countPlan   / maxTotal) * 28)) : 0
-        const totalH  = Math.max(activoH + planH, 2)
+        const totalH  = Math.min(Math.max(activoH + planH, 2), 28)
         const barStyle = { height: `${totalH}px` }
         if (planH > 0 && activoH > 0)
           barStyle.background = `linear-gradient(to top, var(--green-${d.esHoy ? '500' : '400'}) ${activoH}px, var(--green-${d.esHoy ? '200' : '100'}) ${activoH}px)`
@@ -81,11 +81,10 @@ function CalendarioSemana({ albaranes, diaSeleccionado, onDiaClick }) {
         return (
           <div
             key={d.key}
-            className={`pi-semana-dia${d.esHoy ? ' hoy' : ''}${d.esPasado ? ' pasado' : ''}${selected ? ' seleccionado' : ''}`}
+            className={`pi-semana-dia${d.esHoy ? ' hoy' : ''}${d.esPasado ? ' pasado' : ''}${selected ? ' seleccionado' : ''}${clickable ? ' clickable' : ''}`}
             onClick={clickable ? () => onDiaClick(selected ? null : d.key) : undefined}
-            style={{ cursor: clickable ? 'pointer' : 'default' }}
           >
-            <span className="pi-semana-dow">{d.dow}</span>
+            <span className="pi-semana-dow">{d.esHoy ? 'HOY' : d.dow}</span>
             <span className="pi-semana-num">{d.diaN}</span>
             <div className="pi-semana-bar-wrap">
               <div className="pi-semana-bar" style={barStyle} />
@@ -401,7 +400,7 @@ export default function PanelInstalacion() {
 
       {loading ? (
         <div className="pi-spinner-wrap"><div className="pi-spinner" /></div>
-      ) : total === 0 ? (
+      ) : albaranes.length === 0 ? (
         <div className="pi-empty">
           <CheckCircle size={40} color="var(--green-400)" />
           <div className="pi-empty-title">Todo al día</div>
@@ -451,8 +450,8 @@ export default function PanelInstalacion() {
           <div className="pi-main">
             {diaSeleccionado && (
               <div className="pi-filtro-dia-banner">
-                <span>📅 {labelFechaSec(diaSeleccionado)}</span>
-                <button onClick={() => setDiaSeleccionado(null)}>× Todos los días</button>
+                <span>{labelFechaSec(diaSeleccionado)}</span>
+                <button onClick={() => setDiaSeleccionado(null)}>Ver todos</button>
               </div>
             )}
             {desdeId && (
@@ -462,7 +461,12 @@ export default function PanelInstalacion() {
               </div>
             )}
             <div className="pi-section">
-              {fechasOrdenadas.map(fecha => (
+              {albaranesFiltrados.length === 0 && diaSeleccionado ? (
+                <div className="pi-empty-dia">
+                  <div className="pi-empty-dia-title">Sin albaranes para este día</div>
+                  <button className="pi-empty-dia-btn" onClick={() => setDiaSeleccionado(null)}>Ver todos los días</button>
+                </div>
+              ) : fechasOrdenadas.map(fecha => (
                 <div key={fecha}>
                   {multiplesFechas && (
                     <div className="pi-fecha-sep">{labelFechaSec(fecha)}</div>

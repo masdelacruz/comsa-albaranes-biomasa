@@ -98,39 +98,45 @@
   display: flex;
   align-items: center;
   justify-content: center;
+  flex-wrap: wrap;
+  row-gap: 0;
   margin: -22px 16px 0;
   background: #fff;
   border-radius: 14px;
   border: 1px solid var(--gray-100);
   box-shadow: 0 4px 20px rgba(0,0,0,0.09);
-  padding: 16px 20px;
+  padding: 14px 16px;
   position: relative;
   z-index: 1;
 }
 .pi-resumen-item {
   flex: 1;
+  min-width: 56px;
   display: flex;
   flex-direction: column;
   align-items: center;
   gap: 3px;
+  padding: 2px 0;
 }
 .pi-resumen-num {
-  font-size: 26px;
+  font-size: 24px;
   font-weight: 700;
   color: var(--gray-900);
   line-height: 1;
 }
 .pi-resumen-label {
-  font-size: 10px;
+  font-size: 9px;
   color: var(--gray-400);
   text-transform: uppercase;
   letter-spacing: 0.6px;
   font-weight: 500;
+  white-space: nowrap;
 }
 .pi-resumen-sep {
   width: 1px;
-  height: 28px;
+  height: 26px;
   background: var(--gray-200);
+  flex-shrink: 0;
 }
 
 /* ── Sections ────────────────────────────────────── */
@@ -415,13 +421,18 @@
 }
 .pi-semana-dia {
   flex: 1;
+  min-width: 0;
   display: flex;
   flex-direction: column;
   align-items: center;
   gap: 2px;
   padding: 10px 2px 6px;
+  transition: background 0.12s;
 }
-.pi-semana-dia.pasado { opacity: 0.3; }
+.pi-semana-dia.pasado { opacity: 0.35; }
+.pi-semana-dia.clickable:hover { background: var(--green-50); }
+.pi-semana-dia.seleccionado { background: #f0fdf4; }
+.pi-semana-dia.seleccionado.pasado { opacity: 1; }
 .pi-semana-dow {
   font-size: 8px;
   font-weight: 600;
@@ -430,7 +441,12 @@
   letter-spacing: 0.5px;
   line-height: 1;
 }
-.pi-semana-dia.hoy .pi-semana-dow { color: var(--green-600); }
+.pi-semana-dia.hoy .pi-semana-dow {
+  color: var(--green-600);
+  font-weight: 800;
+  letter-spacing: 0;
+}
+.pi-semana-dia.seleccionado:not(.hoy) .pi-semana-dow { color: var(--green-600); }
 .pi-semana-num {
   font-size: 13px;
   font-weight: 600;
@@ -442,11 +458,24 @@
   align-items: center;
   justify-content: center;
   border-radius: 50%;
+  transition: background 0.12s, color 0.12s;
 }
 .pi-semana-dia.hoy .pi-semana-num {
   background: var(--green-600);
   color: #fff;
   font-weight: 700;
+}
+/* Selected (not today): soft green fill — clearly different from today */
+.pi-semana-dia.seleccionado:not(.hoy) .pi-semana-num {
+  background: var(--green-100);
+  color: var(--green-800);
+  font-weight: 700;
+}
+/* Selected AND today: keep today's circle + add outer ring */
+.pi-semana-dia.seleccionado.hoy .pi-semana-num {
+  background: var(--green-600);
+  color: #fff;
+  box-shadow: 0 0 0 2px #fff, 0 0 0 4px var(--green-400);
 }
 .pi-semana-bar-wrap {
   width: 100%;
@@ -455,14 +484,15 @@
   align-items: flex-end;
   justify-content: center;
   padding: 0 5px;
+  overflow: hidden;
 }
 .pi-semana-bar {
   width: 100%;
-  max-width: 20px;
+  max-width: 18px;
   border-radius: 3px 3px 0 0;
   background: var(--gray-200);
   min-height: 2px;
-  transition: height 0.45s ease;
+  transition: height 0.4s ease;
 }
 .pi-semana-dia.hoy .pi-semana-bar    { background: var(--green-500); }
 .pi-semana-dia.pasado .pi-semana-bar { background: var(--gray-100); }
@@ -481,12 +511,6 @@
   font-weight: 500;
 }
 .pi-semana-dia.hoy .pi-semana-count.vacio { color: var(--gray-300); }
-.pi-semana-dia.seleccionado .pi-semana-num {
-  background: var(--green-700);
-  color: #fff;
-  font-weight: 700;
-}
-.pi-semana-dia.seleccionado:not(.hoy) .pi-semana-dow { color: var(--green-600); }
 
 /* ── Badge en camino ─────────────────────────────── */
 .pi-camion-encamino-tag {
@@ -512,13 +536,13 @@
   align-items: center;
   justify-content: space-between;
   background: var(--green-50);
-  border: 1px solid var(--green-100);
-  border-radius: 10px;
-  padding: 8px 14px;
+  border-left: 3px solid var(--green-400);
+  border-radius: 0 8px 8px 0;
+  padding: 9px 14px;
   margin: 0 0 12px;
   font-size: 12px;
   font-weight: 600;
-  color: var(--green-700);
+  color: var(--green-800);
 }
 .pi-filtro-dia-banner button {
   background: none;
@@ -528,6 +552,35 @@
   cursor: pointer;
   font-weight: 600;
   padding: 0;
+  opacity: 0.75;
+}
+.pi-filtro-dia-banner button:hover { opacity: 1; }
+
+/* ── Estado vacío filtro día ─────────────────────── */
+.pi-empty-dia {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 40px 24px;
+  gap: 8px;
+  text-align: center;
+}
+.pi-empty-dia-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--gray-500);
+}
+.pi-empty-dia-btn {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--green-600);
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0;
+  margin-top: 4px;
+  text-decoration: underline;
+  text-underline-offset: 2px;
 }
 
 /* ── Separador de fecha (multi-día) ─────────────── */
