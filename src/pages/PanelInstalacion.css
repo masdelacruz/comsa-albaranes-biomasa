@@ -29,15 +29,17 @@
   flex-shrink: 0;
 }
 .pi-header-logo-img {
-  width: 52px; height: 52px;
-  border-radius: 12px;
+  height: 48px;
+  width: auto;
+  max-width: 140px;
+  border-radius: 10px;
   flex-shrink: 0;
   overflow: hidden;
 }
 .pi-header-logo-img img {
-  width: 100%;
   height: 100%;
-  object-fit: contain;
+  width: auto;
+  display: block;
 }
 .pi-header-label {
   font-size: 10px;
@@ -521,19 +523,18 @@
     min-width: 0;
   }
   .pi-page--recepcion .pi-header-brand {
-    align-items: stretch;
+    align-items: center;
     gap: 20px;
   }
   .pi-page--recepcion .pi-header-logo-img {
+    height: 66px;
     width: auto;
-    height: auto;
-    aspect-ratio: 1;
+    max-width: 220px;
     border-radius: 14px;
   }
   .pi-page--recepcion .pi-header-logo {
-    width: auto;
-    height: auto;
-    aspect-ratio: 1;
+    height: 66px;
+    width: 66px;
     border-radius: 14px;
   }
   .pi-page--recepcion .pi-header-sub {
