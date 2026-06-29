@@ -56,31 +56,39 @@ function CalendarioSemana({ albaranes }) {
     const key = isoLocal(d)
     return {
       key, dow: DIAS_ABR[i], diaN: d.getDate(),
-      count:    albaranes.filter(a => a.fecha === key).length,
+      countActivo: albaranes.filter(a => a.fecha === key && !a.planificado).length,
+      countPlan:   albaranes.filter(a => a.fecha === key &&  a.planificado).length,
       esHoy:    key === hoyStr,
       esPasado: key < hoyStr,
     }
   })
-
-  const maxCount = Math.max(...dias.map(d => d.count), 1)
+  const maxTotal = Math.max(...dias.map(d => d.countActivo + d.countPlan), 1)
 
   return (
     <div className="pi-semana">
-      {dias.map(d => (
-        <div key={d.key} className={`pi-semana-dia${d.esHoy ? ' hoy' : ''}${d.esPasado ? ' pasado' : ''}`}>
-          <span className="pi-semana-dow">{d.dow}</span>
-          <span className="pi-semana-num">{d.diaN}</span>
-          <div className="pi-semana-bar-wrap">
-            <div
-              className="pi-semana-bar"
-              style={{ height: d.count > 0 ? `${Math.max(4, Math.round((d.count / maxCount) * 28))}px` : '2px' }}
-            />
+      {dias.map(d => {
+        const activoH = d.countActivo > 0 ? Math.max(4, Math.round((d.countActivo / maxTotal) * 28)) : 0
+        const planH   = d.countPlan   > 0 ? Math.max(3, Math.round((d.countPlan   / maxTotal) * 28)) : 0
+        const totalH  = Math.max(activoH + planH, 2)
+        const barStyle = { height: `${totalH}px` }
+        if (planH > 0 && activoH > 0)
+          barStyle.background = `linear-gradient(to top, var(--green-${d.esHoy ? '500' : '400'}) ${activoH}px, var(--green-${d.esHoy ? '200' : '100'}) ${activoH}px)`
+        else if (planH > 0)
+          barStyle.background = d.esHoy ? 'rgba(255,255,255,0.25)' : 'var(--green-100)'
+        const empty = d.countActivo === 0 && d.countPlan === 0
+        return (
+          <div key={d.key} className={`pi-semana-dia${d.esHoy ? ' hoy' : ''}${d.esPasado ? ' pasado' : ''}`}>
+            <span className="pi-semana-dow">{d.dow}</span>
+            <span className="pi-semana-num">{d.diaN}</span>
+            <div className="pi-semana-bar-wrap">
+              <div className="pi-semana-bar" style={barStyle} />
+            </div>
+            <span className={`pi-semana-count${empty ? ' vacio' : d.countActivo === 0 ? ' plan' : ''}`}>
+              {d.countActivo > 0 ? d.countActivo : (d.countPlan > 0 ? `+${d.countPlan}` : '·')}
+            </span>
           </div>
-          <span className={`pi-semana-count${d.count === 0 ? ' vacio' : ''}`}>
-            {d.count > 0 ? d.count : '·'}
-          </span>
-        </div>
-      ))}
+        )
+      })}
     </div>
   )
 }

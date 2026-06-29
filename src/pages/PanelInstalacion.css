@@ -17,22 +17,25 @@
   border-radius: 0 0 28px 28px;
 }
 .pi-header-logo {
-  width: 40px; height: 40px;
+  align-self: stretch;
+  aspect-ratio: 1;
   background: rgba(255,255,255,0.15);
-  border-radius: 12px;
+  border-radius: 14px;
   display: flex; align-items: center; justify-content: center;
   flex-shrink: 0;
 }
 .pi-header-logo-img {
-  width: 40px; height: 40px;
-  border-radius: 12px;
-  background: rgba(255,255,255,0.15);
+  align-self: stretch;
+  aspect-ratio: 1;
+  border-radius: 14px;
+  background: rgba(255,255,255,0.12);
   display: flex; align-items: center; justify-content: center;
   flex-shrink: 0; overflow: hidden;
-  backdrop-filter: blur(4px);
+  backdrop-filter: blur(6px);
 }
 .pi-header-logo-img img {
-  width: 30px; height: 30px;
+  width: 82%;
+  height: 82%;
   object-fit: contain;
 }
 .pi-header-label {
@@ -209,9 +212,30 @@
   transition: background 0.15s;
 }
 .pi-camion:last-child { border-bottom: none; }
-.pi-camion.pendiente { border-left-color: var(--amber-400); }
+.pi-camion.pendiente    { border-left-color: var(--amber-400); }
 .pi-camion.pendiente:active { background: var(--gray-50); }
-.pi-camion.firmado { border-left-color: var(--green-200); opacity: 0.55; }
+.pi-camion.firmado      { border-left-color: var(--green-200); opacity: 0.55; }
+.pi-camion.planificado  { border-left-color: var(--gray-200); cursor: default; opacity: 0.6; }
+
+.pi-camion-plan-tag {
+  font-size: 10px;
+  font-weight: 500;
+  color: var(--gray-400);
+  border: 1px solid var(--gray-200);
+  border-radius: 4px;
+  padding: 3px 8px;
+  white-space: nowrap;
+}
+
+.pi-planif-sep {
+  font-size: 9px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.7px;
+  color: var(--gray-300);
+  padding: 10px 14px 4px;
+  border-top: 1px solid var(--gray-100);
+}
 .pi-camion-left {
   flex: 1;
   min-width: 0;
@@ -448,6 +472,10 @@
 .pi-semana-count.vacio {
   color: var(--gray-200);
   font-weight: 400;
+}
+.pi-semana-count.plan {
+  color: var(--green-300);
+  font-weight: 500;
 }
 .pi-semana-dia.hoy .pi-semana-count.vacio { color: var(--gray-300); }
 

@@ -228,9 +228,14 @@ router.get('/astilladora/:nombre', async (req, res) => {
        a.id, a.fecha, a.hora, a.grupo_id, a.camion_orden, a.num_camiones,
        a.astilladora, a.proveedor, a.instalacion, a.transportista,
        a.especie, a.tipo_biomasa, a.estella,
-       a.matricula_tractora, a.matricula_remolque, a.chofer, a.estado, a.origen
+       a.matricula_tractora, a.matricula_remolque, a.chofer, a.estado, a.origen,
+       (a.estado = 'programado') AS planificado
      FROM albaranes a
-     WHERE a.astilladora = $1 AND a.estado NOT IN ('cerrado','programado','rechazado_campo_astilladora','rechazado_campo_instalacion','cancelado')
+     WHERE a.astilladora = $1
+       AND (
+         a.estado NOT IN ('cerrado','programado','rechazado_campo_astilladora','rechazado_campo_instalacion','cancelado')
+         OR (a.estado = 'programado' AND a.fecha >= CURRENT_DATE)
+       )
      ORDER BY a.created_at ASC`,
     [nombre]
   )
@@ -252,19 +257,24 @@ router.get('/astilladora/:nombre', async (req, res) => {
       grupoId: a.grupo_id || null,
       camionOrden: a.camion_orden || 1,
       numCamiones: a.num_camiones || 1,
+      planificado: a.planificado || false,
       astilladora: a.astilladora, proveedor: a.proveedor,
       instalacion: a.instalacion, transportista: a.transportista,
       especie: a.especie, tipoBiomasa: a.tipo_biomasa, estella: a.estella,
       matriculaTractora: a.matricula_tractora,
       matriculaRemolque: a.matricula_remolque,
       chofer: a.chofer, estado: a.estado, origen: a.origen,
-      astilladoraFirmada: fAsti?.firmado || false,
-      astilladoraFecha:   fAsti?.fecha   || null,
+      astilladoraFirmada: a.planificado ? false : (fAsti?.firmado || false),
+      astilladoraFecha:   fAsti?.fecha || null,
     }
   })
 
-  // Pendientes primero, luego firmados desc por fecha
+  // Activos primero (pendientes → firmados desc); planificados al final por fecha asc
   result.sort((a, b) => {
+    if (a.planificado && !b.planificado) return 1
+    if (!a.planificado && b.planificado) return -1
+    if (a.planificado && b.planificado)
+      return (a.fecha || '').localeCompare(b.fecha || '')
     if (!a.astilladoraFirmada && !b.astilladoraFirmada) return 0
     if (!a.astilladoraFirmada) return -1
     if (!b.astilladoraFirmada) return 1
