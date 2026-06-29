@@ -125,10 +125,10 @@
   line-height: 1;
 }
 .pi-resumen-label {
-  font-size: 9px;
+  font-size: 10px;
   color: var(--gray-400);
   text-transform: uppercase;
-  letter-spacing: 0.6px;
+  letter-spacing: 0.4px;
   font-weight: 500;
   white-space: nowrap;
 }
@@ -137,6 +137,33 @@
   height: 26px;
   background: var(--gray-200);
   flex-shrink: 0;
+}
+.pi-resumen-extra {
+  width: 100%;
+  display: flex;
+  justify-content: center;
+  gap: 6px;
+  flex-wrap: wrap;
+  padding-top: 8px;
+  border-top: 1px solid var(--gray-100);
+  margin-top: 8px;
+}
+.pi-resumen-chip {
+  font-size: 10px;
+  font-weight: 600;
+  padding: 3px 10px;
+  border-radius: 20px;
+  white-space: nowrap;
+}
+.pi-resumen-chip.encamino {
+  color: var(--green-700);
+  background: var(--green-50);
+  border: 1px solid var(--green-100);
+}
+.pi-resumen-chip.plan {
+  color: var(--gray-500);
+  background: var(--gray-50);
+  border: 1px solid var(--gray-200);
 }
 
 /* ── Sections ────────────────────────────────────── */
@@ -434,18 +461,14 @@
 .pi-semana-dia.seleccionado { background: #f0fdf4; }
 .pi-semana-dia.seleccionado.pasado { opacity: 1; }
 .pi-semana-dow {
-  font-size: 8px;
+  font-size: 9px;
   font-weight: 600;
   text-transform: uppercase;
   color: var(--gray-400);
-  letter-spacing: 0.5px;
+  letter-spacing: 0.4px;
   line-height: 1;
 }
-.pi-semana-dia.hoy .pi-semana-dow {
-  color: var(--green-600);
-  font-weight: 800;
-  letter-spacing: 0;
-}
+.pi-semana-dia.hoy .pi-semana-dow { color: var(--green-600); }
 .pi-semana-dia.seleccionado:not(.hoy) .pi-semana-dow { color: var(--green-600); }
 .pi-semana-num {
   font-size: 13px;
@@ -471,11 +494,10 @@
   color: var(--green-800);
   font-weight: 700;
 }
-/* Selected AND today: keep today's circle + add outer ring */
+/* Selected AND today: same as normal today — no extra ring since today is always selected */
 .pi-semana-dia.seleccionado.hoy .pi-semana-num {
   background: var(--green-600);
   color: #fff;
-  box-shadow: 0 0 0 2px #fff, 0 0 0 4px var(--green-400);
 }
 .pi-semana-bar-wrap {
   width: 100%;
@@ -537,9 +559,9 @@
   justify-content: space-between;
   background: var(--green-50);
   border-left: 3px solid var(--green-400);
-  border-radius: 0 8px 8px 0;
+  border-radius: 8px;
   padding: 9px 14px;
-  margin: 0 0 12px;
+  margin: 14px 16px 4px;
   font-size: 12px;
   font-weight: 600;
   color: var(--green-800);
@@ -656,5 +678,9 @@
   }
   .pi-page--recepcion .pi-last-update-bar {
     padding-top: 16px;
+  }
+  .pi-page--recepcion .pi-filtro-dia-banner {
+    margin: 0 0 12px;
+    border-radius: 0 8px 8px 0;
   }
 }

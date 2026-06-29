@@ -76,15 +76,15 @@ function CalendarioSemana({ albaranes, diaSeleccionado, onDiaClick }) {
         else if (planH > 0)
           barStyle.background = d.esHoy ? 'rgba(255,255,255,0.25)' : 'var(--green-100)'
         const empty     = d.countActivo === 0 && d.countPlan === 0
-        const clickable = !empty && onDiaClick
+        const clickable = (!empty || d.esHoy) && onDiaClick
         const selected  = d.key === diaSeleccionado
         return (
           <div
             key={d.key}
             className={`pi-semana-dia${d.esHoy ? ' hoy' : ''}${d.esPasado ? ' pasado' : ''}${selected ? ' seleccionado' : ''}${clickable ? ' clickable' : ''}`}
-            onClick={clickable ? () => onDiaClick(selected ? null : d.key) : undefined}
+            onClick={clickable ? () => onDiaClick(selected && !d.esHoy ? hoyStr : d.key) : undefined}
           >
-            <span className="pi-semana-dow">{d.esHoy ? 'HOY' : d.dow}</span>
+            <span className="pi-semana-dow">{d.dow}</span>
             <span className="pi-semana-num">{d.diaN}</span>
             <div className="pi-semana-bar-wrap">
               <div className="pi-semana-bar" style={barStyle} />
@@ -225,7 +225,7 @@ export default function PanelInstalacion() {
   const [hayCambios,     setHayCambios]    = useState(false)
   const [logoUrl,        setLogoUrl]       = useState(null)
   const [headerBgColor,  setHeaderBgColor] = useState(null)
-  const [diaSeleccionado, setDiaSeleccionado] = useState(null)
+  const [diaSeleccionado, setDiaSeleccionado] = useState(() => isoLocal(new Date()))
   const showOkTimer     = useRef(null)
   const hayCambiosTimer = useRef(null)
   const signaturaRef    = useRef(null)
@@ -327,6 +327,8 @@ export default function PanelInstalacion() {
     return () => clearInterval(id)
   }, [fetchData])
 
+  const hoyStr = isoLocal(new Date())
+
   const albaranesFiltrados = diaSeleccionado
     ? albaranes.filter(a => a.fecha === diaSeleccionado)
     : albaranes
@@ -415,13 +417,6 @@ export default function PanelInstalacion() {
                 <span className="pi-resumen-num">{pendientes}</span>
                 <span className="pi-resumen-label">pendiente{pendientes !== 1 ? 's' : ''}</span>
               </div>
-              {enCaminoCount > 0 && <>
-                <div className="pi-resumen-sep" />
-                <div className="pi-resumen-item">
-                  <span className="pi-resumen-num" style={{ color:'var(--green-400)' }}>{enCaminoCount}</span>
-                  <span className="pi-resumen-label">en camino</span>
-                </div>
-              </>}
               <div className="pi-resumen-sep" />
               <div className="pi-resumen-item">
                 <span className="pi-resumen-num">{total - pendientes}</span>
@@ -432,13 +427,12 @@ export default function PanelInstalacion() {
                 <span className="pi-resumen-num">{total}</span>
                 <span className="pi-resumen-label">total</span>
               </div>
-              {planificadosCount > 0 && <>
-                <div className="pi-resumen-sep" />
-                <div className="pi-resumen-item">
-                  <span className="pi-resumen-num" style={{ color:'var(--green-300)' }}>+{planificadosCount}</span>
-                  <span className="pi-resumen-label">planificado{planificadosCount !== 1 ? 's' : ''}</span>
+              {(enCaminoCount > 0 || planificadosCount > 0) && (
+                <div className="pi-resumen-extra">
+                  {enCaminoCount > 0 && <span className="pi-resumen-chip encamino">{enCaminoCount} en camino</span>}
+                  {planificadosCount > 0 && <span className="pi-resumen-chip plan">+{planificadosCount} planif.</span>}
                 </div>
-              </>}
+              )}
             </div>
             <CalendarioSemana
               albaranes={albaranes}
@@ -448,10 +442,10 @@ export default function PanelInstalacion() {
           </aside>
 
           <div className="pi-main">
-            {diaSeleccionado && (
+            {diaSeleccionado !== hoyStr && (
               <div className="pi-filtro-dia-banner">
                 <span>{labelFechaSec(diaSeleccionado)}</span>
-                <button onClick={() => setDiaSeleccionado(null)}>Ver todos</button>
+                <button onClick={() => setDiaSeleccionado(hoyStr)}>Hoy</button>
               </div>
             )}
             {desdeId && (
@@ -463,8 +457,10 @@ export default function PanelInstalacion() {
             <div className="pi-section">
               {albaranesFiltrados.length === 0 && diaSeleccionado ? (
                 <div className="pi-empty-dia">
-                  <div className="pi-empty-dia-title">Sin albaranes para este día</div>
-                  <button className="pi-empty-dia-btn" onClick={() => setDiaSeleccionado(null)}>Ver todos los días</button>
+                  <div className="pi-empty-dia-title">{diaSeleccionado === hoyStr ? 'Sin albaranes hoy' : 'Sin albaranes para este día'}</div>
+                  {diaSeleccionado !== hoyStr && (
+                    <button className="pi-empty-dia-btn" onClick={() => setDiaSeleccionado(hoyStr)}>Volver a hoy</button>
+                  )}
                 </div>
               ) : fechasOrdenadas.map(fecha => (
                 <div key={fecha}>
