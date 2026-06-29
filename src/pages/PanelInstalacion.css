@@ -375,7 +375,7 @@
   letter-spacing: 0.2px;
 }
 
-/* ── Franja semanal ──────────────────────────────── */
+/* ── Franja semanal (bar chart) ──────────────────── */
 .pi-semana {
   display: flex;
   align-items: stretch;
@@ -391,8 +391,8 @@
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 3px;
-  padding: 9px 2px 8px;
+  gap: 2px;
+  padding: 10px 2px 6px;
 }
 .pi-semana-dia.pasado { opacity: 0.3; }
 .pi-semana-dow {
@@ -421,15 +421,32 @@
   color: #fff;
   font-weight: 700;
 }
+.pi-semana-bar-wrap {
+  width: 100%;
+  height: 28px;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  padding: 0 5px;
+}
+.pi-semana-bar {
+  width: 100%;
+  max-width: 20px;
+  border-radius: 3px 3px 0 0;
+  background: var(--gray-200);
+  min-height: 2px;
+  transition: height 0.45s ease;
+}
+.pi-semana-dia.hoy .pi-semana-bar    { background: var(--green-500); }
+.pi-semana-dia.pasado .pi-semana-bar { background: var(--gray-100); }
 .pi-semana-count {
-  font-size: 10px;
+  font-size: 9px;
   font-weight: 600;
   color: var(--green-600);
   line-height: 1;
 }
 .pi-semana-count.vacio {
   color: var(--gray-200);
-  font-size: 9px;
   font-weight: 400;
 }
 .pi-semana-dia.hoy .pi-semana-count.vacio { color: var(--gray-300); }
@@ -442,4 +459,48 @@
   text-transform: uppercase;
   letter-spacing: 0.9px;
   padding: 8px 4px 2px;
+}
+
+/* ── Desktop layout (solo recepción) ────────────── */
+@media (min-width: 768px) {
+  .pi-page--recepcion {
+    max-width: 100%;
+  }
+  .pi-page--recepcion .pi-header {
+    border-radius: 0;
+    padding: 28px 48px 32px;
+  }
+  .pi-body {
+    display: flex;
+    align-items: flex-start;
+    gap: 28px;
+    padding: 32px 48px;
+    max-width: 1280px;
+    margin: 0 auto;
+  }
+  .pi-sidebar {
+    width: 272px;
+    flex-shrink: 0;
+    position: sticky;
+    top: 32px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+  .pi-main {
+    flex: 1;
+    min-width: 0;
+  }
+  .pi-page--recepcion .pi-resumen {
+    margin: 0;
+  }
+  .pi-page--recepcion .pi-semana {
+    margin: 0;
+  }
+  .pi-page--recepcion .pi-section {
+    padding: 0;
+  }
+  .pi-page--recepcion .pi-last-update-bar {
+    padding-top: 16px;
+  }
 }

@@ -62,13 +62,23 @@ function CalendarioSemana({ albaranes }) {
     }
   })
 
+  const maxCount = Math.max(...dias.map(d => d.count), 1)
+
   return (
     <div className="pi-semana">
       {dias.map(d => (
         <div key={d.key} className={`pi-semana-dia${d.esHoy ? ' hoy' : ''}${d.esPasado ? ' pasado' : ''}`}>
           <span className="pi-semana-dow">{d.dow}</span>
           <span className="pi-semana-num">{d.diaN}</span>
-          <span className={`pi-semana-count${d.count === 0 ? ' vacio' : ''}`}>{d.count > 0 ? d.count : '·'}</span>
+          <div className="pi-semana-bar-wrap">
+            <div
+              className="pi-semana-bar"
+              style={{ height: d.count > 0 ? `${Math.max(4, Math.round((d.count / maxCount) * 28))}px` : '2px' }}
+            />
+          </div>
+          <span className={`pi-semana-count${d.count === 0 ? ' vacio' : ''}`}>
+            {d.count > 0 ? d.count : '·'}
+          </span>
         </div>
       ))}
     </div>
@@ -311,7 +321,7 @@ export default function PanelInstalacion() {
   const total      = albaranes.length
 
   return (
-    <div className="pi-page">
+    <div className="pi-page pi-page--recepcion">
       <div className="pi-header" style={{ background: headerBgColor || GREEN_DEFAULT }}>
         {logoUrl
           ? <div className="pi-header-logo-img"><img src={logoUrl} alt="Logo" /></div>
@@ -355,52 +365,53 @@ export default function PanelInstalacion() {
           {lastUpdate && <div className="pi-last-update">{labelFechaSec(isoLocal(lastUpdate))} · {lastUpdate.toLocaleTimeString('es-ES', { hour:'2-digit', minute:'2-digit' })}</div>}
         </div>
       ) : (
-        <>
-          <div className="pi-resumen">
-            <div className="pi-resumen-item">
-              <span className="pi-resumen-num">{pendientes}</span>
-              <span className="pi-resumen-label">pendiente{pendientes !== 1 ? 's' : ''}</span>
-            </div>
-            <div className="pi-resumen-sep" />
-            <div className="pi-resumen-item">
-              <span className="pi-resumen-num">{total - pendientes}</span>
-              <span className="pi-resumen-label">firmado{total - pendientes !== 1 ? 's' : ''}</span>
-            </div>
-            <div className="pi-resumen-sep" />
-            <div className="pi-resumen-item">
-              <span className="pi-resumen-num">{total}</span>
-              <span className="pi-resumen-label">total</span>
-            </div>
-          </div>
-
-          <CalendarioSemana albaranes={albaranes} />
-
-          {desdeId && (
-            <div className="pi-desde-banner">
-              <span className="pi-desde-dot" />
-              Albarán #{desdeId}
-            </div>
-          )}
-
-          <div className="pi-section">
-            {fechasOrdenadas.map(fecha => (
-              <div key={fecha}>
-                {multiplesFechas && (
-                  <div className="pi-fecha-sep">{labelFechaSec(fecha)}</div>
-                )}
-                {sortHoras(Object.entries(gruposPorFecha[fecha])).map(([hora, albs]) => (
-                  <GrupoHora key={`${fecha}-${hora}`} hora={hora} albaranes={albs} desdeId={desdeId} />
-                ))}
+        <div className="pi-body">
+          <aside className="pi-sidebar">
+            <div className="pi-resumen">
+              <div className="pi-resumen-item">
+                <span className="pi-resumen-num">{pendientes}</span>
+                <span className="pi-resumen-label">pendiente{pendientes !== 1 ? 's' : ''}</span>
               </div>
-            ))}
-          </div>
-
-          {lastUpdate && (
-            <div className="pi-last-update-bar">
-              {labelFechaSec(isoLocal(lastUpdate))} · {lastUpdate.toLocaleTimeString('es-ES', { hour:'2-digit', minute:'2-digit' })} · Se actualiza automáticamente
+              <div className="pi-resumen-sep" />
+              <div className="pi-resumen-item">
+                <span className="pi-resumen-num">{total - pendientes}</span>
+                <span className="pi-resumen-label">firmado{total - pendientes !== 1 ? 's' : ''}</span>
+              </div>
+              <div className="pi-resumen-sep" />
+              <div className="pi-resumen-item">
+                <span className="pi-resumen-num">{total}</span>
+                <span className="pi-resumen-label">total</span>
+              </div>
             </div>
-          )}
-        </>
+            <CalendarioSemana albaranes={albaranes} />
+          </aside>
+
+          <div className="pi-main">
+            {desdeId && (
+              <div className="pi-desde-banner">
+                <span className="pi-desde-dot" />
+                Albarán #{desdeId}
+              </div>
+            )}
+            <div className="pi-section">
+              {fechasOrdenadas.map(fecha => (
+                <div key={fecha}>
+                  {multiplesFechas && (
+                    <div className="pi-fecha-sep">{labelFechaSec(fecha)}</div>
+                  )}
+                  {sortHoras(Object.entries(gruposPorFecha[fecha])).map(([hora, albs]) => (
+                    <GrupoHora key={`${fecha}-${hora}`} hora={hora} albaranes={albs} desdeId={desdeId} />
+                  ))}
+                </div>
+              ))}
+            </div>
+            {lastUpdate && (
+              <div className="pi-last-update-bar">
+                {labelFechaSec(isoLocal(lastUpdate))} · {lastUpdate.toLocaleTimeString('es-ES', { hour:'2-digit', minute:'2-digit' })} · Se actualiza automáticamente
+              </div>
+            )}
+          </div>
+        </div>
       )}
     </div>
   )

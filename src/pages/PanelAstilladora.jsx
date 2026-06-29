@@ -62,13 +62,23 @@ function CalendarioSemana({ albaranes }) {
     }
   })
 
+  const maxCount = Math.max(...dias.map(d => d.count), 1)
+
   return (
     <div className="pi-semana">
       {dias.map(d => (
         <div key={d.key} className={`pi-semana-dia${d.esHoy ? ' hoy' : ''}${d.esPasado ? ' pasado' : ''}`}>
           <span className="pi-semana-dow">{d.dow}</span>
           <span className="pi-semana-num">{d.diaN}</span>
-          <span className={`pi-semana-count${d.count === 0 ? ' vacio' : ''}`}>{d.count > 0 ? d.count : '·'}</span>
+          <div className="pi-semana-bar-wrap">
+            <div
+              className="pi-semana-bar"
+              style={{ height: d.count > 0 ? `${Math.max(4, Math.round((d.count / maxCount) * 28))}px` : '2px' }}
+            />
+          </div>
+          <span className={`pi-semana-count${d.count === 0 ? ' vacio' : ''}`}>
+            {d.count > 0 ? d.count : '·'}
+          </span>
         </div>
       ))}
     </div>
