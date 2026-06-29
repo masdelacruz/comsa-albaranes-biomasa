@@ -517,6 +517,14 @@
     flex: 1;
     min-width: 0;
   }
+  .pi-page--recepcion .pi-header-logo-img,
+  .pi-page--recepcion .pi-header-logo {
+    align-self: stretch;
+    aspect-ratio: 1;
+    width: auto;
+    height: auto;
+    max-height: 68px;
+  }
   .pi-page--recepcion .pi-resumen {
     margin: 0;
   }
