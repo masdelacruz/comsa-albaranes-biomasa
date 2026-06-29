@@ -16,6 +16,11 @@
   gap: 13px;
   border-radius: 0 0 28px 28px;
 }
+.pi-header-brand {
+  display: flex;
+  align-items: center;
+  gap: 13px;
+}
 .pi-header-logo {
   width: 48px; height: 48px;
   background: rgba(255,255,255,0.18);
@@ -515,14 +520,20 @@
     flex: 1;
     min-width: 0;
   }
+  .pi-page--recepcion .pi-header-brand {
+    align-items: stretch;
+    gap: 20px;
+  }
   .pi-page--recepcion .pi-header-logo-img {
-    width: 72px;
-    height: 72px;
+    width: auto;
+    height: auto;
+    aspect-ratio: 1;
     border-radius: 14px;
   }
   .pi-page--recepcion .pi-header-logo {
-    width: 64px;
-    height: 64px;
+    width: auto;
+    height: auto;
+    aspect-ratio: 1;
     border-radius: 14px;
   }
   .pi-page--recepcion .pi-header-sub {

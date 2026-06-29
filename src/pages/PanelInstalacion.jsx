@@ -331,14 +331,16 @@ export default function PanelInstalacion() {
   return (
     <div className="pi-page pi-page--recepcion">
       <div className="pi-header" style={{ background: headerBgColor || GREEN_DEFAULT }}>
-        {logoUrl
-          ? <div className="pi-header-logo-img"><img src={logoUrl} alt="Logo" /></div>
-          : <div className="pi-header-logo"><Leaf size={14} color="#fff" /></div>
-        }
-        <div>
-          <div className="pi-header-title">Recepción</div>
-          <div className="pi-header-sub">{nombreInstalacion}</div>
-          <div className="pi-header-date">{fmtHoyHeader()}</div>
+        <div className="pi-header-brand">
+          {logoUrl
+            ? <div className="pi-header-logo-img"><img src={logoUrl} alt="Logo" /></div>
+            : <div className="pi-header-logo"><Leaf size={14} color="#fff" /></div>
+          }
+          <div className="pi-header-info">
+            <div className="pi-header-title">Recepción</div>
+            <div className="pi-header-sub">{nombreInstalacion}</div>
+            <div className="pi-header-date">{fmtHoyHeader()}</div>
+          </div>
         </div>
         <div style={{ marginLeft:'auto', display:'flex', alignItems:'center', gap:8 }}>
           {showOk && <span className="pi-refresh-ok">✓ Actualizado</span>}
