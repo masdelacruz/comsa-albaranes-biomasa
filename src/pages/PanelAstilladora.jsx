@@ -15,9 +15,70 @@ function fmtFirmaTs(ts) {
   return `${d.padStart(2,'0')}/${m.padStart(2,'0')} · ${time}`
 }
 
+const MESES_C   = ['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic']
+const DIAS_ABR  = ['L','M','X','J','V','S','D']
+const DIAS_FULL = ['domingo','lunes','martes','miércoles','jueves','viernes','sábado']
+
+function isoLocal(d) {
+  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`
+}
+
+function fmtHoyHeader() {
+  const d = new Date()
+  const dia = DIAS_FULL[d.getDay()]
+  return `${dia.charAt(0).toUpperCase()}${dia.slice(1,3)} · ${d.getDate()} ${MESES_C[d.getMonth()]}`
+}
+
+function labelFechaSec(fechaISO) {
+  if (!fechaISO || fechaISO === 'Sin fecha') return 'Sin fecha'
+  const [y, m, d] = fechaISO.split('-').map(Number)
+  const hoy = isoLocal(new Date())
+  const man = isoLocal(new Date(new Date().setDate(new Date().getDate() + 1)))
+  const aye = isoLocal(new Date(new Date().setDate(new Date().getDate() - 1)))
+  const dow  = new Date(y, m-1, d).getDay()
+  const base = `${DIAS_FULL[dow].slice(0,3)} ${d} ${MESES_C[m-1]}`
+  if (fechaISO === hoy) return `Hoy · ${base}`
+  if (fechaISO === man) return `Mañana · ${base}`
+  if (fechaISO === aye) return `Ayer · ${base}`
+  return base
+}
+
+function CalendarioSemana({ albaranes }) {
+  const hoy    = new Date()
+  const hoyStr = isoLocal(hoy)
+  const dow    = (hoy.getDay() + 6) % 7
+  const lun    = new Date(hoy)
+  lun.setDate(hoy.getDate() - dow)
+  lun.setHours(0,0,0,0)
+
+  const dias = Array.from({ length: 7 }, (_, i) => {
+    const d   = new Date(lun); d.setDate(lun.getDate() + i)
+    const key = isoLocal(d)
+    return {
+      key, dow: DIAS_ABR[i], diaN: d.getDate(),
+      count:    albaranes.filter(a => a.fecha === key).length,
+      esHoy:    key === hoyStr,
+      esPasado: key < hoyStr,
+    }
+  })
+
+  return (
+    <div className="pi-semana">
+      {dias.map(d => (
+        <div key={d.key} className={`pi-semana-dia${d.esHoy ? ' hoy' : ''}${d.esPasado ? ' pasado' : ''}`}>
+          <span className="pi-semana-dow">{d.dow}</span>
+          <span className="pi-semana-num">{d.diaN}</span>
+          <span className={`pi-semana-badge${d.count === 0 ? ' vacio' : ''}`}>{d.count > 0 ? d.count : '·'}</span>
+        </div>
+      ))}
+    </div>
+  )
+}
+
 function InfoCamion({ a }) {
-  const firmado = a.astilladoraFirmada
-  const especie = [a.especie, a.estella].filter(Boolean).join(' · ')
+  const firmado   = a.astilladoraFirmada
+  const especie   = [a.especie, a.estella].filter(Boolean).join(' · ')
+  const fechaHora = [fmtFecha(a.fecha), a.hora ? String(a.hora).slice(0,5) : null].filter(Boolean).join(' · ')
 
   return (
     <div>
@@ -29,7 +90,8 @@ function InfoCamion({ a }) {
           {a.matriculaRemolque && <span> · {a.matriculaRemolque}</span>}
         </div>
       )}
-      {especie && <div className="pi-camion-meta">{especie}</div>}
+      {especie    && <div className="pi-camion-meta">{especie}</div>}
+      {fechaHora  && <div className="pi-camion-meta">{fechaHora}</div>}
       {firmado && a.astilladoraFecha && (
         <div className="pi-camion-meta verde">✓ Firmado · {fmtFirmaTs(a.astilladoraFecha)}</div>
       )}
@@ -258,6 +320,7 @@ export default function PanelAstilladora() {
         <div>
           <div className="pi-header-title">Astilladora</div>
           <div className="pi-header-sub">{nombreAstilladora}</div>
+          <div className="pi-header-date">{fmtHoyHeader()}</div>
         </div>
         <div style={{ marginLeft:'auto', display:'flex', alignItems:'center', gap:8 }}>
           {showOk && <span className="pi-refresh-ok">✓ Actualizado</span>}
@@ -289,7 +352,7 @@ export default function PanelAstilladora() {
           <CheckCircle size={40} color="var(--green-400)" />
           <div className="pi-empty-title">Todo al día</div>
           <div className="pi-empty-sub">No hay camiones pendientes de firma.</div>
-          {lastUpdate && <div className="pi-last-update">Actualizado: {lastUpdate.toLocaleTimeString('es-ES', { hour:'2-digit', minute:'2-digit' })}</div>}
+          {lastUpdate && <div className="pi-last-update">{labelFechaSec(isoLocal(lastUpdate))} · {lastUpdate.toLocaleTimeString('es-ES', { hour:'2-digit', minute:'2-digit' })}</div>}
         </div>
       ) : (
         <>
@@ -309,6 +372,8 @@ export default function PanelAstilladora() {
               <span className="pi-resumen-label">total</span>
             </div>
           </div>
+
+          <CalendarioSemana albaranes={albaranes} />
 
           {desdeId && (
             <div className="pi-desde-banner">
@@ -330,7 +395,7 @@ export default function PanelAstilladora() {
 
           {lastUpdate && (
             <div className="pi-last-update-bar">
-              Actualizado a las {lastUpdate.toLocaleTimeString('es-ES', { hour:'2-digit', minute:'2-digit' })} · Se actualiza automáticamente
+              {labelFechaSec(isoLocal(lastUpdate))} · {lastUpdate.toLocaleTimeString('es-ES', { hour:'2-digit', minute:'2-digit' })} · Se actualiza automáticamente
             </div>
           )}
         </>

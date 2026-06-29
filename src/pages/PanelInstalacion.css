@@ -396,3 +396,82 @@
   0%, 65% { outline-color: #f59e0b; }
   100%    { outline-color: transparent; }
 }
+
+/* ── Fecha en cabecera ───────────────────────────── */
+.pi-header-date {
+  font-size: 11px;
+  color: rgba(255,255,255,0.5);
+  margin-top: 4px;
+  font-weight: 500;
+  letter-spacing: 0.2px;
+}
+
+/* ── Franja semanal ──────────────────────────────── */
+.pi-semana {
+  display: flex;
+  justify-content: space-between;
+  padding: 14px 16px 0;
+  gap: 5px;
+}
+.pi-semana-dia {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+  padding: 7px 3px 6px;
+  border-radius: 12px;
+  background: #fff;
+  border: 1px solid var(--gray-100);
+  box-shadow: 0 1px 4px rgba(0,0,0,0.04);
+}
+.pi-semana-dia.hoy {
+  background: var(--green-700);
+  border-color: var(--green-700);
+}
+.pi-semana-dia.pasado { opacity: 0.38; }
+.pi-semana-dow {
+  font-size: 9px;
+  font-weight: 700;
+  text-transform: uppercase;
+  color: var(--gray-400);
+  letter-spacing: 0.4px;
+  line-height: 1;
+}
+.pi-semana-dia.hoy .pi-semana-dow { color: rgba(255,255,255,0.65); }
+.pi-semana-num {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--gray-800);
+  line-height: 1;
+}
+.pi-semana-dia.hoy .pi-semana-num { color: #fff; }
+.pi-semana-badge {
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--green-700);
+  background: var(--green-50);
+  border-radius: 99px;
+  min-width: 16px;
+  padding: 1px 4px;
+  text-align: center;
+  line-height: 1.4;
+}
+.pi-semana-badge.vacio {
+  color: var(--gray-300);
+  background: transparent;
+  font-weight: 400;
+  font-size: 9px;
+}
+.pi-semana-dia.hoy .pi-semana-badge       { color: var(--green-700); background: rgba(255,255,255,0.9); }
+.pi-semana-dia.hoy .pi-semana-badge.vacio { color: rgba(255,255,255,0.35); background: transparent; }
+
+/* ── Separador de fecha (multi-día) ─────────────── */
+.pi-fecha-sep {
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--gray-400);
+  text-transform: uppercase;
+  letter-spacing: 0.9px;
+  padding: 8px 4px 2px;
+}

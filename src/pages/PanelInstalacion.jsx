@@ -15,6 +15,66 @@ function fmtFirmaTs(ts) {
   return `${d.padStart(2,'0')}/${m.padStart(2,'0')} · ${time}`
 }
 
+const MESES_C   = ['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic']
+const DIAS_ABR  = ['L','M','X','J','V','S','D']
+const DIAS_FULL = ['domingo','lunes','martes','miércoles','jueves','viernes','sábado']
+
+function isoLocal(d) {
+  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`
+}
+
+function fmtHoyHeader() {
+  const d = new Date()
+  const dia = DIAS_FULL[d.getDay()]
+  return `${dia.charAt(0).toUpperCase()}${dia.slice(1,3)} · ${d.getDate()} ${MESES_C[d.getMonth()]}`
+}
+
+function labelFechaSec(fechaISO) {
+  if (!fechaISO || fechaISO === 'Sin fecha') return 'Sin fecha'
+  const [y, m, d] = fechaISO.split('-').map(Number)
+  const hoy = isoLocal(new Date())
+  const man = isoLocal(new Date(new Date().setDate(new Date().getDate() + 1)))
+  const aye = isoLocal(new Date(new Date().setDate(new Date().getDate() - 1)))
+  const dow  = new Date(y, m-1, d).getDay()
+  const base = `${DIAS_FULL[dow].slice(0,3)} ${d} ${MESES_C[m-1]}`
+  if (fechaISO === hoy) return `Hoy · ${base}`
+  if (fechaISO === man) return `Mañana · ${base}`
+  if (fechaISO === aye) return `Ayer · ${base}`
+  return base
+}
+
+function CalendarioSemana({ albaranes }) {
+  const hoy    = new Date()
+  const hoyStr = isoLocal(hoy)
+  const dow    = (hoy.getDay() + 6) % 7
+  const lun    = new Date(hoy)
+  lun.setDate(hoy.getDate() - dow)
+  lun.setHours(0,0,0,0)
+
+  const dias = Array.from({ length: 7 }, (_, i) => {
+    const d   = new Date(lun); d.setDate(lun.getDate() + i)
+    const key = isoLocal(d)
+    return {
+      key, dow: DIAS_ABR[i], diaN: d.getDate(),
+      count:    albaranes.filter(a => a.fecha === key).length,
+      esHoy:    key === hoyStr,
+      esPasado: key < hoyStr,
+    }
+  })
+
+  return (
+    <div className="pi-semana">
+      {dias.map(d => (
+        <div key={d.key} className={`pi-semana-dia${d.esHoy ? ' hoy' : ''}${d.esPasado ? ' pasado' : ''}`}>
+          <span className="pi-semana-dow">{d.dow}</span>
+          <span className="pi-semana-num">{d.diaN}</span>
+          <span className={`pi-semana-badge${d.count === 0 ? ' vacio' : ''}`}>{d.count > 0 ? d.count : '·'}</span>
+        </div>
+      ))}
+    </div>
+  )
+}
+
 function InfoCamion({ a }) {
   const firmado = a.instalacionFirmada
   const origen  = a.astilladora || a.proveedor
@@ -229,23 +289,29 @@ export default function PanelInstalacion() {
     return () => clearInterval(id)
   }, [fetchData])
 
-  // Agrupar por hora
-  const grupos = {}
+  // Agrupar por fecha → hora
+  const gruposPorFecha = {}
   albaranes.forEach(a => {
-    const key = a.hora ? String(a.hora).slice(0, 5) : 'Sin hora'
-    if (!grupos[key]) grupos[key] = []
-    grupos[key].push(a)
+    const fk = a.fecha || 'Sin fecha'
+    const hk = a.hora ? String(a.hora).slice(0, 5) : 'Sin hora'
+    if (!gruposPorFecha[fk]) gruposPorFecha[fk] = {}
+    if (!gruposPorFecha[fk][hk]) gruposPorFecha[fk][hk] = []
+    gruposPorFecha[fk][hk].push(a)
   })
-  // Grupos con pendientes primero; luego por hora cronológica; "Sin hora" al final
-  const gruposOrdenados = Object.entries(grupos).sort(([keyA, a], [keyB, b]) => {
-    const aPend = a.some(x => !x.instalacionFirmada)
-    const bPend = b.some(x => !x.instalacionFirmada)
-    if (aPend && !bPend) return -1
-    if (!aPend && bPend) return 1
-    if (keyA === 'Sin hora') return 1
-    if (keyB === 'Sin hora') return -1
-    return keyA.localeCompare(keyB)
-  })
+  const fechasOrdenadas  = Object.keys(gruposPorFecha).sort()
+  const multiplesFechas  = fechasOrdenadas.length > 1
+
+  function sortHoras(entries) {
+    return entries.sort(([ka, a], [kb, b]) => {
+      const ap = a.some(x => !x.instalacionFirmada)
+      const bp = b.some(x => !x.instalacionFirmada)
+      if (ap && !bp) return -1
+      if (!ap && bp) return 1
+      if (ka === 'Sin hora') return 1
+      if (kb === 'Sin hora') return -1
+      return ka.localeCompare(kb)
+    })
+  }
 
   const pendientes = albaranes.filter(a => !a.instalacionFirmada).length
   const total      = albaranes.length
@@ -260,6 +326,7 @@ export default function PanelInstalacion() {
         <div>
           <div className="pi-header-title">Recepción</div>
           <div className="pi-header-sub">{nombreInstalacion}</div>
+          <div className="pi-header-date">{fmtHoyHeader()}</div>
         </div>
         <div style={{ marginLeft:'auto', display:'flex', alignItems:'center', gap:8 }}>
           {showOk && <span className="pi-refresh-ok">✓ Actualizado</span>}
@@ -291,7 +358,7 @@ export default function PanelInstalacion() {
           <CheckCircle size={40} color="var(--green-400)" />
           <div className="pi-empty-title">Todo al día</div>
           <div className="pi-empty-sub">No hay camiones pendientes de recepción.</div>
-          {lastUpdate && <div className="pi-last-update">Actualizado: {lastUpdate.toLocaleTimeString('es-ES', { hour:'2-digit', minute:'2-digit' })}</div>}
+          {lastUpdate && <div className="pi-last-update">{labelFechaSec(isoLocal(lastUpdate))} · {lastUpdate.toLocaleTimeString('es-ES', { hour:'2-digit', minute:'2-digit' })}</div>}
         </div>
       ) : (
         <>
@@ -312,6 +379,8 @@ export default function PanelInstalacion() {
             </div>
           </div>
 
+          <CalendarioSemana albaranes={albaranes} />
+
           {desdeId && (
             <div className="pi-desde-banner">
               <span className="pi-desde-dot" />
@@ -320,19 +389,21 @@ export default function PanelInstalacion() {
           )}
 
           <div className="pi-section">
-            {gruposOrdenados.map(([hora, albs]) => (
-              <GrupoHora
-                key={hora}
-                hora={hora}
-                albaranes={albs}
-                desdeId={desdeId}
-              />
+            {fechasOrdenadas.map(fecha => (
+              <div key={fecha}>
+                {multiplesFechas && (
+                  <div className="pi-fecha-sep">{labelFechaSec(fecha)}</div>
+                )}
+                {sortHoras(Object.entries(gruposPorFecha[fecha])).map(([hora, albs]) => (
+                  <GrupoHora key={`${fecha}-${hora}`} hora={hora} albaranes={albs} desdeId={desdeId} />
+                ))}
+              </div>
             ))}
           </div>
 
           {lastUpdate && (
             <div className="pi-last-update-bar">
-              Actualizado a las {lastUpdate.toLocaleTimeString('es-ES', { hour:'2-digit', minute:'2-digit' })} · Se actualiza automáticamente
+              {labelFechaSec(isoLocal(lastUpdate))} · {lastUpdate.toLocaleTimeString('es-ES', { hour:'2-digit', minute:'2-digit' })} · Se actualiza automáticamente
             </div>
           )}
         </>
