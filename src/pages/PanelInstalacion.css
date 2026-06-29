@@ -17,23 +17,24 @@
   border-radius: 0 0 28px 28px;
 }
 .pi-header-logo {
-  width: 44px; height: 44px;
-  background: rgba(255,255,255,0.15);
+  width: 48px; height: 48px;
+  background: rgba(255,255,255,0.18);
   border-radius: 12px;
   display: flex; align-items: center; justify-content: center;
   flex-shrink: 0;
 }
 .pi-header-logo-img {
-  width: 48px; height: 48px;
-  border-radius: 10px;
-  background: rgba(255,255,255,0.93);
+  width: 52px; height: 52px;
+  border-radius: 12px;
+  background: #fff;
   flex-shrink: 0;
   overflow: hidden;
   display: flex; align-items: center; justify-content: center;
+  box-shadow: 0 2px 14px rgba(0,0,0,0.35), 0 0 0 1px rgba(255,255,255,0.06);
 }
 .pi-header-logo-img img {
-  width: 86%;
-  height: 86%;
+  width: 88%;
+  height: 88%;
   object-fit: contain;
 }
 .pi-header-label {
@@ -517,13 +518,22 @@
     flex: 1;
     min-width: 0;
   }
-  .pi-page--recepcion .pi-header-logo-img,
+  .pi-page--recepcion .pi-header-logo-img {
+    width: 68px;
+    height: 68px;
+    border-radius: 14px;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.45), 0 0 0 1px rgba(255,255,255,0.08);
+  }
   .pi-page--recepcion .pi-header-logo {
-    align-self: stretch;
-    aspect-ratio: 1;
-    width: auto;
-    height: auto;
-    max-height: 68px;
+    width: 60px;
+    height: 60px;
+    border-radius: 14px;
+  }
+  .pi-page--recepcion .pi-header-sub {
+    font-size: 22px;
+  }
+  .pi-page--recepcion .pi-header {
+    gap: 18px;
   }
   .pi-page--recepcion .pi-resumen {
     margin: 0;
