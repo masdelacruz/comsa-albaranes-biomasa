@@ -68,7 +68,7 @@ function CalendarioSemana({ albaranes }) {
         <div key={d.key} className={`pi-semana-dia${d.esHoy ? ' hoy' : ''}${d.esPasado ? ' pasado' : ''}`}>
           <span className="pi-semana-dow">{d.dow}</span>
           <span className="pi-semana-num">{d.diaN}</span>
-          <span className={`pi-semana-badge${d.count === 0 ? ' vacio' : ''}`}>{d.count > 0 ? d.count : '·'}</span>
+          <span className={`pi-semana-count${d.count === 0 ? ' vacio' : ''}`}>{d.count > 0 ? d.count : '·'}</span>
         </div>
       ))}
     </div>
@@ -116,10 +116,7 @@ function TarjetaCamion({ a, esUltimo, esDesde }) {
       style={{ cursor: 'pointer', borderBottom: esUltimo ? 'none' : undefined }}
     >
       <div className="pi-camion-left">
-        <div className={`pi-camion-dot ${firmado ? 'verde' : 'amber'}`} />
-        <div>
-          <InfoCamion a={a} />
-        </div>
+        <InfoCamion a={a} />
       </div>
       <div className="pi-camion-right">
         {firmado
@@ -159,10 +156,7 @@ function GrupoInstalacion({ instalacion, albaranes, desdeId }) {
       </div>
       <div className="pi-camiones-list">
         {sorted.map((a, i) => (
-          <div key={a.id} className="pi-camion-row">
-            <span className="pi-camion-orden">#{i + 1}</span>
-            <TarjetaCamion a={a} esUltimo={i === sorted.length - 1} esDesde={String(a.id) === desdeId} />
-          </div>
+          <TarjetaCamion key={a.id} a={a} esUltimo={i === sorted.length - 1} esDesde={String(a.id) === desdeId} />
         ))}
       </div>
     </div>
