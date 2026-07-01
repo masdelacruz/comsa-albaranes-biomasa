@@ -121,35 +121,47 @@ export default function NuevoAlbaran({ addAlbaran }) {
           <div className="form-grid">
             <div className="form-field">
               <label>Proveedor *</label>
-              <select value={form.proveedor} onChange={e => set('proveedor', e.target.value)}>
-                <option value="">Selecciona proveedor...</option>
-                {proveedores.map(p => <option key={p}>{p}</option>)}
-              </select>
+              <div className="select-wrap">
+                <select value={form.proveedor} onChange={e => set('proveedor', e.target.value)}>
+                  <option value="" disabled hidden></option>
+                  {proveedores.map(p => <option key={p}>{p}</option>)}
+                </select>
+                {form.proveedor && <button type="button" className="select-clear-btn" onClick={() => set('proveedor', '')} title="Limpiar">×</button>}
+              </div>
             </div>
             {esOp1 && (
               <div className="form-field">
                 <label>Astilladora *</label>
-                <select value={form.astilladora} onChange={e => set('astilladora', e.target.value)}>
-                  <option value="">Selecciona astilladora...</option>
-                  {astilladoras.map(a => <option key={a}>{a}</option>)}
-                </select>
+                <div className="select-wrap">
+                  <select value={form.astilladora} onChange={e => set('astilladora', e.target.value)}>
+                    <option value="" disabled hidden></option>
+                    {astilladoras.map(a => <option key={a}>{a}</option>)}
+                  </select>
+                  {form.astilladora && <button type="button" className="select-clear-btn" onClick={() => set('astilladora', '')} title="Limpiar">×</button>}
+                </div>
               </div>
             )}
             {esOp1 && (
               <div className="form-field">
                 <label>Transportista *</label>
-                <select value={form.transportista} onChange={e => set('transportista', e.target.value)}>
-                  <option value="">Selecciona transportista...</option>
-                  {transportistas.map(t => <option key={t}>{t}</option>)}
-                </select>
+                <div className="select-wrap">
+                  <select value={form.transportista} onChange={e => set('transportista', e.target.value)}>
+                    <option value="" disabled hidden></option>
+                    {transportistas.map(t => <option key={t}>{t}</option>)}
+                  </select>
+                  {form.transportista && <button type="button" className="select-clear-btn" onClick={() => set('transportista', '')} title="Limpiar">×</button>}
+                </div>
               </div>
             )}
             <div className="form-field">
               <label>Instalación *</label>
-              <select value={form.instalacion} onChange={e => set('instalacion', e.target.value)}>
-                <option value="">Selecciona instalación...</option>
-                {instalaciones.map(i => <option key={i}>{i}</option>)}
-              </select>
+              <div className="select-wrap">
+                <select value={form.instalacion} onChange={e => set('instalacion', e.target.value)}>
+                  <option value="" disabled hidden></option>
+                  {instalaciones.map(i => <option key={i}>{i}</option>)}
+                </select>
+                {form.instalacion && <button type="button" className="select-clear-btn" onClick={() => set('instalacion', '')} title="Limpiar">×</button>}
+              </div>
             </div>
           </div>
         </div>
@@ -167,24 +179,33 @@ export default function NuevoAlbaran({ addAlbaran }) {
             </div>
             <div className="form-field">
               <label>Especie *</label>
-              <select value={form.especie} onChange={e => set('especie', e.target.value)}>
-                <option value="">Selecciona especie...</option>
-                {especiesTipo.map(s => <option key={s}>{s}</option>)}
-              </select>
+              <div className="select-wrap">
+                <select value={form.especie} onChange={e => set('especie', e.target.value)}>
+                  <option value="" disabled hidden></option>
+                  {especiesTipo.map(s => <option key={s}>{s}</option>)}
+                </select>
+                {form.especie && <button type="button" className="select-clear-btn" onClick={() => set('especie', '')} title="Limpiar">×</button>}
+              </div>
             </div>
             <div className="form-field">
               <label>Tipo biomasa *</label>
-              <select value={form.tipoBiomasa} onChange={e => set('tipoBiomasa', e.target.value)}>
-                <option value="">Selecciona tipo biomasa...</option>
-                {tiposBiomasa.map(t => <option key={t}>{t}</option>)}
-              </select>
+              <div className="select-wrap">
+                <select value={form.tipoBiomasa} onChange={e => set('tipoBiomasa', e.target.value)}>
+                  <option value="" disabled hidden></option>
+                  {tiposBiomasa.map(t => <option key={t}>{t}</option>)}
+                </select>
+                {form.tipoBiomasa && <button type="button" className="select-clear-btn" onClick={() => set('tipoBiomasa', '')} title="Limpiar">×</button>}
+              </div>
             </div>
             <div className="form-field">
               <label>Estella</label>
-              <select value={form.estella} onChange={e => set('estella', e.target.value)}>
-                <option value="">Selecciona estella...</option>
-                {estellas.map(s => <option key={s}>{s}</option>)}
-              </select>
+              <div className="select-wrap">
+                <select value={form.estella} onChange={e => set('estella', e.target.value)}>
+                  <option value="" disabled hidden></option>
+                  {estellas.map(s => <option key={s}>{s}</option>)}
+                </select>
+                {form.estella && <button type="button" className="select-clear-btn" onClick={() => set('estella', '')} title="Limpiar">×</button>}
+              </div>
             </div>
             <div className="form-field full">
               <label>Origen biomasa (paraje / término municipal)</label>

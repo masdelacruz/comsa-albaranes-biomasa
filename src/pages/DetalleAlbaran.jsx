@@ -732,56 +732,77 @@ export default function DetalleAlbaran({ albaranes, simularFirma, updateFirma, s
                   </div>
                   <div className="edit-field">
                     <label className="edit-label">Proveedor</label>
-                    <select className="edit-input" value={formDatos.proveedor} onChange={e => setD('proveedor', e.target.value)}>
-                      <option value="">—</option>
-                      {proveedores.map(o => <option key={o} value={o}>{o}</option>)}
-                    </select>
+                    <div className="select-wrap">
+                      <select className="edit-input" value={formDatos.proveedor} onChange={e => setD('proveedor', e.target.value)}>
+                        <option value="" disabled hidden></option>
+                        {proveedores.map(o => <option key={o} value={o}>{o}</option>)}
+                      </select>
+                      {formDatos.proveedor && <button type="button" className="select-clear-btn" onClick={() => setD('proveedor', '')} title="Limpiar">×</button>}
+                    </div>
                   </div>
                   {formDatos.tipo?.includes('1') && (
                   <div className="edit-field">
                     <label className="edit-label">Astilladora</label>
-                    <select className="edit-input" value={formDatos.astilladora} onChange={e => setD('astilladora', e.target.value)}>
-                      <option value="">—</option>
-                      {astilladoras.map(o => <option key={o} value={o}>{o}</option>)}
-                    </select>
+                    <div className="select-wrap">
+                      <select className="edit-input" value={formDatos.astilladora} onChange={e => setD('astilladora', e.target.value)}>
+                        <option value="" disabled hidden></option>
+                        {astilladoras.map(o => <option key={o} value={o}>{o}</option>)}
+                      </select>
+                      {formDatos.astilladora && <button type="button" className="select-clear-btn" onClick={() => setD('astilladora', '')} title="Limpiar">×</button>}
+                    </div>
                   </div>
                   )}
                   {formDatos.tipo?.includes('1') && (
                   <div className="edit-field">
                     <label className="edit-label">Transportista</label>
-                    <select className="edit-input" value={formDatos.transportista} onChange={e => setD('transportista', e.target.value)}>
-                      <option value="">—</option>
-                      {transportistas.map(o => <option key={o} value={o}>{o}</option>)}
-                    </select>
+                    <div className="select-wrap">
+                      <select className="edit-input" value={formDatos.transportista} onChange={e => setD('transportista', e.target.value)}>
+                        <option value="" disabled hidden></option>
+                        {transportistas.map(o => <option key={o} value={o}>{o}</option>)}
+                      </select>
+                      {formDatos.transportista && <button type="button" className="select-clear-btn" onClick={() => setD('transportista', '')} title="Limpiar">×</button>}
+                    </div>
                   </div>
                   )}
                   <div className="edit-field">
                     <label className="edit-label">Instalación</label>
-                    <select className="edit-input" value={formDatos.instalacion} onChange={e => setD('instalacion', e.target.value)}>
-                      <option value="">—</option>
-                      {instalaciones.map(o => <option key={o} value={o}>{o}</option>)}
-                    </select>
+                    <div className="select-wrap">
+                      <select className="edit-input" value={formDatos.instalacion} onChange={e => setD('instalacion', e.target.value)}>
+                        <option value="" disabled hidden></option>
+                        {instalaciones.map(o => <option key={o} value={o}>{o}</option>)}
+                      </select>
+                      {formDatos.instalacion && <button type="button" className="select-clear-btn" onClick={() => setD('instalacion', '')} title="Limpiar">×</button>}
+                    </div>
                   </div>
                   <div className="edit-field">
                     <label className="edit-label">Especie</label>
-                    <select className="edit-input" value={formDatos.especie || ''} onChange={e => setD('especie', e.target.value)}>
-                      <option value="">—</option>
-                      {especiesTipo.map(o => <option key={o} value={o}>{o}</option>)}
-                    </select>
+                    <div className="select-wrap">
+                      <select className="edit-input" value={formDatos.especie || ''} onChange={e => setD('especie', e.target.value)}>
+                        <option value="" disabled hidden></option>
+                        {especiesTipo.map(o => <option key={o} value={o}>{o}</option>)}
+                      </select>
+                      {formDatos.especie && <button type="button" className="select-clear-btn" onClick={() => setD('especie', '')} title="Limpiar">×</button>}
+                    </div>
                   </div>
                   <div className="edit-field">
                     <label className="edit-label">Tipo biomasa</label>
-                    <select className="edit-input" value={formDatos.tipoBiomasa || ''} onChange={e => setD('tipoBiomasa', e.target.value)}>
-                      <option value="">—</option>
-                      {tiposBiomasa.map(o => <option key={o} value={o}>{o}</option>)}
-                    </select>
+                    <div className="select-wrap">
+                      <select className="edit-input" value={formDatos.tipoBiomasa || ''} onChange={e => setD('tipoBiomasa', e.target.value)}>
+                        <option value="" disabled hidden></option>
+                        {tiposBiomasa.map(o => <option key={o} value={o}>{o}</option>)}
+                      </select>
+                      {formDatos.tipoBiomasa && <button type="button" className="select-clear-btn" onClick={() => setD('tipoBiomasa', '')} title="Limpiar">×</button>}
+                    </div>
                   </div>
                   <div className="edit-field">
                     <label className="edit-label">Estella</label>
-                    <select className="edit-input" value={formDatos.estella || ''} onChange={e => setD('estella', e.target.value)}>
-                      <option value="">—</option>
-                      {estellas.map(o => <option key={o} value={o}>{o}</option>)}
-                    </select>
+                    <div className="select-wrap">
+                      <select className="edit-input" value={formDatos.estella || ''} onChange={e => setD('estella', e.target.value)}>
+                        <option value="" disabled hidden></option>
+                        {estellas.map(o => <option key={o} value={o}>{o}</option>)}
+                      </select>
+                      {formDatos.estella && <button type="button" className="select-clear-btn" onClick={() => setD('estella', '')} title="Limpiar">×</button>}
+                    </div>
                   </div>
                   <div className="edit-field">
                     <label className="edit-label">Origen</label>
