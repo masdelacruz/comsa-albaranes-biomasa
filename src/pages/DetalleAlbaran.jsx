@@ -734,7 +734,7 @@ export default function DetalleAlbaran({ albaranes, simularFirma, updateFirma, s
                     <label className="edit-label">Proveedor</label>
                     <div className="select-wrap">
                       <select className="edit-input" value={formDatos.proveedor} onChange={e => setD('proveedor', e.target.value)}>
-                        <option value="" disabled hidden></option>
+                        <option value="" disabled hidden>Sin proveedor</option>
                         {proveedores.map(o => <option key={o} value={o}>{o}</option>)}
                       </select>
                       {formDatos.proveedor && <button type="button" className="select-clear-btn" onClick={() => setD('proveedor', '')} title="Limpiar">×</button>}
@@ -745,7 +745,7 @@ export default function DetalleAlbaran({ albaranes, simularFirma, updateFirma, s
                     <label className="edit-label">Astilladora</label>
                     <div className="select-wrap">
                       <select className="edit-input" value={formDatos.astilladora} onChange={e => setD('astilladora', e.target.value)}>
-                        <option value="" disabled hidden></option>
+                        <option value="" disabled hidden>Sin astilladora</option>
                         {astilladoras.map(o => <option key={o} value={o}>{o}</option>)}
                       </select>
                       {formDatos.astilladora && <button type="button" className="select-clear-btn" onClick={() => setD('astilladora', '')} title="Limpiar">×</button>}
@@ -757,7 +757,7 @@ export default function DetalleAlbaran({ albaranes, simularFirma, updateFirma, s
                     <label className="edit-label">Transportista</label>
                     <div className="select-wrap">
                       <select className="edit-input" value={formDatos.transportista} onChange={e => setD('transportista', e.target.value)}>
-                        <option value="" disabled hidden></option>
+                        <option value="" disabled hidden>Sin transportista</option>
                         {transportistas.map(o => <option key={o} value={o}>{o}</option>)}
                       </select>
                       {formDatos.transportista && <button type="button" className="select-clear-btn" onClick={() => setD('transportista', '')} title="Limpiar">×</button>}
@@ -768,7 +768,7 @@ export default function DetalleAlbaran({ albaranes, simularFirma, updateFirma, s
                     <label className="edit-label">Instalación</label>
                     <div className="select-wrap">
                       <select className="edit-input" value={formDatos.instalacion} onChange={e => setD('instalacion', e.target.value)}>
-                        <option value="" disabled hidden></option>
+                        <option value="" disabled hidden>Sin instalación</option>
                         {instalaciones.map(o => <option key={o} value={o}>{o}</option>)}
                       </select>
                       {formDatos.instalacion && <button type="button" className="select-clear-btn" onClick={() => setD('instalacion', '')} title="Limpiar">×</button>}
@@ -778,7 +778,7 @@ export default function DetalleAlbaran({ albaranes, simularFirma, updateFirma, s
                     <label className="edit-label">Especie</label>
                     <div className="select-wrap">
                       <select className="edit-input" value={formDatos.especie || ''} onChange={e => setD('especie', e.target.value)}>
-                        <option value="" disabled hidden></option>
+                        <option value="" disabled hidden>Sin especie</option>
                         {especiesTipo.map(o => <option key={o} value={o}>{o}</option>)}
                       </select>
                       {formDatos.especie && <button type="button" className="select-clear-btn" onClick={() => setD('especie', '')} title="Limpiar">×</button>}
@@ -788,7 +788,7 @@ export default function DetalleAlbaran({ albaranes, simularFirma, updateFirma, s
                     <label className="edit-label">Tipo biomasa</label>
                     <div className="select-wrap">
                       <select className="edit-input" value={formDatos.tipoBiomasa || ''} onChange={e => setD('tipoBiomasa', e.target.value)}>
-                        <option value="" disabled hidden></option>
+                        <option value="" disabled hidden>Sin tipo biomasa</option>
                         {tiposBiomasa.map(o => <option key={o} value={o}>{o}</option>)}
                       </select>
                       {formDatos.tipoBiomasa && <button type="button" className="select-clear-btn" onClick={() => setD('tipoBiomasa', '')} title="Limpiar">×</button>}
@@ -798,7 +798,7 @@ export default function DetalleAlbaran({ albaranes, simularFirma, updateFirma, s
                     <label className="edit-label">Estella</label>
                     <div className="select-wrap">
                       <select className="edit-input" value={formDatos.estella || ''} onChange={e => setD('estella', e.target.value)}>
-                        <option value="" disabled hidden></option>
+                        <option value="" disabled hidden>Sin estella</option>
                         {estellas.map(o => <option key={o} value={o}>{o}</option>)}
                       </select>
                       {formDatos.estella && <button type="button" className="select-clear-btn" onClick={() => setD('estella', '')} title="Limpiar">×</button>}
