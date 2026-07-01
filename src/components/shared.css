@@ -24,7 +24,7 @@
 .select-clear-btn:hover { color:var(--gray-700); background:var(--gray-100); }
 .select-wrap option[value=""] { display:none; }
 .select-wrap select:has(option[value=""]:checked) { color:var(--gray-400); }
-.select-wrap select option { color:var(--gray-900); }
+.select-wrap select:focus:has(option[value=""]:checked) { color:var(--gray-900); }
 .page-header { padding:24px 28px 0; margin-bottom:24px; }
 .page-title { font-size:20px; font-weight:600; letter-spacing:-0.3px; }
 .page-sub { font-size:13px; color:var(--gray-400); margin-top:3px; }
