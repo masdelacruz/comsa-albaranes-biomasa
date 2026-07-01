@@ -1,0 +1,53 @@
+.sf { display:flex; align-items:center; gap:6px; }
+.sf-inner { flex:1; min-width:0; position:relative; }
+
+.sf-trigger {
+  display:flex; align-items:center; justify-content:space-between; gap:6px;
+  cursor:pointer; user-select:none; outline:none;
+  border:var(--border); border-radius:var(--radius-sm);
+  padding:7px 10px; background:#fff; color:var(--gray-900);
+  font-size:13px; font-family:var(--font-main);
+  transition:border-color 0.15s, box-shadow 0.15s;
+  width:100%; box-sizing:border-box;
+}
+.sf-trigger:hover { border-color:var(--gray-400); }
+.sf-trigger.sf-open {
+  border-color:var(--green-400);
+  box-shadow:0 0 0 3px rgba(29,158,117,0.1);
+}
+.sf-trigger.sf-empty .sf-label { color:var(--gray-400); }
+
+.sf-label { flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+
+.sf-chevron { color:var(--gray-400); flex-shrink:0; transition:transform 0.15s; }
+.sf-trigger.sf-open .sf-chevron { transform:rotate(180deg); }
+
+.sf-clear {
+  flex-shrink:0; background:none; border:none; cursor:pointer;
+  color:var(--gray-400); font-size:18px; padding:0; line-height:1;
+  width:22px; height:22px; display:flex; align-items:center; justify-content:center;
+  border-radius:50%; transition:color 0.15s, background 0.15s;
+}
+.sf-clear:hover { color:var(--gray-700); background:var(--gray-100); }
+
+.sf-dropdown {
+  position:absolute; top:calc(100% + 3px); left:0; right:0; z-index:300;
+  background:#fff; border:var(--border); border-radius:var(--radius-sm);
+  box-shadow:0 4px 16px rgba(0,0,0,0.1);
+  overflow-y:auto; max-height:220px;
+  list-style:none; margin:0; padding:4px 0;
+}
+.sf-option {
+  padding:8px 12px; cursor:pointer;
+  font-size:13px; color:var(--gray-900); font-family:var(--font-main);
+  transition:background 0.1s;
+}
+.sf-option:hover { background:var(--gray-50); }
+.sf-option.sf-selected { color:var(--green-600); font-weight:500; }
+
+/* Variante edit (DetalleAlbaran modo edición) */
+.sf-edit .sf-trigger {
+  padding:5px 8px; background:var(--gray-50);
+  border-color:var(--gray-200); color:var(--gray-800);
+}
+.sf-edit .sf-trigger.sf-open { border-color:var(--green-400); }

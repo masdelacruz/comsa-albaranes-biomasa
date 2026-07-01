@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { ArrowLeft, CheckCircle } from 'lucide-react'
 import { api } from '../lib/api'
 import { ESPECIES, ESPECIES_TIPO, TIPOS_BIOMASA } from '../data/mockData'
+import SelectField from '../components/SelectField'
 import '../components/shared.css'
 import './NuevoAlbaran.css'
 
@@ -121,47 +122,23 @@ export default function NuevoAlbaran({ addAlbaran }) {
           <div className="form-grid">
             <div className="form-field">
               <label>Proveedor *</label>
-              <div className="select-wrap">
-                <select value={form.proveedor} onChange={e => set('proveedor', e.target.value)}>
-                  <option value="" disabled>Selecciona proveedor...</option>
-                  {proveedores.map(p => <option key={p}>{p}</option>)}
-                </select>
-                {form.proveedor && <button type="button" className="select-clear-btn" onClick={() => set('proveedor', '')} title="Limpiar">×</button>}
-              </div>
+              <SelectField value={form.proveedor} onChange={v => set('proveedor', v)} options={proveedores} placeholder="Selecciona proveedor..." clearable />
             </div>
             {esOp1 && (
               <div className="form-field">
                 <label>Astilladora *</label>
-                <div className="select-wrap">
-                  <select value={form.astilladora} onChange={e => set('astilladora', e.target.value)}>
-                    <option value="" disabled>Selecciona astilladora...</option>
-                    {astilladoras.map(a => <option key={a}>{a}</option>)}
-                  </select>
-                  {form.astilladora && <button type="button" className="select-clear-btn" onClick={() => set('astilladora', '')} title="Limpiar">×</button>}
-                </div>
+                <SelectField value={form.astilladora} onChange={v => set('astilladora', v)} options={astilladoras} placeholder="Selecciona astilladora..." clearable />
               </div>
             )}
             {esOp1 && (
               <div className="form-field">
                 <label>Transportista *</label>
-                <div className="select-wrap">
-                  <select value={form.transportista} onChange={e => set('transportista', e.target.value)}>
-                    <option value="" disabled>Selecciona transportista...</option>
-                    {transportistas.map(t => <option key={t}>{t}</option>)}
-                  </select>
-                  {form.transportista && <button type="button" className="select-clear-btn" onClick={() => set('transportista', '')} title="Limpiar">×</button>}
-                </div>
+                <SelectField value={form.transportista} onChange={v => set('transportista', v)} options={transportistas} placeholder="Selecciona transportista..." clearable />
               </div>
             )}
             <div className="form-field">
               <label>Instalación *</label>
-              <div className="select-wrap">
-                <select value={form.instalacion} onChange={e => set('instalacion', e.target.value)}>
-                  <option value="" disabled>Selecciona instalación...</option>
-                  {instalaciones.map(i => <option key={i}>{i}</option>)}
-                </select>
-                {form.instalacion && <button type="button" className="select-clear-btn" onClick={() => set('instalacion', '')} title="Limpiar">×</button>}
-              </div>
+              <SelectField value={form.instalacion} onChange={v => set('instalacion', v)} options={instalaciones} placeholder="Selecciona instalación..." clearable />
             </div>
           </div>
         </div>
@@ -179,33 +156,15 @@ export default function NuevoAlbaran({ addAlbaran }) {
             </div>
             <div className="form-field">
               <label>Especie *</label>
-              <div className="select-wrap">
-                <select value={form.especie} onChange={e => set('especie', e.target.value)}>
-                  <option value="" disabled>Selecciona especie...</option>
-                  {especiesTipo.map(s => <option key={s}>{s}</option>)}
-                </select>
-                {form.especie && <button type="button" className="select-clear-btn" onClick={() => set('especie', '')} title="Limpiar">×</button>}
-              </div>
+              <SelectField value={form.especie} onChange={v => set('especie', v)} options={especiesTipo} placeholder="Selecciona especie..." clearable />
             </div>
             <div className="form-field">
               <label>Tipo biomasa *</label>
-              <div className="select-wrap">
-                <select value={form.tipoBiomasa} onChange={e => set('tipoBiomasa', e.target.value)}>
-                  <option value="" disabled>Selecciona tipo biomasa...</option>
-                  {tiposBiomasa.map(t => <option key={t}>{t}</option>)}
-                </select>
-                {form.tipoBiomasa && <button type="button" className="select-clear-btn" onClick={() => set('tipoBiomasa', '')} title="Limpiar">×</button>}
-              </div>
+              <SelectField value={form.tipoBiomasa} onChange={v => set('tipoBiomasa', v)} options={tiposBiomasa} placeholder="Selecciona tipo biomasa..." clearable />
             </div>
             <div className="form-field">
               <label>Estella</label>
-              <div className="select-wrap">
-                <select value={form.estella} onChange={e => set('estella', e.target.value)}>
-                  <option value="" disabled>Selecciona estella...</option>
-                  {estellas.map(s => <option key={s}>{s}</option>)}
-                </select>
-                {form.estella && <button type="button" className="select-clear-btn" onClick={() => set('estella', '')} title="Limpiar">×</button>}
-              </div>
+              <SelectField value={form.estella} onChange={v => set('estella', v)} options={estellas} placeholder="Selecciona estella..." clearable />
             </div>
             <div className="form-field full">
               <label>Origen biomasa (paraje / término municipal)</label>
