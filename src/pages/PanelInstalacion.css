@@ -285,6 +285,20 @@
   font-weight: 600;
   color: var(--gray-900);
 }
+.pi-camion-atrasado-tag {
+  display: inline-block;
+  margin-left: 6px;
+  font-size: 9px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+  color: #92400e;
+  background: #fef3c7;
+  border: 1px solid #fbbf24;
+  border-radius: 4px;
+  padding: 1px 5px;
+  vertical-align: middle;
+}
 .pi-camion-matricula {
   font-size: 12px;
   font-weight: 600;
@@ -418,6 +432,47 @@
   overflow: hidden;
   box-shadow: 0 1px 4px rgba(0,0,0,0.04);
 }
+/* "Hoy" — pestaña fija a la izquierda: pendientes atrasados + lo de hoy */
+.pi-semana-hoy {
+  position: relative;
+  flex: 0 0 52px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  padding: 10px 2px 6px;
+  cursor: pointer;
+  border-right: 1px solid var(--gray-100);
+  background: var(--green-50);
+  transition: background 0.12s;
+}
+.pi-semana-hoy:hover { background: var(--green-100); }
+.pi-semana-hoy .pi-semana-dow { color: var(--green-700); font-weight: 700; }
+.pi-semana-hoy .pi-semana-bar { background: var(--green-500); }
+.pi-semana-hoy.seleccionado { background: var(--green-600); }
+.pi-semana-hoy.seleccionado:hover { background: var(--green-600); }
+.pi-semana-hoy.seleccionado .pi-semana-dow { color: #fff; }
+.pi-semana-hoy.seleccionado .pi-semana-count { color: #fff; }
+.pi-semana-hoy.seleccionado .pi-semana-count.vacio { color: rgba(255,255,255,0.65); }
+.pi-semana-hoy.seleccionado .pi-semana-bar { background: rgba(255,255,255,0.9); }
+.pi-semana-hoy-dot {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--amber-400);
+  box-shadow: 0 0 0 2px var(--green-50);
+}
+.pi-semana-hoy.seleccionado .pi-semana-hoy-dot { box-shadow: 0 0 0 2px var(--green-600); }
+
+.pi-semana-dias {
+  display: flex;
+  align-items: stretch;
+  flex: 1;
+  min-width: 0;
+}
 .pi-semana-dia {
   flex: 1;
   min-width: 0;
@@ -426,10 +481,11 @@
   align-items: center;
   gap: 2px;
   padding: 10px 2px 6px;
+  cursor: pointer;
   transition: background 0.12s;
 }
 .pi-semana-dia.pasado { opacity: 0.35; }
-.pi-semana-dia.clickable:hover { background: var(--green-50); }
+.pi-semana-dia:hover { background: var(--green-50); }
 .pi-semana-dia.seleccionado { background: #f0fdf4; }
 .pi-semana-dia.seleccionado.pasado { opacity: 1; }
 .pi-semana-dow {

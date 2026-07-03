@@ -62,51 +62,84 @@ function CalendarioSemana({ albaranes, diaSeleccionado, onDiaClick }) {
       esPasado: key < hoyStr,
     }
   })
-  const maxTotal = Math.max(...dias.map(d => d.countActivo + d.countPlan), 1)
+
+  // "Hoy" = todo lo trabajable hoy: atrasados de días anteriores + lo de hoy
+  const atrasados  = albaranes.filter(a => !a.planificado && a.fecha < hoyStr && !a.astilladoraFirmada).length
+  const diaHoy     = dias.find(d => d.esHoy)
+  const hoyActivo  = (diaHoy?.countActivo ?? 0) + atrasados
+  const hoyPlan    = diaHoy?.countPlan ?? 0
+
+  const maxTotal = Math.max(...dias.map(d => d.countActivo + d.countPlan), hoyActivo + hoyPlan, 1)
+
+  const barStyleFor = (countActivo, countPlan, verdeIntenso) => {
+    const activoH = countActivo > 0 ? Math.max(4, Math.round((countActivo / maxTotal) * 28)) : 0
+    const planH   = countPlan   > 0 ? Math.max(3, Math.round((countPlan   / maxTotal) * 28)) : 0
+    const totalH  = Math.min(Math.max(activoH + planH, 2), 28)
+    const style = { height: `${totalH}px` }
+    if (planH > 0 && activoH > 0)
+      style.background = `linear-gradient(to top, var(--green-${verdeIntenso ? '500' : '400'}) ${activoH}px, var(--green-${verdeIntenso ? '200' : '100'}) ${activoH}px)`
+    else if (planH > 0)
+      style.background = verdeIntenso ? 'rgba(255,255,255,0.25)' : 'var(--green-100)'
+    return style
+  }
+
+  const hoySeleccionado = diaSeleccionado === 'hoy'
 
   return (
     <div className="pi-semana">
-      {dias.map(d => {
-        const activoH = d.countActivo > 0 ? Math.max(4, Math.round((d.countActivo / maxTotal) * 28)) : 0
-        const planH   = d.countPlan   > 0 ? Math.max(3, Math.round((d.countPlan   / maxTotal) * 28)) : 0
-        const totalH  = Math.min(Math.max(activoH + planH, 2), 28)
-        const barStyle = { height: `${totalH}px` }
-        if (planH > 0 && activoH > 0)
-          barStyle.background = `linear-gradient(to top, var(--green-${d.esHoy ? '500' : '400'}) ${activoH}px, var(--green-${d.esHoy ? '200' : '100'}) ${activoH}px)`
-        else if (planH > 0)
-          barStyle.background = d.esHoy ? 'rgba(255,255,255,0.25)' : 'var(--green-100)'
-        const empty     = d.countActivo === 0 && d.countPlan === 0
-        const clickable = (!empty || d.esHoy) && onDiaClick
-        const selected  = d.key === diaSeleccionado
-        return (
-          <div
-            key={d.key}
-            className={`pi-semana-dia${d.esHoy ? ' hoy' : ''}${d.esPasado ? ' pasado' : ''}${selected ? ' seleccionado' : ''}${clickable ? ' clickable' : ''}`}
-            onClick={clickable ? () => onDiaClick(selected && !d.esHoy ? hoyStr : d.key) : undefined}
-          >
-            <span className="pi-semana-dow">{d.dow}</span>
-            <span className="pi-semana-num">{d.diaN}</span>
-            <div className="pi-semana-bar-wrap">
-              <div className="pi-semana-bar" style={barStyle} />
+      <div
+        className={`pi-semana-hoy${hoySeleccionado ? ' seleccionado' : ''}`}
+        onClick={() => onDiaClick?.('hoy')}
+      >
+        <span className="pi-semana-dow">HOY</span>
+        <div className="pi-semana-bar-wrap">
+          <div className="pi-semana-bar" style={barStyleFor(hoyActivo, hoyPlan, true)} />
+        </div>
+        <span className={`pi-semana-count${hoyActivo === 0 && hoyPlan === 0 ? ' vacio' : hoyActivo === 0 ? ' plan' : ''}`}>
+          {hoyActivo > 0 ? hoyActivo : (hoyPlan > 0 ? `+${hoyPlan}` : '·')}
+        </span>
+        {atrasados > 0 && (
+          <span className="pi-semana-hoy-dot" title={`${atrasados} atrasado${atrasados !== 1 ? 's' : ''} de días anteriores`} />
+        )}
+      </div>
+      <div className="pi-semana-dias">
+        {dias.map(d => {
+          const empty    = d.countActivo === 0 && d.countPlan === 0
+          const selected = d.key === diaSeleccionado
+          return (
+            <div
+              key={d.key}
+              className={`pi-semana-dia${d.esHoy ? ' hoy' : ''}${d.esPasado ? ' pasado' : ''}${selected ? ' seleccionado' : ''}`}
+              onClick={() => onDiaClick?.(selected ? 'hoy' : d.key)}
+            >
+              <span className="pi-semana-dow">{d.dow}</span>
+              <span className="pi-semana-num">{d.diaN}</span>
+              <div className="pi-semana-bar-wrap">
+                <div className="pi-semana-bar" style={barStyleFor(d.countActivo, d.countPlan, d.esHoy)} />
+              </div>
+              <span className={`pi-semana-count${empty ? ' vacio' : d.countActivo === 0 ? ' plan' : ''}`}>
+                {d.countActivo > 0 ? d.countActivo : (d.countPlan > 0 ? `+${d.countPlan}` : '·')}
+              </span>
             </div>
-            <span className={`pi-semana-count${empty ? ' vacio' : d.countActivo === 0 ? ' plan' : ''}`}>
-              {d.countActivo > 0 ? d.countActivo : (d.countPlan > 0 ? `+${d.countPlan}` : '·')}
-            </span>
-          </div>
-        )
-      })}
+          )
+        })}
+      </div>
     </div>
   )
 }
 
 function InfoCamion({ a }) {
-  const firmado   = a.astilladoraFirmada
-  const especie   = [a.especie, a.estella].filter(Boolean).join(' · ')
-  const fechaHora = [fmtFecha(a.fecha), a.hora ? String(a.hora).slice(0,5) : null].filter(Boolean).join(' · ')
+  const firmado    = a.astilladoraFirmada
+  const especie    = [a.especie, a.estella].filter(Boolean).join(' · ')
+  const fechaHora  = [fmtFecha(a.fecha), a.hora ? String(a.hora).slice(0,5) : null].filter(Boolean).join(' · ')
+  const esAtrasado = !a.planificado && !firmado && a.fecha && a.fecha < isoLocal(new Date())
 
   return (
     <div>
-      <div className="pi-camion-id">Albarán {a.id}</div>
+      <div className="pi-camion-id">
+        Albarán {a.id}
+        {esAtrasado && <span className="pi-camion-atrasado-tag">Atrasado</span>}
+      </div>
       {a.transportista && <div className="pi-camion-matricula" style={{ fontFamily: 'inherit' }}>{a.transportista}</div>}
       {a.matriculaTractora && (
         <div className="pi-camion-meta">
@@ -222,7 +255,7 @@ export default function PanelAstilladora() {
   const [hayCambios,     setHayCambios]    = useState(false)
   const [logoUrl,        setLogoUrl]       = useState(null)
   const [headerBgColor,  setHeaderBgColor] = useState(null)
-  const [diaSeleccionado, setDiaSeleccionado] = useState(() => isoLocal(new Date()))
+  const [diaSeleccionado, setDiaSeleccionado] = useState('hoy')
   const showOkTimer    = useRef(null)
   const hayCambiosTimer = useRef(null)
   const signaturaRef   = useRef(null)
@@ -326,9 +359,13 @@ export default function PanelAstilladora() {
 
   const hoyStr = isoLocal(new Date())
 
-  const albaranesFiltrados = diaSeleccionado
-    ? albaranes.filter(a => a.fecha === diaSeleccionado)
-    : albaranes
+  // "Hoy" = todo lo trabajable: pendientes atrasados de días anteriores + todo lo de hoy
+  const esTrabajableHoy = a =>
+    a.fecha === hoyStr || (!a.planificado && a.fecha < hoyStr && !a.astilladoraFirmada)
+
+  const albaranesFiltrados = diaSeleccionado === 'hoy'
+    ? albaranes.filter(esTrabajableHoy)
+    : albaranes.filter(a => a.fecha === diaSeleccionado)
 
   // Agrupar por instalación destino
   const grupos = {}
@@ -418,18 +455,18 @@ export default function PanelAstilladora() {
             onDiaClick={setDiaSeleccionado}
           />
 
-          {diaSeleccionado !== hoyStr && (
+          {diaSeleccionado !== 'hoy' && (
             <div className="pi-filtro-dia-banner">
               <span>{labelFechaSec(diaSeleccionado)}</span>
-              <button onClick={() => setDiaSeleccionado(hoyStr)}>Hoy</button>
+              <button onClick={() => setDiaSeleccionado('hoy')}>Hoy</button>
             </div>
           )}
           <div className="pi-section">
-            {albaranesFiltrados.length === 0 && diaSeleccionado ? (
+            {albaranesFiltrados.length === 0 ? (
               <div className="pi-empty-dia">
-                <div className="pi-empty-dia-title">{diaSeleccionado === hoyStr ? 'Sin albaranes hoy' : 'Sin albaranes para este día'}</div>
-                {diaSeleccionado !== hoyStr && (
-                  <button className="pi-empty-dia-btn" onClick={() => setDiaSeleccionado(hoyStr)}>Volver a hoy</button>
+                <div className="pi-empty-dia-title">{diaSeleccionado === 'hoy' ? 'Sin albaranes hoy' : 'Sin albaranes para este día'}</div>
+                {diaSeleccionado !== 'hoy' && (
+                  <button className="pi-empty-dia-btn" onClick={() => setDiaSeleccionado('hoy')}>Volver a hoy</button>
                 )}
               </div>
             ) : gruposOrdenados.map(([instalacion, albs]) => (
