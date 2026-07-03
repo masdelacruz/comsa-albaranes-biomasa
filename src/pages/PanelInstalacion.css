@@ -422,6 +422,8 @@
 }
 
 /* ── Franja semanal (bar chart) ──────────────────── */
+/* Ventana móvil de 7 días empezando en hoy (no la semana L-D fija):
+   el primer día siempre es "hoy" y agrega los pendientes atrasados. */
 .pi-semana {
   display: flex;
   align-items: stretch;
@@ -432,48 +434,8 @@
   overflow: hidden;
   box-shadow: 0 1px 4px rgba(0,0,0,0.04);
 }
-/* "Hoy" — pestaña fija a la izquierda: pendientes atrasados + lo de hoy */
-.pi-semana-hoy {
-  position: relative;
-  flex: 0 0 52px;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 2px;
-  padding: 10px 2px 6px;
-  cursor: pointer;
-  border-right: 1px solid var(--gray-100);
-  background: var(--green-50);
-  transition: background 0.12s;
-}
-.pi-semana-hoy:hover { background: var(--green-100); }
-.pi-semana-hoy .pi-semana-dow { color: var(--green-700); font-weight: 700; }
-.pi-semana-hoy .pi-semana-bar { background: var(--green-500); }
-.pi-semana-hoy.seleccionado { background: var(--green-600); }
-.pi-semana-hoy.seleccionado:hover { background: var(--green-600); }
-.pi-semana-hoy.seleccionado .pi-semana-dow { color: #fff; }
-.pi-semana-hoy.seleccionado .pi-semana-count { color: #fff; }
-.pi-semana-hoy.seleccionado .pi-semana-count.vacio { color: rgba(255,255,255,0.65); }
-.pi-semana-hoy.seleccionado .pi-semana-bar { background: rgba(255,255,255,0.9); }
-.pi-semana-hoy-dot {
-  position: absolute;
-  top: 6px;
-  right: 6px;
-  width: 7px;
-  height: 7px;
-  border-radius: 50%;
-  background: var(--amber-400);
-  box-shadow: 0 0 0 2px var(--green-50);
-}
-.pi-semana-hoy.seleccionado .pi-semana-hoy-dot { box-shadow: 0 0 0 2px var(--green-600); }
-
-.pi-semana-dias {
-  display: flex;
-  align-items: stretch;
-  flex: 1;
-  min-width: 0;
-}
 .pi-semana-dia {
+  position: relative;
   flex: 1;
   min-width: 0;
   display: flex;
@@ -484,10 +446,9 @@
   cursor: pointer;
   transition: background 0.12s;
 }
-.pi-semana-dia.pasado { opacity: 0.35; }
 .pi-semana-dia:hover { background: var(--green-50); }
 .pi-semana-dia.seleccionado { background: #f0fdf4; }
-.pi-semana-dia.seleccionado.pasado { opacity: 1; }
+.pi-semana-dia.hoy.seleccionado { background: var(--green-50); }
 .pi-semana-dow {
   font-size: 9px;
   font-weight: 600;
@@ -515,6 +476,15 @@
   background: var(--green-600);
   color: #fff;
   font-weight: 700;
+}
+/* Pastilla "HOY" — mismo alto que el círculo numérico, más ancha para el texto */
+.pi-semana-num-hoy {
+  width: auto;
+  min-width: 34px;
+  padding: 0 5px;
+  border-radius: 13px;
+  font-size: 9px;
+  letter-spacing: 0.3px;
 }
 /* Selected (not today): soft green fill — clearly different from today */
 .pi-semana-dia.seleccionado:not(.hoy) .pi-semana-num {
@@ -544,8 +514,7 @@
   min-height: 2px;
   transition: height 0.4s ease;
 }
-.pi-semana-dia.hoy .pi-semana-bar    { background: var(--green-500); }
-.pi-semana-dia.pasado .pi-semana-bar { background: var(--gray-100); }
+.pi-semana-dia.hoy .pi-semana-bar { background: var(--green-500); }
 .pi-semana-count {
   font-size: 9px;
   font-weight: 600;
@@ -561,6 +530,16 @@
   font-weight: 500;
 }
 .pi-semana-dia.hoy .pi-semana-count.vacio { color: var(--gray-300); }
+.pi-semana-hoy-dot {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--amber-400);
+  box-shadow: 0 0 0 2px #fff;
+}
 
 /* ── Badge en camino ─────────────────────────────── */
 .pi-camion-encamino-tag {

@@ -46,30 +46,23 @@ function labelFechaSec(fechaISO) {
 function CalendarioSemana({ albaranes, diaSeleccionado, onDiaClick }) {
   const hoy    = new Date()
   const hoyStr = isoLocal(hoy)
-  const dow    = (hoy.getDay() + 6) % 7
-  const lun    = new Date(hoy)
-  lun.setDate(hoy.getDate() - dow)
-  lun.setHours(0,0,0,0)
 
+  // Ventana móvil de 7 días empezando siempre en hoy (no la semana L-D fija)
   const dias = Array.from({ length: 7 }, (_, i) => {
-    const d   = new Date(lun); d.setDate(lun.getDate() + i)
+    const d   = new Date(hoy); d.setDate(hoy.getDate() + i)
     const key = isoLocal(d)
     return {
-      key, dow: DIAS_ABR[i], diaN: d.getDate(),
+      key, dow: DIAS_ABR[(d.getDay() + 6) % 7], diaN: d.getDate(),
       countActivo: albaranes.filter(a => a.fecha === key && !a.planificado).length,
       countPlan:   albaranes.filter(a => a.fecha === key &&  a.planificado).length,
-      esHoy:    key === hoyStr,
-      esPasado: key < hoyStr,
+      esHoy: i === 0,
     }
   })
 
-  // "Hoy" = todo lo trabajable hoy: atrasados de días anteriores + lo de hoy
-  const atrasados  = albaranes.filter(a => !a.planificado && a.fecha < hoyStr && !a.astilladoraFirmada).length
-  const diaHoy     = dias.find(d => d.esHoy)
-  const hoyActivo  = (diaHoy?.countActivo ?? 0) + atrasados
-  const hoyPlan    = diaHoy?.countPlan ?? 0
+  // El primer día (hoy) agrega además los pendientes atrasados de días anteriores
+  const atrasados = albaranes.filter(a => !a.planificado && a.fecha < hoyStr && !a.astilladoraFirmada).length
 
-  const maxTotal = Math.max(...dias.map(d => d.countActivo + d.countPlan), hoyActivo + hoyPlan, 1)
+  const maxTotal = Math.max(...dias.map((d, i) => d.countActivo + d.countPlan + (i === 0 ? atrasados : 0)), 1)
 
   const barStyleFor = (countActivo, countPlan, verdeIntenso) => {
     const activoH = countActivo > 0 ? Math.max(4, Math.round((countActivo / maxTotal) * 28)) : 0
@@ -83,47 +76,41 @@ function CalendarioSemana({ albaranes, diaSeleccionado, onDiaClick }) {
     return style
   }
 
-  const hoySeleccionado = diaSeleccionado === 'hoy'
-
   return (
     <div className="pi-semana">
-      <div
-        className={`pi-semana-hoy${hoySeleccionado ? ' seleccionado' : ''}`}
-        onClick={() => onDiaClick?.('hoy')}
-      >
-        <span className="pi-semana-dow">HOY</span>
-        <div className="pi-semana-bar-wrap">
-          <div className="pi-semana-bar" style={barStyleFor(hoyActivo, hoyPlan, true)} />
-        </div>
-        <span className={`pi-semana-count${hoyActivo === 0 && hoyPlan === 0 ? ' vacio' : hoyActivo === 0 ? ' plan' : ''}`}>
-          {hoyActivo > 0 ? hoyActivo : (hoyPlan > 0 ? `+${hoyPlan}` : '·')}
-        </span>
-        {atrasados > 0 && (
-          <span className="pi-semana-hoy-dot" title={`${atrasados} atrasado${atrasados !== 1 ? 's' : ''} de días anteriores`} />
-        )}
-      </div>
-      <div className="pi-semana-dias">
-        {dias.map(d => {
-          const empty    = d.countActivo === 0 && d.countPlan === 0
-          const selected = d.key === diaSeleccionado
-          return (
-            <div
-              key={d.key}
-              className={`pi-semana-dia${d.esHoy ? ' hoy' : ''}${d.esPasado ? ' pasado' : ''}${selected ? ' seleccionado' : ''}`}
-              onClick={() => onDiaClick?.(selected ? 'hoy' : d.key)}
-            >
-              <span className="pi-semana-dow">{d.dow}</span>
-              <span className="pi-semana-num">{d.diaN}</span>
-              <div className="pi-semana-bar-wrap">
-                <div className="pi-semana-bar" style={barStyleFor(d.countActivo, d.countPlan, d.esHoy)} />
-              </div>
-              <span className={`pi-semana-count${empty ? ' vacio' : d.countActivo === 0 ? ' plan' : ''}`}>
-                {d.countActivo > 0 ? d.countActivo : (d.countPlan > 0 ? `+${d.countPlan}` : '·')}
-              </span>
+      {dias.map((d, i) => {
+        const countActivo = d.countActivo + (i === 0 ? atrasados : 0)
+        const empty       = countActivo === 0 && d.countPlan === 0
+        const selected    = d.esHoy ? diaSeleccionado === 'hoy' : d.key === diaSeleccionado
+        return (
+          <div
+            key={d.key}
+            className={`pi-semana-dia${d.esHoy ? ' hoy' : ''}${selected ? ' seleccionado' : ''}`}
+            onClick={() => onDiaClick?.(d.esHoy || selected ? 'hoy' : d.key)}
+          >
+            {d.esHoy ? (
+              <>
+                <span className="pi-semana-dow" style={{ visibility: 'hidden' }}>·</span>
+                <span className="pi-semana-num pi-semana-num-hoy">HOY</span>
+              </>
+            ) : (
+              <>
+                <span className="pi-semana-dow">{d.dow}</span>
+                <span className="pi-semana-num">{d.diaN}</span>
+              </>
+            )}
+            <div className="pi-semana-bar-wrap">
+              <div className="pi-semana-bar" style={barStyleFor(countActivo, d.countPlan, d.esHoy)} />
             </div>
-          )
-        })}
-      </div>
+            <span className={`pi-semana-count${empty ? ' vacio' : countActivo === 0 ? ' plan' : ''}`}>
+              {countActivo > 0 ? countActivo : (d.countPlan > 0 ? `+${d.countPlan}` : '·')}
+            </span>
+            {d.esHoy && atrasados > 0 && (
+              <span className="pi-semana-hoy-dot" title={`${atrasados} atrasado${atrasados !== 1 ? 's' : ''} de días anteriores`} />
+            )}
+          </div>
+        )
+      })}
     </div>
   )
 }
