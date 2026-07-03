@@ -1,35 +1,20 @@
 /* ── Layout base ───────────────────────────────────────────────────── */
 .layout { display:flex; min-height:100vh; }
 
-/* Reserva el espacio en el flujo (52/220px); el <aside> real se ancla
-   dentro con position:absolute para poder "asomar" (peek) sin desplazar
-   el contenido principal. */
-.sidebar-slot {
-  flex-shrink: 0;
-  position: relative;
-  transition: width 0.22s cubic-bezier(0.4,0,0.2,1);
-}
-.sidebar-slot.slot--collapsed { width: 52px; }
-.sidebar-slot.slot--expanded  { width: 220px; }
-
 /* ── Sidebar base ─────────────────────────────────────────────────── */
 .sidebar {
   width: 220px;
+  flex-shrink: 0;
   background: var(--gray-900);
   display: flex;
   flex-direction: column;
   padding: 16px 14px;
-  position: absolute;
+  position: sticky;
   top: 0;
-  left: 0;
   height: 100vh;
   overflow: visible;
   z-index: 20;
-  transition: width 0.22s cubic-bezier(0.4,0,0.2,1), padding 0.22s cubic-bezier(0.4,0,0.2,1), box-shadow 0.22s ease;
-}
-.sidebar--peek {
-  box-shadow: 8px 0 28px rgba(0,0,0,0.28);
-  z-index: 400;
+  transition: width 0.22s cubic-bezier(0.4,0,0.2,1), padding 0.22s cubic-bezier(0.4,0,0.2,1);
 }
 
 /* ── Logo ─────────────────────────────────────────────────────────── */
@@ -56,7 +41,7 @@
    ancho del sidebar automáticamente (anclada con right, no left). ── */
 .sidebar-toggle {
   position: absolute;
-  top: 22px;
+  top: 9px;
   right: -12px;
   display: flex; align-items: center; justify-content: center;
   width: 24px; height: 24px;
@@ -143,9 +128,9 @@
   background: #fff; border-radius: 0 2px 2px 0;
 }
 
-/* Tooltip (solo colapsado, fuera de peek) */
-.sidebar--collapsed:not(.sidebar--peek) .nav-item:hover::after,
-.sidebar--collapsed:not(.sidebar--peek) .user-chip-btn:hover::after {
+/* Tooltip (solo colapsado) */
+.sidebar--collapsed .nav-item:hover::after,
+.sidebar--collapsed .user-chip-btn:hover::after {
   content: attr(data-tooltip);
   position: absolute; left: calc(100% + 10px); top: 50%; transform: translateY(-50%);
   background: var(--gray-900); color: #fff; font-size: 12px; font-weight: 500;
@@ -174,7 +159,9 @@
 .user-chip-btn:hover { background: rgba(255,255,255,0.1); border-color: rgba(255,255,255,0.18); }
 
 /* ── Área principal ───────────────────────────────────────────────── */
-.main-area { flex: 1; min-width: 0; overflow-y: auto; overflow-x: clip; background: var(--gray-50); }
+/* Pequeño respiro respecto al panel lateral; el padding propio de cada
+   página (28px) hace el resto, así todo el contenido arranca en la misma X. */
+.main-area { flex: 1; min-width: 0; overflow-y: auto; overflow-x: clip; background: var(--gray-50); padding-left: 14px; }
 
 /* ══════════════════════════════════════════════════════════════════════
    ESTADOS JS-CONTROLLED — !important para ganar sobre cualquier media query
@@ -197,8 +184,8 @@
 .sidebar--collapsed .nav-item span  { display: none !important; }
 .sidebar--collapsed .nav-item svg   { flex-shrink: 0; }
 /* Accesibilidad: iconos algo más grandes cuando el texto no está visible */
-.sidebar--collapsed:not(.sidebar--peek) .nav-item svg { transform: scale(1.15); }
-.sidebar--collapsed:not(.sidebar--peek) .nav-item:hover svg { transform: scale(1.2); }
+.sidebar--collapsed .nav-item svg { transform: scale(1.15); }
+.sidebar--collapsed .nav-item:hover svg { transform: scale(1.2); }
 
 /* Footer: mismo gap que entre nav-items */
 .sidebar--collapsed .sidebar-footer { width: 100%; display: flex; flex-direction: column; align-items: center; padding-top: 6px !important; }

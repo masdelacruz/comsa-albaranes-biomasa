@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect } from 'react'
 import { Outlet, NavLink, useNavigate } from 'react-router-dom'
 import { LayoutDashboard, PlusCircle, Clock, BarChart2, Settings, LogOut, User, X, Mail, Briefcase, Shield, Users, Bell, BellOff, ChevronLeft } from 'lucide-react'
 import { api } from '../lib/api'
@@ -30,9 +30,7 @@ export default function Layout({ usuario, logout, albaranes = [], actualizarUsua
     if (remembered !== null) return remembered === '1'
     return window.innerWidth <= AUTO_COLLAPSE_PX
   })
-  const [peeking, setPeeking]             = useState(false)
   const [logoAnim, setLogoAnim]           = useState(false)
-  const peekTimerRef = useRef(null)
 
   // Auto-colapsa si el viewport es demasiado estrecho (zoom elevado)
   // También evalúa en el montaje inicial (no solo en resize)
@@ -46,11 +44,6 @@ export default function Layout({ usuario, logout, albaranes = [], actualizarUsua
   }, [])
 
   const toggleSidebar = () => {
-    // Cancela cualquier "peek" pendiente/activo: el toggle manual siempre
-    // manda, para que el panel no quede en un estado mixto (colapsado pero
-    // visualmente expandido por un hover previo sin resolver).
-    clearTimeout(peekTimerRef.current)
-    setPeeking(false)
     setCollapsed(v => {
       const next = !v
       localStorage.setItem(SIDEBAR_PREF_KEY, next ? '1' : '0')
@@ -58,21 +51,6 @@ export default function Layout({ usuario, logout, albaranes = [], actualizarUsua
     })
     setLogoAnim(true)
     setTimeout(() => setLogoAnim(false), 450)
-  }
-
-  // Modo "peek": al mantener el cursor sobre el sidebar colapsado, se expande
-  // temporalmente sin desplazar el contenido (igual que Teams/Jira/Azure).
-  // Un pequeño delay evita que tape el tooltip en un simple paso rápido del ratón.
-  const visualExpanded = !collapsed || peeking
-
-  const handleSidebarEnter = () => {
-    if (!collapsed) return
-    clearTimeout(peekTimerRef.current)
-    peekTimerRef.current = setTimeout(() => setPeeking(true), 350)
-  }
-  const handleSidebarLeave = () => {
-    clearTimeout(peekTimerRef.current)
-    setPeeking(false)
   }
 
   const iniciales = usuario?.nombre
@@ -125,72 +103,66 @@ export default function Layout({ usuario, logout, albaranes = [], actualizarUsua
 
   return (
     <div className="layout">
-      <div className={`sidebar-slot${collapsed ? ' slot--collapsed' : ' slot--expanded'}`}>
-        <aside
-          className={`sidebar${visualExpanded ? ' sidebar--expanded' : ' sidebar--collapsed'}${peeking ? ' sidebar--peek' : ''}`}
-          onMouseEnter={handleSidebarEnter}
-          onMouseLeave={handleSidebarLeave}
+      <aside className={`sidebar${collapsed ? ' sidebar--collapsed' : ' sidebar--expanded'}`}>
+        <button
+          className="sidebar-toggle"
+          onClick={toggleSidebar}
+          title={collapsed ? 'Expandir panel' : 'Colapsar panel'}
+          aria-label={collapsed ? 'Expandir panel' : 'Colapsar panel'}
         >
-          <button
-            className="sidebar-toggle"
-            onClick={toggleSidebar}
-            title={collapsed ? 'Expandir panel' : 'Colapsar panel'}
-            aria-label={collapsed ? 'Expandir panel' : 'Colapsar panel'}
-          >
-            <ChevronLeft size={13} />
-          </button>
+          <ChevronLeft size={13} />
+        </button>
 
-          <div
-            className={`sidebar-logo${logoAnim ? ' logo-anim' : ''}`}
-            onClick={() => navigate('/dashboard')}
-            title="Ir al Dashboard"
-          >
-            <img src={logoFull} alt="COMSA Biomasa" className="logo-img-full" />
-            <img src="/favicon.ico" alt="COMSA" className="logo-img-mini" />
-          </div>
+        <div
+          className={`sidebar-logo${logoAnim ? ' logo-anim' : ''}`}
+          onClick={() => navigate('/dashboard')}
+          title="Ir al Dashboard"
+        >
+          <img src={logoFull} alt="COMSA Biomasa" className="logo-img-full" />
+          <img src="/favicon.ico" alt="COMSA" className="logo-img-mini" />
+        </div>
 
-          <nav className="sidebar-nav">
-            <NavLink to="/dashboard"      data-tooltip="Dashboard"       className={({isActive}) => isActive ? 'nav-item active' : 'nav-item'}>
-              <LayoutDashboard size={16} /><span>Dashboard</span>
-              {pendientesOficina > 0 && (
-                <span style={{marginLeft:'auto',background:'var(--blue-400)',color:'#fff',fontSize:10,fontWeight:700,borderRadius:99,padding:'1px 6px',minWidth:18,textAlign:'center',lineHeight:'16px'}}>
-                  {pendientesOficina}
-                </span>
-              )}
-            </NavLink>
-            <NavLink to="/nuevo"          data-tooltip="Nuevo albarán"   className={({isActive}) => isActive ? 'nav-item active' : 'nav-item'}>
-              <PlusCircle size={16} /><span>Nuevo albarán</span>
-            </NavLink>
-            <NavLink to="/historial"      data-tooltip="Historial"       className={({isActive}) => isActive ? 'nav-item active' : 'nav-item'}>
-              <Clock size={16} /><span>Historial</span>
-            </NavLink>
-            <NavLink to="/estadisticas"   data-tooltip="Estadísticas"    className={({isActive}) => isActive ? 'nav-item active' : 'nav-item'}>
-              <BarChart2 size={16} /><span>Estadísticas</span>
-            </NavLink>
-            <NavLink to="/administracion" data-tooltip="Administración"  className={({isActive}) => isActive ? 'nav-item active' : 'nav-item'}>
-              <Settings size={16} /><span>Administración</span>
-            </NavLink>
-            {esSuperadmin && (
-              <NavLink to="/usuarios" data-tooltip="Usuarios" className={({isActive}) => isActive ? 'nav-item active' : 'nav-item'}>
-                <Users size={16} /><span>Usuarios</span>
-              </NavLink>
+        <nav className="sidebar-nav">
+          <NavLink to="/dashboard"      data-tooltip="Dashboard"       className={({isActive}) => isActive ? 'nav-item active' : 'nav-item'}>
+            <LayoutDashboard size={16} /><span>Dashboard</span>
+            {pendientesOficina > 0 && (
+              <span style={{marginLeft:'auto',background:'var(--blue-400)',color:'#fff',fontSize:10,fontWeight:700,borderRadius:99,padding:'1px 6px',minWidth:18,textAlign:'center',lineHeight:'16px'}}>
+                {pendientesOficina}
+              </span>
             )}
-          </nav>
+          </NavLink>
+          <NavLink to="/nuevo"          data-tooltip="Nuevo albarán"   className={({isActive}) => isActive ? 'nav-item active' : 'nav-item'}>
+            <PlusCircle size={16} /><span>Nuevo albarán</span>
+          </NavLink>
+          <NavLink to="/historial"      data-tooltip="Historial"       className={({isActive}) => isActive ? 'nav-item active' : 'nav-item'}>
+            <Clock size={16} /><span>Historial</span>
+          </NavLink>
+          <NavLink to="/estadisticas"   data-tooltip="Estadísticas"    className={({isActive}) => isActive ? 'nav-item active' : 'nav-item'}>
+            <BarChart2 size={16} /><span>Estadísticas</span>
+          </NavLink>
+          <NavLink to="/administracion" data-tooltip="Administración"  className={({isActive}) => isActive ? 'nav-item active' : 'nav-item'}>
+            <Settings size={16} /><span>Administración</span>
+          </NavLink>
+          {esSuperadmin && (
+            <NavLink to="/usuarios" data-tooltip="Usuarios" className={({isActive}) => isActive ? 'nav-item active' : 'nav-item'}>
+              <Users size={16} /><span>Usuarios</span>
+            </NavLink>
+          )}
+        </nav>
 
-          <div className="sidebar-footer">
-            <button className="user-chip-btn" onClick={() => setPerfilOpen(true)} data-tooltip={usuario?.nombre || '—'}>
-              <div className="user-avatar" style={{background:'var(--green-100)',color:'var(--green-600)'}}>
-                {iniciales}
-              </div>
-              <div style={{flex:1,minWidth:0,textAlign:'left'}}>
-                <div className="user-name">{usuario?.nombre || '—'}</div>
-                <div className="user-role">{usuario?.rol || '—'}</div>
-              </div>
-              <User size={13} style={{color:'var(--gray-400)',flexShrink:0}} />
-            </button>
-          </div>
-        </aside>
-      </div>
+        <div className="sidebar-footer">
+          <button className="user-chip-btn" onClick={() => setPerfilOpen(true)} data-tooltip={usuario?.nombre || '—'}>
+            <div className="user-avatar" style={{background:'var(--green-100)',color:'var(--green-600)'}}>
+              {iniciales}
+            </div>
+            <div style={{flex:1,minWidth:0,textAlign:'left'}}>
+              <div className="user-name">{usuario?.nombre || '—'}</div>
+              <div className="user-role">{usuario?.rol || '—'}</div>
+            </div>
+            <User size={13} style={{color:'var(--gray-400)',flexShrink:0}} />
+          </button>
+        </div>
+      </aside>
 
       <main className="main-area"><Outlet /></main>
 
