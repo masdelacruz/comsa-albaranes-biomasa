@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { Outlet, NavLink, useNavigate } from 'react-router-dom'
+import { Outlet, NavLink, useNavigate, useLocation } from 'react-router-dom'
 import { LayoutDashboard, PlusCircle, Clock, BarChart2, Settings, LogOut, User, X, Mail, Briefcase, Shield, Users, Bell, BellOff, ChevronLeft } from 'lucide-react'
 import { api } from '../lib/api'
 import { useScrollLock } from '../hooks/useScrollLock'
@@ -20,6 +20,7 @@ const SIDEBAR_PREF_KEY = 'sidebarCollapsed'
 
 export default function Layout({ usuario, logout, albaranes = [], actualizarUsuario }) {
   const navigate = useNavigate()
+  const location = useLocation()
   const [perfilOpen, setPerfilOpen]       = useState(false)
   const [confirmLogout, setConfirmLogout] = useState(false)
   const [notifPrefs, setNotifPrefs]       = useState({})
@@ -42,6 +43,12 @@ export default function Layout({ usuario, logout, albaranes = [], actualizarUsua
     window.addEventListener('resize', onResize)
     return () => window.removeEventListener('resize', onResize)
   }, [])
+
+  // .layout usa min-height:100vh, así que el scroll real es el de la
+  // ventana (no uno interno) — React Router no lo resetea solo al navegar.
+  useEffect(() => {
+    window.scrollTo(0, 0)
+  }, [location.pathname])
 
   const toggleSidebar = () => {
     setCollapsed(v => {
