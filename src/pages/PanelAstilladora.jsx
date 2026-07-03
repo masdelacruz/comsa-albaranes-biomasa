@@ -424,13 +424,6 @@ export default function PanelAstilladora() {
               <button onClick={() => setDiaSeleccionado(hoyStr)}>Hoy</button>
             </div>
           )}
-          {desdeId && (
-            <div className="pi-desde-banner">
-              <span className="pi-desde-dot" />
-              Albarán #{desdeId}
-            </div>
-          )}
-
           <div className="pi-section">
             {albaranesFiltrados.length === 0 && diaSeleccionado ? (
               <div className="pi-empty-dia">
