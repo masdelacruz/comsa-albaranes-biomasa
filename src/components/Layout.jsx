@@ -46,6 +46,11 @@ export default function Layout({ usuario, logout, albaranes = [], actualizarUsua
   }, [])
 
   const toggleSidebar = () => {
+    // Cancela cualquier "peek" pendiente/activo: el toggle manual siempre
+    // manda, para que el panel no quede en un estado mixto (colapsado pero
+    // visualmente expandido por un hover previo sin resolver).
+    clearTimeout(peekTimerRef.current)
+    setPeeking(false)
     setCollapsed(v => {
       const next = !v
       localStorage.setItem(SIDEBAR_PREF_KEY, next ? '1' : '0')
@@ -126,24 +131,22 @@ export default function Layout({ usuario, logout, albaranes = [], actualizarUsua
           onMouseEnter={handleSidebarEnter}
           onMouseLeave={handleSidebarLeave}
         >
-          <div className="sidebar-header">
-            <div
-              className={`sidebar-logo${logoAnim ? ' logo-anim' : ''}`}
-              onClick={() => navigate('/dashboard')}
-              title="Ir al Dashboard"
-            >
-              <img src={logoFull} alt="COMSA Biomasa" className="logo-img-full" />
-              <img src="/favicon.ico" alt="COMSA" className="logo-img-mini" />
-            </div>
+          <button
+            className="sidebar-toggle"
+            onClick={toggleSidebar}
+            title={collapsed ? 'Expandir panel' : 'Colapsar panel'}
+            aria-label={collapsed ? 'Expandir panel' : 'Colapsar panel'}
+          >
+            <ChevronLeft size={13} />
+          </button>
 
-            <button
-              className="sidebar-toggle"
-              onClick={toggleSidebar}
-              title={collapsed ? 'Expandir panel' : 'Colapsar panel'}
-              aria-label={collapsed ? 'Expandir panel' : 'Colapsar panel'}
-            >
-              <ChevronLeft size={15} />
-            </button>
+          <div
+            className={`sidebar-logo${logoAnim ? ' logo-anim' : ''}`}
+            onClick={() => navigate('/dashboard')}
+            title="Ir al Dashboard"
+          >
+            <img src={logoFull} alt="COMSA Biomasa" className="logo-img-full" />
+            <img src="/favicon.ico" alt="COMSA" className="logo-img-mini" />
           </div>
 
           <nav className="sidebar-nav">
