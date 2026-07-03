@@ -1,6 +1,6 @@
-import { useState, useEffect } from 'react'
-import { Outlet, NavLink } from 'react-router-dom'
-import { LayoutDashboard, PlusCircle, Clock, BarChart2, Settings, LogOut, User, X, Mail, Briefcase, Shield, Users, Bell, BellOff } from 'lucide-react'
+import { useState, useEffect, useRef } from 'react'
+import { Outlet, NavLink, useNavigate } from 'react-router-dom'
+import { LayoutDashboard, PlusCircle, Clock, BarChart2, Settings, LogOut, User, X, Mail, Briefcase, Shield, Users, Bell, BellOff, ChevronLeft } from 'lucide-react'
 import { api } from '../lib/api'
 import { useScrollLock } from '../hooks/useScrollLock'
 import logoFull from '../assets/logo_biomasa_full.png'
@@ -16,15 +16,23 @@ const getN = (p, k) => p?.[k] !== false
 
 // ~150 % zoom en portátil 1366 px → viewport ≈ 910 px
 const AUTO_COLLAPSE_PX = 960
+const SIDEBAR_PREF_KEY = 'sidebarCollapsed'
 
 export default function Layout({ usuario, logout, albaranes = [], actualizarUsuario }) {
+  const navigate = useNavigate()
   const [perfilOpen, setPerfilOpen]       = useState(false)
   const [confirmLogout, setConfirmLogout] = useState(false)
   const [notifPrefs, setNotifPrefs]       = useState({})
   const [notifGuardando, setNotifGuardando] = useState(false)
   const [notifOk, setNotifOk]             = useState(false)
-  const [collapsed, setCollapsed]         = useState(false)
+  const [collapsed, setCollapsed]         = useState(() => {
+    const remembered = localStorage.getItem(SIDEBAR_PREF_KEY)
+    if (remembered !== null) return remembered === '1'
+    return window.innerWidth <= AUTO_COLLAPSE_PX
+  })
+  const [peeking, setPeeking]             = useState(false)
   const [logoAnim, setLogoAnim]           = useState(false)
+  const peekTimerRef = useRef(null)
 
   // Auto-colapsa si el viewport es demasiado estrecho (zoom elevado)
   // También evalúa en el montaje inicial (no solo en resize)
@@ -38,9 +46,28 @@ export default function Layout({ usuario, logout, albaranes = [], actualizarUsua
   }, [])
 
   const toggleSidebar = () => {
-    setCollapsed(v => !v)
+    setCollapsed(v => {
+      const next = !v
+      localStorage.setItem(SIDEBAR_PREF_KEY, next ? '1' : '0')
+      return next
+    })
     setLogoAnim(true)
     setTimeout(() => setLogoAnim(false), 450)
+  }
+
+  // Modo "peek": al mantener el cursor sobre el sidebar colapsado, se expande
+  // temporalmente sin desplazar el contenido (igual que Teams/Jira/Azure).
+  // Un pequeño delay evita que tape el tooltip en un simple paso rápido del ratón.
+  const visualExpanded = !collapsed || peeking
+
+  const handleSidebarEnter = () => {
+    if (!collapsed) return
+    clearTimeout(peekTimerRef.current)
+    peekTimerRef.current = setTimeout(() => setPeeking(true), 350)
+  }
+  const handleSidebarLeave = () => {
+    clearTimeout(peekTimerRef.current)
+    setPeeking(false)
   }
 
   const iniciales = usuario?.nombre
@@ -93,57 +120,74 @@ export default function Layout({ usuario, logout, albaranes = [], actualizarUsua
 
   return (
     <div className="layout">
-      <aside className={`sidebar${collapsed ? ' sidebar--collapsed' : ' sidebar--expanded'}`}>
-        <div
-          className={`sidebar-logo${logoAnim ? ' logo-anim' : ''}`}
-          onClick={toggleSidebar}
-          title={collapsed ? 'Expandir panel' : 'Colapsar panel'}
+      <div className={`sidebar-slot${collapsed ? ' slot--collapsed' : ' slot--expanded'}`}>
+        <aside
+          className={`sidebar${visualExpanded ? ' sidebar--expanded' : ' sidebar--collapsed'}${peeking ? ' sidebar--peek' : ''}`}
+          onMouseEnter={handleSidebarEnter}
+          onMouseLeave={handleSidebarLeave}
         >
-          <img src={logoFull} alt="COMSA Biomasa" className="logo-img-full" />
-          <img src="/favicon.ico" alt="COMSA" className="logo-img-mini" />
-        </div>
+          <div className="sidebar-header">
+            <div
+              className={`sidebar-logo${logoAnim ? ' logo-anim' : ''}`}
+              onClick={() => navigate('/dashboard')}
+              title="Ir al Dashboard"
+            >
+              <img src={logoFull} alt="COMSA Biomasa" className="logo-img-full" />
+              <img src="/favicon.ico" alt="COMSA" className="logo-img-mini" />
+            </div>
 
-        <nav className="sidebar-nav">
-          <NavLink to="/dashboard"      className={({isActive}) => isActive ? 'nav-item active' : 'nav-item'}>
-            <LayoutDashboard size={16} /><span>Dashboard</span>
-            {pendientesOficina > 0 && (
-              <span style={{marginLeft:'auto',background:'var(--blue-400)',color:'#fff',fontSize:10,fontWeight:700,borderRadius:99,padding:'1px 6px',minWidth:18,textAlign:'center',lineHeight:'16px'}}>
-                {pendientesOficina}
-              </span>
-            )}
-          </NavLink>
-          <NavLink to="/nuevo"          className={({isActive}) => isActive ? 'nav-item active' : 'nav-item'}>
-            <PlusCircle size={16} /><span>Nuevo albarán</span>
-          </NavLink>
-          <NavLink to="/historial"      className={({isActive}) => isActive ? 'nav-item active' : 'nav-item'}>
-            <Clock size={16} /><span>Historial</span>
-          </NavLink>
-          <NavLink to="/estadisticas"   className={({isActive}) => isActive ? 'nav-item active' : 'nav-item'}>
-            <BarChart2 size={16} /><span>Estadísticas</span>
-          </NavLink>
-          <NavLink to="/administracion" className={({isActive}) => isActive ? 'nav-item active' : 'nav-item'}>
-            <Settings size={16} /><span>Administración</span>
-          </NavLink>
-          {esSuperadmin && (
-            <NavLink to="/usuarios" className={({isActive}) => isActive ? 'nav-item active' : 'nav-item'}>
-              <Users size={16} /><span>Usuarios</span>
+            <button
+              className="sidebar-toggle"
+              onClick={toggleSidebar}
+              title={collapsed ? 'Expandir panel' : 'Colapsar panel'}
+              aria-label={collapsed ? 'Expandir panel' : 'Colapsar panel'}
+            >
+              <ChevronLeft size={15} />
+            </button>
+          </div>
+
+          <nav className="sidebar-nav">
+            <NavLink to="/dashboard"      data-tooltip="Dashboard"       className={({isActive}) => isActive ? 'nav-item active' : 'nav-item'}>
+              <LayoutDashboard size={16} /><span>Dashboard</span>
+              {pendientesOficina > 0 && (
+                <span style={{marginLeft:'auto',background:'var(--blue-400)',color:'#fff',fontSize:10,fontWeight:700,borderRadius:99,padding:'1px 6px',minWidth:18,textAlign:'center',lineHeight:'16px'}}>
+                  {pendientesOficina}
+                </span>
+              )}
             </NavLink>
-          )}
-        </nav>
+            <NavLink to="/nuevo"          data-tooltip="Nuevo albarán"   className={({isActive}) => isActive ? 'nav-item active' : 'nav-item'}>
+              <PlusCircle size={16} /><span>Nuevo albarán</span>
+            </NavLink>
+            <NavLink to="/historial"      data-tooltip="Historial"       className={({isActive}) => isActive ? 'nav-item active' : 'nav-item'}>
+              <Clock size={16} /><span>Historial</span>
+            </NavLink>
+            <NavLink to="/estadisticas"   data-tooltip="Estadísticas"    className={({isActive}) => isActive ? 'nav-item active' : 'nav-item'}>
+              <BarChart2 size={16} /><span>Estadísticas</span>
+            </NavLink>
+            <NavLink to="/administracion" data-tooltip="Administración"  className={({isActive}) => isActive ? 'nav-item active' : 'nav-item'}>
+              <Settings size={16} /><span>Administración</span>
+            </NavLink>
+            {esSuperadmin && (
+              <NavLink to="/usuarios" data-tooltip="Usuarios" className={({isActive}) => isActive ? 'nav-item active' : 'nav-item'}>
+                <Users size={16} /><span>Usuarios</span>
+              </NavLink>
+            )}
+          </nav>
 
-        <div className="sidebar-footer">
-          <button className="user-chip-btn" onClick={() => setPerfilOpen(true)}>
-            <div className="user-avatar" style={{background:'var(--green-100)',color:'var(--green-600)'}}>
-              {iniciales}
-            </div>
-            <div style={{flex:1,minWidth:0,textAlign:'left'}}>
-              <div className="user-name">{usuario?.nombre || '—'}</div>
-              <div className="user-role">{usuario?.rol || '—'}</div>
-            </div>
-            <User size={13} style={{color:'var(--gray-400)',flexShrink:0}} />
-          </button>
-        </div>
-      </aside>
+          <div className="sidebar-footer">
+            <button className="user-chip-btn" onClick={() => setPerfilOpen(true)} data-tooltip={usuario?.nombre || '—'}>
+              <div className="user-avatar" style={{background:'var(--green-100)',color:'var(--green-600)'}}>
+                {iniciales}
+              </div>
+              <div style={{flex:1,minWidth:0,textAlign:'left'}}>
+                <div className="user-name">{usuario?.nombre || '—'}</div>
+                <div className="user-role">{usuario?.rol || '—'}</div>
+              </div>
+              <User size={13} style={{color:'var(--gray-400)',flexShrink:0}} />
+            </button>
+          </div>
+        </aside>
+      </div>
 
       <main className="main-area"><Outlet /></main>
 

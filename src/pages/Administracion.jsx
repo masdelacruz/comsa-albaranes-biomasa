@@ -43,7 +43,6 @@ const LOGOS_SECTIONS = [
     color: '#1D9E75',
     logos: [
       { id: 'comsa', nombre: 'COMSA Service', descripcion: 'Logotipo corporativo · cabecera de todos los albaranes PDF' },
-      { id: 'panel-header', nombre: 'Logo panel instalación', descripcion: 'Aparece en la cabecera del panel de recepción de camiones · reemplaza el icono de hoja' },
     ],
   },
   {

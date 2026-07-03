@@ -1,22 +1,50 @@
 /* ── Layout base ───────────────────────────────────────────────────── */
 .layout { display:flex; min-height:100vh; }
 
+/* Reserva el espacio en el flujo (52/220px); el <aside> real se ancla
+   dentro con position:absolute para poder "asomar" (peek) sin desplazar
+   el contenido principal. */
+.sidebar-slot {
+  flex-shrink: 0;
+  position: relative;
+  transition: width 0.22s cubic-bezier(0.4,0,0.2,1);
+}
+.sidebar-slot.slot--collapsed { width: 52px; }
+.sidebar-slot.slot--expanded  { width: 220px; }
+
 /* ── Sidebar base ─────────────────────────────────────────────────── */
 .sidebar {
   width: 220px;
-  flex-shrink: 0;
   background: var(--gray-900);
   display: flex;
   flex-direction: column;
   padding: 16px 14px;
-  position: sticky;
+  position: absolute;
   top: 0;
+  left: 0;
   height: 100vh;
-  overflow: hidden;
-  transition: width 0.3s cubic-bezier(0.4,0,0.2,1), padding 0.3s cubic-bezier(0.4,0,0.2,1);
+  overflow: visible;
+  z-index: 20;
+  transition: width 0.22s cubic-bezier(0.4,0,0.2,1), padding 0.22s cubic-bezier(0.4,0,0.2,1), box-shadow 0.22s ease;
+}
+.sidebar--peek {
+  box-shadow: 8px 0 28px rgba(0,0,0,0.28);
+  z-index: 400;
 }
 
-/* ── Logo ─────────────────────────────────────────────────────────── */
+/* ── Cabecera (logo + botón plegar) ───────────────────────────────── */
+.sidebar-header {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  flex-shrink: 0;
+  align-self: stretch;
+  border-bottom: 1px solid rgba(255,255,255,0.08);
+  padding-bottom: 8px;
+  margin-bottom: 10px;
+  transition: padding 0.22s cubic-bezier(0.4,0,0.2,1);
+}
+
 .sidebar-logo {
   position: relative;
   display: flex;
@@ -24,15 +52,28 @@
   justify-content: center;
   flex-shrink: 0;
   align-self: stretch;
-  border-bottom: 1px solid rgba(255,255,255,0.08);
-  padding: 4px 0 14px;
-  margin-bottom: 14px;
+  padding: 2px 0 6px;
   cursor: pointer;
   user-select: none;
-  transition: padding 0.3s cubic-bezier(0.4,0,0.2,1);
 }
 .sidebar-logo:hover  { opacity: 0.82; }
 .sidebar-logo:active { opacity: 0.6; }
+
+/* ── Botón permanente de plegar/desplegar ─────────────────────────── */
+.sidebar-toggle {
+  display: flex; align-items: center; justify-content: center;
+  width: 26px; height: 26px;
+  flex-shrink: 0;
+  border-radius: var(--radius-sm);
+  background: rgba(255,255,255,0.05);
+  border: 1px solid rgba(255,255,255,0.08);
+  color: var(--gray-400);
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s, border-color 0.15s;
+}
+.sidebar-toggle:hover { background: rgba(255,255,255,0.12); color: #fff; border-color: rgba(255,255,255,0.16); }
+.sidebar-toggle svg { transition: transform 0.25s cubic-bezier(0.4,0,0.2,1); }
+.sidebar--collapsed .sidebar-toggle svg { transform: rotate(180deg); }
 
 /* Logo completo — visible en expandido */
 .logo-img-full {
@@ -74,29 +115,65 @@
 /* ── Navegación ────────────────────────────────────────────────────── */
 .sidebar-nav  { display: flex; flex-direction: column; gap: 2px; flex: 1; }
 .nav-item {
+  position: relative;
   display: flex; align-items: center; gap: 9px;
-  padding: 8px 10px;
+  padding: 8px 10px 8px 13px;
   border-radius: var(--radius-sm);
   color: var(--gray-400); font-size: 13px;
-  transition: all 0.15s; text-decoration: none;
-  white-space: nowrap; overflow: hidden;
+  transition: background 0.18s ease, color 0.18s ease, box-shadow 0.18s ease;
+  text-decoration: none;
+  white-space: nowrap;
 }
 .nav-item span {
   max-width: 200px;
   overflow: hidden;
   transition: max-width 0.3s cubic-bezier(0.4,0,0.2,1), opacity 0.25s ease;
 }
-.nav-item:hover  { background: rgba(255,255,255,0.06); color: #fff; }
-.nav-item.active { background: rgba(29,158,117,0.18); color: var(--green-100); }
+.nav-item svg { flex-shrink: 0; transition: transform 0.18s ease; }
+.nav-item:hover  { background: rgba(255,255,255,0.1); color: #fff; }
+.nav-item:hover svg { transform: scale(1.05); }
+
+/* Activo: fondo verde sólido, texto/icono en blanco, barra de acento izquierda */
+.nav-item.active {
+  background: var(--green-600);
+  color: #fff;
+  box-shadow: 0 2px 8px rgba(15,110,86,0.35);
+}
+.nav-item.active::before {
+  content: '';
+  position: absolute; left: 0; top: 4px; bottom: 4px; width: 3px;
+  background: #fff; border-radius: 0 2px 2px 0;
+}
+
+/* Tooltip (solo colapsado, fuera de peek) */
+.sidebar--collapsed:not(.sidebar--peek) .nav-item:hover::after,
+.sidebar--collapsed:not(.sidebar--peek) .user-chip-btn:hover::after {
+  content: attr(data-tooltip);
+  position: absolute; left: calc(100% + 10px); top: 50%; transform: translateY(-50%);
+  background: var(--gray-900); color: #fff; font-size: 12px; font-weight: 500;
+  padding: 5px 10px; border-radius: 6px; white-space: nowrap;
+  box-shadow: 0 4px 14px rgba(0,0,0,0.3);
+  pointer-events: none; z-index: 500;
+  animation: tooltip-in 0.12s ease-out;
+}
+@keyframes tooltip-in {
+  from { opacity: 0; transform: translateY(-50%) translateX(-4px); }
+  to   { opacity: 1; transform: translateY(-50%) translateX(0); }
+}
 
 /* ── Footer (usuario) ─────────────────────────────────────────────── */
 .sidebar-footer  { border-top: 1px solid rgba(255,255,255,0.08); padding-top: 16px; }
 .user-chip       { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
-.user-avatar     { width: 28px; height: 28px; border-radius: 50%; background: var(--gray-600); color: var(--gray-100); display: flex; align-items: center; justify-content: center; font-size: 10px; font-weight: 600; flex-shrink: 0; }
+.user-avatar     { position: relative; width: 28px; height: 28px; border-radius: 50%; background: var(--gray-600); color: var(--gray-100); display: flex; align-items: center; justify-content: center; font-size: 10px; font-weight: 600; flex-shrink: 0; }
+.user-avatar::after {
+  content: ''; position: absolute; right: -1px; bottom: -1px;
+  width: 8px; height: 8px; border-radius: 50%;
+  background: var(--green-400); border: 2px solid var(--gray-900);
+}
 .user-name       { font-size: 12px; color: var(--gray-200); font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .user-role       { font-size: 10px; color: var(--gray-400); margin-top: 1px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.user-chip-btn   { display: flex; align-items: center; gap: 8px; width: 100%; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.08); border-radius: var(--radius-md); padding: 8px 10px; cursor: pointer; transition: background 0.15s; overflow: hidden; }
-.user-chip-btn:hover { background: rgba(255,255,255,0.1); }
+.user-chip-btn   { position: relative; display: flex; align-items: center; gap: 8px; width: 100%; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.08); border-radius: var(--radius-md); padding: 8px 10px; cursor: pointer; transition: background 0.15s, border-color 0.15s; overflow: visible; }
+.user-chip-btn:hover { background: rgba(255,255,255,0.1); border-color: rgba(255,255,255,0.18); }
 
 /* ── Área principal ───────────────────────────────────────────────── */
 .main-area { flex: 1; min-width: 0; overflow-y: auto; overflow-x: clip; background: var(--gray-50); }
@@ -112,7 +189,8 @@
   align-items: center;
 }
 /* Logo: mismo tamaño visual que un nav-item */
-.sidebar--collapsed .sidebar-logo   { padding: 7px 0 !important; margin-bottom: 6px !important; }
+.sidebar--collapsed .sidebar-header { padding-bottom: 6px !important; }
+.sidebar--collapsed .sidebar-logo   { padding: 5px 0 !important; }
 .sidebar--collapsed .logo-img-full  { opacity: 0 !important; }
 .sidebar--collapsed .logo-img-mini  { opacity: 1 !important; }
 
@@ -121,6 +199,9 @@
 .sidebar--collapsed .nav-item       { justify-content: center; padding: 0; width: 36px; height: 36px; }
 .sidebar--collapsed .nav-item span  { display: none !important; }
 .sidebar--collapsed .nav-item svg   { flex-shrink: 0; }
+/* Accesibilidad: iconos algo más grandes cuando el texto no está visible */
+.sidebar--collapsed:not(.sidebar--peek) .nav-item svg { transform: scale(1.15); }
+.sidebar--collapsed:not(.sidebar--peek) .nav-item:hover svg { transform: scale(1.2); }
 
 /* Footer: mismo gap que entre nav-items */
 .sidebar--collapsed .sidebar-footer { width: 100%; display: flex; flex-direction: column; align-items: center; padding-top: 6px !important; }
@@ -138,13 +219,13 @@
   padding: 16px 14px !important;
   align-items: stretch !important;
 }
-/* Logo expandido: padding asimétrico (compensa 16px sidebar-top), full visible, mini oculto */
-.sidebar--expanded .sidebar-logo     { padding: 4px 0 14px !important; }
+/* Logo expandido: full visible, mini oculto */
+.sidebar--expanded .sidebar-logo     { padding: 2px 0 6px !important; }
 .sidebar--expanded .logo-img-full    { opacity: 1 !important; }
 .sidebar--expanded .logo-img-mini    { opacity: 0 !important; }
 
 .sidebar--expanded .sidebar-nav      { align-items: stretch !important; }
-.sidebar--expanded .nav-item         { justify-content: flex-start !important; padding: 8px 10px !important; width: auto !important; height: auto !important; }
+.sidebar--expanded .nav-item         { justify-content: flex-start !important; padding: 8px 10px 8px 13px !important; width: auto !important; height: auto !important; }
 .sidebar--expanded .nav-item span    { max-width: 200px !important; opacity: 1 !important; }
 .sidebar--expanded .sidebar-footer   { align-items: stretch !important; }
 .sidebar--expanded .user-chip-btn    { justify-content: flex-start !important; padding: 8px 10px !important; }
