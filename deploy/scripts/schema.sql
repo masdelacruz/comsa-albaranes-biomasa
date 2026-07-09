@@ -56,6 +56,7 @@ CREATE TABLE IF NOT EXISTS pesada (
   entrada         NUMERIC,
   salida          NUMERIC,
   humedad         NUMERIC,
+  numero_pesada   TEXT,
   ticket_adjunto  BOOLEAN NOT NULL DEFAULT FALSE,
   ticket_url      TEXT,
   created_at      TIMESTAMPTZ NOT NULL DEFAULT NOW()

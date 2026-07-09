@@ -101,6 +101,7 @@ function buildAlbaran(a, firmas, pesada, docs, actividad, observacionesPost, emp
     pesada: {
       entrada: p.entrada || null, salida: p.salida || null,
       humedad: p.humedad || null,
+      numeroPesada: p.numero_pesada || null,
       ticketAdjunto: p.ticket_adjunto || false,
       ticketUrl: p.ticket_url || null,
     },
@@ -529,7 +530,7 @@ const ALLOWED_ALBARAN_COLS = new Set([
   'maps_origen', 'maps_destino', 'matricula_tractora', 'matricula_remolque', 'chofer',
   'fecha', 'hora',
 ])
-const ALLOWED_PESADA_COLS = new Set(['entrada', 'salida', 'humedad'])
+const ALLOWED_PESADA_COLS = new Set(['entrada', 'salida', 'humedad', 'numero_pesada'])
 
 // ── PATCH /albaranes/:id  (requiere auth) ─────────────────────────
 router.patch('/:id', requireAuth, async (req, res) => {
@@ -659,8 +660,8 @@ router.post('/:id/firmas/:rol', async (req, res) => {
 
   if (pesadaData) {
     await pool.query(
-      'UPDATE pesada SET entrada=$1, salida=$2, humedad=$3 WHERE albaran_id=$4',
-      [pesadaData.entrada||null, pesadaData.salida||null, pesadaData.humedad||null, id]
+      'UPDATE pesada SET entrada=$1, salida=$2, humedad=$3, numero_pesada=$4 WHERE albaran_id=$5',
+      [pesadaData.entrada||null, pesadaData.salida||null, pesadaData.humedad||null, pesadaData.numeroPesada||null, id]
     )
   }
 

@@ -350,6 +350,7 @@ export default function DetalleAlbaran({ albaranes, simularFirma, updateFirma, s
       entrada: a.pesada?.entrada ?? '',
       salida:  a.pesada?.salida  ?? '',
       humedad: a.pesada?.humedad ?? '',
+      numeroPesada: a.pesada?.numeroPesada ?? '',
     })
     setEditandoPesada(true)
   }
@@ -361,6 +362,7 @@ export default function DetalleAlbaran({ albaranes, simularFirma, updateFirma, s
         entrada: formPesada.entrada !== '' ? Number(formPesada.entrada) : null,
         salida:  formPesada.salida  !== '' ? Number(formPesada.salida)  : null,
         humedad: formPesada.humedad !== '' ? Number(formPesada.humedad) : null,
+        numero_pesada: formPesada.numeroPesada !== '' ? formPesada.numeroPesada : null,
       }, 'Datos de pesada editados')
       setEditandoPesada(false)
       mostrarToast('Datos de pesada actualizados')
@@ -903,6 +905,16 @@ export default function DetalleAlbaran({ albaranes, simularFirma, updateFirma, s
                       />
                     </div>
                   ))}
+                  <div className="edit-field">
+                    <label className="edit-label">Nº de pesada</label>
+                    <input
+                      className="edit-input"
+                      type="text"
+                      value={formPesada.numeroPesada}
+                      onChange={e => setP('numeroPesada', e.target.value)}
+                      placeholder="Ej: 12345"
+                    />
+                  </div>
                 </div>
               ) : (
                 <>
@@ -911,6 +923,7 @@ export default function DetalleAlbaran({ albaranes, simularFirma, updateFirma, s
                     ['Tara',        a.pesada?.salida  ? a.pesada.salida.toLocaleString('es-ES')  + ' kg' : '—'],
                     ['Peso neto',   pesoNeto],
                     ['Humedad (%)', a.pesada?.humedad != null ? `${a.pesada.humedad}%` : 'Pendiente análisis'],
+                    ['Nº de pesada', a.pesada?.numeroPesada || '—'],
                   ].map(([k, v]) => (
                     <div key={k} className="detalle-row">
                       <span className="detalle-key">{k}</span>

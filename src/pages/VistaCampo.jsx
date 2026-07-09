@@ -197,6 +197,12 @@ function VistaFirmadaInstalacion({ a }) {
               <span className="campo-row-val">{a.pesada.humedad}%</span>
             </div>
           )}
+          {a.pesada.numeroPesada && (
+            <div className="campo-row">
+              <span className="campo-row-key">Nº de pesada</span>
+              <span className="campo-row-val">{a.pesada.numeroPesada}</span>
+            </div>
+          )}
         </div>
       )}
 
@@ -249,6 +255,7 @@ function PasoFirma({ rol, a, updateFirma, subirTicketPesada, onCompletado, total
   const [pesoBruto,         setPesoBruto]        = useState(a.pesada?.entrada ? String(a.pesada.entrada) : '')
   const [tara,              setTara]             = useState(a.pesada?.salida  ? String(a.pesada.salida)  : '')
   const [humedad,           setHumedad]          = useState(a.pesada?.humedad ? String(a.pesada.humedad) : '')
+  const [numeroPesada,      setNumeroPesada]     = useState(a.pesada?.numeroPesada || '')
   const [ticketNombre,      setTicketNombre]     = useState('')
   const [firmando,          setFirmando]         = useState(false)
   const [firmado,           setFirmado]          = useState(false)
@@ -282,6 +289,7 @@ function PasoFirma({ rol, a, updateFirma, subirTicketPesada, onCompletado, total
       entrada: parseFloat(pesoBruto) || null,
       salida:  parseFloat(tara)      || null,
       humedad: parseFloat(humedad)   || null,
+      numeroPesada: numeroPesada.trim() || null,
     } : null
     const campoData = (rol === 'astilladora' || rol === 'transportista') ? {
       matriculaTractora, matriculaRemolque,
@@ -463,6 +471,10 @@ function PasoFirma({ rol, a, updateFirma, subirTicketPesada, onCompletado, total
           <div className="campo-field">
             <label>Humedad (%) <span style={{fontWeight:400,color:'var(--gray-400)'}}>(opcional)</span></label>
             <input type="number" step="0.1" placeholder="Ej: 28.4" value={humedad} onChange={e => setHumedad(e.target.value)} />
+          </div>
+          <div className="campo-field">
+            <label>Nº de pesada <span style={{fontWeight:400,color:'var(--gray-400)'}}>(opcional)</span></label>
+            <input type="text" placeholder="Ej: 12345" value={numeroPesada} onChange={e => setNumeroPesada(e.target.value)} />
           </div>
           <label className="upload-zona" style={{cursor:'pointer',marginBottom:14}}>
             <Upload size={16} />

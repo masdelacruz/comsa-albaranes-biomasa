@@ -1,0 +1,1 @@
+ALTER TABLE pesada ADD COLUMN IF NOT EXISTS numero_pesada TEXT;
