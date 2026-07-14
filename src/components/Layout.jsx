@@ -47,8 +47,19 @@ export default function Layout({ usuario, logout, albaranes = [], actualizarUsua
   // .layout usa min-height:100vh, así que el scroll real es el de la
   // ventana (no uno interno) — React Router no lo resetea solo al navegar.
   useEffect(() => {
-    window.scrollTo(0, 0)
+    window.scrollTo({ top: 0, behavior: 'smooth' })
   }, [location.pathname])
+
+  // Si ya estamos en /dashboard, el pathname no cambia al pulsar el logo
+  // o el enlace "Dashboard", así que el efecto de arriba no salta solo:
+  // forzamos el scroll suave aquí también.
+  const irADashboard = () => {
+    if (location.pathname === '/dashboard') {
+      window.scrollTo({ top: 0, behavior: 'smooth' })
+    } else {
+      navigate('/dashboard')
+    }
+  }
 
   const toggleSidebar = () => {
     setCollapsed(v => {
@@ -122,7 +133,7 @@ export default function Layout({ usuario, logout, albaranes = [], actualizarUsua
 
         <div
           className={`sidebar-logo${logoAnim ? ' logo-anim' : ''}`}
-          onClick={() => navigate('/dashboard')}
+          onClick={irADashboard}
           title="Ir al Dashboard"
         >
           <img src={logoFull} alt="COMSA Biomasa" className="logo-img-full" />
@@ -130,7 +141,7 @@ export default function Layout({ usuario, logout, albaranes = [], actualizarUsua
         </div>
 
         <nav className="sidebar-nav">
-          <NavLink to="/dashboard"      data-tooltip="Dashboard"       className={({isActive}) => isActive ? 'nav-item active' : 'nav-item'}>
+          <NavLink to="/dashboard"      data-tooltip="Dashboard"       onClick={irADashboard}  className={({isActive}) => isActive ? 'nav-item active' : 'nav-item'}>
             <LayoutDashboard size={16} /><span>Dashboard</span>
             {pendientesOficina > 0 && (
               <span style={{marginLeft:'auto',background:'var(--blue-400)',color:'#fff',fontSize:10,fontWeight:700,borderRadius:99,padding:'1px 6px',minWidth:18,textAlign:'center',lineHeight:'16px'}}>
