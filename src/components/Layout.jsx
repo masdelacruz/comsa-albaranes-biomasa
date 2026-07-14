@@ -50,16 +50,17 @@ export default function Layout({ usuario, logout, albaranes = [], actualizarUsua
     window.scrollTo({ top: 0, behavior: 'smooth' })
   }, [location.pathname])
 
-  // Si ya estamos en /dashboard, el pathname no cambia al pulsar el logo
-  // o el enlace "Dashboard", así que el efecto de arriba no salta solo:
+  // Si ya estamos en la ruta destino, el pathname no cambia al pulsar el
+  // logo o un enlace del menú, así que el efecto de arriba no salta solo:
   // forzamos el scroll suave aquí también.
-  const irADashboard = () => {
-    if (location.pathname === '/dashboard') {
+  const irA = ruta => () => {
+    if (location.pathname === ruta) {
       window.scrollTo({ top: 0, behavior: 'smooth' })
     } else {
-      navigate('/dashboard')
+      navigate(ruta)
     }
   }
+  const irADashboard = irA('/dashboard')
 
   const toggleSidebar = () => {
     setCollapsed(v => {
@@ -149,20 +150,20 @@ export default function Layout({ usuario, logout, albaranes = [], actualizarUsua
               </span>
             )}
           </NavLink>
-          <NavLink to="/nuevo"          data-tooltip="Nuevo albarán"   className={({isActive}) => isActive ? 'nav-item active' : 'nav-item'}>
+          <NavLink to="/nuevo"          data-tooltip="Nuevo albarán"   onClick={irA('/nuevo')}          className={({isActive}) => isActive ? 'nav-item active' : 'nav-item'}>
             <PlusCircle size={16} /><span>Nuevo albarán</span>
           </NavLink>
-          <NavLink to="/historial"      data-tooltip="Historial"       className={({isActive}) => isActive ? 'nav-item active' : 'nav-item'}>
+          <NavLink to="/historial"      data-tooltip="Historial"       onClick={irA('/historial')}      className={({isActive}) => isActive ? 'nav-item active' : 'nav-item'}>
             <Clock size={16} /><span>Historial</span>
           </NavLink>
-          <NavLink to="/estadisticas"   data-tooltip="Estadísticas"    className={({isActive}) => isActive ? 'nav-item active' : 'nav-item'}>
+          <NavLink to="/estadisticas"   data-tooltip="Estadísticas"    onClick={irA('/estadisticas')}   className={({isActive}) => isActive ? 'nav-item active' : 'nav-item'}>
             <BarChart2 size={16} /><span>Estadísticas</span>
           </NavLink>
-          <NavLink to="/administracion" data-tooltip="Administración"  className={({isActive}) => isActive ? 'nav-item active' : 'nav-item'}>
+          <NavLink to="/administracion" data-tooltip="Administración"  onClick={irA('/administracion')} className={({isActive}) => isActive ? 'nav-item active' : 'nav-item'}>
             <Settings size={16} /><span>Administración</span>
           </NavLink>
           {esSuperadmin && (
-            <NavLink to="/usuarios" data-tooltip="Usuarios" className={({isActive}) => isActive ? 'nav-item active' : 'nav-item'}>
+            <NavLink to="/usuarios" data-tooltip="Usuarios" onClick={irA('/usuarios')} className={({isActive}) => isActive ? 'nav-item active' : 'nav-item'}>
               <Users size={16} /><span>Usuarios</span>
             </NavLink>
           )}
