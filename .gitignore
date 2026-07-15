@@ -20,6 +20,13 @@ dist-ssr
 # Server-side deployment artifacts
 deploy/docker-compose.server.yml
 *.tar.gz
+deploy_now.cjs
+
+# Office documents
+*.docx
+*.xlsx
+*.doc
+~$*
 
 # Claude Code local settings
 .claude/settings.local.json
