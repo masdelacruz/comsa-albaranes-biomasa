@@ -42,4 +42,33 @@ async function destinatarios(tipo) {
   return rows.map(r => r.email)
 }
 
-module.exports = { transport, destinatarios }
+/**
+ * Devuelve el email (o emails, separados por coma) configurado en
+ * Administración para la instalación indicada, junto con su contacto.
+ */
+async function destinatarioInstalacion(nombreInstalacion) {
+  if (!nombreInstalacion) return { emails: [], contacto: null }
+  const { rows } = await pool.query(
+    `SELECT email, contacto FROM proveedores
+     WHERE tipo = 'instalacion' AND nombre = $1 AND activo = true
+     LIMIT 1`,
+    [nombreInstalacion]
+  )
+  const row = rows[0]
+  if (!row?.email) return { emails: [], contacto: null }
+  return {
+    emails: row.email.split(',').map(e => e.trim()).filter(Boolean),
+    contacto: row.contacto || null,
+  }
+}
+
+/**
+ * URL del logotipo corporativo configurado en Administración
+ * (el mismo que se usa como cabecera de los PDF de los albaranes).
+ */
+async function logoComsaUrl() {
+  const { rows } = await pool.query(`SELECT url FROM logos WHERE id = 'comsa'`)
+  return rows[0]?.url || null
+}
+
+module.exports = { transport, destinatarios, destinatarioInstalacion, logoComsaUrl }

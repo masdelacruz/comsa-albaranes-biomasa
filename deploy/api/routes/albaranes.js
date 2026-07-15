@@ -1,7 +1,7 @@
 const router = require('express').Router()
 const pool   = require('../db')
 const { requireAuth } = require('./auth')
-const { enviarNotificacion } = require('../emailSender')
+const { enviarNotificacion, enviarNotificacionCamionEnviado } = require('../emailSender')
 
 // ── Helper: normaliza nombre a Title Case ─────────────────────────
 function toTitleCase(str) {
@@ -728,6 +728,9 @@ router.post('/:id/firmas/:rol', async (req, res) => {
       enviarNotificacion('humedad_pendiente', albaran).catch(() => {})
     } else {
       enviarNotificacion('firma_completada', { ...albaran, firmante: actor, rolLabel: ROL_LABELS[rol] || rol }).catch(() => {})
+    }
+    if (rol === 'astilladora') {
+      enviarNotificacionCamionEnviado(albaran).catch(() => {})
     }
   }
 

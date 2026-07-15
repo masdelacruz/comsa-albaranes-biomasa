@@ -2,7 +2,7 @@
  * emailSender.js — construcción de templates y envío de notificaciones.
  * Puede llamarse desde rutas autenticadas O desde el propio backend (firmas).
  */
-const { transport, destinatarios } = require('./mailer')
+const { transport, destinatarios, destinatarioInstalacion, logoComsaUrl } = require('./mailer')
 
 const APP_URL = process.env.APP_URL || 'https://biomasa.cserintranet.com'
 
@@ -46,6 +46,81 @@ const emailWrapper = (bodyContent) => `
   </table>
 </body>
 </html>`
+
+// Variante de cabecera en negro con logo, usada por el email de "camión
+// enviado" — inspirada en la plantilla de referencia (logo + etiqueta lateral).
+const emailWrapperTransporte = (bodyContent, etiqueta = 'Transporte', logoUrl = null) => `
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Comsa Service - Albaranes de Biomasa</title>
+</head>
+<body style="margin:0;padding:0;background-color:#f4f6f4;font-family:Arial,Helvetica,sans-serif;">
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background-color:#f4f6f4;padding:32px 16px;">
+    <tr>
+      <td align="center">
+        <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:600px;background-color:#ffffff;border-radius:8px;overflow:hidden;box-shadow:0 2px 8px rgba(0,0,0,0.08);">
+          <tr>
+            <td style="background-color:#0a0f0c;padding:20px 40px;">
+              <table role="presentation" width="100%" cellpadding="0" cellspacing="0"><tr>
+                <td valign="middle"><img src="${logoUrl || `${APP_URL}/logo-comsa.png`}" alt="COMSA Service Bioenergía" height="52" style="display:block;height:52px;"></td>
+                <td valign="middle" align="right">
+                  <span style="border-left:2px solid #1D9E75;padding-left:12px;font-family:Arial,Helvetica,sans-serif;font-size:13px;font-weight:600;color:#ffffff;">${etiqueta}</span>
+                </td>
+              </tr></table>
+            </td>
+          </tr>
+          ${bodyContent}
+          <tr>
+            <td style="background-color:#f9fafb;padding:20px 40px;border-top:1px solid #edf0ed;">
+              <table role="presentation" width="100%" cellpadding="0" cellspacing="0"><tr>
+                <td width="36" valign="top">
+                  <table role="presentation" cellpadding="0" cellspacing="0"><tr>
+                    <td width="30" style="width:30px;height:30px;border-radius:50%;background-color:#ffffff;border:1px solid #e2e8e4;text-align:center;vertical-align:middle;">
+                      <img src="${APP_URL}/icons-email/globe.png" width="16" height="16" alt="" style="display:inline-block;vertical-align:middle;">
+                    </td>
+                  </tr></table>
+                </td>
+                <td valign="middle" style="padding-left:10px;">
+                  <span style="display:block;font-family:Arial,Helvetica,sans-serif;font-size:12px;color:#6b7c74;">Accede a la aplicación</span>
+                  <span style="display:block;font-family:Arial,Helvetica,sans-serif;font-size:12px;color:#0f2d1f;font-weight:600;">COMSA Service Bioenergía</span>
+                </td>
+                <td width="1" style="background-color:#e2e8e4;font-size:0;line-height:0;">&nbsp;</td>
+                <td valign="middle" align="right" style="padding-left:20px;">
+                  <span style="display:block;font-family:Arial,Helvetica,sans-serif;font-size:12px;color:#6b7c74;">Este es un correo automático.</span>
+                  <span style="display:block;font-family:Arial,Helvetica,sans-serif;font-size:12px;color:#6b7c74;">Por favor, no respondas a este mensaje.</span>
+                </td>
+              </tr></table>
+            </td>
+          </tr>
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>`
+
+// Iconos monocromo (verde, mismo trazo que lucide-react) subidos como PNG
+// estáticos — un <img> de icono real, sin depender de emoji multicolor.
+const ICONOS_VALIDOS = new Set(['matricula', 'conductor', 'transportista', 'hora', 'estado', 'destino'])
+
+// Celda con icono + etiqueta + valor, para la cuadrícula 2x3
+// del email de camión enviado.
+const celda = (label, value, iconKey = 'estado') => {
+  const icono = ICONOS_VALIDOS.has(iconKey) ? iconKey : 'estado'
+  return `
+  <td width="50%" valign="top" style="padding:0 8px 16px 0;">
+    <table role="presentation" cellpadding="0" cellspacing="0"><tr>
+      <td width="36"><img src="${APP_URL}/icons-email/${icono}.png" width="36" height="36" alt="" style="display:block;width:36px;height:36px;"></td>
+      <td style="padding-left:12px;">
+        <span style="display:block;font-family:Arial,Helvetica,sans-serif;font-size:11px;color:#6b7c74;">${label}</span>
+        <span style="display:block;font-family:Arial,Helvetica,sans-serif;font-size:14px;color:#0f2d1f;font-weight:700;">${String(value || '—').replace(/</g, '&lt;').replace(/>/g, '&gt;')}</span>
+      </td>
+    </tr></table>
+  </td>`
+}
 
 const badge = (text, color = '#1D9E75') =>
   `<span style="display:inline-block;background-color:${color};color:#ffffff;font-family:Arial,Helvetica,sans-serif;font-size:11px;font-weight:700;padding:3px 10px;border-radius:12px;letter-spacing:0.5px;text-transform:uppercase;">${text}</span>`
@@ -218,6 +293,44 @@ function buildEmail(tipo, albaran) {
       <tr><td style="padding:8px 40px 40px;" align="center">${boton('Registrar humedad', `${APP_URL}/albaran/${albaran.id}`)}</td></tr>
     `)
 
+  } else if (tipo === 'camion_enviado') {
+    const meses = ['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre']
+    const fmtFechaHoraLarga = (f) => {
+      if (!f) return '—'
+      const [datePart, timePart] = String(f).split(', ')
+      const [d, m, y] = (datePart || '').split('/')
+      if (!y) return f
+      return `${+d} de ${meses[+m - 1]} de ${y}${timePart ? ', ' + timePart.slice(0, 5) : ''}`
+    }
+    const horaSalida = fmtFechaHoraLarga(albaran.firmas?.astilladora?.fecha)
+    const matricula  = [albaran.matriculaTractora, albaran.matriculaRemolque].filter(Boolean).join(' · ') || '—'
+    const origenTexto = albaran.astilladora || albaran.proveedor || albaran.origen || 'origen'
+    const primerNombre = albaran.contactoInstalacion ? albaran.contactoInstalacion.split(' ')[0] : null
+
+    const instalacionSlug = String(albaran.instalacion || '').trim().replace(/\s+/g, '-')
+
+    subject = `Camión en camino - ${albaran.instalacion || resumenAsunto}`
+    html = emailWrapperTransporte(`
+      <tr>
+        <td style="padding:32px 40px 4px;">
+          <p style="margin:0 0 10px;font-family:Arial,Helvetica,sans-serif;font-size:24px;font-weight:700;color:#0f2d1f;">Hola${primerNombre ? ' ' + primerNombre : ''},</p>
+          <p style="margin:0 0 24px;font-family:Arial,Helvetica,sans-serif;font-size:14px;color:#6b7c74;line-height:1.6;">
+            Se ha <strong style="color:#1D9E75;">enviado</strong> un camión desde <strong style="color:#0f2d1f;">${String(origenTexto).replace(/</g, '&lt;')}</strong> con destino a <strong style="color:#0f2d1f;">${String(albaran.instalacion || '—').replace(/</g, '&lt;')}</strong>.
+          </p>
+        </td>
+      </tr>
+      <tr>
+        <td style="padding:0 40px 8px;">
+          <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="border:1px solid #edf0ed;border-radius:8px;padding:20px 16px 4px;">
+            <tr>${celda('Matrícula', matricula, 'matricula')}${celda('Conductor', albaran.chofer, 'conductor')}</tr>
+            <tr>${celda('Empresa transportista', albaran.transportista, 'transportista')}${celda('Hora de salida', horaSalida, 'hora')}</tr>
+            <tr>${celda('Estado', 'Enviado', 'estado')}${celda('Destino', albaran.instalacion, 'destino')}</tr>
+          </table>
+        </td>
+      </tr>
+      <tr><td style="padding:16px 40px 40px;" align="center">${boton('Ver envío', `${APP_URL}/campo/instalacion/${instalacionSlug}`)}</td></tr>
+    `, 'Transporte', albaran.logoUrl)
+
   } else {
     return null
   }
@@ -237,4 +350,19 @@ async function enviarNotificacion(tipo, albaran) {
   }
 }
 
-module.exports = { enviarNotificacion, buildEmail }
+async function enviarNotificacionCamionEnviado(albaran) {
+  const [{ emails, contacto }, logoUrl] = await Promise.all([
+    destinatarioInstalacion(albaran.instalacion),
+    logoComsaUrl(),
+  ])
+  if (!emails.length) return
+  const built = buildEmail('camion_enviado', { ...albaran, contactoInstalacion: contacto, logoUrl })
+  if (!built) return
+  try {
+    await transport.sendMail({ from: process.env.SMTP_FROM, to: emails.join(', '), subject: built.subject, html: built.html })
+  } catch (e) {
+    console.error('Email error (camion_enviado):', e.message)
+  }
+}
+
+module.exports = { enviarNotificacion, enviarNotificacionCamionEnviado, buildEmail }
