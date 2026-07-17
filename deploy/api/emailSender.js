@@ -104,7 +104,7 @@ const celdaGrande = (label, value, iconKey, mutedValue = false) => {
           <td width="34"><img src="${APP_URL}/icons-email/${icono}.png" width="34" height="34" alt="" style="display:block;width:34px;height:34px;"></td>
           <td style="padding-left:10px;">
             <span style="display:block;font-family:Arial,Helvetica,sans-serif;font-size:11px;color:${TEXT_MUTED};text-transform:uppercase;letter-spacing:0.5px;">${label}</span>
-            <span style="display:block;font-family:Arial,Helvetica,sans-serif;font-size:22px;font-weight:700;color:${mutedValue ? TEXT_MUTED : TEXT_TITLE};">${String(value || '—').replace(/</g, '&lt;').replace(/>/g, '&gt;')}</span>
+            <span style="display:block;font-family:Arial,Helvetica,sans-serif;font-size:${mutedValue ? '14px' : '22px'};line-height:1.3;font-weight:${mutedValue ? '600' : '700'};color:${mutedValue ? TEXT_MUTED : TEXT_TITLE};">${String(value || '—').replace(/</g, '&lt;').replace(/>/g, '&gt;')}</span>
           </td>
         </tr></table>
       </td></tr>
