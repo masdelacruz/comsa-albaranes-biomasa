@@ -99,7 +99,7 @@ const celdaGrande = (label, value, iconKey, mutedValue = false) => {
   return `
   <td width="50%" valign="top" style="padding:0 8px 0 0;">
     <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="border:1px solid ${BORDER};border-radius:8px;">
-      <tr><td height="88" style="height:88px;padding:18px 20px;">
+      <tr><td style="padding:18px 20px;">
         <table role="presentation" cellpadding="0" cellspacing="0"><tr>
           <td width="34" valign="top"><img src="${APP_URL}/icons-email/${icono}.png" width="34" height="34" alt="" style="display:block;width:34px;height:34px;"></td>
           <td valign="top" style="padding-left:10px;">
