@@ -96,6 +96,10 @@ const celda = (label, value, iconKey = 'estado') => {
 // sin relleno de color — es texto sobre el fondo blanco de la tarjeta.
 const celdaGrande = (label, value, iconKey, mutedValue = false) => {
   const icono = ICONOS_VALIDOS.has(iconKey) ? iconKey : 'estado'
+  // Un valor vacío (placeholder "—") nunca debe usar la tipografía grande:
+  // sin esto, una card sin dato aún queda visualmente más "pesada" que una
+  // con texto real, solo por el tamaño de fuente del guion.
+  const chico = mutedValue || !value
   return `
   <td width="50%" valign="top" style="padding:0 8px 0 0;">
     <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="border:1px solid ${BORDER};border-radius:8px;">
@@ -104,7 +108,7 @@ const celdaGrande = (label, value, iconKey, mutedValue = false) => {
           <td width="34" valign="top"><img src="${APP_URL}/icons-email/${icono}.png" width="34" height="34" alt="" style="display:block;width:34px;height:34px;"></td>
           <td valign="top" style="padding-left:10px;">
             <span style="display:block;font-family:Arial,Helvetica,sans-serif;font-size:11px;color:${TEXT_MUTED};text-transform:uppercase;letter-spacing:0.5px;">${label}</span>
-            <span style="display:block;font-family:Arial,Helvetica,sans-serif;font-size:${mutedValue ? '14px' : '22px'};line-height:1.3;font-weight:${mutedValue ? '600' : '700'};color:${mutedValue ? TEXT_MUTED : TEXT_TITLE};">${String(value || '—').replace(/</g, '&lt;').replace(/>/g, '&gt;')}</span>
+            <span style="display:block;font-family:Arial,Helvetica,sans-serif;font-size:${chico ? '14px' : '22px'};line-height:1.3;font-weight:${chico ? '600' : '700'};color:${chico ? TEXT_MUTED : TEXT_TITLE};">${String(value || '—').replace(/</g, '&lt;').replace(/>/g, '&gt;')}</span>
           </td>
         </tr></table>
       </td></tr>
