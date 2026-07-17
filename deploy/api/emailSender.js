@@ -14,7 +14,8 @@ const APP_URL = process.env.APP_URL || 'https://biomasa.cserintranet.com'
 // recolorear de forma impredecible; el panel de datos es solo texto con
 // una línea divisoria fina, como cualquier email transaccional normal.
 const CARD_BG = '#ffffff'
-const HEADER_BG = '#0a0f0c'
+const HEADER_BG = '#000000'
+const LABEL_BG = '#f8fafc'
 const BORDER = '#e5e7eb'
 const TEXT_TITLE = '#1a1a1a'
 const TEXT_MUTED = '#6b7280'
@@ -37,13 +38,13 @@ const emailWrapper = (bodyContent, etiqueta = '', logoUrl = null) => `
   <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="padding:32px 16px;">
     <tr>
       <td align="center">
-        <table role="presentation" width="100%" cellpadding="0" cellspacing="0" bgcolor="${CARD_BG}" style="max-width:600px;background-color:${CARD_BG};border:1px solid ${BORDER};border-radius:8px;overflow:hidden;">
+        <table role="presentation" width="100%" cellpadding="0" cellspacing="0" bgcolor="${CARD_BG}" style="max-width:600px;background-color:${CARD_BG};border:1px solid ${BORDER};border-radius:10px;overflow:hidden;box-shadow:0 4px 16px rgba(0,0,0,0.12);">
           <tr>
-            <td bgcolor="${HEADER_BG}" style="background-color:${HEADER_BG};padding:20px 40px;">
+            <td bgcolor="${HEADER_BG}" style="background-color:${HEADER_BG};padding:26px 40px;border-bottom:3px solid ${ACCENT};">
               <table role="presentation" width="100%" cellpadding="0" cellspacing="0"><tr>
                 <td valign="middle"><img src="${logoUrl || `${APP_URL}/logo-comsa.png`}" alt="COMSA Service Bioenergía" height="52" style="display:block;height:52px;"></td>
                 <td valign="middle" align="right">
-                  <span style="border-left:2px solid ${ACCENT};padding-left:12px;font-family:Arial,Helvetica,sans-serif;font-size:13px;font-weight:600;color:${TEXT_WHITE};">${etiqueta}</span>
+                  <span style="border-left:2px solid ${ACCENT};padding-left:12px;font-family:Arial,Helvetica,sans-serif;font-size:13px;font-weight:700;letter-spacing:0.3px;text-transform:uppercase;color:${TEXT_WHITE};">${etiqueta}</span>
                 </td>
               </tr></table>
             </td>
@@ -111,15 +112,16 @@ const celdaGrande = (label, value, iconKey, mutedValue = false) => {
   </td>`
 }
 
-// Fila de la tabla de datos del albarán: etiqueta y valor sobre el mismo
-// fondo (el de la tarjeta), separadas solo por una línea fina — sin
-// relleno de color propio, como cualquier email transaccional normal.
+// Fila de la tabla de datos del albarán: la columna de etiqueta lleva un
+// gris neutro muy claro para diferenciarla de la de valor (blanca) — un
+// único tono suave, no dos tonos casi iguales, para que quede clara la
+// jerarquía sin arriesgar el aspecto "manchado" en clientes con dark mode.
 const fila = (label, value) => `
   <tr>
-    <td style="padding:10px 16px;border-bottom:1px solid ${BORDER};width:38%;">
-      <span style="font-family:Arial,Helvetica,sans-serif;font-size:12px;color:${TEXT_MUTED};">${label}</span>
+    <td bgcolor="${LABEL_BG}" style="padding:11px 16px;background-color:${LABEL_BG};border-bottom:1px solid ${BORDER};width:38%;">
+      <span style="font-family:Arial,Helvetica,sans-serif;font-size:12px;color:${TEXT_MUTED};font-weight:600;text-transform:uppercase;letter-spacing:0.3px;">${label}</span>
     </td>
-    <td style="padding:10px 16px;border-bottom:1px solid ${BORDER};">
+    <td style="padding:11px 16px;border-bottom:1px solid ${BORDER};">
       <span style="font-family:Arial,Helvetica,sans-serif;font-size:13px;color:${TEXT_TITLE};font-weight:600;">${String(value || '—').replace(/</g, '&lt;').replace(/>/g, '&gt;')}</span>
     </td>
   </tr>`
