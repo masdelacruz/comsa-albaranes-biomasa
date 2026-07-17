@@ -96,14 +96,17 @@ const celda = (label, value, iconKey = 'estado') => {
 // flexbox (no tabla) para que las dos cards se igualen de altura de
 // forma simultánea y responsive en cualquier ancho — las tablas HTML
 // no pueden garantizar esto de forma fiable entre distintos anchos.
-const celdaGrande = (label, value, iconKey, mutedValue = false) => {
+const celdaGrande = (label, value, iconKey, mutedValue = false, margin = '0') => {
   const icono = ICONOS_VALIDOS.has(iconKey) ? iconKey : 'estado'
   // Un valor vacío (placeholder "—") nunca debe usar la tipografía grande:
   // sin esto, una card sin dato aún queda visualmente más "pesada" que una
   // con texto real, solo por el tamaño de fuente del guion.
   const chico = mutedValue || !value
+  // El espaciado entre cards se resuelve con margin, no con "gap" del
+  // contenedor flex — "gap" en flexbox no lo soportan de forma fiable
+  // todos los clientes de correo (se filtra al sanear el CSS del email).
   return `
-  <div style="flex:1 1 0;min-width:160px;box-sizing:border-box;border:1px solid ${BORDER};border-radius:8px;padding:18px 20px;">
+  <div style="flex:1 1 0;min-width:160px;box-sizing:border-box;margin:${margin};border:1px solid ${BORDER};border-radius:8px;padding:18px 20px;">
     <table role="presentation" cellpadding="0" cellspacing="0"><tr>
       <td width="34" valign="top"><img src="${APP_URL}/icons-email/${icono}.png" width="34" height="34" alt="" style="display:block;width:34px;height:34px;"></td>
       <td valign="top" style="padding-left:10px;">
@@ -213,9 +216,9 @@ function buildEmail(tipo, albaran) {
       </tr>
       <tr>
         <td style="padding:0 40px 24px;">
-          <div style="display:flex;gap:16px;">
-            ${celdaGrande('Peso neto', albaran.pesoNeto, 'peso')}
-            ${celdaGrande('Humedad', albaran.humedad != null ? albaran.humedad + ' %' : 'Pendiente de análisis', 'humedad', albaran.humedad == null)}
+          <div style="display:flex;">
+            ${celdaGrande('Peso neto', albaran.pesoNeto, 'peso', false, '0 8px 0 0')}
+            ${celdaGrande('Humedad', albaran.humedad != null ? albaran.humedad + ' %' : 'Pendiente de análisis', 'humedad', albaran.humedad == null, '0 0 0 8px')}
           </div>
         </td>
       </tr>
