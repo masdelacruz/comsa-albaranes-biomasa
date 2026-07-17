@@ -22,45 +22,58 @@ const emailWrapper = (bodyContent, etiqueta = '', logoUrl = null) => `
   <style>
     :root { color-scheme: light; supported-color-schemes: light; }
     @media (prefers-color-scheme: dark) {
-      .email-bg { background-color: #f4f6f4 !important; }
-      .email-card { background-color: #ffffff !important; }
+      .em-page { background-color: #f4f6f4 !important; }
+      .em-card { background-color: #ffffff !important; }
+      .em-header { background-color: #0a0f0c !important; }
+      .em-white { background-color: #ffffff !important; }
+      .em-alt { background-color: #f9fafb !important; }
+      .em-circle { background-color: #ffffff !important; }
+      .em-divider { background-color: #e2e8e4 !important; }
+      .em-btn { background-color: #1D9E75 !important; }
+      .em-title, .em-strong, .em-value, .em-value-dark, .em-footer-title {
+        color: #0f2d1f !important;
+      }
+      .em-muted { color: #6b7c74 !important; }
+      .em-accent { color: #1D9E75 !important; }
+      .em-value-muted { color: #9aada5 !important; }
+      .em-on-dark, .em-btn-text { color: #ffffff !important; }
     }
   </style>
 </head>
 <body style="margin:0;padding:0;background-color:#f4f6f4;font-family:Arial,Helvetica,sans-serif;">
-  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" bgcolor="#f4f6f4" class="email-bg" style="background-color:#f4f6f4;padding:32px 16px;">
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" bgcolor="#f4f6f4" class="em-page" style="background-color:#f4f6f4;padding:32px 16px;">
     <tr>
       <td align="center">
-        <table role="presentation" width="100%" cellpadding="0" cellspacing="0" bgcolor="#ffffff" class="email-card" style="max-width:600px;background-color:#ffffff;border-radius:8px;overflow:hidden;box-shadow:0 2px 8px rgba(0,0,0,0.08);">
+        <table role="presentation" width="100%" cellpadding="0" cellspacing="0" bgcolor="#ffffff" class="em-card" style="max-width:600px;background-color:#ffffff;border-radius:8px;overflow:hidden;box-shadow:0 2px 8px rgba(0,0,0,0.08);">
           <tr>
-            <td bgcolor="#0a0f0c" style="background-color:#0a0f0c;padding:20px 40px;">
+            <td bgcolor="#0a0f0c" class="em-header" style="background-color:#0a0f0c;padding:20px 40px;">
               <table role="presentation" width="100%" cellpadding="0" cellspacing="0"><tr>
                 <td valign="middle"><img src="${logoUrl || `${APP_URL}/logo-comsa.png`}" alt="COMSA Service Bioenergía" height="52" style="display:block;height:52px;"></td>
                 <td valign="middle" align="right">
-                  <span style="border-left:2px solid #1D9E75;padding-left:12px;font-family:Arial,Helvetica,sans-serif;font-size:13px;font-weight:600;color:#ffffff;">${etiqueta}</span>
+                  <span class="em-on-dark" style="border-left:2px solid #1D9E75;padding-left:12px;font-family:Arial,Helvetica,sans-serif;font-size:13px;font-weight:600;color:#ffffff;">${etiqueta}</span>
                 </td>
               </tr></table>
             </td>
           </tr>
           ${bodyContent}
           <tr>
-            <td bgcolor="#f9fafb" style="background-color:#f9fafb;padding:20px 40px;border-top:1px solid #edf0ed;">
+            <td bgcolor="#f9fafb" class="em-alt" style="background-color:#f9fafb;padding:20px 40px;border-top:1px solid #edf0ed;">
               <table role="presentation" width="100%" cellpadding="0" cellspacing="0"><tr>
                 <td width="36" valign="top">
                   <table role="presentation" cellpadding="0" cellspacing="0"><tr>
-                    <td width="30" style="width:30px;height:30px;border-radius:50%;background-color:#ffffff;border:1px solid #e2e8e4;text-align:center;vertical-align:middle;">
+                    <td width="30" bgcolor="#ffffff" class="em-circle" style="width:30px;height:30px;border-radius:50%;background-color:#ffffff;border:1px solid #e2e8e4;text-align:center;vertical-align:middle;">
                       <img src="${APP_URL}/icons-email/globe.png" width="16" height="16" alt="" style="display:inline-block;vertical-align:middle;">
                     </td>
                   </tr></table>
                 </td>
                 <td valign="middle" style="padding-left:10px;">
-                  <span style="display:block;font-family:Arial,Helvetica,sans-serif;font-size:12px;color:#6b7c74;">Accede a la aplicación</span>
-                  <span style="display:block;font-family:Arial,Helvetica,sans-serif;font-size:12px;color:#0f2d1f;font-weight:600;">COMSA Service Bioenergía</span>
+                  <span class="em-muted" style="display:block;font-family:Arial,Helvetica,sans-serif;font-size:12px;color:#6b7c74;">Accede a la aplicación</span>
+                  <span class="em-footer-title" style="display:block;font-family:Arial,Helvetica,sans-serif;font-size:12px;color:#0f2d1f;font-weight:600;">COMSA Service Bioenergía</span>
                 </td>
-                <td width="1" style="background-color:#e2e8e4;font-size:0;line-height:0;">&nbsp;</td>
+                <td width="1" bgcolor="#e2e8e4" class="em-divider" style="background-color:#e2e8e4;font-size:0;line-height:0;">&nbsp;</td>
                 <td valign="middle" align="right" style="padding-left:20px;">
-                  <span style="display:block;font-family:Arial,Helvetica,sans-serif;font-size:12px;color:#6b7c74;">Este es un correo automático.</span>
-                  <span style="display:block;font-family:Arial,Helvetica,sans-serif;font-size:12px;color:#6b7c74;">Por favor, no respondas a este mensaje.</span>
+                  <span class="em-muted" style="display:block;font-family:Arial,Helvetica,sans-serif;font-size:12px;color:#6b7c74;">Este es un correo automático.</span>
+                  <span class="em-muted" style="display:block;font-family:Arial,Helvetica,sans-serif;font-size:12px;color:#6b7c74;">Por favor, no respondas a este mensaje.</span>
                 </td>
               </tr></table>
             </td>
@@ -85,8 +98,8 @@ const celda = (label, value, iconKey = 'estado') => {
     <table role="presentation" cellpadding="0" cellspacing="0"><tr>
       <td width="36"><img src="${APP_URL}/icons-email/${icono}.png" width="36" height="36" alt="" style="display:block;width:36px;height:36px;"></td>
       <td style="padding-left:12px;">
-        <span style="display:block;font-family:Arial,Helvetica,sans-serif;font-size:11px;color:#6b7c74;">${label}</span>
-        <span style="display:block;font-family:Arial,Helvetica,sans-serif;font-size:14px;color:#0f2d1f;font-weight:700;">${String(value || '—').replace(/</g, '&lt;').replace(/>/g, '&gt;')}</span>
+        <span class="em-muted" style="display:block;font-family:Arial,Helvetica,sans-serif;font-size:11px;color:#6b7c74;">${label}</span>
+        <span class="em-value-dark" style="display:block;font-family:Arial,Helvetica,sans-serif;font-size:14px;color:#0f2d1f;font-weight:700;">${String(value || '—').replace(/</g, '&lt;').replace(/>/g, '&gt;')}</span>
       </td>
     </tr></table>
   </td>`
@@ -98,13 +111,13 @@ const celdaGrande = (label, value, iconKey, mutedValue = false) => {
   const icono = ICONOS_VALIDOS.has(iconKey) ? iconKey : 'estado'
   return `
   <td width="50%" valign="top" style="padding:0 8px 0 0;">
-    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" bgcolor="#f9fafb" style="background-color:#f9fafb;border:1px solid #edf0ed;border-radius:8px;">
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" bgcolor="#f9fafb" class="em-alt" style="background-color:#f9fafb;border:1px solid #edf0ed;border-radius:8px;">
       <tr><td style="padding:18px 20px;">
         <table role="presentation" cellpadding="0" cellspacing="0"><tr>
           <td width="34"><img src="${APP_URL}/icons-email/${icono}.png" width="34" height="34" alt="" style="display:block;width:34px;height:34px;"></td>
           <td style="padding-left:10px;">
-            <span style="display:block;font-family:Arial,Helvetica,sans-serif;font-size:11px;color:#6b7c74;text-transform:uppercase;letter-spacing:0.5px;">${label}</span>
-            <span style="display:block;font-family:Arial,Helvetica,sans-serif;font-size:22px;font-weight:700;color:${mutedValue ? '#9aada5' : '#0f2d1f'};">${String(value || '—').replace(/</g, '&lt;').replace(/>/g, '&gt;')}</span>
+            <span class="em-muted" style="display:block;font-family:Arial,Helvetica,sans-serif;font-size:11px;color:#6b7c74;text-transform:uppercase;letter-spacing:0.5px;">${label}</span>
+            <span class="${mutedValue ? 'em-value-muted' : 'em-value-dark'}" style="display:block;font-family:Arial,Helvetica,sans-serif;font-size:22px;font-weight:700;color:${mutedValue ? '#9aada5' : '#0f2d1f'};">${String(value || '—').replace(/</g, '&lt;').replace(/>/g, '&gt;')}</span>
           </td>
         </tr></table>
       </td></tr>
@@ -114,19 +127,19 @@ const celdaGrande = (label, value, iconKey, mutedValue = false) => {
 
 const fila = (label, value) => `
   <tr>
-    <td bgcolor="#f9fafb" style="padding:10px 16px;background-color:#f9fafb;border-bottom:1px solid #edf0ed;width:38%;">
-      <span style="font-family:Arial,Helvetica,sans-serif;font-size:12px;color:#6b7c74;">${label}</span>
+    <td bgcolor="#f9fafb" class="em-alt" style="padding:10px 16px;background-color:#f9fafb;border-bottom:1px solid #edf0ed;width:38%;">
+      <span class="em-muted" style="font-family:Arial,Helvetica,sans-serif;font-size:12px;color:#6b7c74;">${label}</span>
     </td>
-    <td bgcolor="#ffffff" style="padding:10px 16px;background-color:#ffffff;border-bottom:1px solid #edf0ed;">
-      <span style="font-family:Arial,Helvetica,sans-serif;font-size:13px;color:#1a2e24;font-weight:600;">${String(value || '—').replace(/</g, '&lt;').replace(/>/g, '&gt;')}</span>
+    <td bgcolor="#ffffff" class="em-white" style="padding:10px 16px;background-color:#ffffff;border-bottom:1px solid #edf0ed;">
+      <span class="em-value" style="font-family:Arial,Helvetica,sans-serif;font-size:13px;color:#1a2e24;font-weight:600;">${String(value || '—').replace(/</g, '&lt;').replace(/>/g, '&gt;')}</span>
     </td>
   </tr>`
 
 const boton = (text, url) => `
   <table role="presentation" cellpadding="0" cellspacing="0" style="margin:0 auto;">
     <tr>
-      <td style="border-radius:6px;background-color:#1D9E75;">
-        <a href="${url}" target="_blank" style="display:inline-block;padding:13px 28px;font-family:Arial,Helvetica,sans-serif;font-size:14px;font-weight:700;color:#ffffff;text-decoration:none;border-radius:6px;">${text}</a>
+      <td class="em-btn" style="border-radius:6px;background-color:#1D9E75;">
+        <a href="${url}" target="_blank" class="em-btn-text" style="display:inline-block;padding:13px 28px;font-family:Arial,Helvetica,sans-serif;font-size:14px;font-weight:700;color:#ffffff;text-decoration:none;border-radius:6px;">${text}</a>
       </td>
     </tr>
   </table>`
@@ -161,75 +174,75 @@ function buildEmail(tipo, albaran) {
     subject = `Nuevo albaran - ${resumenAsunto}`
     html = emailWrapper(`
       <tr>
-        <td bgcolor="#ffffff" style="background-color:#ffffff;padding:32px 40px 8px;">
-          <h1 style="margin:0 0 8px;font-family:Arial,Helvetica,sans-serif;font-size:22px;font-weight:700;color:#0f2d1f;">Nuevo albarán registrado</h1>
-          <p style="margin:0 0 24px;font-family:Arial,Helvetica,sans-serif;font-size:14px;color:#6b7c74;line-height:1.6;">
-            Se ha creado un nuevo albarán en el sistema el <strong style="color:#0f2d1f;">${fechaHora}</strong>. Queda pendiente de firma por las partes correspondientes.
+        <td bgcolor="#ffffff" class="em-white" style="background-color:#ffffff;padding:32px 40px 8px;">
+          <h1 class="em-title" style="margin:0 0 8px;font-family:Arial,Helvetica,sans-serif;font-size:22px;font-weight:700;color:#0f2d1f;">Nuevo albarán registrado</h1>
+          <p class="em-muted" style="margin:0 0 24px;font-family:Arial,Helvetica,sans-serif;font-size:14px;color:#6b7c74;line-height:1.6;">
+            Se ha creado un nuevo albarán en el sistema el <strong class="em-strong" style="color:#0f2d1f;">${fechaHora}</strong>. Queda pendiente de firma por las partes correspondientes.
           </p>
         </td>
       </tr>
-      <tr><td bgcolor="#ffffff" style="background-color:#ffffff;padding:0 40px 24px;">${tablaAlbaran}</td></tr>
-      <tr><td bgcolor="#ffffff" style="background-color:#ffffff;padding:8px 40px 40px;" align="center">${boton('Ver albarán', `${APP_URL}/albaran/${albaran.id}`)}</td></tr>
+      <tr><td bgcolor="#ffffff" class="em-white" style="background-color:#ffffff;padding:0 40px 24px;">${tablaAlbaran}</td></tr>
+      <tr><td bgcolor="#ffffff" class="em-white" style="background-color:#ffffff;padding:8px 40px 40px;" align="center">${boton('Ver albarán', `${APP_URL}/albaran/${albaran.id}`)}</td></tr>
     `, 'Nuevo albarán', albaran.logoUrl)
 
   } else if (tipo === 'firma_completada') {
     subject = `Firma registrada - ${albaran.rolLabel || 'firma'} - ${resumenAsunto}`
     html = emailWrapper(`
       <tr>
-        <td bgcolor="#ffffff" style="background-color:#ffffff;padding:32px 40px 8px;">
-          <h1 style="margin:0 0 8px;font-family:Arial,Helvetica,sans-serif;font-size:22px;font-weight:700;color:#0f2d1f;">Firma registrada</h1>
-          <p style="margin:0 0 20px;font-family:Arial,Helvetica,sans-serif;font-size:14px;color:#6b7c74;line-height:1.6;">
+        <td bgcolor="#ffffff" class="em-white" style="background-color:#ffffff;padding:32px 40px 8px;">
+          <h1 class="em-title" style="margin:0 0 8px;font-family:Arial,Helvetica,sans-serif;font-size:22px;font-weight:700;color:#0f2d1f;">Firma registrada</h1>
+          <p class="em-muted" style="margin:0 0 20px;font-family:Arial,Helvetica,sans-serif;font-size:14px;color:#6b7c74;line-height:1.6;">
             Una de las partes ha firmado el albarán. El proceso continúa hasta que todas las firmas requeridas estén completas.
           </p>
         </td>
       </tr>
       <tr>
-        <td bgcolor="#ffffff" style="background-color:#ffffff;padding:0 40px 20px;">
-          <table role="presentation" width="100%" cellpadding="0" cellspacing="0" bgcolor="#ffffff" style="background-color:#ffffff;border:1px solid #edf0ed;border-radius:8px;">
+        <td bgcolor="#ffffff" class="em-white" style="background-color:#ffffff;padding:0 40px 20px;">
+          <table role="presentation" width="100%" cellpadding="0" cellspacing="0" bgcolor="#ffffff" class="em-white" style="background-color:#ffffff;border:1px solid #edf0ed;border-radius:8px;">
             <tr>${celda('Firmado por', albaran.firmante, 'conductor')}${celda('Rol', albaran.rolLabel, 'matricula')}</tr>
           </table>
         </td>
       </tr>
-      <tr><td bgcolor="#ffffff" style="background-color:#ffffff;padding:0 40px 24px;">${tablaAlbaran}</td></tr>
-      <tr><td bgcolor="#ffffff" style="background-color:#ffffff;padding:8px 40px 40px;" align="center">${boton('Ver albarán', `${APP_URL}/albaran/${albaran.id}`)}</td></tr>
+      <tr><td bgcolor="#ffffff" class="em-white" style="background-color:#ffffff;padding:0 40px 24px;">${tablaAlbaran}</td></tr>
+      <tr><td bgcolor="#ffffff" class="em-white" style="background-color:#ffffff;padding:8px 40px 40px;" align="center">${boton('Ver albarán', `${APP_URL}/albaran/${albaran.id}`)}</td></tr>
     `, 'Firma registrada', albaran.logoUrl)
 
   } else if (tipo === 'albaran_cerrado') {
     subject = `Albaran cerrado - ${resumenAsunto} - ${fmtFecha(albaran.fecha)}`
     html = emailWrapper(`
       <tr>
-        <td bgcolor="#ffffff" style="background-color:#ffffff;padding:32px 40px 8px;">
-          <h1 style="margin:0 0 8px;font-family:Arial,Helvetica,sans-serif;font-size:22px;font-weight:700;color:#0f2d1f;">Albarán cerrado</h1>
-          <p style="margin:0 0 24px;font-family:Arial,Helvetica,sans-serif;font-size:14px;color:#6b7c74;line-height:1.6;">
+        <td bgcolor="#ffffff" class="em-white" style="background-color:#ffffff;padding:32px 40px 8px;">
+          <h1 class="em-title" style="margin:0 0 8px;font-family:Arial,Helvetica,sans-serif;font-size:22px;font-weight:700;color:#0f2d1f;">Albarán cerrado</h1>
+          <p class="em-muted" style="margin:0 0 24px;font-family:Arial,Helvetica,sans-serif;font-size:14px;color:#6b7c74;line-height:1.6;">
             El albarán ha recibido todas las firmas requeridas y ha quedado cerrado. A continuación se muestran los datos de pesada definitivos.
           </p>
         </td>
       </tr>
       <tr>
-        <td bgcolor="#ffffff" style="background-color:#ffffff;padding:0 40px 24px;">
-          <table role="presentation" width="100%" cellpadding="0" cellspacing="0" bgcolor="#ffffff" style="background-color:#ffffff;"><tr>
+        <td bgcolor="#ffffff" class="em-white" style="background-color:#ffffff;padding:0 40px 24px;">
+          <table role="presentation" width="100%" cellpadding="0" cellspacing="0" bgcolor="#ffffff" class="em-white" style="background-color:#ffffff;"><tr>
             ${celdaGrande('Peso neto', albaran.pesoNeto, 'peso')}
             ${celdaGrande('Humedad', albaran.humedad != null ? albaran.humedad + ' %' : 'Pendiente de análisis', 'humedad', albaran.humedad == null)}
           </tr></table>
         </td>
       </tr>
-      <tr><td bgcolor="#ffffff" style="background-color:#ffffff;padding:0 40px 24px;">${tablaAlbaran}</td></tr>
-      <tr><td bgcolor="#ffffff" style="background-color:#ffffff;padding:8px 40px 40px;" align="center">${boton('Ver albarán', `${APP_URL}/albaran/${albaran.id}`)}</td></tr>
+      <tr><td bgcolor="#ffffff" class="em-white" style="background-color:#ffffff;padding:0 40px 24px;">${tablaAlbaran}</td></tr>
+      <tr><td bgcolor="#ffffff" class="em-white" style="background-color:#ffffff;padding:8px 40px 40px;" align="center">${boton('Ver albarán', `${APP_URL}/albaran/${albaran.id}`)}</td></tr>
     `, 'Cerrado', albaran.logoUrl)
 
   } else if (tipo === 'humedad_pendiente') {
     subject = `Humedad pendiente - ${resumenAsunto} - ${fmtFecha(albaran.fecha)}`
     html = emailWrapper(`
       <tr>
-        <td bgcolor="#ffffff" style="background-color:#ffffff;padding:32px 40px 8px;">
-          <h1 style="margin:0 0 8px;font-family:Arial,Helvetica,sans-serif;font-size:22px;font-weight:700;color:#0f2d1f;">Análisis de humedad pendiente</h1>
-          <p style="margin:0 0 24px;font-family:Arial,Helvetica,sans-serif;font-size:14px;color:#6b7c74;line-height:1.6;">
+        <td bgcolor="#ffffff" class="em-white" style="background-color:#ffffff;padding:32px 40px 8px;">
+          <h1 class="em-title" style="margin:0 0 8px;font-family:Arial,Helvetica,sans-serif;font-size:22px;font-weight:700;color:#0f2d1f;">Análisis de humedad pendiente</h1>
+          <p class="em-muted" style="margin:0 0 24px;font-family:Arial,Helvetica,sans-serif;font-size:14px;color:#6b7c74;line-height:1.6;">
             El albarán ha completado las firmas de campo pero requiere el resultado del análisis de humedad antes de quedar cerrado definitivamente.
           </p>
         </td>
       </tr>
-      <tr><td bgcolor="#ffffff" style="background-color:#ffffff;padding:0 40px 24px;">${tablaAlbaran}</td></tr>
-      <tr><td bgcolor="#ffffff" style="background-color:#ffffff;padding:8px 40px 40px;" align="center">${boton('Registrar humedad', `${APP_URL}/albaran/${albaran.id}`)}</td></tr>
+      <tr><td bgcolor="#ffffff" class="em-white" style="background-color:#ffffff;padding:0 40px 24px;">${tablaAlbaran}</td></tr>
+      <tr><td bgcolor="#ffffff" class="em-white" style="background-color:#ffffff;padding:8px 40px 40px;" align="center">${boton('Registrar humedad', `${APP_URL}/albaran/${albaran.id}`)}</td></tr>
     `, 'Humedad pendiente', albaran.logoUrl)
 
   } else if (tipo === 'camion_enviado') {
@@ -251,23 +264,23 @@ function buildEmail(tipo, albaran) {
     subject = `Camión en camino - ${albaran.instalacion || resumenAsunto}`
     html = emailWrapper(`
       <tr>
-        <td bgcolor="#ffffff" style="background-color:#ffffff;padding:32px 40px 4px;">
-          <p style="margin:0 0 10px;font-family:Arial,Helvetica,sans-serif;font-size:24px;font-weight:700;color:#0f2d1f;">Hola${primerNombre ? ' ' + primerNombre : ''},</p>
-          <p style="margin:0 0 24px;font-family:Arial,Helvetica,sans-serif;font-size:14px;color:#6b7c74;line-height:1.6;">
-            Se ha <strong style="color:#1D9E75;">enviado</strong> un camión desde <strong style="color:#0f2d1f;">${String(origenTexto).replace(/</g, '&lt;')}</strong> con destino a <strong style="color:#0f2d1f;">${String(albaran.instalacion || '—').replace(/</g, '&lt;')}</strong>.
+        <td bgcolor="#ffffff" class="em-white" style="background-color:#ffffff;padding:32px 40px 4px;">
+          <p class="em-title" style="margin:0 0 10px;font-family:Arial,Helvetica,sans-serif;font-size:24px;font-weight:700;color:#0f2d1f;">Hola${primerNombre ? ' ' + primerNombre : ''},</p>
+          <p class="em-muted" style="margin:0 0 24px;font-family:Arial,Helvetica,sans-serif;font-size:14px;color:#6b7c74;line-height:1.6;">
+            Se ha <strong class="em-accent" style="color:#1D9E75;">enviado</strong> un camión desde <strong class="em-strong" style="color:#0f2d1f;">${String(origenTexto).replace(/</g, '&lt;')}</strong> con destino a <strong class="em-strong" style="color:#0f2d1f;">${String(albaran.instalacion || '—').replace(/</g, '&lt;')}</strong>.
           </p>
         </td>
       </tr>
       <tr>
-        <td bgcolor="#ffffff" style="background-color:#ffffff;padding:0 40px 8px;">
-          <table role="presentation" width="100%" cellpadding="0" cellspacing="0" bgcolor="#ffffff" style="background-color:#ffffff;border:1px solid #edf0ed;border-radius:8px;padding:20px 16px 4px;">
+        <td bgcolor="#ffffff" class="em-white" style="background-color:#ffffff;padding:0 40px 8px;">
+          <table role="presentation" width="100%" cellpadding="0" cellspacing="0" bgcolor="#ffffff" class="em-white" style="background-color:#ffffff;border:1px solid #edf0ed;border-radius:8px;padding:20px 16px 4px;">
             <tr>${celda('Matrícula', matricula, 'matricula')}${celda('Conductor', albaran.chofer, 'conductor')}</tr>
             <tr>${celda('Empresa transportista', albaran.transportista, 'transportista')}${celda('Hora de salida', horaSalida, 'hora')}</tr>
             <tr>${celda('Estado', 'Enviado', 'estado')}${celda('Destino', albaran.instalacion, 'destino')}</tr>
           </table>
         </td>
       </tr>
-      <tr><td bgcolor="#ffffff" style="background-color:#ffffff;padding:16px 40px 40px;" align="center">${boton('Ver envío', `${APP_URL}/campo/instalacion/${instalacionSlug}`)}</td></tr>
+      <tr><td bgcolor="#ffffff" class="em-white" style="background-color:#ffffff;padding:16px 40px 40px;" align="center">${boton('Ver envío', `${APP_URL}/campo/instalacion/${instalacionSlug}`)}</td></tr>
     `, 'Transporte', albaran.logoUrl)
 
   } else {
