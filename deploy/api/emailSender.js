@@ -161,22 +161,22 @@ function buildEmail(tipo, albaran) {
     subject = `Nuevo albaran - ${resumenAsunto}`
     html = emailWrapper(`
       <tr>
-        <td style="padding:32px 40px 8px;">
+        <td bgcolor="#ffffff" style="background-color:#ffffff;padding:32px 40px 8px;">
           <h1 style="margin:0 0 8px;font-family:Arial,Helvetica,sans-serif;font-size:22px;font-weight:700;color:#0f2d1f;">Nuevo albarán registrado</h1>
           <p style="margin:0 0 24px;font-family:Arial,Helvetica,sans-serif;font-size:14px;color:#6b7c74;line-height:1.6;">
             Se ha creado un nuevo albarán en el sistema el <strong style="color:#0f2d1f;">${fechaHora}</strong>. Queda pendiente de firma por las partes correspondientes.
           </p>
         </td>
       </tr>
-      <tr><td style="padding:0 40px 24px;">${tablaAlbaran}</td></tr>
-      <tr><td style="padding:8px 40px 40px;" align="center">${boton('Ver albarán', `${APP_URL}/albaran/${albaran.id}`)}</td></tr>
+      <tr><td bgcolor="#ffffff" style="background-color:#ffffff;padding:0 40px 24px;">${tablaAlbaran}</td></tr>
+      <tr><td bgcolor="#ffffff" style="background-color:#ffffff;padding:8px 40px 40px;" align="center">${boton('Ver albarán', `${APP_URL}/albaran/${albaran.id}`)}</td></tr>
     `, 'Nuevo albarán', albaran.logoUrl)
 
   } else if (tipo === 'firma_completada') {
     subject = `Firma registrada - ${albaran.rolLabel || 'firma'} - ${resumenAsunto}`
     html = emailWrapper(`
       <tr>
-        <td style="padding:32px 40px 8px;">
+        <td bgcolor="#ffffff" style="background-color:#ffffff;padding:32px 40px 8px;">
           <h1 style="margin:0 0 8px;font-family:Arial,Helvetica,sans-serif;font-size:22px;font-weight:700;color:#0f2d1f;">Firma registrada</h1>
           <p style="margin:0 0 20px;font-family:Arial,Helvetica,sans-serif;font-size:14px;color:#6b7c74;line-height:1.6;">
             Una de las partes ha firmado el albarán. El proceso continúa hasta que todas las firmas requeridas estén completas.
@@ -184,21 +184,21 @@ function buildEmail(tipo, albaran) {
         </td>
       </tr>
       <tr>
-        <td style="padding:0 40px 20px;">
-          <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="border:1px solid #edf0ed;border-radius:8px;">
+        <td bgcolor="#ffffff" style="background-color:#ffffff;padding:0 40px 20px;">
+          <table role="presentation" width="100%" cellpadding="0" cellspacing="0" bgcolor="#ffffff" style="background-color:#ffffff;border:1px solid #edf0ed;border-radius:8px;">
             <tr>${celda('Firmado por', albaran.firmante, 'conductor')}${celda('Rol', albaran.rolLabel, 'matricula')}</tr>
           </table>
         </td>
       </tr>
-      <tr><td style="padding:0 40px 24px;">${tablaAlbaran}</td></tr>
-      <tr><td style="padding:8px 40px 40px;" align="center">${boton('Ver albarán', `${APP_URL}/albaran/${albaran.id}`)}</td></tr>
+      <tr><td bgcolor="#ffffff" style="background-color:#ffffff;padding:0 40px 24px;">${tablaAlbaran}</td></tr>
+      <tr><td bgcolor="#ffffff" style="background-color:#ffffff;padding:8px 40px 40px;" align="center">${boton('Ver albarán', `${APP_URL}/albaran/${albaran.id}`)}</td></tr>
     `, 'Firma registrada', albaran.logoUrl)
 
   } else if (tipo === 'albaran_cerrado') {
     subject = `Albaran cerrado - ${resumenAsunto} - ${fmtFecha(albaran.fecha)}`
     html = emailWrapper(`
       <tr>
-        <td style="padding:32px 40px 8px;">
+        <td bgcolor="#ffffff" style="background-color:#ffffff;padding:32px 40px 8px;">
           <h1 style="margin:0 0 8px;font-family:Arial,Helvetica,sans-serif;font-size:22px;font-weight:700;color:#0f2d1f;">Albarán cerrado</h1>
           <p style="margin:0 0 24px;font-family:Arial,Helvetica,sans-serif;font-size:14px;color:#6b7c74;line-height:1.6;">
             El albarán ha recibido todas las firmas requeridas y ha quedado cerrado. A continuación se muestran los datos de pesada definitivos.
@@ -206,30 +206,30 @@ function buildEmail(tipo, albaran) {
         </td>
       </tr>
       <tr>
-        <td style="padding:0 40px 24px;">
-          <table role="presentation" width="100%" cellpadding="0" cellspacing="0"><tr>
+        <td bgcolor="#ffffff" style="background-color:#ffffff;padding:0 40px 24px;">
+          <table role="presentation" width="100%" cellpadding="0" cellspacing="0" bgcolor="#ffffff" style="background-color:#ffffff;"><tr>
             ${celdaGrande('Peso neto', albaran.pesoNeto, 'peso')}
             ${celdaGrande('Humedad', albaran.humedad != null ? albaran.humedad + ' %' : 'Pendiente de análisis', 'humedad', albaran.humedad == null)}
           </tr></table>
         </td>
       </tr>
-      <tr><td style="padding:0 40px 24px;">${tablaAlbaran}</td></tr>
-      <tr><td style="padding:8px 40px 40px;" align="center">${boton('Ver albarán', `${APP_URL}/albaran/${albaran.id}`)}</td></tr>
+      <tr><td bgcolor="#ffffff" style="background-color:#ffffff;padding:0 40px 24px;">${tablaAlbaran}</td></tr>
+      <tr><td bgcolor="#ffffff" style="background-color:#ffffff;padding:8px 40px 40px;" align="center">${boton('Ver albarán', `${APP_URL}/albaran/${albaran.id}`)}</td></tr>
     `, 'Cerrado', albaran.logoUrl)
 
   } else if (tipo === 'humedad_pendiente') {
     subject = `Humedad pendiente - ${resumenAsunto} - ${fmtFecha(albaran.fecha)}`
     html = emailWrapper(`
       <tr>
-        <td style="padding:32px 40px 8px;">
+        <td bgcolor="#ffffff" style="background-color:#ffffff;padding:32px 40px 8px;">
           <h1 style="margin:0 0 8px;font-family:Arial,Helvetica,sans-serif;font-size:22px;font-weight:700;color:#0f2d1f;">Análisis de humedad pendiente</h1>
           <p style="margin:0 0 24px;font-family:Arial,Helvetica,sans-serif;font-size:14px;color:#6b7c74;line-height:1.6;">
             El albarán ha completado las firmas de campo pero requiere el resultado del análisis de humedad antes de quedar cerrado definitivamente.
           </p>
         </td>
       </tr>
-      <tr><td style="padding:0 40px 24px;">${tablaAlbaran}</td></tr>
-      <tr><td style="padding:8px 40px 40px;" align="center">${boton('Registrar humedad', `${APP_URL}/albaran/${albaran.id}`)}</td></tr>
+      <tr><td bgcolor="#ffffff" style="background-color:#ffffff;padding:0 40px 24px;">${tablaAlbaran}</td></tr>
+      <tr><td bgcolor="#ffffff" style="background-color:#ffffff;padding:8px 40px 40px;" align="center">${boton('Registrar humedad', `${APP_URL}/albaran/${albaran.id}`)}</td></tr>
     `, 'Humedad pendiente', albaran.logoUrl)
 
   } else if (tipo === 'camion_enviado') {
@@ -251,7 +251,7 @@ function buildEmail(tipo, albaran) {
     subject = `Camión en camino - ${albaran.instalacion || resumenAsunto}`
     html = emailWrapper(`
       <tr>
-        <td style="padding:32px 40px 4px;">
+        <td bgcolor="#ffffff" style="background-color:#ffffff;padding:32px 40px 4px;">
           <p style="margin:0 0 10px;font-family:Arial,Helvetica,sans-serif;font-size:24px;font-weight:700;color:#0f2d1f;">Hola${primerNombre ? ' ' + primerNombre : ''},</p>
           <p style="margin:0 0 24px;font-family:Arial,Helvetica,sans-serif;font-size:14px;color:#6b7c74;line-height:1.6;">
             Se ha <strong style="color:#1D9E75;">enviado</strong> un camión desde <strong style="color:#0f2d1f;">${String(origenTexto).replace(/</g, '&lt;')}</strong> con destino a <strong style="color:#0f2d1f;">${String(albaran.instalacion || '—').replace(/</g, '&lt;')}</strong>.
@@ -259,15 +259,15 @@ function buildEmail(tipo, albaran) {
         </td>
       </tr>
       <tr>
-        <td style="padding:0 40px 8px;">
-          <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="border:1px solid #edf0ed;border-radius:8px;padding:20px 16px 4px;">
+        <td bgcolor="#ffffff" style="background-color:#ffffff;padding:0 40px 8px;">
+          <table role="presentation" width="100%" cellpadding="0" cellspacing="0" bgcolor="#ffffff" style="background-color:#ffffff;border:1px solid #edf0ed;border-radius:8px;padding:20px 16px 4px;">
             <tr>${celda('Matrícula', matricula, 'matricula')}${celda('Conductor', albaran.chofer, 'conductor')}</tr>
             <tr>${celda('Empresa transportista', albaran.transportista, 'transportista')}${celda('Hora de salida', horaSalida, 'hora')}</tr>
             <tr>${celda('Estado', 'Enviado', 'estado')}${celda('Destino', albaran.instalacion, 'destino')}</tr>
           </table>
         </td>
       </tr>
-      <tr><td style="padding:16px 40px 40px;" align="center">${boton('Ver envío', `${APP_URL}/campo/instalacion/${instalacionSlug}`)}</td></tr>
+      <tr><td bgcolor="#ffffff" style="background-color:#ffffff;padding:16px 40px 40px;" align="center">${boton('Ver envío', `${APP_URL}/campo/instalacion/${instalacionSlug}`)}</td></tr>
     `, 'Transporte', albaran.logoUrl)
 
   } else {
