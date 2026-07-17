@@ -45,13 +45,13 @@ const emailWrapper = (bodyContent, etiqueta = '', logoUrl = null) => `
                   </tr></table>
                 </td>
                 <td valign="middle" style="padding-left:10px;">
-                  <span style="display:block;font-family:Arial,Helvetica,sans-serif;font-size:12px;color:#6b7c74;">Accede a la aplicación</span>
-                  <span style="display:block;font-family:Arial,Helvetica,sans-serif;font-size:12px;color:#0f2d1f;font-weight:600;">COMSA Service Bioenergía</span>
+                  <span style="display:block;font-family:Arial,Helvetica,sans-serif;font-size:12px;color:#6b7280;">Accede a la aplicación</span>
+                  <span style="display:block;font-family:Arial,Helvetica,sans-serif;font-size:12px;color:#1a1a1a;font-weight:600;">COMSA Service Bioenergía</span>
                 </td>
                 <td width="1" style="background-color:#e2e8e4;font-size:0;line-height:0;">&nbsp;</td>
                 <td valign="middle" align="right" style="padding-left:20px;">
-                  <span style="display:block;font-family:Arial,Helvetica,sans-serif;font-size:12px;color:#6b7c74;">Este es un correo automático.</span>
-                  <span style="display:block;font-family:Arial,Helvetica,sans-serif;font-size:12px;color:#6b7c74;">Por favor, no respondas a este mensaje.</span>
+                  <span style="display:block;font-family:Arial,Helvetica,sans-serif;font-size:12px;color:#6b7280;">Este es un correo automático.</span>
+                  <span style="display:block;font-family:Arial,Helvetica,sans-serif;font-size:12px;color:#6b7280;">Por favor, no respondas a este mensaje.</span>
                 </td>
               </tr></table>
             </td>
@@ -76,8 +76,8 @@ const celda = (label, value, iconKey = 'estado') => {
     <table role="presentation" cellpadding="0" cellspacing="0"><tr>
       <td width="36"><img src="${APP_URL}/icons-email/${icono}.png" width="36" height="36" alt="" style="display:block;width:36px;height:36px;"></td>
       <td style="padding-left:12px;">
-        <span style="display:block;font-family:Arial,Helvetica,sans-serif;font-size:11px;color:#6b7c74;">${label}</span>
-        <span style="display:block;font-family:Arial,Helvetica,sans-serif;font-size:14px;color:#0f2d1f;font-weight:700;">${String(value || '—').replace(/</g, '&lt;').replace(/>/g, '&gt;')}</span>
+        <span style="display:block;font-family:Arial,Helvetica,sans-serif;font-size:11px;color:#6b7280;">${label}</span>
+        <span style="display:block;font-family:Arial,Helvetica,sans-serif;font-size:14px;color:#1a1a1a;font-weight:700;">${String(value || '—').replace(/</g, '&lt;').replace(/>/g, '&gt;')}</span>
       </td>
     </tr></table>
   </td>`
@@ -94,8 +94,8 @@ const celdaGrande = (label, value, iconKey, mutedValue = false) => {
         <table role="presentation" cellpadding="0" cellspacing="0"><tr>
           <td width="34"><img src="${APP_URL}/icons-email/${icono}.png" width="34" height="34" alt="" style="display:block;width:34px;height:34px;"></td>
           <td style="padding-left:10px;">
-            <span style="display:block;font-family:Arial,Helvetica,sans-serif;font-size:11px;color:#6b7c74;text-transform:uppercase;letter-spacing:0.5px;">${label}</span>
-            <span style="display:block;font-family:Arial,Helvetica,sans-serif;font-size:22px;font-weight:700;color:${mutedValue ? '#9aada5' : '#0f2d1f'};">${String(value || '—').replace(/</g, '&lt;').replace(/>/g, '&gt;')}</span>
+            <span style="display:block;font-family:Arial,Helvetica,sans-serif;font-size:11px;color:#6b7280;text-transform:uppercase;letter-spacing:0.5px;">${label}</span>
+            <span style="display:block;font-family:Arial,Helvetica,sans-serif;font-size:22px;font-weight:700;color:${mutedValue ? '#9ca3af' : '#1a1a1a'};">${String(value || '—').replace(/</g, '&lt;').replace(/>/g, '&gt;')}</span>
           </td>
         </tr></table>
       </td></tr>
@@ -106,10 +106,10 @@ const celdaGrande = (label, value, iconKey, mutedValue = false) => {
 const fila = (label, value) => `
   <tr>
     <td style="padding:10px 16px;background-color:#f9fafb;border-bottom:1px solid #edf0ed;width:38%;">
-      <span style="font-family:Arial,Helvetica,sans-serif;font-size:12px;color:#6b7c74;">${label}</span>
+      <span style="font-family:Arial,Helvetica,sans-serif;font-size:12px;color:#6b7280;">${label}</span>
     </td>
     <td style="padding:10px 16px;background-color:#ffffff;border-bottom:1px solid #edf0ed;">
-      <span style="font-family:Arial,Helvetica,sans-serif;font-size:13px;color:#1a2e24;font-weight:600;">${String(value || '—').replace(/</g, '&lt;').replace(/>/g, '&gt;')}</span>
+      <span style="font-family:Arial,Helvetica,sans-serif;font-size:13px;color:#1a1a1a;font-weight:600;">${String(value || '—').replace(/</g, '&lt;').replace(/>/g, '&gt;')}</span>
     </td>
   </tr>`
 
@@ -153,9 +153,9 @@ function buildEmail(tipo, albaran) {
     html = emailWrapper(`
       <tr>
         <td style="padding:32px 40px 8px;">
-          <h1 style="margin:0 0 8px;font-family:Arial,Helvetica,sans-serif;font-size:22px;font-weight:700;color:#0f2d1f;">Nuevo albarán registrado</h1>
-          <p style="margin:0 0 24px;font-family:Arial,Helvetica,sans-serif;font-size:14px;color:#6b7c74;line-height:1.6;">
-            Se ha creado un nuevo albarán en el sistema el <strong style="color:#0f2d1f;">${fechaHora}</strong>. Queda pendiente de firma por las partes correspondientes.
+          <h1 style="margin:0 0 8px;font-family:Arial,Helvetica,sans-serif;font-size:22px;font-weight:700;color:#1a1a1a;">Nuevo albarán registrado</h1>
+          <p style="margin:0 0 24px;font-family:Arial,Helvetica,sans-serif;font-size:14px;color:#6b7280;line-height:1.6;">
+            Se ha creado un nuevo albarán en el sistema el <strong style="color:#1a1a1a;">${fechaHora}</strong>. Queda pendiente de firma por las partes correspondientes.
           </p>
         </td>
       </tr>
@@ -168,8 +168,8 @@ function buildEmail(tipo, albaran) {
     html = emailWrapper(`
       <tr>
         <td style="padding:32px 40px 8px;">
-          <h1 style="margin:0 0 8px;font-family:Arial,Helvetica,sans-serif;font-size:22px;font-weight:700;color:#0f2d1f;">Firma registrada</h1>
-          <p style="margin:0 0 20px;font-family:Arial,Helvetica,sans-serif;font-size:14px;color:#6b7c74;line-height:1.6;">
+          <h1 style="margin:0 0 8px;font-family:Arial,Helvetica,sans-serif;font-size:22px;font-weight:700;color:#1a1a1a;">Firma registrada</h1>
+          <p style="margin:0 0 20px;font-family:Arial,Helvetica,sans-serif;font-size:14px;color:#6b7280;line-height:1.6;">
             Una de las partes ha firmado el albarán. El proceso continúa hasta que todas las firmas requeridas estén completas.
           </p>
         </td>
@@ -190,8 +190,8 @@ function buildEmail(tipo, albaran) {
     html = emailWrapper(`
       <tr>
         <td style="padding:32px 40px 8px;">
-          <h1 style="margin:0 0 8px;font-family:Arial,Helvetica,sans-serif;font-size:22px;font-weight:700;color:#0f2d1f;">Albarán cerrado</h1>
-          <p style="margin:0 0 24px;font-family:Arial,Helvetica,sans-serif;font-size:14px;color:#6b7c74;line-height:1.6;">
+          <h1 style="margin:0 0 8px;font-family:Arial,Helvetica,sans-serif;font-size:22px;font-weight:700;color:#1a1a1a;">Albarán cerrado</h1>
+          <p style="margin:0 0 24px;font-family:Arial,Helvetica,sans-serif;font-size:14px;color:#6b7280;line-height:1.6;">
             El albarán ha recibido todas las firmas requeridas y ha quedado cerrado. A continuación se muestran los datos de pesada definitivos.
           </p>
         </td>
@@ -213,8 +213,8 @@ function buildEmail(tipo, albaran) {
     html = emailWrapper(`
       <tr>
         <td style="padding:32px 40px 8px;">
-          <h1 style="margin:0 0 8px;font-family:Arial,Helvetica,sans-serif;font-size:22px;font-weight:700;color:#0f2d1f;">Análisis de humedad pendiente</h1>
-          <p style="margin:0 0 24px;font-family:Arial,Helvetica,sans-serif;font-size:14px;color:#6b7c74;line-height:1.6;">
+          <h1 style="margin:0 0 8px;font-family:Arial,Helvetica,sans-serif;font-size:22px;font-weight:700;color:#1a1a1a;">Análisis de humedad pendiente</h1>
+          <p style="margin:0 0 24px;font-family:Arial,Helvetica,sans-serif;font-size:14px;color:#6b7280;line-height:1.6;">
             El albarán ha completado las firmas de campo pero requiere el resultado del análisis de humedad antes de quedar cerrado definitivamente.
           </p>
         </td>
@@ -243,9 +243,9 @@ function buildEmail(tipo, albaran) {
     html = emailWrapper(`
       <tr>
         <td style="padding:32px 40px 4px;">
-          <p style="margin:0 0 10px;font-family:Arial,Helvetica,sans-serif;font-size:24px;font-weight:700;color:#0f2d1f;">Hola${primerNombre ? ' ' + primerNombre : ''},</p>
-          <p style="margin:0 0 24px;font-family:Arial,Helvetica,sans-serif;font-size:14px;color:#6b7c74;line-height:1.6;">
-            Se ha <strong style="color:#1D9E75;">enviado</strong> un camión desde <strong style="color:#0f2d1f;">${String(origenTexto).replace(/</g, '&lt;')}</strong> con destino a <strong style="color:#0f2d1f;">${String(albaran.instalacion || '—').replace(/</g, '&lt;')}</strong>.
+          <p style="margin:0 0 10px;font-family:Arial,Helvetica,sans-serif;font-size:24px;font-weight:700;color:#1a1a1a;">Hola${primerNombre ? ' ' + primerNombre : ''},</p>
+          <p style="margin:0 0 24px;font-family:Arial,Helvetica,sans-serif;font-size:14px;color:#6b7280;line-height:1.6;">
+            Se ha <strong style="color:#1D9E75;">enviado</strong> un camión desde <strong style="color:#1a1a1a;">${String(origenTexto).replace(/</g, '&lt;')}</strong> con destino a <strong style="color:#1a1a1a;">${String(albaran.instalacion || '—').replace(/</g, '&lt;')}</strong>.
           </p>
         </td>
       </tr>
