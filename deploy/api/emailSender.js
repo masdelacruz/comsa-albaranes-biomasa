@@ -92,29 +92,30 @@ const celda = (label, value, iconKey = 'estado') => {
 }
 
 // Celda destacada (icono + etiqueta + valor grande) para datos clave
-// como el peso neto o la humedad en el cierre de un albarán. Se usa
-// flexbox (no tabla) para que las dos cards se igualen de altura de
-// forma simultánea y responsive en cualquier ancho — las tablas HTML
-// no pueden garantizar esto de forma fiable entre distintos anchos.
-const celdaGrande = (label, value, iconKey, mutedValue = false, margin = '0') => {
+// como el peso neto o la humedad en el cierre de un albarán. Vuelve a
+// ser una <td> de tabla (no flex): al reenviar/compartir, Outlook
+// reprocesa el HTML y elimina display:flex (las cards se apilaban en
+// vertical), mientras que las tablas sobreviven esa conversión intactas.
+const celdaGrande = (label, value, iconKey, mutedValue = false) => {
   const icono = ICONOS_VALIDOS.has(iconKey) ? iconKey : 'estado'
   // Un valor vacío (placeholder "—") nunca debe usar la tipografía grande:
   // sin esto, una card sin dato aún queda visualmente más "pesada" que una
   // con texto real, solo por el tamaño de fuente del guion.
   const chico = mutedValue || !value
-  // El espaciado entre cards se resuelve con margin, no con "gap" del
-  // contenedor flex — "gap" en flexbox no lo soportan de forma fiable
-  // todos los clientes de correo (se filtra al sanear el CSS del email).
   return `
-  <div style="flex:1 1 0;min-width:160px;box-sizing:border-box;margin:${margin};border:1px solid ${BORDER};border-radius:8px;padding:18px 20px;">
-    <table role="presentation" cellpadding="0" cellspacing="0"><tr>
-      <td width="34" valign="top"><img src="${APP_URL}/icons-email/${icono}.png" width="34" height="34" alt="" style="display:block;width:34px;height:34px;"></td>
-      <td valign="top" style="padding-left:10px;">
-        <span style="display:block;font-family:Arial,Helvetica,sans-serif;font-size:11px;color:${TEXT_MUTED};text-transform:uppercase;letter-spacing:0.5px;">${label}</span>
-        <span style="display:block;font-family:Arial,Helvetica,sans-serif;font-size:${chico ? '14px' : '22px'};line-height:1.3;font-weight:${chico ? '600' : '700'};color:${chico ? TEXT_MUTED : TEXT_TITLE};">${String(value || '—').replace(/</g, '&lt;').replace(/>/g, '&gt;')}</span>
-      </td>
-    </tr></table>
-  </div>`
+  <td width="50%" valign="top" style="padding:0 8px 0 0;">
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="border:1px solid ${BORDER};border-radius:8px;">
+      <tr><td style="padding:18px 20px;">
+        <table role="presentation" cellpadding="0" cellspacing="0"><tr>
+          <td width="34" valign="top"><img src="${APP_URL}/icons-email/${icono}.png" width="34" height="34" alt="" style="display:block;width:34px;height:34px;"></td>
+          <td valign="top" style="padding-left:10px;">
+            <span style="display:block;font-family:Arial,Helvetica,sans-serif;font-size:11px;color:${TEXT_MUTED};text-transform:uppercase;letter-spacing:0.5px;">${label}</span>
+            <span style="display:block;font-family:Arial,Helvetica,sans-serif;font-size:${chico ? '14px' : '22px'};line-height:1.3;font-weight:${chico ? '600' : '700'};color:${chico ? TEXT_MUTED : TEXT_TITLE};">${String(value || '—').replace(/</g, '&lt;').replace(/>/g, '&gt;')}</span>
+          </td>
+        </tr></table>
+      </td></tr>
+    </table>
+  </td>`
 }
 
 // Fila de la tabla de datos del albarán: la columna de etiqueta lleva un
@@ -216,10 +217,10 @@ function buildEmail(tipo, albaran) {
       </tr>
       <tr>
         <td style="padding:0 40px 24px;">
-          <div style="display:flex;">
-            ${celdaGrande('Peso neto', albaran.pesoNeto, 'peso', false, '0 8px 0 0')}
-            ${celdaGrande('Humedad', albaran.humedad != null ? albaran.humedad + ' %' : 'Pendiente de análisis', 'humedad', albaran.humedad == null, '0 0 0 8px')}
-          </div>
+          <table role="presentation" width="100%" cellpadding="0" cellspacing="0"><tr>
+            ${celdaGrande('Peso neto', albaran.pesoNeto, 'peso')}
+            ${celdaGrande('Humedad', albaran.humedad != null ? albaran.humedad + ' %' : 'Pendiente de análisis', 'humedad', albaran.humedad == null)}
+          </tr></table>
         </td>
       </tr>
       <tr><td style="padding:0 40px 24px;">${tablaAlbaran}</td></tr>
