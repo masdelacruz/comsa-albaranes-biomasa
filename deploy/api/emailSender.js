@@ -92,12 +92,12 @@ const celda = (label, value, iconKey = 'estado') => {
 }
 
 // Celda destacada (icono + etiqueta + valor grande) para datos clave
-// como el peso neto o la humedad en el cierre de un albarán. Tabla, no
-// flex: al reenviar/compartir, Outlook reprocesa el HTML y elimina
-// display:flex (las cards se apilaban en vertical), mientras que las
-// tablas sobreviven esa conversión intactas. La altura mínima fija (en
-// vez de porcentual) iguala ambas cards en el caso normal de una línea
-// sin forzar un tamaño excesivo, y sigue siendo forward-safe.
+// como el peso neto o la humedad en el cierre de un albarán. El borde
+// va DIRECTAMENTE en la <td> de la fila (no en una tabla anidada
+// dentro): los navegadores igualan de forma nativa la altura de las
+// celdas de una misma fila sin necesidad de flex, height:100% ni una
+// altura fija adivinada — y al ser solo <table>/<td> básicos, sobrevive
+// intacto al reenviar (a diferencia de flex, que Outlook elimina).
 const celdaGrande = (label, value, iconKey, mutedValue = false) => {
   const icono = ICONOS_VALIDOS.has(iconKey) ? iconKey : 'estado'
   // Un valor vacío (placeholder "—") nunca debe usar la tipografía grande:
@@ -105,18 +105,14 @@ const celdaGrande = (label, value, iconKey, mutedValue = false) => {
   // con texto real, solo por el tamaño de fuente del guion.
   const chico = mutedValue || !value
   return `
-  <td width="50%" valign="top" style="padding:0 8px 0 0;">
-    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="border:1px solid ${BORDER};border-radius:8px;">
-      <tr><td height="78" style="height:78px;padding:18px 20px;">
-        <table role="presentation" cellpadding="0" cellspacing="0"><tr>
-          <td width="34" valign="top"><img src="${APP_URL}/icons-email/${icono}.png" width="34" height="34" alt="" style="display:block;width:34px;height:34px;"></td>
-          <td valign="top" style="padding-left:10px;">
-            <span style="display:block;font-family:Arial,Helvetica,sans-serif;font-size:11px;color:${TEXT_MUTED};text-transform:uppercase;letter-spacing:0.5px;">${label}</span>
-            <span style="display:block;font-family:Arial,Helvetica,sans-serif;font-size:${chico ? '14px' : '22px'};line-height:1.3;font-weight:${chico ? '600' : '700'};color:${chico ? TEXT_MUTED : TEXT_TITLE};">${String(value || '—').replace(/</g, '&lt;').replace(/>/g, '&gt;')}</span>
-          </td>
-        </tr></table>
-      </td></tr>
-    </table>
+  <td width="50%" valign="top" style="border:1px solid ${BORDER};border-radius:8px;padding:18px 20px;">
+    <table role="presentation" cellpadding="0" cellspacing="0"><tr>
+      <td width="34" valign="top"><img src="${APP_URL}/icons-email/${icono}.png" width="34" height="34" alt="" style="display:block;width:34px;height:34px;"></td>
+      <td valign="top" style="padding-left:10px;">
+        <span style="display:block;font-family:Arial,Helvetica,sans-serif;font-size:11px;color:${TEXT_MUTED};text-transform:uppercase;letter-spacing:0.5px;">${label}</span>
+        <span style="display:block;font-family:Arial,Helvetica,sans-serif;font-size:${chico ? '14px' : '22px'};line-height:1.3;font-weight:${chico ? '600' : '700'};color:${chico ? TEXT_MUTED : TEXT_TITLE};">${String(value || '—').replace(/</g, '&lt;').replace(/>/g, '&gt;')}</span>
+      </td>
+    </tr></table>
   </td>`
 }
 
@@ -221,6 +217,7 @@ function buildEmail(tipo, albaran) {
         <td style="padding:0 40px 24px;">
           <table role="presentation" width="100%" cellpadding="0" cellspacing="0"><tr>
             ${celdaGrande('Peso neto', albaran.pesoNeto, 'peso')}
+            <td width="16"></td>
             ${celdaGrande('Humedad', albaran.humedad != null ? albaran.humedad + ' %' : 'Pendiente de análisis', 'humedad', albaran.humedad == null)}
           </tr></table>
         </td>
