@@ -198,7 +198,7 @@ function buildEmail(tipo, albaran) {
       </tr>
       <tr>
         <td bgcolor="#ffffff" class="em-white" style="background-color:#ffffff;padding:0 40px 20px;">
-          <table role="presentation" width="100%" cellpadding="0" cellspacing="0" bgcolor="#ffffff" class="em-white" style="background-color:#ffffff;border:1px solid #edf0ed;border-radius:8px;">
+          <table role="presentation" width="100%" cellpadding="0" cellspacing="0" bgcolor="#ffffff" class="em-white" style="background-color:#ffffff;border:1px solid #edf0ed;border-radius:8px;padding:20px 16px 4px;">
             <tr>${celda('Firmado por', albaran.firmante, 'conductor')}${celda('Rol', albaran.rolLabel, 'matricula')}</tr>
           </table>
         </td>
