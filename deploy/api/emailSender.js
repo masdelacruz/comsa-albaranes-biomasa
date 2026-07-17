@@ -16,15 +16,24 @@ const emailWrapper = (bodyContent, etiqueta = '', logoUrl = null) => `
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="color-scheme" content="light">
+  <meta name="supported-color-schemes" content="light">
   <title>Comsa Service - Albaranes de Biomasa</title>
+  <style>
+    :root { color-scheme: light; supported-color-schemes: light; }
+    @media (prefers-color-scheme: dark) {
+      .email-bg { background-color: #f4f6f4 !important; }
+      .email-card { background-color: #ffffff !important; }
+    }
+  </style>
 </head>
 <body style="margin:0;padding:0;background-color:#f4f6f4;font-family:Arial,Helvetica,sans-serif;">
-  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background-color:#f4f6f4;padding:32px 16px;">
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" bgcolor="#f4f6f4" class="email-bg" style="background-color:#f4f6f4;padding:32px 16px;">
     <tr>
       <td align="center">
-        <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:600px;background-color:#ffffff;border-radius:8px;overflow:hidden;box-shadow:0 2px 8px rgba(0,0,0,0.08);">
+        <table role="presentation" width="100%" cellpadding="0" cellspacing="0" bgcolor="#ffffff" class="email-card" style="max-width:600px;background-color:#ffffff;border-radius:8px;overflow:hidden;box-shadow:0 2px 8px rgba(0,0,0,0.08);">
           <tr>
-            <td style="background-color:#0a0f0c;padding:20px 40px;">
+            <td bgcolor="#0a0f0c" style="background-color:#0a0f0c;padding:20px 40px;">
               <table role="presentation" width="100%" cellpadding="0" cellspacing="0"><tr>
                 <td valign="middle"><img src="${logoUrl || `${APP_URL}/logo-comsa.png`}" alt="COMSA Service Bioenergía" height="52" style="display:block;height:52px;"></td>
                 <td valign="middle" align="right">
@@ -35,7 +44,7 @@ const emailWrapper = (bodyContent, etiqueta = '', logoUrl = null) => `
           </tr>
           ${bodyContent}
           <tr>
-            <td style="background-color:#f9fafb;padding:20px 40px;border-top:1px solid #edf0ed;">
+            <td bgcolor="#f9fafb" style="background-color:#f9fafb;padding:20px 40px;border-top:1px solid #edf0ed;">
               <table role="presentation" width="100%" cellpadding="0" cellspacing="0"><tr>
                 <td width="36" valign="top">
                   <table role="presentation" cellpadding="0" cellspacing="0"><tr>
@@ -89,7 +98,7 @@ const celdaGrande = (label, value, iconKey, mutedValue = false) => {
   const icono = ICONOS_VALIDOS.has(iconKey) ? iconKey : 'estado'
   return `
   <td width="50%" valign="top" style="padding:0 8px 0 0;">
-    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background-color:#f9fafb;border:1px solid #edf0ed;border-radius:8px;">
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" bgcolor="#f9fafb" style="background-color:#f9fafb;border:1px solid #edf0ed;border-radius:8px;">
       <tr><td style="padding:18px 20px;">
         <table role="presentation" cellpadding="0" cellspacing="0"><tr>
           <td width="34"><img src="${APP_URL}/icons-email/${icono}.png" width="34" height="34" alt="" style="display:block;width:34px;height:34px;"></td>
@@ -105,10 +114,10 @@ const celdaGrande = (label, value, iconKey, mutedValue = false) => {
 
 const fila = (label, value) => `
   <tr>
-    <td style="padding:10px 16px;background-color:#f9fafb;border-bottom:1px solid #edf0ed;width:38%;">
+    <td bgcolor="#f9fafb" style="padding:10px 16px;background-color:#f9fafb;border-bottom:1px solid #edf0ed;width:38%;">
       <span style="font-family:Arial,Helvetica,sans-serif;font-size:12px;color:#6b7c74;">${label}</span>
     </td>
-    <td style="padding:10px 16px;background-color:#ffffff;border-bottom:1px solid #edf0ed;">
+    <td bgcolor="#ffffff" style="padding:10px 16px;background-color:#ffffff;border-bottom:1px solid #edf0ed;">
       <span style="font-family:Arial,Helvetica,sans-serif;font-size:13px;color:#1a2e24;font-weight:600;">${String(value || '—').replace(/</g, '&lt;').replace(/>/g, '&gt;')}</span>
     </td>
   </tr>`
