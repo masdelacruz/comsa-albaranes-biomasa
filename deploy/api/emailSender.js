@@ -92,10 +92,12 @@ const celda = (label, value, iconKey = 'estado') => {
 }
 
 // Celda destacada (icono + etiqueta + valor grande) para datos clave
-// como el peso neto o la humedad en el cierre de un albarán. Vuelve a
-// ser una <td> de tabla (no flex): al reenviar/compartir, Outlook
-// reprocesa el HTML y elimina display:flex (las cards se apilaban en
-// vertical), mientras que las tablas sobreviven esa conversión intactas.
+// como el peso neto o la humedad en el cierre de un albarán. Tabla, no
+// flex: al reenviar/compartir, Outlook reprocesa el HTML y elimina
+// display:flex (las cards se apilaban en vertical), mientras que las
+// tablas sobreviven esa conversión intactas. La altura mínima fija (en
+// vez de porcentual) iguala ambas cards en el caso normal de una línea
+// sin forzar un tamaño excesivo, y sigue siendo forward-safe.
 const celdaGrande = (label, value, iconKey, mutedValue = false) => {
   const icono = ICONOS_VALIDOS.has(iconKey) ? iconKey : 'estado'
   // Un valor vacío (placeholder "—") nunca debe usar la tipografía grande:
@@ -105,7 +107,7 @@ const celdaGrande = (label, value, iconKey, mutedValue = false) => {
   return `
   <td width="50%" valign="top" style="padding:0 8px 0 0;">
     <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="border:1px solid ${BORDER};border-radius:8px;">
-      <tr><td style="padding:18px 20px;">
+      <tr><td height="78" style="height:78px;padding:18px 20px;">
         <table role="presentation" cellpadding="0" cellspacing="0"><tr>
           <td width="34" valign="top"><img src="${APP_URL}/icons-email/${icono}.png" width="34" height="34" alt="" style="display:block;width:34px;height:34px;"></td>
           <td valign="top" style="padding-left:10px;">
