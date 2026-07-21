@@ -214,10 +214,9 @@ function buildEmail(tipo, albaran) {
         </td>
       </tr>
       <tr>
-        <td style="padding:0 40px 24px;">
-          <table role="presentation" width="100%" cellpadding="0" cellspacing="0"><tr>
+        <td style="padding:0 20px 4px;">
+          <table role="presentation" width="100%" cellpadding="0" cellspacing="20"><tr>
             ${celdaGrande('Peso neto', albaran.pesoNeto, 'peso')}
-            <td width="20" style="font-size:0;line-height:0;">&nbsp;</td>
             ${celdaGrande('Humedad', albaran.humedad != null ? albaran.humedad + ' %' : 'Pendiente de análisis', 'humedad', albaran.humedad == null)}
           </tr></table>
         </td>
