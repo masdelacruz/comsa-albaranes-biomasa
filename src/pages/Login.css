@@ -205,26 +205,88 @@
 }
 .login-forgot:hover { text-decoration: underline; }
 
+/* ── Botón "Acceder" animado (adaptado de Uiverse.io by ryota1231) ──────
+   Círculo que se expande desde el centro al pasar el ratón, flechas que
+   "viajan" de un lado a otro del botón, y esquinas que pasan de semi-
+   redondeadas a más puntiagudas en hover — todo en los tonos verdes de
+   la app en vez del azul/menta original. */
 .login-btn {
-  width: 100%;
-  padding: 12px;
-  background: var(--green-400);
-  color: #fff;
-  border: none;
-  border-radius: var(--radius-md);
-  font-size: 14px;
-  font-weight: 500;
-  cursor: pointer;
-  transition: background 0.15s;
-  margin-top: 4px;
+  position: relative;
+  overflow: hidden;
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 8px;
+  width: 100%;
+  padding: 13px;
+  border: none;
+  border-radius: 16px;
+  background: var(--green-400);
+  color: #fff;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  margin-top: 4px;
+  box-shadow: 0 0 0 2px rgba(15,110,86,0.25);
+  transition: border-radius 0.5s cubic-bezier(0.23,1,0.32,1), box-shadow 0.5s cubic-bezier(0.23,1,0.32,1);
 }
 
-.login-btn:hover { background: var(--green-600); }
-.login-btn:disabled { background: var(--gray-300); cursor: not-allowed; }
+.login-btn-circle {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 20px;
+  height: 20px;
+  background: var(--green-900);
+  border-radius: 50%;
+  opacity: 0;
+  transition: all 0.7s cubic-bezier(0.23,1,0.32,1);
+}
+
+.login-btn .login-btn-text {
+  position: relative;
+  z-index: 1;
+  transition: transform 0.6s cubic-bezier(0.23,1,0.32,1);
+}
+
+.login-btn .arr-1,
+.login-btn .arr-2 {
+  position: absolute;
+  z-index: 1;
+  top: 50%;
+  transform: translateY(-50%);
+  color: #fff;
+  transition: all 0.6s cubic-bezier(0.23,1,0.32,1);
+}
+.login-btn .arr-1 { right: 18px; }
+.login-btn .arr-2 { left: -20%; }
+
+.login-btn:hover:not(:disabled) {
+  border-radius: 9px;
+  box-shadow: 0 0 0 10px transparent;
+}
+.login-btn:hover:not(:disabled) .login-btn-circle {
+  width: 260px;
+  height: 260px;
+  opacity: 1;
+}
+.login-btn:hover:not(:disabled) .login-btn-text { transform: translateX(-8px); }
+.login-btn:hover:not(:disabled) .arr-1 { right: -20%; }
+.login-btn:hover:not(:disabled) .arr-2 { left: 18px; }
+
+.login-btn:active:not(:disabled) {
+  scale: 0.97;
+  box-shadow: 0 0 0 4px var(--green-100);
+}
+
+.login-btn:disabled {
+  background: var(--gray-300);
+  box-shadow: none;
+  cursor: not-allowed;
+}
+.login-btn:disabled .login-btn-circle,
+.login-btn:disabled .arr-1,
+.login-btn:disabled .arr-2 { display: none; }
 
 .login-error {
   background: var(--red-50);
