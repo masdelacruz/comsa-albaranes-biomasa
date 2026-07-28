@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { Mail, Lock, Eye, EyeOff, ArrowRight, ShieldCheck, MapPin } from 'lucide-react'
 import { api } from '../lib/api'
+import logoFull from '../assets/logo_biomasa_full.png'
 import './Login.css'
 
 const EMAIL_ADMIN = 'biomasa@cserintranet.com'
@@ -34,15 +35,7 @@ export default function Login() {
     <div className="login-page">
       <div className="login-brand">
         <div className="login-brand-content">
-          <div className="login-brand-mark">
-            <span className="login-brand-dot" />
-            <span className="login-brand-square" />
-          </div>
-          <div className="login-brand-wordmark">
-            <div className="login-brand-comsa">COMSA</div>
-            <div className="login-brand-service">SERVICE</div>
-            <div className="login-brand-service">BIOENERGIA</div>
-          </div>
+          <img src={logoFull} alt="Comsa Service Bioenergia" className="login-brand-logo" />
           <div className="login-brand-divider" />
           <p className="login-brand-sub">Gestión de albaranes · Biomasa</p>
         </div>
@@ -57,11 +50,7 @@ export default function Login() {
 
       <div className="login-form-panel">
         <div className="login-card">
-          <div className="login-card-logo-mobile">
-            <span className="login-brand-dot" />
-            <span className="login-brand-square" />
-            <span className="login-card-logo-mobile-text">COMSA</span>
-          </div>
+          <img src={logoFull} alt="Comsa Service Bioenergia" className="login-card-logo-mobile" />
 
           <h1 className="login-title">Bienvenido</h1>
           <p className="login-sub">Inicia sesión en tu cuenta para continuar</p>

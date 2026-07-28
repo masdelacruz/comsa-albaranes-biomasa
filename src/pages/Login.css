@@ -50,51 +50,10 @@
   text-align: center;
 }
 
-.login-brand-mark {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  margin-bottom: 14px;
-}
-
-.login-brand-dot {
-  width: 26px;
-  height: 26px;
-  border-radius: 50%;
-  background: #E2001A;
-  display: inline-block;
-  flex-shrink: 0;
-}
-
-.login-brand-square {
-  width: 26px;
-  height: 26px;
-  background: #00A3E0;
-  display: inline-block;
-  flex-shrink: 0;
-}
-
-.login-brand-wordmark {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 2px;
-}
-
-.login-brand-comsa {
-  font-size: clamp(32px, 3vw, 42px);
-  font-weight: 700;
-  color: #fff;
-  letter-spacing: -0.5px;
-  line-height: 1;
-}
-
-.login-brand-service {
-  font-size: 15px;
-  font-weight: 700;
-  color: var(--gray-400);
-  letter-spacing: 2.5px;
-  line-height: 1.3;
+.login-brand-logo {
+  width: clamp(200px, 16vw, 300px);
+  max-width: 70%;
+  height: auto;
 }
 
 .login-brand-divider {
@@ -149,18 +108,10 @@
 
 .login-card-logo-mobile {
   display: none;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
+  width: 160px;
+  max-width: 60%;
+  height: auto;
   margin: 0 auto 28px;
-}
-.login-card-logo-mobile .login-brand-dot,
-.login-card-logo-mobile .login-brand-square { width: 18px; height: 18px; }
-.login-card-logo-mobile-text {
-  font-size: 20px;
-  font-weight: 700;
-  color: var(--gray-900);
-  letter-spacing: -0.3px;
 }
 
 .login-title {
@@ -320,5 +271,5 @@
    el logo se muestra compacto encima del formulario ─────────────────── */
 @media (max-width: 860px) {
   .login-brand { display: none; }
-  .login-card-logo-mobile { display: flex; }
+  .login-card-logo-mobile { display: block; }
 }
