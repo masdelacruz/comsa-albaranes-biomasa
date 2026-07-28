@@ -4,10 +4,11 @@
 }
 
 /* ── Panel izquierdo — branding ────────────────────────────────────── */
+/* clamp() en vez de un max-width fijo: el panel escala con la ventana en
+   lugar de quedarse anclado a 520px y dejar un hueco enorme de blanco en
+   monitores anchos. */
 .login-brand {
-  flex: 0 0 42%;
-  max-width: 520px;
-  min-width: 340px;
+  flex: 0 0 clamp(340px, 40vw, 680px);
   background: var(--gray-900);
   display: flex;
   flex-direction: column;
@@ -25,14 +26,14 @@
 }
 
 .login-brand-logo {
-  width: 200px;
+  width: clamp(200px, 16vw, 300px);
   max-width: 70%;
   height: auto;
 }
 
 .login-brand-sub {
   margin-top: 18px;
-  font-size: 13px;
+  font-size: 14px;
   color: var(--gray-400);
   letter-spacing: 0.2px;
 }
@@ -54,13 +55,18 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  background: #fff;
-  padding: 40px 20px;
+  background: var(--gray-50);
+  padding: 40px;
 }
 
 .login-card {
   width: 100%;
-  max-width: 360px;
+  max-width: 440px;
+  background: #fff;
+  border: var(--border);
+  border-radius: var(--radius-xl);
+  padding: 48px 44px;
+  box-shadow: 0 4px 24px rgba(0,0,0,0.05);
 }
 
 .login-card-logo-mobile {
@@ -72,7 +78,7 @@
 }
 
 .login-title {
-  font-size: 26px;
+  font-size: 28px;
   font-weight: 600;
   color: var(--gray-900);
   letter-spacing: -0.4px;
@@ -137,6 +143,13 @@
   color: var(--gray-400);
   text-align: center;
 }
+
+.login-footer a {
+  color: var(--green-600);
+  font-weight: 500;
+  text-decoration: none;
+}
+.login-footer a:hover { text-decoration: underline; }
 
 /* ── Responsive — el panel de marca desaparece en pantallas estrechas,
    el logo se muestra compacto encima del formulario ─────────────────── */

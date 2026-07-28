@@ -19,7 +19,7 @@ export default function Login() {
       window.location.reload()
     } catch (err) {
       setError(err.data?.error === 'cuenta_bloqueada'
-        ? 'Tu cuenta está desactivada. Contacta con Marc Serrano.'
+        ? 'Tu cuenta está desactivada. Contacta con administración (biomasa@cserintranet.com).'
         : 'Email o contraseña incorrectos')
       setLoading(false)
     }
@@ -71,7 +71,7 @@ export default function Login() {
           </form>
 
           <div className="login-footer">
-            ¿Problemas de acceso? Contacta con Marc Serrano
+            ¿Problemas de acceso? Contacta con administración: <a href="mailto:biomasa@cserintranet.com">biomasa@cserintranet.com</a>
           </div>
         </div>
       </div>

@@ -29,7 +29,7 @@ const Bloqueado = () => (
     <div style={{width:56,height:56,borderRadius:'50%',background:'#fde8e8',display:'flex',alignItems:'center',justifyContent:'center',fontSize:24}}>🔒</div>
     <div style={{fontSize:18,fontWeight:600,color:'#1a1917'}}>Acceso desactivado</div>
     <div style={{fontSize:13,color:'#9e9b94',textAlign:'center',maxWidth:320}}>
-      Tu cuenta ha sido desactivada. Contacta con Marc Serrano para recuperar el acceso.
+      Tu cuenta ha sido desactivada. Contacta con administración (biomasa@cserintranet.com) para recuperar el acceso.
     </div>
   </div>
 )
