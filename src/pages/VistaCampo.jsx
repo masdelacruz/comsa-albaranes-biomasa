@@ -766,8 +766,9 @@ export default function VistaCampo({ albaranes, updateFirma, subirTicketPesada, 
               {nombreOrigen || a.origen || '—'}
             </div>
             {horarioOrigen && (
-              <div style={{display:'flex',alignItems:'center',gap:3,marginTop:3,fontSize:10,color:'var(--gray-500)'}}>
-                <Clock size={9} style={{flexShrink:0}} /> <span style={{overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{horarioOrigen}</span>
+              <div style={{display:'inline-flex',alignItems:'center',gap:4,marginTop:5,padding:'3px 7px',background:'var(--amber-50)',border:'1px solid var(--amber-100)',borderRadius:6,maxWidth:'100%'}}>
+                <Clock size={11} color="var(--amber-700)" style={{flexShrink:0}} />
+                <span style={{fontSize:11,fontWeight:700,color:'var(--amber-700)',overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{horarioOrigen}</span>
               </div>
             )}
           </div>
@@ -778,8 +779,9 @@ export default function VistaCampo({ albaranes, updateFirma, subirTicketPesada, 
               {a.instalacion || '—'}
             </div>
             {horarioDestino && (
-              <div style={{display:'flex',alignItems:'center',justifyContent:'flex-end',gap:3,marginTop:3,fontSize:10,color:'var(--gray-500)'}}>
-                <span style={{overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{horarioDestino}</span> <Clock size={9} style={{flexShrink:0}} />
+              <div style={{display:'inline-flex',alignItems:'center',gap:4,marginTop:5,padding:'3px 7px',background:'var(--amber-50)',border:'1px solid var(--amber-100)',borderRadius:6,maxWidth:'100%'}}>
+                <Clock size={11} color="var(--amber-700)" style={{flexShrink:0}} />
+                <span style={{fontSize:11,fontWeight:700,color:'var(--amber-700)',overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{horarioDestino}</span>
               </div>
             )}
           </div>
