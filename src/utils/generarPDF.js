@@ -2,8 +2,62 @@ import jsPDF from 'jspdf'
 import autoTable from 'jspdf-autotable'
 import { api } from '../lib/api'
 
+// ── helpers compartidos (módulo) ───────────────────────────────────────────
+// toBase64/fmt no dependen de la instancia jsPDF, así que viven a nivel de
+// módulo y se reutilizan entre generarPDF / generarPDFA5 / la caché de logos.
+
+const toBase64 = (url) =>
+  fetch(url)
+    .then(r => { if (!r.ok) throw new Error('fetch failed'); return r.blob() })
+    .then(b => new Promise(res => {
+      const reader = new FileReader()
+      reader.onloadend = () => res(reader.result)
+      reader.readAsDataURL(b)
+    }))
+
+const fmt = (b64) => {
+  if (!b64) return 'PNG'
+  if (b64.startsWith('data:image/jpeg') || b64.startsWith('data:image/jpg')) return 'JPEG'
+  if (b64.startsWith('data:image/webp')) return 'WEBP'
+  return 'PNG'
+}
+
+// ── caché de logos ──────────────────────────────────────────────────────────
+// Los logos institucionales (Comsa, Applus×4, PEFC, SURE) casi nunca cambian,
+// pero antes se pedían a /storage/logos y se convertían a base64 EN CADA
+// PDF generado — con hasta 7 fetches secuenciales por descarga. Eso hacía
+// que exportar varios albaranes seguidos (p.ej. desde Historial) fuera muy
+// lento. Ahora se cargan una sola vez por sesión (promesa memoizada) y las
+// conversiones a base64 se hacen en paralelo, no una a una.
+const LOGO_IDS = { comsa: 'logoComsa', applus_1: 'logoApplus1', applus_2: 'logoApplus2', applus_3: 'logoApplus3', applus_4: 'logoApplus4', pefc: 'logoPefc', sure: 'logoSure' }
+let logosCachePromise = null
+
+function cargarLogos() {
+  if (logosCachePromise) return logosCachePromise
+  logosCachePromise = (async () => {
+    const vacio = Object.fromEntries(Object.values(LOGO_IDS).map(v => [v, null]))
+    try {
+      const map = await api.get('/storage/logos')
+      if (!map) return vacio
+      const entries = await Promise.all(
+        Object.entries(LOGO_IDS).map(async ([id, varName]) => {
+          if (!map[id]) return [varName, null]
+          try { return [varName, await toBase64(map[id])] } catch { return [varName, null] }
+        })
+      )
+      return Object.fromEntries(entries)
+    } catch {
+      return vacio
+    }
+  })()
+  // Si la carga falla del todo, no dejamos la promesa fallida en caché:
+  // permite reintentar en la siguiente llamada.
+  logosCachePromise.catch(() => { logosCachePromise = null })
+  return logosCachePromise
+}
+
 export async function generarPDF(a, options = {}) {
-  const { includeTicket = false } = options
+  const { includeTicket = false, preview = false } = options
   const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' })
   const W        = 210
   const margen   = 10
@@ -13,22 +67,6 @@ export async function generarPDF(a, options = {}) {
   const negro    = [20, 20, 20]
 
   // ── helpers ────────────────────────────────────────────────────────────────
-
-  const toBase64 = (url) =>
-    fetch(url)
-      .then(r => { if (!r.ok) throw new Error('fetch failed'); return r.blob() })
-      .then(b => new Promise(res => {
-        const reader = new FileReader()
-        reader.onloadend = () => res(reader.result)
-        reader.readAsDataURL(b)
-      }))
-
-  const fmt = (b64) => {
-    if (!b64) return 'PNG'
-    if (b64.startsWith('data:image/jpeg') || b64.startsWith('data:image/jpg')) return 'JPEG'
-    if (b64.startsWith('data:image/webp')) return 'WEBP'
-    return 'PNG'
-  }
 
   // Ajusta imagen a área manteniendo ratio. Fallback: dibuja estirado si falla getImageProperties
   const addImgFit = (b64, ax, ay, aw, ah) => {
@@ -46,28 +84,9 @@ export async function generarPDF(a, options = {}) {
   }
 
 
-  // ── carga de logos ─────────────────────────────────────────────────────────
+  // ── carga de logos (cacheada, ver cargarLogos arriba) ──────────────────────
 
-  let logoComsa, logoApplus1, logoApplus2, logoApplus3, logoApplus4, logoPefc, logoSure
-  try {
-    const map = await api.get('/storage/logos')
-    if (map) {
-      const ids = { comsa: 'logoComsa', applus_1: 'logoApplus1', applus_2: 'logoApplus2', applus_3: 'logoApplus3', applus_4: 'logoApplus4', pefc: 'logoPefc', sure: 'logoSure' }
-      const assigns = { logoComsa: null, logoApplus1: null, logoApplus2: null, logoApplus3: null, logoApplus4: null, logoPefc: null, logoSure: null }
-      for (const [id, varName] of Object.entries(ids)) {
-        if (map[id]) {
-          try { assigns[varName] = await toBase64(map[id]) } catch {}
-        }
-      }
-      logoComsa   = assigns.logoComsa
-      logoApplus1 = assigns.logoApplus1
-      logoApplus2 = assigns.logoApplus2
-      logoApplus3 = assigns.logoApplus3
-      logoApplus4 = assigns.logoApplus4
-      logoPefc    = assigns.logoPefc
-      logoSure    = assigns.logoSure
-    }
-  } catch {}
+  const { logoComsa, logoApplus1, logoApplus2, logoApplus3, logoApplus4, logoPefc, logoSure } = await cargarLogos()
 
   // ═══════════════════════════════════════════════════════════════════════════
   //  CABECERA — 4 bloques simétricos + bloque TÍTULO
@@ -353,7 +372,12 @@ export async function generarPDF(a, options = {}) {
   }
 
   const nombre = includeTicket ? `${a.id}_albaran_ticket_comsa.pdf` : `${a.id}_albaran_comsa.pdf`
-  doc.save(nombre)
+
+  if (preview) {
+    window.open(doc.output('bloburl'), '_blank')
+  } else {
+    doc.save(nombre)
+  }
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -368,23 +392,8 @@ export async function generarPDFA5(a) {
   const grisClaro = [242, 242, 242]
   const negro    = [20, 20, 20]
 
-  // ── helpers (idénticos al A4) ──────────────────────────────────────────────
-  const toBase64 = (url) =>
-    fetch(url)
-      .then(r => { if (!r.ok) throw new Error('fetch failed'); return r.blob() })
-      .then(b => new Promise(res => {
-        const reader = new FileReader()
-        reader.onloadend = () => res(reader.result)
-        reader.readAsDataURL(b)
-      }))
-
-  const fmt = (b64) => {
-    if (!b64) return 'PNG'
-    if (b64.startsWith('data:image/jpeg') || b64.startsWith('data:image/jpg')) return 'JPEG'
-    if (b64.startsWith('data:image/webp')) return 'WEBP'
-    return 'PNG'
-  }
-
+  // ── helpers ─────────────────────────────────────────────────────────────────
+  // toBase64/fmt son ahora compartidos a nivel de módulo (ver cabecera del archivo)
   const addImgFit = (b64, ax, ay, aw, ah) => {
     if (!b64) return
     try {
@@ -398,19 +407,8 @@ export async function generarPDFA5(a) {
     }
   }
 
-  // ── carga de logos ─────────────────────────────────────────────────────────
-  let logoComsa, logoApplus1, logoApplus2, logoApplus3, logoApplus4, logoPefc, logoSure
-  try {
-    const map = await api.get('/storage/logos')
-    if (map) {
-      const ids = { comsa:'logoComsa', applus_1:'logoApplus1', applus_2:'logoApplus2', applus_3:'logoApplus3', applus_4:'logoApplus4', pefc:'logoPefc', sure:'logoSure' }
-      const assigns = { logoComsa:null, logoApplus1:null, logoApplus2:null, logoApplus3:null, logoApplus4:null, logoPefc:null, logoSure:null }
-      for (const [id, varName] of Object.entries(ids)) {
-        if (map[id]) { try { assigns[varName] = await toBase64(map[id]) } catch {} }
-      }
-      ;({ logoComsa, logoApplus1, logoApplus2, logoApplus3, logoApplus4, logoPefc, logoSure } = assigns)
-    }
-  } catch {}
+  // ── carga de logos (cacheada, ver cargarLogos arriba) ──────────────────────
+  const { logoComsa, logoApplus1, logoApplus2, logoApplus3, logoApplus4, logoPefc, logoSure } = await cargarLogos()
 
   // ── CABECERA (16 mm) ───────────────────────────────────────────────────────
   const cabY = margen

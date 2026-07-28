@@ -41,6 +41,53 @@ const FIRMA_LABELS = {
 
 const TIPOS_OP = ['Opción 1 — Compra en monte / plataforma', 'Opción 2 — Proveedor directo']
 
+// Botón (simple o con desplegable "solo albarán" / "+ ticket pesada" si aplica
+// certificación SURE) para generar el PDF, en modo descarga o vista previa.
+function MenuPDF({ a, modo, generando, onGenerar }) {
+  const [open, setOpen] = useState(false)
+  const Icon  = modo === 'preview' ? Eye : FileDown
+  const label = modo === 'preview' ? 'Vista previa' : 'Descargar PDF'
+  const baseOpts = modo === 'preview' ? { preview: true } : {}
+  const tieneSure = a.certificacion?.includes('SURE')
+
+  const disparar = (extra) => {
+    setOpen(false)
+    onGenerar({ ...baseOpts, ...extra })
+  }
+
+  if (!tieneSure) {
+    return (
+      <button className="btn" onClick={() => disparar({})} disabled={generando}>
+        <Icon size={15} /> {generando ? 'Generando...' : label}
+      </button>
+    )
+  }
+
+  return (
+    <div style={{position:'relative'}}>
+      <button className="btn" onClick={() => setOpen(o => !o)} disabled={generando}>
+        <Icon size={15} /> {generando ? 'Generando...' : `${label} ▾`}
+      </button>
+      {open && (
+        <div style={{position:'absolute',top:'calc(100% + 4px)',right:0,background:'#fff',border:'var(--border)',borderRadius:'var(--radius-md)',boxShadow:'0 4px 16px rgba(0,0,0,0.1)',zIndex:50,minWidth:220}}>
+          <button style={{display:'block',width:'100%',padding:'9px 14px',textAlign:'left',background:'none',border:'none',cursor:'pointer',fontSize:13}}
+            onClick={() => disparar({})}>
+            <Icon size={13} style={{marginRight:6}} /> Solo albarán
+          </button>
+          <button style={{display:'block',width:'100%',padding:'9px 14px',textAlign:'left',background:'none',border:'none',fontSize:13,
+            cursor: a.pesada?.ticketAdjunto ? 'pointer' : 'not-allowed',
+            color: a.pesada?.ticketAdjunto ? 'inherit' : 'var(--gray-400)'}}
+            disabled={!a.pesada?.ticketAdjunto}
+            onClick={() => { if (a.pesada?.ticketAdjunto) disparar({ includeTicket: true }) }}>
+            <Icon size={13} style={{marginRight:6}} /> Albarán + ticket pesada
+            {!a.pesada?.ticketAdjunto && <span style={{fontSize:11,marginLeft:6}}>(sin ticket)</span>}
+          </button>
+        </div>
+      )}
+    </div>
+  )
+}
+
 function BannerRevision({ albaranId, onReabrir }) {
   const [reabriendo, setReabriendo] = useState(false)
 
@@ -81,7 +128,7 @@ export default function DetalleAlbaran({ albaranes, simularFirma, updateFirma, s
   const [copiado, setCopiado]               = useState('')
   const [dragOverDoc, setDragOverDoc]       = useState(null)   // nombre del doc sobre el que se arrastra
   const [dragOverTicket, setDragOverTicket] = useState(false)
-  const [pdfMenuOpen, setPdfMenuOpen]       = useState(false)
+  const [generandoPdf, setGenerandoPdf]     = useState(false)
 
   const [editandoDatos,  setEditandoDatos]  = useState(false)
   const [editandoPesada, setEditandoPesada] = useState(false)
@@ -246,6 +293,12 @@ export default function DetalleAlbaran({ albaranes, simularFirma, updateFirma, s
     } finally {
       setDuplicando(false)
     }
+  }
+
+  const handleGenerarPDF = async (opts) => {
+    setGenerandoPdf(true)
+    try { await generarPDF(a, opts) }
+    finally { setGenerandoPdf(false) }
   }
 
   const subirDoc = async (docNombre, fichero) => {
@@ -561,33 +614,8 @@ export default function DetalleAlbaran({ albaranes, simularFirma, updateFirma, s
                 <RotateCcw size={14} /> Reabrir
               </button>
             )}
-            {a.certificacion?.includes('SURE') ? (
-              <div style={{position:'relative'}}>
-                <button className="btn" onClick={() => setPdfMenuOpen(o => !o)}>
-                  <FileDown size={15} /> Descargar PDF ▾
-                </button>
-                {pdfMenuOpen && (
-                  <div style={{position:'absolute',top:'calc(100% + 4px)',right:0,background:'#fff',border:'var(--border)',borderRadius:'var(--radius-md)',boxShadow:'0 4px 16px rgba(0,0,0,0.1)',zIndex:50,minWidth:220}}>
-                    <button style={{display:'block',width:'100%',padding:'9px 14px',textAlign:'left',background:'none',border:'none',cursor:'pointer',fontSize:13}}
-                      onClick={() => { generarPDF(a); setPdfMenuOpen(false) }}>
-                      <FileDown size={13} style={{marginRight:6}} /> Solo albarán
-                    </button>
-                    <button style={{display:'block',width:'100%',padding:'9px 14px',textAlign:'left',background:'none',border:'none',fontSize:13,
-                      cursor: a.pesada?.ticketAdjunto ? 'pointer' : 'not-allowed',
-                      color: a.pesada?.ticketAdjunto ? 'inherit' : 'var(--gray-400)'}}
-                      disabled={!a.pesada?.ticketAdjunto}
-                      onClick={() => { if(a.pesada?.ticketAdjunto){ generarPDF(a, { includeTicket: true }); setPdfMenuOpen(false) } }}>
-                      <FileDown size={13} style={{marginRight:6}} /> Albarán + ticket pesada
-                      {!a.pesada?.ticketAdjunto && <span style={{fontSize:11,marginLeft:6}}>(sin ticket)</span>}
-                    </button>
-                  </div>
-                )}
-              </div>
-            ) : (
-              <button className="btn" onClick={() => generarPDF(a)}>
-                <FileDown size={15} /> Descargar PDF
-              </button>
-            )}
+            <MenuPDF a={a} modo="preview"    generando={generandoPdf} onGenerar={handleGenerarPDF} />
+            <MenuPDF a={a} modo="descargar"  generando={generandoPdf} onGenerar={handleGenerarPDF} />
             <button className="btn" onClick={() => { setDuplicarOpen(true); setNumCopias(1) }}>
               <Copy size={14} /> Duplicar
             </button>
