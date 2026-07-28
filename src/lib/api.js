@@ -6,7 +6,7 @@
 const BASE = import.meta.env.VITE_API_URL || '/api'
 
 function getToken() {
-  return localStorage.getItem('biomasa_token')
+  return localStorage.getItem('biomasa_token') || sessionStorage.getItem('biomasa_token')
 }
 
 function authHeaders(extra = {}) {
@@ -56,7 +56,20 @@ export const api = {
     return res.json()
   },
 
-  setToken(token)  { localStorage.setItem('biomasa_token', token) },
-  clearToken()     { localStorage.removeItem('biomasa_token') },
+  // remember=true → persiste entre reinicios del navegador (localStorage).
+  // remember=false → solo dura la pestaña actual (sessionStorage).
+  setToken(token, remember = true) {
+    if (remember) {
+      localStorage.setItem('biomasa_token', token)
+      sessionStorage.removeItem('biomasa_token')
+    } else {
+      sessionStorage.setItem('biomasa_token', token)
+      localStorage.removeItem('biomasa_token')
+    }
+  },
+  clearToken() {
+    localStorage.removeItem('biomasa_token')
+    sessionStorage.removeItem('biomasa_token')
+  },
   hasToken()       { return !!getToken() },
 }

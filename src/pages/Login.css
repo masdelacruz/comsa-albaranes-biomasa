@@ -3,36 +3,108 @@
   display: flex;
 }
 
-/* ── Panel izquierdo — branding ────────────────────────────────────── */
-/* clamp() en vez de un max-width fijo: el panel escala con la ventana en
-   lugar de quedarse anclado a 520px y dejar un hueco enorme de blanco en
-   monitores anchos. */
+/* ── Panel izquierdo — branding ────────────────────────────────────────────
+   clamp() en vez de un max-width fijo: escala con la ventana en lugar de
+   dejar un hueco de blanco vacío en monitores anchos. Fondo casi negro con
+   un leve resplandor radial arriba-a-la-izquierda y una textura de líneas
+   finas (estilo "circuito") que se desvanece hacia la esquina inferior
+   derecha, replicando el mockup de referencia. */
 .login-brand {
   flex: 0 0 clamp(340px, 40vw, 680px);
-  background: var(--gray-900);
+  background: linear-gradient(160deg, #050505 0%, #101012 55%, #060606 100%);
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
   position: relative;
   padding: 40px;
+  overflow: hidden;
+}
+
+.login-brand::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(ellipse 60% 45% at 18% 12%, rgba(255,255,255,0.07), transparent 60%);
+  pointer-events: none;
+}
+
+.login-brand::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background-image:
+    repeating-linear-gradient(45deg,  rgba(255,255,255,0.05) 0 1px, transparent 1px 15px),
+    repeating-linear-gradient(-45deg, rgba(255,255,255,0.05) 0 1px, transparent 1px 15px);
+  -webkit-mask-image: radial-gradient(ellipse 65% 55% at 100% 100%, black 0%, transparent 72%);
+          mask-image: radial-gradient(ellipse 65% 55% at 100% 100%, black 0%, transparent 72%);
+  pointer-events: none;
 }
 
 .login-brand-content {
+  position: relative;
+  z-index: 1;
   display: flex;
   flex-direction: column;
   align-items: center;
   text-align: center;
 }
 
-.login-brand-logo {
-  width: clamp(200px, 16vw, 300px);
-  max-width: 70%;
-  height: auto;
+.login-brand-mark {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 14px;
+}
+
+.login-brand-dot {
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  background: #E2001A;
+  display: inline-block;
+  flex-shrink: 0;
+}
+
+.login-brand-square {
+  width: 26px;
+  height: 26px;
+  background: #00A3E0;
+  display: inline-block;
+  flex-shrink: 0;
+}
+
+.login-brand-wordmark {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+}
+
+.login-brand-comsa {
+  font-size: clamp(32px, 3vw, 42px);
+  font-weight: 700;
+  color: #fff;
+  letter-spacing: -0.5px;
+  line-height: 1;
+}
+
+.login-brand-service {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--gray-400);
+  letter-spacing: 2.5px;
+  line-height: 1.3;
+}
+
+.login-brand-divider {
+  width: 46px;
+  height: 2px;
+  background: var(--green-400);
+  margin: 16px 0 14px;
 }
 
 .login-brand-sub {
-  margin-top: 18px;
   font-size: 14px;
   color: var(--gray-400);
   letter-spacing: 0.2px;
@@ -40,22 +112,28 @@
 
 .login-brand-footer {
   position: absolute;
-  bottom: 24px;
+  z-index: 1;
   left: 0;
   right: 0;
-  text-align: center;
-  font-size: 11px;
+  bottom: 32px;
+  padding: 0 40px;
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
   color: var(--gray-400);
-  opacity: 0.6;
+  opacity: 0.75;
+  font-size: 11.5px;
+  line-height: 1.5;
 }
+.login-brand-footer svg { color: var(--green-400); flex-shrink: 0; margin-top: 2px; }
 
-/* ── Panel derecho — formulario ────────────────────────────────────── */
+/* ── Panel derecho — formulario ──────────────────────────────────────────── */
 .login-form-panel {
   flex: 1;
   display: flex;
   align-items: center;
   justify-content: center;
-  background: var(--gray-50);
+  background: #f6f4f1 url('../assets/login-bg.png') center bottom / cover no-repeat;
   padding: 40px;
 }
 
@@ -71,10 +149,18 @@
 
 .login-card-logo-mobile {
   display: none;
-  width: 160px;
-  max-width: 60%;
-  height: auto;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
   margin: 0 auto 28px;
+}
+.login-card-logo-mobile .login-brand-dot,
+.login-card-logo-mobile .login-brand-square { width: 18px; height: 18px; }
+.login-card-logo-mobile-text {
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--gray-900);
+  letter-spacing: -0.3px;
 }
 
 .login-title {
@@ -109,9 +195,68 @@
   color: var(--gray-600);
 }
 
+/* ── Campos con icono / toggle de contraseña ──────────────────────────── */
+.login-input-group {
+  position: relative;
+}
+.login-input-group input { padding-left: 38px; }
+.login-input-group--toggle input { padding-right: 38px; }
+
+.login-input-icon {
+  position: absolute;
+  left: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--gray-400);
+  pointer-events: none;
+}
+
+.login-input-toggle {
+  position: absolute;
+  right: 6px;
+  top: 50%;
+  transform: translateY(-50%);
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--gray-400);
+  display: flex;
+  align-items: center;
+  padding: 6px;
+  border-radius: var(--radius-sm);
+}
+.login-input-toggle:hover { color: var(--gray-600); background: var(--gray-50); }
+
+/* ── Recordarme / olvidé contraseña ──────────────────────────────────── */
+.login-row-options {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 12.5px;
+  margin-top: -2px;
+}
+.login-remember {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--gray-600);
+  cursor: pointer;
+  user-select: none;
+}
+.login-remember input[type="checkbox"] {
+  accent-color: var(--green-400);
+  cursor: pointer;
+}
+.login-forgot {
+  color: var(--green-600);
+  font-weight: 500;
+  text-decoration: none;
+}
+.login-forgot:hover { text-decoration: underline; }
+
 .login-btn {
   width: 100%;
-  padding: 11px;
+  padding: 12px;
   background: var(--green-400);
   color: #fff;
   border: none;
@@ -121,6 +266,10 @@
   cursor: pointer;
   transition: background 0.15s;
   margin-top: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
 }
 
 .login-btn:hover { background: var(--green-600); }
@@ -135,18 +284,34 @@
   color: var(--red-700);
 }
 
-.login-footer {
-  margin-top: 24px;
-  padding-top: 16px;
+/* ── Divisor con icono de escudo + footer de contacto ────────────────── */
+.login-shield-divider {
+  position: relative;
+  margin-top: 26px;
+  padding-top: 18px;
   border-top: var(--border);
+  display: flex;
+  justify-content: center;
+}
+.login-shield-divider svg {
+  position: absolute;
+  top: -9px;
+  background: #fff;
+  padding: 0 10px;
+  color: var(--green-600);
+}
+
+.login-footer {
+  margin-top: 14px;
   font-size: 12px;
   color: var(--gray-400);
   text-align: center;
+  line-height: 1.6;
 }
 
 .login-footer a {
   color: var(--green-600);
-  font-weight: 500;
+  font-weight: 600;
   text-decoration: none;
 }
 .login-footer a:hover { text-decoration: underline; }
@@ -155,5 +320,5 @@
    el logo se muestra compacto encima del formulario ─────────────────── */
 @media (max-width: 860px) {
   .login-brand { display: none; }
-  .login-card-logo-mobile { display: block; }
+  .login-card-logo-mobile { display: flex; }
 }
