@@ -45,7 +45,7 @@ async function fetchOne(id) {
   const empresaDataMap  = {}
   if (empresasNombres.length) {
     const eRes = await pool.query(
-      'SELECT nombre, firma_imagen, trabajadores, maquinas FROM proveedores WHERE nombre = ANY($1)',
+      'SELECT nombre, firma_imagen, trabajadores, maquinas, horario FROM proveedores WHERE nombre = ANY($1)',
       [empresasNombres]
     )
     eRes.rows.forEach(e => {
@@ -53,6 +53,7 @@ async function fetchOne(id) {
       empresaDataMap[e.nombre] = {
         trabajadores: e.trabajadores || [],
         maquinas:     e.maquinas     || [],
+        horario:      e.horario      || null,
       }
     })
   }
@@ -135,12 +136,12 @@ router.get('/', requireAuth, async (_req, res) => {
   const empresaDataMap  = {}
   if (allNombres.length) {
     const eRes = await pool.query(
-      'SELECT nombre, firma_imagen, trabajadores, maquinas FROM proveedores WHERE nombre = ANY($1)',
+      'SELECT nombre, firma_imagen, trabajadores, maquinas, horario FROM proveedores WHERE nombre = ANY($1)',
       [allNombres]
     )
     eRes.rows.forEach(e => {
       if (e.firma_imagen) empresaFirmaMap[e.nombre] = e.firma_imagen
-      empresaDataMap[e.nombre] = { trabajadores: e.trabajadores || [], maquinas: e.maquinas || [] }
+      empresaDataMap[e.nombre] = { trabajadores: e.trabajadores || [], maquinas: e.maquinas || [], horario: e.horario || null }
     })
   }
 

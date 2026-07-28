@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
-import { CheckCircle, Upload, Leaf, ArrowLeft, Truck, Factory, Building2, User } from 'lucide-react'
+import { CheckCircle, Upload, Leaf, ArrowLeft, Truck, Factory, Building2, User, Clock } from 'lucide-react'
 import '../components/shared.css'
 import './VistaCampo.css'
 
@@ -240,9 +240,11 @@ function PasoFirma({ rol, a, updateFirma, subirTicketPesada, onCompletado, total
   const empresaFirmaUrl = a.empresaFirmaMap?.[empresaNombre] || null
   const requiereFirma   = ROL_REQUIERE_FIRMA[rol]
 
-  const astiData     = rol === 'astilladora' ? (a.empresaDataMap?.[empresaNombre] || {}) : {}
-  const trabajadores = (astiData.trabajadores || []).filter(t => t?.trim())
-  const maquinas     = (astiData.maquinas     || []).filter(m => m?.matricula?.trim())
+  const esInstalacionFisica = rol === 'astilladora' || rol === 'instalacion'
+  const empresaData  = esInstalacionFisica ? (a.empresaDataMap?.[empresaNombre] || {}) : {}
+  const trabajadores = (empresaData.trabajadores || []).filter(t => t?.trim())
+  const maquinas     = (empresaData.maquinas     || []).filter(m => m?.matricula?.trim())
+  const horario       = empresaData.horario || null
 
   // Campos comunes
   const [nombrePersona,       setNombrePersona]      = useState(trabajadores.length === 1 ? trabajadores[0] : '')
@@ -352,6 +354,15 @@ function PasoFirma({ rol, a, updateFirma, subirTicketPesada, onCompletado, total
           {totalPasos > 1 && <div style={{fontSize:11,color:'var(--gray-400)'}}>Paso {pasoActual} de {totalPasos}</div>}
         </div>
       </div>
+
+      {horario && (
+        <div style={{display:'flex',alignItems:'center',gap:8,marginBottom:14,padding:'9px 12px',background:config.bg,border:`1px solid ${config.color}25`,borderRadius:'var(--radius-md)'}}>
+          <Clock size={14} color={config.color} style={{flexShrink:0}} />
+          <div style={{fontSize:12,color:'var(--gray-700)',lineHeight:1.4}}>
+            <span style={{fontWeight:600,color:config.color}}>Horario: </span>{horario}
+          </div>
+        </div>
+      )}
 
       {/* ── PROVEEDOR ─────────────────────────────────── */}
       {rol === 'proveedor' && (

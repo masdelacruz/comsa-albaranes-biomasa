@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react'
-import { Plus, Search, Pencil, Trash2, X, Check, Upload, Image, ExternalLink } from 'lucide-react'
+import { Plus, Search, Pencil, Trash2, X, Check, Upload, Image, ExternalLink, Clock } from 'lucide-react'
 import { api } from '../lib/api'
 import '../components/shared.css'
 import './Administracion.css'
@@ -32,7 +32,7 @@ function normalizarTelefono(raw) {
 const TIPOS = ['proveedor', 'astilladora', 'transportista', 'instalacion']
 const TIPO_LABELS = { proveedor: 'Proveedor', astilladora: 'Astilladora', transportista: 'Transportista', instalacion: 'Instalación' }
 
-const EMPTY_FORM = { nombre: '', tipo: 'proveedor', contacto: '', email: '', telefono: '', notas: '', activo: true, trabajadores: [], maquinas: [] }
+const EMPTY_FORM = { nombre: '', tipo: 'proveedor', contacto: '', email: '', telefono: '', notas: '', activo: true, trabajadores: [], maquinas: [], horario: '' }
 
 const slugify = s => s.toLowerCase().replace(/\s+/g, '_').replace(/[^a-z0-9_]/g, '')
 
@@ -165,7 +165,7 @@ export default function Administracion({ usuario }) {
 
   const abrirEditar = (p) => {
     setEditando(p.id)
-    setForm({ nombre: p.nombre, tipo: p.tipo, contacto: p.contacto || '', email: p.email || '', telefono: p.telefono || '', notas: p.notas || '', activo: p.activo, trabajadores: p.trabajadores || [], maquinas: p.maquinas || [] })
+    setForm({ nombre: p.nombre, tipo: p.tipo, contacto: p.contacto || '', email: p.email || '', telefono: p.telefono || '', notas: p.notas || '', activo: p.activo, trabajadores: p.trabajadores || [], maquinas: p.maquinas || [], horario: p.horario || '' })
     setFirmaUrl(p.firma_imagen || null)
     setModal(true)
   }
@@ -783,6 +783,18 @@ export default function Administracion({ usuario }) {
                 <label>Email</label>
                 <input type="email" placeholder="contacto@empresa.com" value={form.email} onChange={e => set('email', e.target.value)} />
               </div>
+              {(form.tipo === 'astilladora' || form.tipo === 'instalacion') && (
+                <div className="modal-field full">
+                  <label style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
+                    <Clock size={12} /> Horario de la instalación
+                  </label>
+                  <input type="text" placeholder="Ej: L-V 8:00-14:00 y 15:00-18:00 · Sáb 8:00-13:00"
+                    value={form.horario} onChange={e => set('horario', e.target.value)} />
+                  <div style={{ fontSize: 11, color: 'var(--gray-400)', marginTop: 4 }}>
+                    Se muestra al transportista/conductor al confirmar en campo
+                  </div>
+                </div>
+              )}
               <div className="modal-field full">
                 <label>Notas internas</label>
                 <textarea placeholder="Observaciones, condiciones especiales..." value={form.notas} onChange={e => set('notas', e.target.value)} style={{ minHeight: 60 }} />

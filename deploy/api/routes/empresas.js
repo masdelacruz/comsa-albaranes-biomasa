@@ -22,13 +22,13 @@ router.get('/', requireAuth, async (req, res) => {
 
 // ── POST /empresas ────────────────────────────────────────────────
 router.post('/', requireAuth, async (req, res) => {
-  const { nombre, tipo, contacto, email, telefono, notas, activo, trabajadores, maquinas } = req.body
+  const { nombre, tipo, contacto, email, telefono, notas, activo, trabajadores, maquinas, horario } = req.body
   const id = uuidv4()
   await pool.query(
-    `INSERT INTO proveedores (id,nombre,tipo,contacto,email,telefono,notas,activo,trabajadores,maquinas)
-     VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)`,
+    `INSERT INTO proveedores (id,nombre,tipo,contacto,email,telefono,notas,activo,trabajadores,maquinas,horario)
+     VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11)`,
     [id, toTitleCase(nombre), tipo, toTitleCase(contacto)||null, email||null, telefono||null, notas||null, activo??true,
-     JSON.stringify(trabajadores||[]), JSON.stringify(maquinas||[])]
+     JSON.stringify(trabajadores||[]), JSON.stringify(maquinas||[]), horario||null]
   )
   const { rows } = await pool.query('SELECT * FROM proveedores WHERE id=$1', [id])
   res.json(rows[0])
@@ -38,7 +38,7 @@ router.post('/', requireAuth, async (req, res) => {
 router.patch('/:id', requireAuth, async (req, res) => {
   if (req.body.nombre) req.body.nombre = toTitleCase(req.body.nombre)
   if (req.body.contacto) req.body.contacto = toTitleCase(req.body.contacto)
-  const fields = ['nombre','tipo','contacto','email','telefono','notas','activo','firma_imagen','trabajadores','maquinas']
+  const fields = ['nombre','tipo','contacto','email','telefono','notas','activo','firma_imagen','trabajadores','maquinas','horario']
   const jsonbFields = new Set(['trabajadores', 'maquinas'])
   const updates = [], vals = []
   let idx = 1

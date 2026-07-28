@@ -110,6 +110,7 @@ CREATE TABLE IF NOT EXISTS proveedores (
   notas        TEXT,
   activo       BOOLEAN NOT NULL DEFAULT TRUE,
   firma_imagen TEXT,             -- URL a MinIO con la imagen de firma oficial
+  horario      TEXT,             -- horario de apertura (astilladora / instalacion)
   created_at   TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
