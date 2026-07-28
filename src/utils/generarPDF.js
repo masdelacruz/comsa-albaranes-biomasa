@@ -373,11 +373,13 @@ export async function generarPDF(a, options = {}) {
 
   const nombre = includeTicket ? `${a.id}_albaran_ticket_comsa.pdf` : `${a.id}_albaran_comsa.pdf`
 
+  // En modo preview devolvemos la blob URL para mostrarla embebida en un
+  // <iframe> dentro de la propia página (más rápido y sin abrir pestaña
+  // nueva); el llamador decide cómo mostrarla.
   if (preview) {
-    window.open(doc.output('bloburl'), '_blank')
-  } else {
-    doc.save(nombre)
+    return { url: doc.output('bloburl'), nombre }
   }
+  doc.save(nombre)
 }
 
 // ─────────────────────────────────────────────────────────────────────────────

@@ -129,6 +129,7 @@ export default function DetalleAlbaran({ albaranes, simularFirma, updateFirma, s
   const [dragOverDoc, setDragOverDoc]       = useState(null)   // nombre del doc sobre el que se arrastra
   const [dragOverTicket, setDragOverTicket] = useState(false)
   const [generandoPdf, setGenerandoPdf]     = useState(false)
+  const [previewPdf, setPreviewPdf]         = useState(null)   // { url, nombre } del PDF mostrado en el modal
 
   const [editandoDatos,  setEditandoDatos]  = useState(false)
   const [editandoPesada, setEditandoPesada] = useState(false)
@@ -297,8 +298,17 @@ export default function DetalleAlbaran({ albaranes, simularFirma, updateFirma, s
 
   const handleGenerarPDF = async (opts) => {
     setGenerandoPdf(true)
-    try { await generarPDF(a, opts) }
-    finally { setGenerandoPdf(false) }
+    try {
+      const resultado = await generarPDF(a, opts)
+      if (opts.preview && resultado) setPreviewPdf(resultado)
+    } finally {
+      setGenerandoPdf(false)
+    }
+  }
+
+  const cerrarPreviewPdf = () => {
+    if (previewPdf?.url) URL.revokeObjectURL(previewPdf.url)
+    setPreviewPdf(null)
   }
 
   const subirDoc = async (docNombre, fichero) => {
@@ -535,6 +545,28 @@ export default function DetalleAlbaran({ albaranes, simularFirma, updateFirma, s
       {toast && (
         <div className="toast-guardado">
           <CheckCircle size={14} /> {toast}
+        </div>
+      )}
+      {previewPdf && (
+        <div style={{position:'fixed',inset:0,background:'rgba(0,0,0,0.6)',display:'flex',alignItems:'center',justifyContent:'center',zIndex:150,padding:20}}
+          onClick={cerrarPreviewPdf}>
+          <div style={{background:'#fff',borderRadius:'var(--radius-lg)',width:'100%',maxWidth:900,height:'92vh',display:'flex',flexDirection:'column',overflow:'hidden',boxShadow:'0 20px 60px rgba(0,0,0,0.3)'}}
+            onClick={e => e.stopPropagation()}>
+            <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',padding:'10px 14px',borderBottom:'var(--border)',flexShrink:0}}>
+              <div style={{display:'flex',alignItems:'center',gap:7,fontSize:13,fontWeight:600,color:'var(--gray-800)'}}>
+                <Eye size={14} /> Vista previa — Albarán {a.id}
+              </div>
+              <div style={{display:'flex',alignItems:'center',gap:6}}>
+                <a href={previewPdf.url} download={previewPdf.nombre} className="btn" style={{fontSize:12,padding:'5px 10px'}}>
+                  <FileDown size={13} /> Descargar
+                </a>
+                <button onClick={cerrarPreviewPdf} style={{background:'none',border:'none',cursor:'pointer',color:'var(--gray-400)',display:'flex',padding:4}}>
+                  <X size={18} />
+                </button>
+              </div>
+            </div>
+            <iframe src={previewPdf.url} title={previewPdf.nombre} style={{flex:1,border:'none',width:'100%'}} />
+          </div>
         </div>
       )}
       {duplicarOpen && (
