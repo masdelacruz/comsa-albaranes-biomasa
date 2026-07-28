@@ -289,6 +289,17 @@ export async function generarPDF(a, options = {}) {
   doc.text(a.instalacion || '.'.repeat(26), 131, y)
 
   y += 6
+
+  // ── PERMISO / REFERENCIA ────────────────────────────────────────────────────
+  doc.setFont('helvetica', 'bold')
+  const permisoLW = doc.getTextWidth('Permiso:')
+  doc.setTextColor(...grisOsc)
+  doc.text('Permiso:', margen, y)
+  doc.setFont('helvetica', 'normal')
+  doc.setTextColor(...negro)
+  doc.text(a.permiso || '.'.repeat(30), margen + permisoLW + 2, y)
+
+  y += 6
   doc.setDrawColor(200, 200, 200)
   doc.line(margen, y, W - margen, y)
   y += 7
