@@ -267,19 +267,22 @@ export async function generarPDF(a, options = {}) {
   doc.setTextColor(...negro)
   doc.text(pn, pnX + pnLW + sp, y)
 
-  y += 6
-  doc.setDrawColor(200, 200, 200)
-  doc.line(margen, y, W - margen, y)
+  // Sin divisoria intermedia: Pesos / Origen / Destino / Permiso forman un
+  // único bloque de datos, con el mismo ritmo vertical (7mm) entre líneas.
   y += 7
 
-  // ── ORIGEN / DESTINO ────────────────────────────────────────────────────────
+  // ── ORIGEN / DESTINO / PERMISO ───────────────────────────────────────────────
   doc.setFont('helvetica', 'bold')
   doc.setFontSize(9)
+  const origenLW  = doc.getTextWidth('Origen:')
+  const permisoLW = doc.getTextWidth('Permiso:')
+  const labelColX = margen + Math.max(origenLW, permisoLW) + sp   // valores de Origen/Permiso alineados en la misma columna
+
   doc.setTextColor(...grisOsc)
   doc.text('Origen:', margen, y)
   doc.setFont('helvetica', 'normal')
   doc.setTextColor(...negro)
-  doc.text(a.origen || '.'.repeat(30), margen + 16, y)
+  doc.text(a.origen || '.'.repeat(30), labelColX, y)
 
   doc.setFont('helvetica', 'bold')
   doc.setTextColor(...grisOsc)
@@ -288,16 +291,14 @@ export async function generarPDF(a, options = {}) {
   doc.setTextColor(...negro)
   doc.text(a.instalacion || '.'.repeat(26), 131, y)
 
-  y += 6
+  y += 7
 
-  // ── PERMISO / REFERENCIA ────────────────────────────────────────────────────
   doc.setFont('helvetica', 'bold')
-  const permisoLW = doc.getTextWidth('Permiso:')
   doc.setTextColor(...grisOsc)
   doc.text('Permiso:', margen, y)
   doc.setFont('helvetica', 'normal')
   doc.setTextColor(...negro)
-  doc.text(a.permiso || '.'.repeat(30), margen + permisoLW + 2, y)
+  doc.text(a.permiso || '.'.repeat(30), labelColX, y)
 
   y += 6
   doc.setDrawColor(200, 200, 200)
