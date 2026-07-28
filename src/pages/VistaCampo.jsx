@@ -240,11 +240,9 @@ function PasoFirma({ rol, a, updateFirma, subirTicketPesada, onCompletado, total
   const empresaFirmaUrl = a.empresaFirmaMap?.[empresaNombre] || null
   const requiereFirma   = ROL_REQUIERE_FIRMA[rol]
 
-  const esInstalacionFisica = rol === 'astilladora' || rol === 'instalacion'
-  const empresaData  = esInstalacionFisica ? (a.empresaDataMap?.[empresaNombre] || {}) : {}
-  const trabajadores = (empresaData.trabajadores || []).filter(t => t?.trim())
-  const maquinas     = (empresaData.maquinas     || []).filter(m => m?.matricula?.trim())
-  const horario       = empresaData.horario || null
+  const astiData     = rol === 'astilladora' ? (a.empresaDataMap?.[empresaNombre] || {}) : {}
+  const trabajadores = (astiData.trabajadores || []).filter(t => t?.trim())
+  const maquinas     = (astiData.maquinas     || []).filter(m => m?.matricula?.trim())
 
   // Campos comunes
   const [nombrePersona,       setNombrePersona]      = useState(trabajadores.length === 1 ? trabajadores[0] : '')
@@ -354,15 +352,6 @@ function PasoFirma({ rol, a, updateFirma, subirTicketPesada, onCompletado, total
           {totalPasos > 1 && <div style={{fontSize:11,color:'var(--gray-400)'}}>Paso {pasoActual} de {totalPasos}</div>}
         </div>
       </div>
-
-      {horario && (
-        <div style={{display:'flex',alignItems:'center',gap:8,marginBottom:14,padding:'9px 12px',background:config.bg,border:`1px solid ${config.color}25`,borderRadius:'var(--radius-md)'}}>
-          <Clock size={14} color={config.color} style={{flexShrink:0}} />
-          <div style={{fontSize:12,color:'var(--gray-700)',lineHeight:1.4}}>
-            <span style={{fontWeight:600,color:config.color}}>Horario: </span>{horario}
-          </div>
-        </div>
-      )}
 
       {/* ── PROVEEDOR ─────────────────────────────────── */}
       {rol === 'proveedor' && (
@@ -764,22 +753,35 @@ export default function VistaCampo({ albaranes, updateFirma, subirTicketPesada, 
   const DatosAlbaran = () => {
     const hasBiomasa = a.especie || a.tipoBiomasa || a.estella
     const hasTransporte = a.transportista || a.matriculaTractora
+    const nombreOrigen  = a.astilladora || a.proveedor
+    const horarioOrigen  = a.empresaDataMap?.[nombreOrigen]?.horario  || null
+    const horarioDestino = a.empresaDataMap?.[a.instalacion]?.horario || null
     return (
       <div style={{marginBottom:14,background:'var(--gray-50)',border:'1px solid var(--gray-150,#ebebeb)',borderRadius:'var(--radius-lg)',overflow:'hidden'}}>
         {/* Ruta */}
-        <div style={{display:'flex',alignItems:'center',padding:'9px 12px',gap:8}}>
+        <div style={{display:'flex',alignItems:'flex-start',padding:'9px 12px',gap:8}}>
           <div style={{flex:1,minWidth:0}}>
             <div style={{fontSize:9,fontWeight:700,color:'var(--gray-400)',textTransform:'uppercase',letterSpacing:'0.6px',marginBottom:1}}>Origen</div>
             <div style={{fontSize:12,fontWeight:600,color:'var(--gray-800)',overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>
-              {a.astilladora || a.proveedor || a.origen || '—'}
+              {nombreOrigen || a.origen || '—'}
             </div>
+            {horarioOrigen && (
+              <div style={{display:'flex',alignItems:'center',gap:3,marginTop:3,fontSize:10,color:'var(--gray-500)'}}>
+                <Clock size={9} style={{flexShrink:0}} /> <span style={{overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{horarioOrigen}</span>
+              </div>
+            )}
           </div>
-          <div style={{color:'var(--gray-300)',fontSize:13,flexShrink:0}}>→</div>
+          <div style={{color:'var(--gray-300)',fontSize:13,flexShrink:0,marginTop:2}}>→</div>
           <div style={{flex:1,minWidth:0,textAlign:'right'}}>
             <div style={{fontSize:9,fontWeight:700,color:'var(--green-600)',textTransform:'uppercase',letterSpacing:'0.6px',marginBottom:1}}>Destino</div>
             <div style={{fontSize:12,fontWeight:600,color:'var(--gray-800)',overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>
               {a.instalacion || '—'}
             </div>
+            {horarioDestino && (
+              <div style={{display:'flex',alignItems:'center',justifyContent:'flex-end',gap:3,marginTop:3,fontSize:10,color:'var(--gray-500)'}}>
+                <span style={{overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{horarioDestino}</span> <Clock size={9} style={{flexShrink:0}} />
+              </div>
+            )}
           </div>
         </div>
 

@@ -220,7 +220,7 @@ export async function generarPDF(a, options = {}) {
   doc.setDrawColor(200, 200, 200)
   doc.setLineWidth(0.3)
   doc.line(margen, y, W - margen, y)
-  y += 7
+  y += 8.5
 
   const pb   = a.pesada?.entrada ? Number(a.pesada.entrada).toLocaleString('es-ES') + ' kg' : '...................'
   const tara = a.pesada?.salida  ? Number(a.pesada.salida).toLocaleString('es-ES')  + ' kg' : '...................'
@@ -268,8 +268,8 @@ export async function generarPDF(a, options = {}) {
   doc.text(pn, pnX + pnLW + sp, y)
 
   // Sin divisoria intermedia: Pesos / Origen / Destino / Permiso forman un
-  // único bloque de datos, con el mismo ritmo vertical (7mm) entre líneas.
-  y += 7
+  // único bloque de datos, con el mismo ritmo vertical (8.5mm) entre líneas.
+  y += 8.5
 
   // ── ORIGEN / DESTINO / PERMISO ───────────────────────────────────────────────
   doc.setFont('helvetica', 'bold')
@@ -291,7 +291,7 @@ export async function generarPDF(a, options = {}) {
   doc.setTextColor(...negro)
   doc.text(a.instalacion || '.'.repeat(26), 131, y)
 
-  y += 7
+  y += 8.5
 
   doc.setFont('helvetica', 'bold')
   doc.setTextColor(...grisOsc)
@@ -300,7 +300,7 @@ export async function generarPDF(a, options = {}) {
   doc.setTextColor(...negro)
   doc.text(a.permiso || '.'.repeat(30), labelColX, y)
 
-  y += 6
+  y += 7
   doc.setDrawColor(200, 200, 200)
   doc.line(margen, y, W - margen, y)
   y += 7
