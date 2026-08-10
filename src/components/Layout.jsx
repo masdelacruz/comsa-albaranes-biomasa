@@ -1,9 +1,9 @@
 import { useState, useEffect } from 'react'
-import { Outlet, NavLink, useNavigate, useLocation } from 'react-router-dom'
-import { LayoutDashboard, PlusCircle, Clock, BarChart2, Settings, LogOut, User, X, Mail, Briefcase, Shield, Users, Bell, BellOff, ChevronLeft } from 'lucide-react'
+import { Outlet, useNavigate, useLocation } from 'react-router-dom'
+import { LayoutDashboard, PlusCircle, Clock, BarChart2, Settings, LogOut, User, X, Mail, Briefcase, Shield, Users, Bell, BellOff } from 'lucide-react'
 import { api } from '../lib/api'
 import { useScrollLock } from '../hooks/useScrollLock'
-import logoFull from '../assets/logo_biomasa_full.png'
+import Dock from './Dock'
 import './Layout.css'
 
 const NOTIFS = [
@@ -14,10 +14,6 @@ const NOTIFS = [
 ]
 const getN = (p, k) => p?.[k] !== false
 
-// ~150 % zoom en portátil 1366 px → viewport ≈ 910 px
-const AUTO_COLLAPSE_PX = 960
-const SIDEBAR_PREF_KEY = 'sidebarCollapsed'
-
 export default function Layout({ usuario, logout, albaranes = [], actualizarUsuario }) {
   const navigate = useNavigate()
   const location = useLocation()
@@ -26,23 +22,6 @@ export default function Layout({ usuario, logout, albaranes = [], actualizarUsua
   const [notifPrefs, setNotifPrefs]       = useState({})
   const [notifGuardando, setNotifGuardando] = useState(false)
   const [notifOk, setNotifOk]             = useState(false)
-  const [collapsed, setCollapsed]         = useState(() => {
-    const remembered = localStorage.getItem(SIDEBAR_PREF_KEY)
-    if (remembered !== null) return remembered === '1'
-    return window.innerWidth <= AUTO_COLLAPSE_PX
-  })
-  const [logoAnim, setLogoAnim]           = useState(false)
-
-  // Auto-colapsa si el viewport es demasiado estrecho (zoom elevado)
-  // También evalúa en el montaje inicial (no solo en resize)
-  useEffect(() => {
-    if (window.innerWidth <= AUTO_COLLAPSE_PX) setCollapsed(true)
-    const onResize = () => {
-      if (window.innerWidth <= AUTO_COLLAPSE_PX) setCollapsed(true)
-    }
-    window.addEventListener('resize', onResize)
-    return () => window.removeEventListener('resize', onResize)
-  }, [])
 
   // .layout usa min-height:100vh, así que el scroll real es el de la
   // ventana (no uno interno) — React Router no lo resetea solo al navegar.
@@ -51,25 +30,14 @@ export default function Layout({ usuario, logout, albaranes = [], actualizarUsua
   }, [location.pathname])
 
   // Si ya estamos en la ruta destino, el pathname no cambia al pulsar el
-  // logo o un enlace del menú, así que el efecto de arriba no salta solo:
-  // forzamos el scroll suave aquí también.
+  // icono del dock, así que el efecto de arriba no salta solo: forzamos
+  // el scroll suave aquí también.
   const irA = ruta => () => {
     if (location.pathname === ruta) {
       window.scrollTo({ top: 0, behavior: 'smooth' })
     } else {
       navigate(ruta)
     }
-  }
-  const irADashboard = irA('/dashboard')
-
-  const toggleSidebar = () => {
-    setCollapsed(v => {
-      const next = !v
-      localStorage.setItem(SIDEBAR_PREF_KEY, next ? '1' : '0')
-      return next
-    })
-    setLogoAnim(true)
-    setTimeout(() => setLogoAnim(false), 450)
   }
 
   const iniciales = usuario?.nombre
@@ -120,70 +88,23 @@ export default function Layout({ usuario, logout, albaranes = [], actualizarUsua
     (notifPrefs?.silenciado ?? false) !== (usuario?.notificaciones?.silenciado ?? false) ||
     NOTIFS.some(({ key }) => getN(notifPrefs, key) !== getN(usuario?.notificaciones, key))
 
+  const dockItems = [
+    { key: 'dashboard',      label: 'Dashboard',      icon: <LayoutDashboard size={18} />, active: location.pathname === '/dashboard',      badge: pendientesOficina, onClick: irA('/dashboard') },
+    { key: 'nuevo',          label: 'Nuevo albarán',  icon: <PlusCircle size={18} />,      active: location.pathname === '/nuevo',          onClick: irA('/nuevo') },
+    { key: 'historial',      label: 'Historial',      icon: <Clock size={18} />,           active: location.pathname === '/historial',      onClick: irA('/historial') },
+    { key: 'estadisticas',   label: 'Estadísticas',   icon: <BarChart2 size={18} />,       active: location.pathname === '/estadisticas',   onClick: irA('/estadisticas') },
+    { key: 'administracion', label: 'Administración', icon: <Settings size={18} />,        active: location.pathname === '/administracion', onClick: irA('/administracion') },
+    ...(esSuperadmin ? [
+      { key: 'usuarios', label: 'Usuarios', icon: <Users size={18} />, active: location.pathname === '/usuarios', onClick: irA('/usuarios') },
+    ] : []),
+    { key: 'perfil', label: usuario?.nombre || 'Perfil', isAvatar: true, initials: iniciales, onClick: () => setPerfilOpen(true) },
+  ]
+
   return (
     <div className="layout">
-      <aside className={`sidebar${collapsed ? ' sidebar--collapsed' : ' sidebar--expanded'}`}>
-        <button
-          className="sidebar-toggle"
-          onClick={toggleSidebar}
-          title={collapsed ? 'Expandir panel' : 'Colapsar panel'}
-          aria-label={collapsed ? 'Expandir panel' : 'Colapsar panel'}
-        >
-          <ChevronLeft size={13} />
-        </button>
-
-        <div
-          className={`sidebar-logo${logoAnim ? ' logo-anim' : ''}`}
-          onClick={irADashboard}
-          title="Ir al Dashboard"
-        >
-          <img src={logoFull} alt="COMSA Biomasa" className="logo-img-full" />
-          <img src="/favicon.ico" alt="COMSA" className="logo-img-mini" />
-        </div>
-
-        <nav className="sidebar-nav">
-          <NavLink to="/dashboard"      data-tooltip="Dashboard"       onClick={irADashboard}  className={({isActive}) => isActive ? 'nav-item active' : 'nav-item'}>
-            <LayoutDashboard size={16} /><span>Dashboard</span>
-            {pendientesOficina > 0 && (
-              <span style={{marginLeft:'auto',background:'var(--blue-400)',color:'#fff',fontSize:10,fontWeight:700,borderRadius:99,padding:'1px 6px',minWidth:18,textAlign:'center',lineHeight:'16px'}}>
-                {pendientesOficina}
-              </span>
-            )}
-          </NavLink>
-          <NavLink to="/nuevo"          data-tooltip="Nuevo albarán"   onClick={irA('/nuevo')}          className={({isActive}) => isActive ? 'nav-item active' : 'nav-item'}>
-            <PlusCircle size={16} /><span>Nuevo albarán</span>
-          </NavLink>
-          <NavLink to="/historial"      data-tooltip="Historial"       onClick={irA('/historial')}      className={({isActive}) => isActive ? 'nav-item active' : 'nav-item'}>
-            <Clock size={16} /><span>Historial</span>
-          </NavLink>
-          <NavLink to="/estadisticas"   data-tooltip="Estadísticas"    onClick={irA('/estadisticas')}   className={({isActive}) => isActive ? 'nav-item active' : 'nav-item'}>
-            <BarChart2 size={16} /><span>Estadísticas</span>
-          </NavLink>
-          <NavLink to="/administracion" data-tooltip="Administración"  onClick={irA('/administracion')} className={({isActive}) => isActive ? 'nav-item active' : 'nav-item'}>
-            <Settings size={16} /><span>Administración</span>
-          </NavLink>
-          {esSuperadmin && (
-            <NavLink to="/usuarios" data-tooltip="Usuarios" onClick={irA('/usuarios')} className={({isActive}) => isActive ? 'nav-item active' : 'nav-item'}>
-              <Users size={16} /><span>Usuarios</span>
-            </NavLink>
-          )}
-        </nav>
-
-        <div className="sidebar-footer">
-          <button className="user-chip-btn" onClick={() => setPerfilOpen(true)} data-tooltip={usuario?.nombre || '—'}>
-            <div className="user-avatar" style={{background:'var(--green-100)',color:'var(--green-600)'}}>
-              {iniciales}
-            </div>
-            <div style={{flex:1,minWidth:0,textAlign:'left'}}>
-              <div className="user-name">{usuario?.nombre || '—'}</div>
-              <div className="user-role">{usuario?.rol || '—'}</div>
-            </div>
-            <User size={13} style={{color:'var(--gray-400)',flexShrink:0}} />
-          </button>
-        </div>
-      </aside>
-
       <main className="main-area"><Outlet /></main>
+
+      <Dock items={dockItems} />
 
       {perfilOpen && (
         <div
