@@ -1,23 +1,12 @@
+/* Reglas propias de Historial. Filtros, buscador, rango de fechas,
+   tarjetas de resumen y estilo base de tabla viven en components/shared.css
+   (compartidos con Dashboard para que ambas páginas midan/se vean igual). */
+
 .historial-page { min-height:100vh; }
 .historial-content { padding:0 28px 40px; }
-.filtros-bar { display:flex; gap:10px; align-items:center; flex-wrap:wrap; margin-bottom:16px; }
-.filtros-bar select, .filtros-bar input[type="text"], .filtros-bar input[type="date"] { width:auto; font-size:12px; padding:6px 10px; }
-.filtros-bar input[type="text"] { min-width:200px; }
-.filtros-bar input[type="date"] { min-width:130px; }
+.historial-filtros { margin-bottom:16px; }
 .export-btns { display:flex; gap:8px; margin-left:auto; }
-.historial-table { width:100%; border-collapse:collapse; font-size:13px; min-width:640px; }
-.historial-table th { text-align:left; padding:10px 12px; font-size:11px; font-weight:600; text-transform:uppercase; letter-spacing:0.5px; color:var(--gray-400); border-bottom:var(--border); background:var(--gray-50); white-space:nowrap; }
-.historial-table td { padding:10px 12px; border-bottom:var(--border-light); color:var(--gray-800); white-space:nowrap; vertical-align:middle; }
-.historial-table tr:last-child td { border-bottom:none; }
-.historial-table tbody tr { cursor:pointer; transition:background 0.1s; }
-.historial-table tbody tr:hover td { background:var(--gray-50); }
-.albaran-id { font-family:var(--font-mono); font-size:12px !important; color:var(--blue-700) !important; font-weight:500; }
-.resumen-bar { display:grid; grid-template-columns:repeat(5,minmax(0,1fr)); gap:10px; margin-bottom:18px; }
-.resumen-chip { background:#fff; border:var(--border); border-radius:var(--radius-md); padding:12px 14px; }
-.resumen-chip .label { font-size:11px; color:var(--gray-400); margin-bottom:4px; }
-.resumen-chip .val { font-size:18px; font-weight:600; color:var(--gray-900); }
-.resumen-chip .sub { font-size:11px; color:var(--gray-400); margin-top:2px; }
-.empty-state { text-align:center; padding:40px; color:var(--gray-400); font-size:13px; }
+.historial-table { min-width:640px; }
 
 /* Truncar columnas de texto largo */
 .historial-table td:nth-child(3),
@@ -31,9 +20,6 @@
 
 @media (max-width: 1400px) {
   .historial-content { padding: 0 18px 32px; }
-  .resumen-bar { grid-template-columns: repeat(3, 1fr); gap: 8px; }
-  .resumen-chip { padding: 10px 12px; }
-  .historial-table th, .historial-table td { padding: 9px 10px; }
   .historial-table td:nth-child(3),
   .historial-table td:nth-child(4),
   .historial-table td:nth-child(5),
@@ -49,13 +35,8 @@
 
 @media (max-width: 1280px) {
   .historial-content { padding: 0 16px 28px; }
-  .historial-table { font-size: 12px; min-width: 560px; }
-  .historial-table th, .historial-table td { padding: 8px 8px; }
+  .historial-table { min-width: 560px; }
 }
 @media (max-width: 1100px) {
   .historial-content { padding: 0 12px 24px; }
-  .resumen-bar { grid-template-columns: repeat(3, 1fr); }
-}
-@media (max-width: 800px) {
-  .resumen-bar { grid-template-columns: repeat(2, 1fr); }
 }

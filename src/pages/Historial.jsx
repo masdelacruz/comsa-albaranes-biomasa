@@ -1,6 +1,6 @@
 import { useState, useMemo, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Download, Search, FileSpreadsheet, CheckSquare, Upload, Trash2, Square, X, Send } from 'lucide-react'
+import { Download, Search, FileSpreadsheet, CheckSquare, Upload, Trash2, Square, X, Send, Package, CheckCircle2, Scale, Droplet, Clock } from 'lucide-react'
 import ExcelJS from 'exceljs'
 import { Badge, FirmaSteps } from '../components/Badge'
 import { generarPDF } from '../utils/generarPDF'
@@ -244,18 +244,38 @@ export default function Historial({ albaranes, empresas = [], usuario, refetch, 
       </div>
 
       <div className="historial-content">
-        <div className="resumen-bar">
-          <div className="resumen-chip"><div className="label">Total albaranes</div><div className="val">{filtrados.length}</div><div className="sub">en selección actual</div></div>
-          <div className="resumen-chip"><div className="label">Cerrados</div><div className="val" style={{color:'var(--green-400)'}}>{cerrados}</div><div className="sub">de {filtrados.length} totales</div></div>
-          <div className="resumen-chip"><div className="label">Peso neto total</div><div className="val">{totalPesoNeto > 0 ? (totalPesoNeto/1000).toFixed(1)+' t' : '—'}</div><div className="sub">con pesada registrada</div></div>
-          <div className="resumen-chip"><div className="label">Humedad media</div><div className="val">{mediaHumedad}{mediaHumedad !== '—' ? '%' : ''}</div><div className="sub">{humedadMedia.length} muestras</div></div>
-          <div className="resumen-chip"><div className="label">Pendientes</div><div className="val" style={{color:'var(--amber-400)'}}>{filtrados.length - cerrados}</div><div className="sub">sin cerrar</div></div>
+        <div className="stat-grid">
+          <div className="stat-card stat-green">
+            <div className="stat-top"><span className="stat-label">Total albaranes</span><span className="stat-icon"><Package size={15} /></span></div>
+            <div className="stat-val">{filtrados.length}</div>
+            <div className="stat-sub">en selección actual</div>
+          </div>
+          <div className="stat-card stat-green">
+            <div className="stat-top"><span className="stat-label">Cerrados</span><span className="stat-icon"><CheckCircle2 size={15} /></span></div>
+            <div className="stat-val">{cerrados}</div>
+            <div className="stat-sub">de {filtrados.length} totales</div>
+          </div>
+          <div className="stat-card stat-blue">
+            <div className="stat-top"><span className="stat-label">Peso neto total</span><span className="stat-icon"><Scale size={15} /></span></div>
+            <div className="stat-val">{totalPesoNeto > 0 ? (totalPesoNeto/1000).toFixed(1)+' t' : '—'}</div>
+            <div className="stat-sub">con pesada registrada</div>
+          </div>
+          <div className="stat-card stat-blue">
+            <div className="stat-top"><span className="stat-label">Humedad media</span><span className="stat-icon"><Droplet size={15} /></span></div>
+            <div className="stat-val">{mediaHumedad}{mediaHumedad !== '—' ? '%' : ''}</div>
+            <div className="stat-sub">{humedadMedia.length} muestras</div>
+          </div>
+          <div className="stat-card stat-amber">
+            <div className="stat-top"><span className="stat-label">Pendientes</span><span className="stat-icon"><Clock size={15} /></span></div>
+            <div className="stat-val">{filtrados.length - cerrados}</div>
+            <div className="stat-sub">sin cerrar</div>
+          </div>
         </div>
 
-        <div className="filtros-bar">
-          <div style={{position:'relative',display:'flex',alignItems:'center'}}>
-            <Search size={13} style={{position:'absolute',left:8,color:'var(--gray-400)'}} />
-            <input type="text" placeholder="Buscar por ID, empresa, especie, origen..." value={busqueda} onChange={e => setBusqueda(e.target.value)} style={{paddingLeft:28}} />
+        <div className="filters-bar historial-filtros">
+          <div className="search-field">
+            <Search size={14} className="search-field-icon" />
+            <input type="text" className="search-field-input" placeholder="Buscar por ID, empresa, especie, origen..." value={busqueda} onChange={e => setBusqueda(e.target.value)} />
           </div>
           <select value={filtroProveedor} onChange={e => setFiltroProveedor(e.target.value)}>
             <option value="">Todos los proveedores</option>
@@ -281,13 +301,16 @@ export default function Historial({ albaranes, empresas = [], usuario, refetch, 
             <option value="humedad_pendiente">Humedad pendiente</option>
             <option value="cerrado">Cerrado</option>
           </select>
-          <div style={{display:'flex',alignItems:'center',gap:4}}>
-            <span style={{fontSize:11,color:'var(--gray-400)',whiteSpace:'nowrap'}}>Desde</span>
-            <input type="date" value={filtroFechaDesde} onChange={e => setFiltroFechaDesde(e.target.value)} />
-          </div>
-          <div style={{display:'flex',alignItems:'center',gap:4}}>
-            <span style={{fontSize:11,color:'var(--gray-400)',whiteSpace:'nowrap'}}>Hasta</span>
-            <input type="date" value={filtroFechaHasta} onChange={e => setFiltroFechaHasta(e.target.value)} />
+          <div className="date-range">
+            <div className="date-range-field">
+              <span>Desde</span>
+              <input type="date" value={filtroFechaDesde} onChange={e => setFiltroFechaDesde(e.target.value)} />
+            </div>
+            <div className="date-range-sep" />
+            <div className="date-range-field">
+              <span>Hasta</span>
+              <input type="date" value={filtroFechaHasta} onChange={e => setFiltroFechaHasta(e.target.value)} />
+            </div>
           </div>
           {(busqueda||filtroInstalacion||filtroAstilladora||filtroProveedor||filtroTransportista||filtroEstado||filtroFechaDesde||filtroFechaHasta) && (
             <button className="btn btn-ghost" onClick={limpiarFiltros} style={{fontSize:12}}>Limpiar filtros ×</button>
@@ -324,7 +347,7 @@ export default function Historial({ albaranes, empresas = [], usuario, refetch, 
 
         <div className="card" style={{padding:0, overflow:'clip'}}>
           <div style={{overflowX:'auto'}}>
-          <table className="historial-table">
+          <table className="data-table historial-table">
             <thead>
               <tr>
                 {seleccionando && <th style={{width:36}}></th>}
@@ -336,8 +359,8 @@ export default function Historial({ albaranes, empresas = [], usuario, refetch, 
                 <th>Instalación</th>
                 <th>Especie</th>
                 <th>Estella</th>
-                <th>Peso neto</th>
-                <th>Humedad</th>
+                <th style={{textAlign:'right'}}>Peso neto</th>
+                <th style={{textAlign:'right'}}>Humedad</th>
                 <th>Estado</th>
                 <th>Firmas</th>
                 {esSuperadmin && <th style={{width:36,padding:'10px 4px'}}></th>}
@@ -354,7 +377,7 @@ export default function Historial({ albaranes, empresas = [], usuario, refetch, 
                       <input type="checkbox" checked={seleccionados.has(a.id)} onChange={() => {}} style={{cursor:'pointer',pointerEvents:'none'}} />
                     </td>
                   )}
-                  <td className="albaran-id">{a.id}</td>
+                  <td className="row-id">{a.id}</td>
                   <td>{a.fecha?.slice(0,10).split('-').reverse().join('/')}</td>
                   <td>{a.proveedor}</td>
                   <td>{a.astilladora}</td>
@@ -362,8 +385,8 @@ export default function Historial({ albaranes, empresas = [], usuario, refetch, 
                   <td>{a.instalacion}</td>
                   <td>{a.especie}</td>
                   <td>{a.estella}</td>
-                  <td>{a.pesada.entrada && a.pesada.salida ? ((a.pesada.entrada-a.pesada.salida)/1000).toFixed(1)+' t' : <span style={{color:'var(--gray-300)'}}>—</span>}</td>
-                  <td>{a.pesada.humedad != null ? `${a.pesada.humedad}%` : <span style={{color:'var(--gray-300)'}}>—</span>}</td>
+                  <td style={{textAlign:'right'}}>{a.pesada.entrada && a.pesada.salida ? ((a.pesada.entrada-a.pesada.salida)/1000).toFixed(1)+' t' : <span style={{color:'var(--gray-300)'}}>—</span>}</td>
+                  <td style={{textAlign:'right'}}>{a.pesada.humedad != null ? `${a.pesada.humedad}%` : <span style={{color:'var(--gray-300)'}}>—</span>}</td>
                   <td style={{whiteSpace:'nowrap'}}>
                     <Badge estado={a.estado} />
                     {a.solicitaRevision && <span title="Solicitud de revisión desde campo" style={{marginLeft:6,color:'#d97706',fontSize:13,verticalAlign:'middle'}}>⚠</span>}

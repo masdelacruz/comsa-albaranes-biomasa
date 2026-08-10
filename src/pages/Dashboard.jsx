@@ -113,16 +113,16 @@ export default function Dashboard({ albaranes, empresas = [], usuario, borrarAlb
 
       <div className="dash-content">
         {/* KPIs */}
-        <div className="kpi-grid">
+        <div className="stat-grid">
           {kpis.map(k => {
             const Icon = k.icon
             return (
-              <div key={k.key} className={`kpi-card kpi-${k.tone}${k.onClick ? ' kpi-clickable' : ''}`} onClick={k.onClick}>
-                <div className="kpi-top">
-                  <span className="kpi-label">{k.label}</span>
-                  <span className="kpi-icon"><Icon size={15} /></span>
+              <div key={k.key} className={`stat-card stat-${k.tone}${k.onClick ? ' stat-clickable' : ''}`} onClick={k.onClick}>
+                <div className="stat-top">
+                  <span className="stat-label">{k.label}</span>
+                  <span className="stat-icon"><Icon size={15} /></span>
                 </div>
-                <div className="kpi-val">{k.value}</div>
+                <div className="stat-val">{k.value}</div>
               </div>
             )
           })}
@@ -156,10 +156,10 @@ export default function Dashboard({ albaranes, empresas = [], usuario, borrarAlb
           </div>
 
           {/* Filtros */}
-          <div className="filtros-bar">
-            <div className="dash-search">
-              <Search size={14} className="dash-search-icon" />
-              <input type="text" className="dash-search-input" placeholder="Buscar ID, empresa, especie..." value={busqueda} onChange={e => setBusqueda(e.target.value)} />
+          <div className="filters-bar dash-filtros-wrap">
+            <div className="search-field">
+              <Search size={14} className="search-field-icon" />
+              <input type="text" className="search-field-input" placeholder="Buscar ID, empresa, especie..." value={busqueda} onChange={e => setBusqueda(e.target.value)} />
             </div>
             <Filter size={13} color="var(--gray-400)" />
             <select value={filtroProveedor} onChange={e => setFiltroProveedor(e.target.value)}>
@@ -189,13 +189,13 @@ export default function Dashboard({ albaranes, empresas = [], usuario, borrarAlb
               <option value="cancelado">Anulado</option>
               {soloActivos === 'todos' && <option value="cerrado">Cerrado</option>}
             </select>
-            <div className="dash-date-group">
-              <div className="dash-date-field">
+            <div className="date-range">
+              <div className="date-range-field">
                 <span>Desde</span>
                 <input type="date" value={filtroFechaDesde} onChange={e => setFiltroFechaDesde(e.target.value)} />
               </div>
-              <div className="dash-date-sep" />
-              <div className="dash-date-field">
+              <div className="date-range-sep" />
+              <div className="date-range-field">
                 <span>Hasta</span>
                 <input type="date" value={filtroFechaHasta} onChange={e => setFiltroFechaHasta(e.target.value)} />
               </div>
@@ -207,7 +207,7 @@ export default function Dashboard({ albaranes, empresas = [], usuario, borrarAlb
 
           {/* Tabla */}
           <div className="table-wrap">
-            <table className="albaran-table">
+            <table className="data-table albaran-table">
               <thead>
                 <tr>
                   <th>Nº albarán</th>
@@ -230,7 +230,7 @@ export default function Dashboard({ albaranes, empresas = [], usuario, borrarAlb
                   <tr><td colSpan={11 + (esSuperadmin ? 1 : 0)} className="empty-state">No hay albaranes con los filtros seleccionados</td></tr>
                 ) : paginados.map(a => (
                   <tr key={a.id} onClick={() => navigate(`/albaran/${a.id}`)}>
-                    <td className="albaran-id">{a.id}</td>
+                    <td className="row-id">{a.id}</td>
                     <td>{a.fecha?.slice(0,10).split('-').reverse().join('/')}</td>
                     <td>{a.proveedor}</td>
                     <td>{a.astilladora}</td>
