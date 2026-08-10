@@ -9,14 +9,14 @@
 .dock-bar {
   display: flex;
   align-items: flex-end;
-  gap: 10px;
+  gap: 8px;
   padding: 8px 14px;
-  background: rgba(255,255,255,0.82);
+  background: rgba(255,255,255,0.9);
   backdrop-filter: blur(16px);
   -webkit-backdrop-filter: blur(16px);
-  border: 1px solid var(--gray-200);
-  border-radius: 22px;
-  box-shadow: 0 10px 34px rgba(0,0,0,0.14), 0 2px 8px rgba(0,0,0,0.06);
+  border: 1px solid #EAEAE6;
+  border-radius: 30px;
+  box-shadow: 0 8px 24px rgba(20,20,15,0.10), 0 2px 6px rgba(20,20,15,0.05);
 }
 
 .dock-btn {
@@ -28,22 +28,30 @@
   border: none;
   border-radius: 50%;
   background: var(--gray-100);
-  color: var(--gray-600);
+  color: var(--gray-700);
   cursor: pointer;
   transition: background 0.15s ease, color 0.15s ease;
 }
-.dock-btn:hover { background: var(--gray-200); color: var(--gray-800); }
+.dock-btn:hover { background: #ececE8; color: var(--gray-800); }
 
 .dock-btn--active { background: var(--green-400); color: #fff; }
 .dock-btn--active:hover { background: var(--green-600); color: #fff; }
 
 .dock-btn--avatar { background: var(--green-100); }
-.dock-btn--avatar:hover { background: var(--green-100); filter: brightness(0.96); }
+.dock-btn--avatar:hover { filter: brightness(0.97); }
 
 .dock-avatar {
   font-size: 12px;
   font-weight: 700;
-  color: var(--green-600);
+  color: var(--green-900);
+}
+
+.dock-divider {
+  width: 1px;
+  align-self: stretch;
+  margin: 6px 6px 6px 2px;
+  background: var(--gray-200);
+  flex-shrink: 0;
 }
 
 .dock-btn-dot {
@@ -59,21 +67,21 @@
 
 .dock-btn-badge {
   position: absolute;
-  top: -2px;
-  right: -2px;
-  min-width: 16px;
-  height: 16px;
+  top: -1px;
+  right: -1px;
+  min-width: 14px;
+  height: 14px;
   padding: 0 3px;
   border-radius: 99px;
   background: var(--blue-400);
   color: #fff;
-  font-size: 10px;
+  font-size: 9px;
   font-weight: 700;
   line-height: 1;
   display: flex;
   align-items: center;
   justify-content: center;
-  border: 2px solid #fff;
+  border: 1.5px solid #fff;
 }
 
 .dock-btn-tooltip {
@@ -96,5 +104,5 @@
 
 @media (max-width: 560px) {
   .dock-wrap { bottom: 10px; }
-  .dock-bar { gap: 6px; padding: 6px 10px; }
+  .dock-bar { gap: 5px; padding: 6px 10px; }
 }

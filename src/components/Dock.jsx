@@ -47,7 +47,12 @@ export default function Dock({ items }) {
         onMouseMove={(e) => mouseX.set(e.clientX)}
         onMouseLeave={() => mouseX.set(Infinity)}
       >
-        {items.map(item => <DockButton key={item.key} item={item} mouseX={mouseX} />)}
+        {items.map((item, i) => (
+          <span key={item.key} style={{ display: 'flex', alignItems: 'flex-end' }}>
+            {item.isAvatar && i > 0 && <span className="dock-divider" />}
+            <DockButton item={item} mouseX={mouseX} />
+          </span>
+        ))}
       </motion.div>
     </div>
   )

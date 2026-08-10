@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { AlertTriangle, Plus, Trash2, Search, Filter } from 'lucide-react'
+import { AlertTriangle, Plus, Trash2, Search, Filter, Package, CalendarClock, PenLine, CheckCircle2 } from 'lucide-react'
 import { Badge, FirmaSteps } from '../components/Badge'
 import { labelSemanaActual, isoWeek, isoWeekYear } from '../utils/semana'
 import '../components/shared.css'
@@ -81,17 +81,32 @@ export default function Dashboard({ albaranes, empresas = [], usuario, borrarAlb
     setFiltroEstado(''); setFiltroFechaDesde(''); setFiltroFechaHasta('')
   }
 
+  const kpis = [
+    { key: 'semana',   label: 'Albaranes esta semana', value: albaranesSemana.length, icon: Package,       tone: 'green' },
+    { key: 'prog',     label: 'Programados',           value: programados,            icon: CalendarClock, tone: 'blue', onClick: programados > 0 ? () => setFiltroEstado('programado') : undefined },
+    { key: 'firma',    label: 'Pendientes de firma',   value: pendienteFirma,         icon: PenLine,       tone: 'amber' },
+    { key: 'cerrados', label: 'Cerrados',              value: cerrados,               icon: CheckCircle2,  tone: 'green' },
+    { key: 'inc',      label: 'Con incidencia',        value: conIncidencia,          icon: AlertTriangle, tone: 'red' },
+  ]
+
+  const TABS = [
+    { label: 'Activos',    count: totalActivos,    val: 'activos'    },
+    { label: 'Cerrados',   count: cerrados,         val: 'cerrados'   },
+    { label: 'Rechazados', count: totalRechazados,  val: 'rechazados' },
+    { label: 'Todos',      count: albaranes.length, val: 'todos'      },
+  ]
+
   return (
     <>
     <div className="dashboard">
       <div className="page-header">
-        <div style={{display:'flex',alignItems:'center',justifyContent:'space-between'}}>
+        <div className="dash-header-row">
           <div>
             <div className="page-title">Dashboard</div>
             <div className="page-sub">{labelSemanaActual()}</div>
           </div>
-          <button className="btn btn-primary" onClick={() => navigate('/nuevo')}>
-            <Plus size={15} /> Nuevo albarán
+          <button className="btn btn-primary dash-cta" onClick={() => navigate('/nuevo')}>
+            <Plus size={16} /> Nuevo albarán
           </button>
         </div>
       </div>
@@ -99,11 +114,18 @@ export default function Dashboard({ albaranes, empresas = [], usuario, borrarAlb
       <div className="dash-content">
         {/* KPIs */}
         <div className="kpi-grid">
-          <div className="kpi-card"><div className="kpi-label">Albaranes esta semana</div><div className="kpi-val">{albaranesSemana.length}</div></div>
-          <div className="kpi-card" style={{cursor: programados > 0 ? 'pointer' : 'default'}} onClick={() => programados > 0 && setFiltroEstado('programado')}><div className="kpi-label">Programados</div><div className="kpi-val" style={{color: programados > 0 ? 'var(--gray-600)' : undefined}}>{programados}</div></div>
-          <div className="kpi-card"><div className="kpi-label">Pendientes de firma</div><div className="kpi-val amber">{pendienteFirma}</div></div>
-          <div className="kpi-card"><div className="kpi-label">Cerrados</div><div className="kpi-val green">{cerrados}</div></div>
-          <div className="kpi-card"><div className="kpi-label">Con incidencia</div><div className="kpi-val red">{conIncidencia}</div></div>
+          {kpis.map(k => {
+            const Icon = k.icon
+            return (
+              <div key={k.key} className={`kpi-card kpi-${k.tone}${k.onClick ? ' kpi-clickable' : ''}`} onClick={k.onClick}>
+                <div className="kpi-top">
+                  <span className="kpi-label">{k.label}</span>
+                  <span className="kpi-icon"><Icon size={15} /></span>
+                </div>
+                <div className="kpi-val">{k.value}</div>
+              </div>
+            )
+          })}
         </div>
 
         {/* Alertas humedad */}
@@ -115,86 +137,75 @@ export default function Dashboard({ albaranes, empresas = [], usuario, borrarAlb
           </div>
         ))}
 
-        {/* Cabecera tabla */}
-        <div className="table-header">
-          <div style={{display:'flex',alignItems:'center',gap:10,flexWrap:'wrap'}}>
-            <div className="section-label" style={{margin:0}}>
+        {/* Bloque principal: título + tabs + filtros + tabla, unificados */}
+        <div className="dash-main">
+          <div className="dash-main-head">
+            <div className="dash-main-title">
               {{ activos:'Albaranes activos', cerrados:'Albaranes cerrados', rechazados:'Rechazados y anulados', todos:'Todos los albaranes' }[soloActivos]}
             </div>
-            <div style={{display:'flex',gap:2,background:'var(--gray-100)',borderRadius:6,padding:2}}>
-              {[
-                { label:`Activos · ${totalActivos}`,        val:'activos'    },
-                { label:`Cerrados · ${cerrados}`,           val:'cerrados'   },
-                { label:`Rechazados · ${totalRechazados}`,  val:'rechazados' },
-                { label:`Todos · ${albaranes.length}`,      val:'todos'      },
-              ].map(({ label, val }) => (
+            <div className="dash-tabs">
+              {TABS.map(({ label, count, val }) => (
                 <button key={val}
+                  className={`dash-tab${soloActivos === val ? ' active' : ''}`}
                   onClick={() => { setSoloActivos(val); if (val === 'activos') setFiltroEstado('') }}
-                  style={{fontSize:11,padding:'3px 10px',borderRadius:4,border:'none',cursor:'pointer',
-                    background: soloActivos === val ? '#fff' : 'transparent',
-                    color: soloActivos === val ? 'var(--gray-800)' : 'var(--gray-400)',
-                    fontWeight: soloActivos === val ? 600 : 400,
-                    boxShadow: soloActivos === val ? '0 1px 3px rgba(0,0,0,0.1)' : 'none',
-                    transition:'all 0.15s',
-                  }}
-                >{label}</button>
+                >
+                  {label} <span className="dash-tab-count">{count}</span>
+                </button>
               ))}
             </div>
           </div>
-        </div>
 
-        {/* Filtros */}
-        <div className="filtros-bar">
-          <div style={{position:'relative',display:'flex',alignItems:'center'}}>
-            <Search size={12} style={{position:'absolute',left:7,color:'var(--gray-400)',pointerEvents:'none'}} />
-            <input type="text" placeholder="Buscar ID, empresa, especie..." value={busqueda}
-              onChange={e => setBusqueda(e.target.value)}
-              style={{paddingLeft:24,fontSize:12}}
-            />
+          {/* Filtros */}
+          <div className="filtros-bar">
+            <div className="dash-search">
+              <Search size={14} className="dash-search-icon" />
+              <input type="text" placeholder="Buscar ID, empresa, especie..." value={busqueda} onChange={e => setBusqueda(e.target.value)} />
+            </div>
+            <Filter size={13} color="var(--gray-400)" />
+            <select value={filtroProveedor} onChange={e => setFiltroProveedor(e.target.value)}>
+              <option value="">Todos los proveedores</option>
+              {proveedores.map(p => <option key={p}>{p}</option>)}
+            </select>
+            <select value={filtroAstilladora} onChange={e => setFiltroAstilladora(e.target.value)}>
+              <option value="">Todas las astilladoras</option>
+              {astilladoras.map(a => <option key={a}>{a}</option>)}
+            </select>
+            <select value={filtroTransportista} onChange={e => setFiltroTransportista(e.target.value)}>
+              <option value="">Todos los transportistas</option>
+              {transportistas.map(t => <option key={t}>{t}</option>)}
+            </select>
+            <select value={filtroInstalacion} onChange={e => setFiltroInstalacion(e.target.value)}>
+              <option value="">Todas las instalaciones</option>
+              {instalaciones.map(i => <option key={i}>{i}</option>)}
+            </select>
+            <select value={filtroEstado} onChange={e => setFiltroEstado(e.target.value)}>
+              <option value="">Todos los estados</option>
+              <option value="programado">Programado</option>
+              <option value="pendiente_campo">Pendiente campo</option>
+              <option value="pendiente_oficina">Pendiente oficina</option>
+              <option value="humedad_pendiente">Humedad pendiente</option>
+              <option value="rechazado_campo_astilladora">No gestionado · Astilladora</option>
+              <option value="rechazado_campo_instalacion">No gestionado · Instalación</option>
+              <option value="cancelado">Anulado</option>
+              {soloActivos === 'todos' && <option value="cerrado">Cerrado</option>}
+            </select>
+            <div className="dash-date-group">
+              <div className="dash-date-field">
+                <span>Desde</span>
+                <input type="date" value={filtroFechaDesde} onChange={e => setFiltroFechaDesde(e.target.value)} />
+              </div>
+              <div className="dash-date-sep" />
+              <div className="dash-date-field">
+                <span>Hasta</span>
+                <input type="date" value={filtroFechaHasta} onChange={e => setFiltroFechaHasta(e.target.value)} />
+              </div>
+            </div>
+            {hayFiltros && (
+              <button className="btn btn-ghost" onClick={limpiarFiltros} style={{fontSize:11}}>× Limpiar</button>
+            )}
           </div>
-          <Filter size={13} color="var(--gray-400)" />
-          <select value={filtroProveedor} onChange={e => setFiltroProveedor(e.target.value)}>
-            <option value="">Todos los proveedores</option>
-            {proveedores.map(p => <option key={p}>{p}</option>)}
-          </select>
-          <select value={filtroAstilladora} onChange={e => setFiltroAstilladora(e.target.value)}>
-            <option value="">Todas las astilladoras</option>
-            {astilladoras.map(a => <option key={a}>{a}</option>)}
-          </select>
-          <select value={filtroTransportista} onChange={e => setFiltroTransportista(e.target.value)}>
-            <option value="">Todos los transportistas</option>
-            {transportistas.map(t => <option key={t}>{t}</option>)}
-          </select>
-          <select value={filtroInstalacion} onChange={e => setFiltroInstalacion(e.target.value)}>
-            <option value="">Todas las instalaciones</option>
-            {instalaciones.map(i => <option key={i}>{i}</option>)}
-          </select>
-          <select value={filtroEstado} onChange={e => setFiltroEstado(e.target.value)}>
-            <option value="">Todos los estados</option>
-            <option value="programado">Programado</option>
-            <option value="pendiente_campo">Pendiente campo</option>
-            <option value="pendiente_oficina">Pendiente oficina</option>
-            <option value="humedad_pendiente">Humedad pendiente</option>
-            <option value="rechazado_campo_astilladora">No gestionado · Astilladora</option>
-            <option value="rechazado_campo_instalacion">No gestionado · Instalación</option>
-            <option value="cancelado">Anulado</option>
-            {soloActivos === 'todos' && <option value="cerrado">Cerrado</option>}
-          </select>
-          <div style={{display:'flex',alignItems:'center',gap:4}}>
-            <span style={{fontSize:11,color:'var(--gray-400)',whiteSpace:'nowrap'}}>Desde</span>
-            <input type="date" value={filtroFechaDesde} onChange={e => setFiltroFechaDesde(e.target.value)} />
-          </div>
-          <div style={{display:'flex',alignItems:'center',gap:4}}>
-            <span style={{fontSize:11,color:'var(--gray-400)',whiteSpace:'nowrap'}}>Hasta</span>
-            <input type="date" value={filtroFechaHasta} onChange={e => setFiltroFechaHasta(e.target.value)} />
-          </div>
-          {hayFiltros && (
-            <button className="btn btn-ghost" onClick={limpiarFiltros} style={{fontSize:11}}>× Limpiar</button>
-          )}
-        </div>
 
-        {/* Tabla */}
-        <div className="card" style={{padding:0,overflow:'clip'}}>
+          {/* Tabla */}
           <div className="table-wrap">
             <table className="albaran-table">
               <thead>
