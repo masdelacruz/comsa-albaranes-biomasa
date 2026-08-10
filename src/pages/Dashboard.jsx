@@ -159,7 +159,7 @@ export default function Dashboard({ albaranes, empresas = [], usuario, borrarAlb
           <div className="filtros-bar">
             <div className="dash-search">
               <Search size={14} className="dash-search-icon" />
-              <input type="text" placeholder="Buscar ID, empresa, especie..." value={busqueda} onChange={e => setBusqueda(e.target.value)} />
+              <input type="text" className="dash-search-input" placeholder="Buscar ID, empresa, especie..." value={busqueda} onChange={e => setBusqueda(e.target.value)} />
             </div>
             <Filter size={13} color="var(--gray-400)" />
             <select value={filtroProveedor} onChange={e => setFiltroProveedor(e.target.value)}>
