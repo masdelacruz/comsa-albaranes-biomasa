@@ -2,15 +2,15 @@
    Sustituye al icono estático de un botón mientras su acción está en
    curso (generar/descargar PDF...), para que quede claro que el clic
    se ha registrado y algo se está ejecutando. */
-.uiv-loader { width:15px; height:15px; display:inline-block; vertical-align:middle; flex-shrink:0; }
+.uiv-loader { width:16px; height:16px; display:inline-block; vertical-align:middle; flex-shrink:0; }
 .uiv-loader-box {
-  width:15px; height:15px;
+  width:16px; height:16px;
   fill:none;
-  stroke-width:15px;
+  stroke-width:8px;
   stroke:var(--green-400);
-  stroke-dasharray:15;
+  stroke-dasharray:16;
   stroke-dashoffset:50%;
-  animation:uiv-loader-spin 2s linear infinite;
+  animation:uiv-loader-spin 1s linear infinite;
 }
 @keyframes uiv-loader-spin {
   to { stroke-dashoffset:250%; }
