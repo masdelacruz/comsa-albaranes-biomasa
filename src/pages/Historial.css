@@ -4,7 +4,7 @@
 
 .historial-page { min-height:100vh; }
 .historial-content { padding:0 28px 40px; }
-.historial-filtros { margin-bottom:16px; }
+.historial-filtros { margin:20px 0 16px; }
 .export-btns { display:flex; gap:8px; margin-left:auto; }
 .historial-table { min-width:640px; }
 
