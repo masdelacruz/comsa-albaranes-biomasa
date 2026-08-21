@@ -4,7 +4,7 @@ import '../components/shared.css'
 // size: 'sm' (icono inline) o 'lg' (overlay a pantalla completa).
 export default function Loader({ size = 'sm' }) {
   return (
-    <span className={`uiv-loader-spin uiv-loader-${size}`}>
+    <span className={`uiv-loader-wrap uiv-loader-${size}`}>
       <svg className="uiv-loader-svg">
         <rect className="uiv-loader-box" />
       </svg>

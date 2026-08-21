@@ -1,13 +1,8 @@
 /* Loader "boxes" — From Uiverse.io by elijahgummer (uiverse.io/elijahgummer/sour-earwig-21),
    en el verde de marca. La forma (el "notch") sale de stroke-dasharray
-   igual al tamaño de la caja. El movimiento real es una rotación por
-   transform en un wrapper aparte: esa animación la lleva el hilo de
-   composición del navegador, así que sigue viéndose fluida aunque el
-   hilo principal esté ocupado generando el PDF con jsPDF — algo que NO
-   pasa con stroke-dashoffset a secas, que depende del hilo principal y
-   se congela justo cuando el PDF se está dibujando. */
-.uiv-loader-spin { display:inline-block; animation:uiv-loader-rotate 0.9s linear infinite; }
-@keyframes uiv-loader-rotate { to { transform:rotate(360deg); } }
+   igual al tamaño de la caja; el movimiento es solo la animación de
+   stroke-dashoffset del diseño original, sin giro añadido. */
+.uiv-loader-wrap { display:inline-block; }
 
 .uiv-loader-svg { display:block; }
 .uiv-loader-box { fill:none; stroke:var(--green-400); stroke-dashoffset:50%; animation:uiv-loader-dash 2s linear infinite; }
