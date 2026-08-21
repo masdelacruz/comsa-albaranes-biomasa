@@ -261,30 +261,30 @@ export default function Dashboard({ albaranes, empresas = [], usuario, borrarAlb
               </tbody>
             </table>
           </div>
-        </div>
 
-        {/* Paginación */}
-        {totalPaginas > 1 && (
-          <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',padding:'12px 4px',marginTop:8}}>
-            <div style={{fontSize:12,color:'var(--gray-500)'}}>
-              Mostrando {(pagina-1)*POR_PAGINA+1}–{Math.min(pagina*POR_PAGINA, filtrados.length)} de {filtrados.length}
+          {/* Paginación — pie de la misma tarjeta, no un bloque aparte */}
+          {totalPaginas > 1 && (
+            <div className="list-pagination">
+              <div className="list-pagination-info">
+                Mostrando {(pagina-1)*POR_PAGINA+1}–{Math.min(pagina*POR_PAGINA, filtrados.length)} de {filtrados.length}
+              </div>
+              <div className="list-pagination-pages">
+                <button className="btn" disabled={pagina===1} onClick={() => setPagina(1)}>«</button>
+                <button className="btn" disabled={pagina===1} onClick={() => setPagina(p => p-1)}>‹</button>
+                {Array.from({length:Math.min(5,totalPaginas)}, (_,i) => {
+                  const inicio = Math.max(1, Math.min(pagina-2, totalPaginas-4))
+                  const p = inicio + i
+                  if (p > totalPaginas) return null
+                  return (
+                    <button key={p} className={`btn${p===pagina?' btn-primary':''}`} onClick={() => setPagina(p)}>{p}</button>
+                  )
+                })}
+                <button className="btn" disabled={pagina===totalPaginas} onClick={() => setPagina(p => p+1)}>›</button>
+                <button className="btn" disabled={pagina===totalPaginas} onClick={() => setPagina(totalPaginas)}>»</button>
+              </div>
             </div>
-            <div style={{display:'flex',gap:4}}>
-              <button className="btn" style={{fontSize:12,padding:'4px 10px'}} disabled={pagina===1} onClick={() => setPagina(1)}>«</button>
-              <button className="btn" style={{fontSize:12,padding:'4px 10px'}} disabled={pagina===1} onClick={() => setPagina(p => p-1)}>‹</button>
-              {Array.from({length:Math.min(5,totalPaginas)}, (_,i) => {
-                const inicio = Math.max(1, Math.min(pagina-2, totalPaginas-4))
-                const p = inicio + i
-                if (p > totalPaginas) return null
-                return (
-                  <button key={p} className={`btn${p===pagina?' btn-primary':''}`} style={{fontSize:12,padding:'4px 10px'}} onClick={() => setPagina(p)}>{p}</button>
-                )
-              })}
-              <button className="btn" style={{fontSize:12,padding:'4px 10px'}} disabled={pagina===totalPaginas} onClick={() => setPagina(p => p+1)}>›</button>
-              <button className="btn" style={{fontSize:12,padding:'4px 10px'}} disabled={pagina===totalPaginas} onClick={() => setPagina(totalPaginas)}>»</button>
-            </div>
-          </div>
-        )}
+          )}
+        </div>
       </div>
     </div>
 
