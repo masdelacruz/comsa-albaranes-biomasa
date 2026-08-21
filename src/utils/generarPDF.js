@@ -22,6 +22,14 @@ const fmt = (b64) => {
   return 'PNG'
 }
 
+// Cede el hilo principal un instante. jsPDF dibuja de forma síncrona y
+// bloquea el hilo mientras lo hace, así que el loader de "Generando PDF..."
+// (animación por stroke-dashoffset, sin giro) se queda congelado si no le
+// damos al navegador ninguna oportunidad de pintar entre medias. Repartir
+// generarPDF en trozos separados por tick() hace que esa animación avance
+// de verdad en vez de quedarse en un único fotograma todo el rato.
+const tick = () => new Promise(r => setTimeout(r, 0))
+
 // ── caché de logos ──────────────────────────────────────────────────────────
 // Los logos institucionales (Comsa, Applus×4, PEFC, SURE) casi nunca cambian,
 // pero antes se pedían a /storage/logos y se convertían a base64 EN CADA
@@ -190,6 +198,8 @@ export async function generarPDF(a, options = {}) {
     doc.text(`Fecha:  ${fechaStr}`, sx + 2, cabY + 23)
   }
 
+  await tick()
+
   // ── TABLA DE DATOS ──────────────────────────────────────────────────────────
   let y = cabY + cabH + 4
 
@@ -215,6 +225,8 @@ export async function generarPDF(a, options = {}) {
   })
 
   y = doc.lastAutoTable.finalY + 5
+
+  await tick()
 
   // ── PESOS ───────────────────────────────────────────────────────────────────
   doc.setDrawColor(200, 200, 200)
@@ -323,6 +335,8 @@ export async function generarPDF(a, options = {}) {
   }
   y += 23
 
+  await tick()
+
   // ── CAJAS DE FIRMA ──────────────────────────────────────────────────────────
   const sigH    = 46
   const sigW    = contentW / 2 - 2
@@ -384,6 +398,8 @@ export async function generarPDF(a, options = {}) {
   }
 
   const nombre = includeTicket ? `${a.id}_albaran_ticket_comsa.pdf` : `${a.id}_albaran_comsa.pdf`
+
+  await tick()
 
   // En modo preview devolvemos la blob URL para mostrarla embebida en un
   // <iframe> dentro de la propia página (más rápido y sin abrir pestaña
