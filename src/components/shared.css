@@ -56,18 +56,21 @@
    ni redefina estas.
    ══════════════════════════════════════════════════════════════════════ */
 
-/* ── Barra de filtros: buscador + selects + rango de fechas ─────────── */
+/* ── Barra de filtros: buscador + selects + rango de fechas ───────────
+   Los campos crecen (flex-grow) para repartirse todo el ancho de la
+   tarjeta y quedar a ras con los bordes de la tabla de abajo, en vez
+   de agruparse a la izquierda dejando hueco a la derecha. ────────── */
 .filters-bar { display:flex; gap:8px; align-items:center; flex-wrap:wrap; }
-.filters-bar select { height:40px; width:auto; font-size:12.5px; padding:0 12px; border-color:var(--gray-200); }
+.filters-bar select { height:40px; flex:1 1 130px; min-width:110px; font-size:12.5px; padding:0 12px; border-color:var(--gray-200); }
 
-.search-field { position:relative; display:flex; align-items:center; flex:1 1 240px; max-width:320px; min-width:180px; }
+.search-field { position:relative; display:flex; align-items:center; flex:1.6 1 220px; min-width:180px; }
 .search-field-icon { position:absolute; left:12px; top:50%; transform:translateY(-50%); color:var(--gray-400); pointer-events:none; }
 .search-field-input { height:40px; width:100%; min-width:0; font-size:12.5px; padding:0 12px 0 34px; border-color:var(--gray-200); }
 
-.date-range { display:flex; align-items:center; height:40px; border:1px solid var(--gray-200); border-radius:8px; background:#fff; }
-.date-range-field { display:flex; align-items:center; gap:6px; padding:0 10px; }
+.date-range { display:flex; align-items:center; height:40px; border:1px solid var(--gray-200); border-radius:8px; background:#fff; flex:1.4 1 230px; }
+.date-range-field { display:flex; align-items:center; gap:6px; padding:0 10px; flex:1 1 0; }
 .date-range-field span { font-size:11px; color:var(--gray-400); white-space:nowrap; }
-.date-range-field input[type="date"] { border:none; background:transparent; padding:0; width:auto; height:auto; font-size:12px; }
+.date-range-field input[type="date"] { border:none; background:transparent; padding:0; width:100%; height:auto; font-size:12px; }
 .date-range-sep { width:1px; height:20px; background:var(--gray-200); flex-shrink:0; }
 
 /* ── Tarjetas de estadística (KPIs / resúmenes) ──────────────────────── */
