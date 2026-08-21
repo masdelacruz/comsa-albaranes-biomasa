@@ -66,6 +66,10 @@ export default function Historial({ albaranes, empresas = [], usuario, refetch, 
 
   const handleDescargarPDFs = async () => {
     setDescargando(true)
+    // generarPDF dibuja de forma síncrona (bloquea el hilo principal);
+    // cedemos el hilo un instante para que el navegador pinte el loader
+    // antes de que arranque ese bloqueo (ver mismo fix en DetalleAlbaran.jsx).
+    await new Promise(r => setTimeout(r, 0))
     const inicio = Date.now()
     for (const id of seleccionados) {
       const a = albaranes.find(x => x.id === id)
