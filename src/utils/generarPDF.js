@@ -32,7 +32,7 @@ const fmt = (b64) => {
 const LOGO_IDS = { comsa: 'logoComsa', applus_1: 'logoApplus1', applus_2: 'logoApplus2', applus_3: 'logoApplus3', applus_4: 'logoApplus4', pefc: 'logoPefc', sure: 'logoSure' }
 let logosCachePromise = null
 
-function cargarLogos() {
+export function cargarLogos() {
   if (logosCachePromise) return logosCachePromise
   logosCachePromise = (async () => {
     const vacio = Object.fromEntries(Object.values(LOGO_IDS).map(v => [v, null]))

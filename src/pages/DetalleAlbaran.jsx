@@ -2,7 +2,7 @@ import { useRef, useState, useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { ExternalLink, CheckCircle, Clock, FileDown, Upload, Eye, FileText, AlertTriangle, Copy, Pencil, X, Check, Trash2, MapPin, Share2, Truck, RotateCcw } from 'lucide-react'
 import { Badge } from '../components/Badge'
-import { generarPDF, generarPDFA5 } from '../utils/generarPDF'
+import { generarPDF, generarPDFA5, cargarLogos } from '../utils/generarPDF'
 import { api } from '../lib/api'
 import { ESPECIES, TIPOS_BIOMASA } from '../data/mockData'
 import SelectField from '../components/SelectField'
@@ -128,7 +128,10 @@ export default function DetalleAlbaran({ albaranes, simularFirma, updateFirma, s
   const [copiado, setCopiado]               = useState('')
   const [dragOverDoc, setDragOverDoc]       = useState(null)   // nombre del doc sobre el que se arrastra
   const [dragOverTicket, setDragOverTicket] = useState(false)
-  const [generandoPdf, setGenerandoPdf]     = useState(false)
+  // Un flag por botón (preview / descargar): antes era un único booleano
+  // compartido y al pulsar uno de los dos, ambos se ponían en "Generando..."
+  // aunque solo se estuviera generando uno.
+  const [generandoPdf, setGenerandoPdf]     = useState({ preview: false, descargar: false })
   const [previewPdf, setPreviewPdf]         = useState(null)   // { url, nombre } del PDF mostrado en el modal
 
   const [editandoDatos,  setEditandoDatos]  = useState(false)
@@ -178,6 +181,10 @@ export default function DetalleAlbaran({ albaranes, simularFirma, updateFirma, s
       if (data?.especie?.length)     setEspeciesTipo(data.especie.map(e => e.valor))
       if (data?.estella?.length)     setEstellas(data.estella.map(e => e.valor))
     }).catch(() => {})
+    // Precarga en segundo plano los logos del PDF (cacheados a nivel de módulo,
+    // ver generarPDF.js) para que al pulsar "Vista previa" o "Descargar PDF" ya
+    // estén listos y no se note la espera de red la primera vez de la sesión.
+    cargarLogos()
   }, [])
 
   const a = albaranes.find(x => x.id === id)
@@ -297,12 +304,13 @@ export default function DetalleAlbaran({ albaranes, simularFirma, updateFirma, s
   }
 
   const handleGenerarPDF = async (opts) => {
-    setGenerandoPdf(true)
+    const modo = opts.preview ? 'preview' : 'descargar'
+    setGenerandoPdf(prev => ({ ...prev, [modo]: true }))
     try {
       const resultado = await generarPDF(a, opts)
       if (opts.preview && resultado) setPreviewPdf(resultado)
     } finally {
-      setGenerandoPdf(false)
+      setGenerandoPdf(prev => ({ ...prev, [modo]: false }))
     }
   }
 
@@ -646,8 +654,8 @@ export default function DetalleAlbaran({ albaranes, simularFirma, updateFirma, s
                 <RotateCcw size={14} /> Reabrir
               </button>
             )}
-            <MenuPDF a={a} modo="preview"    generando={generandoPdf} onGenerar={handleGenerarPDF} />
-            <MenuPDF a={a} modo="descargar"  generando={generandoPdf} onGenerar={handleGenerarPDF} />
+            <MenuPDF a={a} modo="preview"    generando={generandoPdf.preview}   onGenerar={handleGenerarPDF} />
+            <MenuPDF a={a} modo="descargar"  generando={generandoPdf.descargar} onGenerar={handleGenerarPDF} />
             <button className="btn" onClick={() => { setDuplicarOpen(true); setNumCopias(1) }}>
               <Copy size={14} /> Duplicar
             </button>
