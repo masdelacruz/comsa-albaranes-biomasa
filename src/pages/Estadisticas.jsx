@@ -1,4 +1,5 @@
 import { useMemo } from 'react'
+import { Package, CheckCircle2, Scale, Building2, Factory, PieChart, TrendingUp, TrendingDown, Minus, Table2 } from 'lucide-react'
 import { ultimas4Semanas } from '../utils/semana'
 import '../components/shared.css'
 import './Estadisticas.css'
@@ -51,6 +52,10 @@ export default function Estadisticas({ albaranes }) {
     }
 
     const semanas = ultimas4Semanas(albaranes)
+    const actual  = semanas[semanas.length - 1]?.val ?? 0
+    const previa  = semanas[semanas.length - 2]?.val ?? 0
+    const tendenciaPct = previa > 0 ? Math.round(((actual - previa) / previa) * 100) : (actual > 0 ? 100 : 0)
+    const tendencia = actual === previa ? 'flat' : (actual > previa ? 'up' : 'down')
 
     return {
       total, cerrados, pendientes, humedadMedia, pesoTotal,
@@ -60,6 +65,7 @@ export default function Estadisticas({ albaranes }) {
       porEstado:      Object.entries(porEstado).filter(([,v]) => v > 0),
       semanas,
       maxSemana: Math.max(...semanas.map(s => s.val), 1),
+      tendencia, tendenciaPct,
     }
   }, [albaranes])
 
@@ -71,35 +77,43 @@ export default function Estadisticas({ albaranes }) {
       </div>
 
       <div className="stats-content">
-        <div className="stats-grid-3">
-          <div className="stat-card">
-            <div className="kpi-big">
-              <div className="kpi-big-val" style={{color:'var(--gray-900)'}}>{stats.total}</div>
-              <div className="kpi-big-label">Albaranes totales</div>
-              <div className="kpi-big-sub">en total</div>
+        <div className="section-label">Resumen general</div>
+        <div className="es-kpi-grid">
+          <div className="es-kpi">
+            <div className="es-kpi-top">
+              <span className="es-kpi-label">Albaranes totales</span>
+              <span className="es-icon tone-blue"><Package size={14} /></span>
             </div>
+            <div className="es-kpi-val">{stats.total}</div>
+            <div className="es-kpi-sub">en total</div>
           </div>
-          <div className="stat-card">
-            <div className="kpi-big">
-              <div className="kpi-big-val" style={{color:'var(--green-400)'}}>{stats.cerrados}</div>
-              <div className="kpi-big-label">Cerrados correctamente</div>
-              <div className="kpi-big-sub">{stats.total > 0 ? Math.round(stats.cerrados/stats.total*100) : 0}% del total</div>
+          <div className="es-kpi">
+            <div className="es-kpi-top">
+              <span className="es-kpi-label">Cerrados correctamente</span>
+              <span className="es-icon tone-green"><CheckCircle2 size={14} /></span>
             </div>
+            <div className="es-kpi-val">{stats.cerrados}</div>
+            <div className="es-kpi-sub">{stats.total > 0 ? Math.round(stats.cerrados/stats.total*100) : 0}% del total</div>
           </div>
-          <div className="stat-card">
-            <div className="kpi-big">
-              <div className="kpi-big-val" style={{color:'var(--green-400)'}}>
-                {stats.pesoTotal > 0 ? (stats.pesoTotal/1000).toFixed(1) + ' t' : '—'}
-              </div>
-              <div className="kpi-big-label">Peso neto gestionado</div>
-              <div className="kpi-big-sub">con pesada registrada</div>
+          <div className="es-kpi">
+            <div className="es-kpi-top">
+              <span className="es-kpi-label">Peso neto gestionado</span>
+              <span className="es-icon tone-purple"><Scale size={14} /></span>
             </div>
+            <div className="es-kpi-val">{stats.pesoTotal > 0 ? (stats.pesoTotal/1000).toFixed(1) + ' t' : '—'}</div>
+            <div className="es-kpi-sub">con pesada registrada</div>
           </div>
         </div>
 
+        <div className="section-label">Distribución</div>
         <div className="stats-grid">
-          <div className="stat-card">
-            <div className="stat-card-title">Albaranes por instalación</div>
+          <div className="es-card">
+            <div className="es-card-head">
+              <div className="es-card-head-left">
+                <span className="es-icon tone-blue"><Building2 size={14} /></span>
+                <span className="es-card-title">Albaranes por instalación</span>
+              </div>
+            </div>
             {stats.porInstalacion.map(([inst, data], i) => (
               <div key={inst} className="bar-row">
                 <div className="bar-label" title={inst}>{inst}</div>
@@ -109,13 +123,19 @@ export default function Estadisticas({ albaranes }) {
                     background: COLORES[i % COLORES.length]
                   }} />
                 </div>
+                <div className="bar-pct">{Math.round(data.total / stats.total * 100)}%</div>
                 <div className="bar-val">{data.total}</div>
               </div>
             ))}
           </div>
 
-          <div className="stat-card">
-            <div className="stat-card-title">Albaranes por astilladora</div>
+          <div className="es-card">
+            <div className="es-card-head">
+              <div className="es-card-head-left">
+                <span className="es-icon tone-orange"><Factory size={14} /></span>
+                <span className="es-card-title">Albaranes por astilladora</span>
+              </div>
+            </div>
             {stats.porAstilladora.map(([ast, count], i) => (
               <div key={ast} className="bar-row">
                 <div className="bar-label" title={ast}>{ast}</div>
@@ -125,15 +145,22 @@ export default function Estadisticas({ albaranes }) {
                     background: COLORES[i % COLORES.length]
                   }} />
                 </div>
+                <div className="bar-pct">{Math.round(count / stats.total * 100)}%</div>
                 <div className="bar-val">{count}</div>
               </div>
             ))}
           </div>
         </div>
 
+        <div className="section-label">Estado y tendencia</div>
         <div className="stats-grid">
-          <div className="stat-card">
-            <div className="stat-card-title">Estado de albaranes</div>
+          <div className="es-card">
+            <div className="es-card-head">
+              <div className="es-card-head-left">
+                <span className="es-icon tone-purple"><PieChart size={14} /></span>
+                <span className="es-card-title">Estado de albaranes</span>
+              </div>
+            </div>
             <div className="donut-wrap">
               <svg width="90" height="90" viewBox="0 0 90 90">
                 {(() => {
@@ -170,8 +197,17 @@ export default function Estadisticas({ albaranes }) {
             </div>
           </div>
 
-          <div className="stat-card">
-            <div className="stat-card-title">Volumen semanal (albaranes)</div>
+          <div className="es-card">
+            <div className="es-card-head">
+              <div className="es-card-head-left">
+                <span className="es-icon tone-green"><TrendingUp size={14} /></span>
+                <span className="es-card-title">Volumen semanal</span>
+              </div>
+              <span className={`tendencia ${stats.tendencia}`}>
+                {stats.tendencia === 'up' ? <TrendingUp size={11} /> : stats.tendencia === 'down' ? <TrendingDown size={11} /> : <Minus size={11} />}
+                {stats.tendencia === 'flat' ? 'Igual' : `${stats.tendenciaPct > 0 ? '+' : ''}${stats.tendenciaPct}%`}
+              </span>
+            </div>
             <div className="timeline-semana">
               {stats.semanas.map(s => (
                 <div key={s.label} className="semana-bar-wrap">
@@ -191,8 +227,14 @@ export default function Estadisticas({ albaranes }) {
           </div>
         </div>
 
-        <div className="stat-card">
-          <div className="stat-card-title">Detalle por instalación</div>
+        <div className="section-label">Detalle</div>
+        <div className="es-card">
+          <div className="es-card-head">
+            <div className="es-card-head-left">
+              <span className="es-icon tone-blue"><Table2 size={14} /></span>
+              <span className="es-card-title">Detalle por instalación</span>
+            </div>
+          </div>
           <table className="instalacion-table">
             <thead>
               <tr>
