@@ -1,23 +1,28 @@
 /* Loader "boxes" — From Uiverse.io by elijahgummer (uiverse.io/elijahgummer/sour-earwig-21),
-   en el verde de marca. Misma proporción que el original (stroke-width y
-   dasharray igual al tamaño de la caja: es lo que le da esa forma sólida
-   y reconocible, no un grosor a la mitad) escalado a tamaño de icono.
-   Sustituye al icono estático de un botón mientras su acción está en
-   curso (generar/descargar PDF...), para que quede claro que el clic
-   se ha registrado y algo se está ejecutando. */
-.uiv-loader { width:18px; height:18px; display:inline-block; vertical-align:middle; flex-shrink:0; }
-.uiv-loader-box {
-  width:18px; height:18px;
-  fill:none;
-  stroke-width:18px;
-  stroke:var(--green-400);
-  stroke-dasharray:18;
-  stroke-dashoffset:50%;
-  animation:uiv-loader-spin 2s linear infinite;
-}
-@keyframes uiv-loader-spin {
-  to { stroke-dashoffset:250%; }
-}
+   en el verde de marca. La forma (el "notch") sale de stroke-dasharray
+   igual al tamaño de la caja. El movimiento real es una rotación por
+   transform en un wrapper aparte: esa animación la lleva el hilo de
+   composición del navegador, así que sigue viéndose fluida aunque el
+   hilo principal esté ocupado generando el PDF con jsPDF — algo que NO
+   pasa con stroke-dashoffset a secas, que depende del hilo principal y
+   se congela justo cuando el PDF se está dibujando. */
+.uiv-loader-spin { display:inline-block; animation:uiv-loader-rotate 0.9s linear infinite; }
+@keyframes uiv-loader-rotate { to { transform:rotate(360deg); } }
+
+.uiv-loader-svg { display:block; }
+.uiv-loader-box { fill:none; stroke:var(--green-400); stroke-dashoffset:50%; animation:uiv-loader-dash 2s linear infinite; }
+@keyframes uiv-loader-dash { to { stroke-dashoffset:250%; } }
+
+.uiv-loader-sm, .uiv-loader-sm .uiv-loader-svg, .uiv-loader-sm .uiv-loader-box { width:18px; height:18px; }
+.uiv-loader-sm .uiv-loader-box { stroke-width:18px; stroke-dasharray:18; }
+
+.uiv-loader-lg, .uiv-loader-lg .uiv-loader-svg, .uiv-loader-lg .uiv-loader-box { width:46px; height:46px; }
+.uiv-loader-lg .uiv-loader-box { stroke-width:46px; stroke-dasharray:46; }
+
+/* ── Overlay centrado para acciones largas (generar PDF...) ──────────── */
+.pdf-loading-overlay { position:fixed; inset:0; background:rgba(20,20,15,0.35); display:flex; align-items:center; justify-content:center; z-index:300; }
+.pdf-loading-card { background:#fff; border-radius:var(--radius-xl); padding:32px 46px; display:flex; flex-direction:column; align-items:center; gap:16px; box-shadow:0 20px 60px rgba(0,0,0,0.25); }
+.pdf-loading-text { font-size:13px; font-weight:600; color:var(--gray-700); }
 
 .badge { display:inline-block; padding:3px 8px; border-radius:20px; font-size:11px; font-weight:600; letter-spacing:0.1px; white-space:nowrap; }
 .badge-green  { background:var(--green-100);  color:var(--green-600);  }

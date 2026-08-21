@@ -2,7 +2,7 @@ import { useRef, useState, useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { ExternalLink, CheckCircle, Clock, FileDown, Upload, Eye, FileText, AlertTriangle, Copy, Pencil, X, Check, Trash2, MapPin, Share2, Truck, RotateCcw } from 'lucide-react'
 import { Badge } from '../components/Badge'
-import Loader from '../components/Loader'
+import PdfLoadingOverlay from '../components/PdfLoadingOverlay'
 import { generarPDF, generarPDFA5, cargarLogos } from '../utils/generarPDF'
 import { api } from '../lib/api'
 import { ESPECIES, TIPOS_BIOMASA } from '../data/mockData'
@@ -59,7 +59,7 @@ function MenuPDF({ a, modo, generando, onGenerar }) {
   if (!tieneSure) {
     return (
       <button className="btn" onClick={() => disparar({})} disabled={generando}>
-        {generando ? <Loader /> : <Icon size={15} />} {generando ? 'Generando...' : label}
+        <Icon size={15} /> {generando ? 'Generando...' : label}
       </button>
     )
   }
@@ -67,7 +67,7 @@ function MenuPDF({ a, modo, generando, onGenerar }) {
   return (
     <div style={{position:'relative'}}>
       <button className="btn" onClick={() => setOpen(o => !o)} disabled={generando}>
-        {generando ? <Loader /> : <Icon size={15} />} {generando ? 'Generando...' : `${label} ▾`}
+        <Icon size={15} /> {generando ? 'Generando...' : `${label} ▾`}
       </button>
       {open && (
         <div style={{position:'absolute',top:'calc(100% + 4px)',right:0,background:'#fff',border:'var(--border)',borderRadius:'var(--radius-md)',boxShadow:'0 4px 16px rgba(0,0,0,0.1)',zIndex:50,minWidth:220}}>
@@ -560,6 +560,10 @@ export default function DetalleAlbaran({ albaranes, simularFirma, updateFirma, s
 
   return (
     <>
+    <PdfLoadingOverlay
+      show={generandoPdf.preview || generandoPdf.descargar}
+      texto={generandoPdf.preview ? 'Generando vista previa...' : 'Generando PDF...'}
+    />
     <div className="detalle-page">
       {toast && (
         <div className="toast-guardado">

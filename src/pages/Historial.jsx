@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { Download, Search, FileSpreadsheet, CheckSquare, Upload, Trash2, Square, X, Send, Package, CheckCircle2, Scale, Droplet, Clock } from 'lucide-react'
 import ExcelJS from 'exceljs'
 import { Badge, FirmaSteps } from '../components/Badge'
-import Loader from '../components/Loader'
+import PdfLoadingOverlay from '../components/PdfLoadingOverlay'
 import { generarPDF } from '../utils/generarPDF'
 import { api } from '../lib/api'
 import '../components/shared.css'
@@ -241,6 +241,7 @@ export default function Historial({ albaranes, empresas = [], usuario, refetch, 
 
   return (
     <div className="historial-page">
+      <PdfLoadingOverlay show={descargando} texto="Generando PDFs..." />
       <div className="page-header">
         <div style={{display:'flex',alignItems:'center',justifyContent:'space-between'}}>
           <div>
@@ -462,7 +463,7 @@ export default function Historial({ albaranes, empresas = [], usuario, refetch, 
           </button>
           <button onClick={handleDescargarPDFs} disabled={descargando}
             style={{display:'inline-flex',alignItems:'center',gap:5,padding:'6px 12px',borderRadius:20,border:'1px solid rgba(255,255,255,0.15)',background:'rgba(255,255,255,0.1)',color:'#fff',fontSize:12,fontWeight:500,cursor:'pointer',opacity:descargando?0.6:1}}>
-            {descargando ? <Loader /> : <Download size={13}/>} {descargando ? 'Descargando...' : 'PDFs'}
+            <Download size={13}/> {descargando ? 'Descargando...' : 'PDFs'}
           </button>
           {esSuperadmin && (
             <button onClick={() => setConfirmEliminar(true)}
