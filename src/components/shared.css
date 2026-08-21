@@ -19,7 +19,7 @@
 .firma-line-cerrado { background:var(--green-400); }
 .card { background:#fff; border:var(--border); border-radius:var(--radius-lg); padding:18px 20px; }
 .page-header { padding:24px 28px 0; margin-bottom:24px; }
-.page-title { font-size:20px; font-weight:600; letter-spacing:-0.3px; }
+.page-title { font-size:26px; font-weight:700; letter-spacing:-0.4px; }
 .page-sub { font-size:13px; color:var(--gray-400); margin-top:3px; }
 .btn { display:inline-flex; align-items:center; gap:6px; padding:7px 14px; border-radius:var(--radius-sm); font-size:13px; font-weight:500; border:var(--border); background:#fff; color:var(--gray-800); transition:all 0.15s; cursor:pointer; }
 .btn:hover { background:var(--gray-50); }
@@ -37,11 +37,11 @@
 
 @media (max-width: 1400px) {
   .page-header { padding: 18px 18px 0; margin-bottom: 18px; }
-  .page-title { font-size: 18px; }
+  .page-title { font-size: 22px; }
 }
 @media (max-width: 1280px) {
   .page-header { padding: 14px 16px 0; margin-bottom: 16px; }
-  .page-title { font-size: 17px; }
+  .page-title { font-size: 20px; }
   .card { padding: 14px 16px; }
 }
 @media (max-width: 1100px) {

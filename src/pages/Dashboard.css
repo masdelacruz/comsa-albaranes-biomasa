@@ -5,9 +5,8 @@
 .dashboard { min-height:100vh; }
 .dashboard .dash-content { padding:0 28px 28px; }
 
-/* ── Cabecera (no toca .page-title global) ───────────────────────── */
+/* ── Cabecera (usa .page-title global, unificado con el resto de páginas) ── */
 .dashboard .dash-header-row { display:flex; align-items:center; justify-content:space-between; gap:16px; }
-.dashboard .page-title { font-size:26px; font-weight:700; letter-spacing:-0.4px; }
 .dashboard .dash-cta { height:41px; padding:0 18px; font-size:13.5px; }
 
 .dashboard .stat-grid { margin:22px 0; }
@@ -20,14 +19,14 @@
 /* ── Bloque principal unificado (título + tabs + filtros + tabla) ──── */
 .dashboard .dash-main { background:#fff; border:1px solid #E8E8E5; border-radius:12px; overflow:hidden; }
 
-.dashboard .dash-main-head { display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:12px 20px; padding:16px 20px 0; }
-.dashboard .dash-main-title { font-size:11px; font-weight:600; text-transform:uppercase; letter-spacing:0.6px; color:var(--gray-400); }
+.dashboard .dash-main-head { display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:10px 20px; padding:16px 20px 10px; }
+.dashboard .dash-main-title { font-size:12px; font-weight:700; text-transform:uppercase; letter-spacing:0.6px; color:var(--gray-500); line-height:1; }
 
-.dashboard .dash-tabs { display:flex; gap:16px; }
+.dashboard .dash-tabs { display:flex; align-items:center; gap:16px; }
 .dashboard .dash-tab {
   display:flex; align-items:center; gap:6px;
   background:none; border:none; cursor:pointer;
-  padding:0 0 12px;
+  padding:4px 0;
   font-size:12.5px; font-weight:500; color:var(--gray-400);
   border-bottom:2px solid transparent;
   transition:color 0.15s ease, border-color 0.15s ease;
