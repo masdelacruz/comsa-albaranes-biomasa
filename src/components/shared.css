@@ -1,16 +1,19 @@
-/* Loader "boxes" — From Uiverse.io by elijahgummer, en el verde de marca.
+/* Loader "boxes" — From Uiverse.io by elijahgummer (uiverse.io/elijahgummer/sour-earwig-21),
+   en el verde de marca. Misma proporción que el original (stroke-width y
+   dasharray igual al tamaño de la caja: es lo que le da esa forma sólida
+   y reconocible, no un grosor a la mitad) escalado a tamaño de icono.
    Sustituye al icono estático de un botón mientras su acción está en
    curso (generar/descargar PDF...), para que quede claro que el clic
    se ha registrado y algo se está ejecutando. */
-.uiv-loader { width:16px; height:16px; display:inline-block; vertical-align:middle; flex-shrink:0; }
+.uiv-loader { width:18px; height:18px; display:inline-block; vertical-align:middle; flex-shrink:0; }
 .uiv-loader-box {
-  width:16px; height:16px;
+  width:18px; height:18px;
   fill:none;
-  stroke-width:8px;
+  stroke-width:18px;
   stroke:var(--green-400);
-  stroke-dasharray:16;
+  stroke-dasharray:18;
   stroke-dashoffset:50%;
-  animation:uiv-loader-spin 1s linear infinite;
+  animation:uiv-loader-spin 2s linear infinite;
 }
 @keyframes uiv-loader-spin {
   to { stroke-dashoffset:250%; }
