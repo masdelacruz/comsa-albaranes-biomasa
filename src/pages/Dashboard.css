@@ -45,7 +45,7 @@
 /* Gráfico de barras — minimalista, solo lo real (sin ejes densos ni leyendas) */
 .dashboard .dash-act-plot { position:relative; height:128px; margin-left:26px; }
 .dashboard .dash-act-gridline { position:absolute; left:-26px; right:0; border-top:1px dashed var(--gray-100); }
-.dashboard .dash-act-gridline-label { position:absolute; left:0; top:-6px; width:20px; text-align:right; font-size:10.5px; color:var(--gray-300); }
+.dashboard .dash-act-gridline-label { position:absolute; left:0; bottom:2px; width:20px; text-align:right; font-size:10.5px; line-height:1; color:var(--gray-300); }
 .dashboard .dash-act-bars { position:absolute; inset:0; display:flex; align-items:flex-end; gap:10px; }
 .dashboard .dash-act-col { flex:1; display:flex; flex-direction:column; align-items:center; justify-content:flex-end; height:100%; }
 .dashboard .dash-act-val { font-size:11px; font-weight:700; color:var(--gray-700); margin-bottom:4px; }
@@ -113,9 +113,8 @@
 /* Envoltorio de filtros dentro del bloque unificado: fondo + separadores */
 .dashboard .dash-filtros-wrap { padding:14px 20px; background:var(--gray-50); border-top:1px solid #F0F0EC; border-bottom:1px solid #F0F0EC; }
 
-/* Tabla — altura mínima para que con pocos registros el panel no
-   termine abruptamente (espacio interno real, no filas ficticias) */
-.dashboard .table-wrap { overflow-x:auto; min-height:280px; }
+/* Tabla */
+.dashboard .table-wrap { overflow-x:auto; }
 .dashboard .albaran-table { min-width:700px; }
 
 /* Selector "Filas por página" en el pie de la tabla */
