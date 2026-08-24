@@ -1,19 +1,15 @@
 /* Loader "boxes" — From Uiverse.io by elijahgummer (uiverse.io/elijahgummer/sour-earwig-21),
    en el verde de marca. La forma (el "notch") sale de stroke-dasharray
-   igual al tamaño de la caja. jsPDF dibuja de forma síncrona y bloquea
-   el hilo principal mientras genera el PDF — stroke-dashoffset depende
-   de ese hilo, así que se congela justo durante el bloqueo (verificado).
-   El wrapper añade un pulso (transform + opacity), que el navegador
-   anima en el hilo de composición y por tanto SIGUE MOVIÉNDOSE durante
-   ese bloqueo, sin necesidad de girar. */
-.uiv-loader-wrap { display:inline-block; animation:uiv-loader-pulse 0.8s ease-in-out infinite; }
-@keyframes uiv-loader-pulse {
-  0%, 100% { transform:scale(1);    opacity:1;   }
-  50%      { transform:scale(0.82); opacity:0.5; }
-}
+   igual al tamaño de la caja; el movimiento es la animación original de
+   stroke-dashoffset, sin efectos añadidos (ni giro ni pulso).
+   jsPDF dibuja de forma síncrona y bloquea el hilo donde corre — de ahí
+   que antes se congelara: ahora corre en un Web Worker aparte (ver
+   utils/pdfWorker.js), así que el hilo principal queda libre y esta
+   animación se ve con normalidad durante toda la generación. */
+.uiv-loader-wrap { display:inline-block; }
 
 .uiv-loader-svg { display:block; }
-.uiv-loader-box { fill:none; stroke:var(--green-400); stroke-dashoffset:50%; animation:uiv-loader-dash 1.4s linear infinite; }
+.uiv-loader-box { fill:none; stroke:var(--green-400); stroke-dashoffset:50%; animation:uiv-loader-dash 2s linear infinite; }
 @keyframes uiv-loader-dash { to { stroke-dashoffset:250%; } }
 
 .uiv-loader-sm, .uiv-loader-sm .uiv-loader-svg, .uiv-loader-sm .uiv-loader-box { width:18px; height:18px; }
