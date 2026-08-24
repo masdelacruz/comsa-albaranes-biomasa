@@ -75,6 +75,12 @@ export default function Dashboard({ albaranes, empresas = [], usuario, borrarAlb
   const paginados    = filtrados.slice((pagina - 1) * POR_PAGINA, pagina * POR_PAGINA)
 
   const hayFiltros = busqueda || filtroInstalacion || filtroAstilladora || filtroProveedor || filtroTransportista || filtroEstado || filtroFechaDesde || filtroFechaHasta
+  const TAB_ADJETIVO = { activos: 'activos', cerrados: 'cerrados', rechazados: 'rechazados' }
+  const mensajeVacio = hayFiltros
+    ? 'No hay albaranes con los filtros seleccionados'
+    : TAB_ADJETIVO[soloActivos]
+      ? `No hay albaranes ${TAB_ADJETIVO[soloActivos]} actualmente`
+      : 'No hay albaranes actualmente'
   const limpiarFiltros = () => {
     setBusqueda(''); setFiltroInstalacion(''); setFiltroAstilladora('')
     setFiltroProveedor(''); setFiltroTransportista('')
@@ -227,7 +233,7 @@ export default function Dashboard({ albaranes, empresas = [], usuario, borrarAlb
               </thead>
               <tbody>
                 {filtrados.length === 0 ? (
-                  <tr><td colSpan={11 + (esSuperadmin ? 1 : 0)} className="empty-state">No hay albaranes con los filtros seleccionados</td></tr>
+                  <tr><td colSpan={11 + (esSuperadmin ? 1 : 0)} className="empty-state">{mensajeVacio}</td></tr>
                 ) : paginados.map(a => (
                   <tr key={a.id} onClick={() => navigate(`/albaran/${a.id}`)}>
                     <td className="row-id">{a.id}</td>

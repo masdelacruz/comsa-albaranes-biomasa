@@ -239,6 +239,9 @@ export default function Historial({ albaranes, empresas = [], usuario, refetch, 
     setFiltroEstado(''); setFiltroFechaDesde(''); setFiltroFechaHasta('')
   }
 
+  const hayFiltros = busqueda || filtroInstalacion || filtroAstilladora || filtroProveedor || filtroTransportista || filtroEstado || filtroFechaDesde || filtroFechaHasta
+  const mensajeVacio = hayFiltros ? 'No hay albaranes con los filtros seleccionados' : 'No hay albaranes actualmente'
+
   return (
     <div className="historial-page">
       <PdfLoadingOverlay show={descargando} texto="Generando PDFs..." />
@@ -323,7 +326,7 @@ export default function Historial({ albaranes, empresas = [], usuario, refetch, 
               <input type="date" value={filtroFechaHasta} onChange={e => setFiltroFechaHasta(e.target.value)} />
             </div>
           </div>
-          {(busqueda||filtroInstalacion||filtroAstilladora||filtroProveedor||filtroTransportista||filtroEstado||filtroFechaDesde||filtroFechaHasta) && (
+          {hayFiltros && (
             <button className="btn btn-ghost" onClick={limpiarFiltros} style={{fontSize:12}}>Limpiar filtros ×</button>
           )}
         </div>
@@ -379,7 +382,7 @@ export default function Historial({ albaranes, empresas = [], usuario, refetch, 
             </thead>
             <tbody>
               {filtrados.length === 0 ? (
-                <tr><td colSpan={(seleccionando ? 1 : 0) + 11 + (esSuperadmin ? 1 : 0)} className="empty-state">No hay albaranes con los filtros seleccionados</td></tr>
+                <tr><td colSpan={(seleccionando ? 1 : 0) + 11 + (esSuperadmin ? 1 : 0)} className="empty-state">{mensajeVacio}</td></tr>
               ) : paginados.map(a => (
                 <tr key={a.id} onClick={() => seleccionando ? toggleSeleccion(a.id) : navigate(`/albaran/${a.id}`)}
                   style={{cursor:'pointer', background: seleccionados.has(a.id) ? 'var(--green-50)' : undefined}}>
