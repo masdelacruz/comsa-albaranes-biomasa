@@ -5,7 +5,7 @@
 .uiv-loader-wrap { display:inline-block; }
 
 .uiv-loader-svg { display:block; }
-.uiv-loader-box { fill:none; stroke:var(--green-400); stroke-dashoffset:50%; animation:uiv-loader-dash 2s linear infinite; }
+.uiv-loader-box { fill:none; stroke:var(--green-400); stroke-dashoffset:50%; animation:uiv-loader-dash 0.7s linear infinite; }
 @keyframes uiv-loader-dash { to { stroke-dashoffset:250%; } }
 
 .uiv-loader-sm, .uiv-loader-sm .uiv-loader-svg, .uiv-loader-sm .uiv-loader-box { width:18px; height:18px; }

@@ -75,9 +75,9 @@ export default function Historial({ albaranes, empresas = [], usuario, refetch, 
       const a = albaranes.find(x => x.id === id)
       if (a) await generarPDF(a)
     }
-    // Con los logos precargados y pocos albaranes seleccionados, el bucle
-    // puede resolver en menos de un frame y el loader nunca llega a pintarse.
-    const espera = 400 - (Date.now() - inicio)
+    // Igual que en DetalleAlbaran.jsx: forzamos que la ventana visible dure
+    // al menos un par de ciclos de la animación (0.7s) para que se note.
+    const espera = 900 - (Date.now() - inicio)
     if (espera > 0) await new Promise(r => setTimeout(r, espera))
     setDescargando(false)
     cancelarSeleccion()

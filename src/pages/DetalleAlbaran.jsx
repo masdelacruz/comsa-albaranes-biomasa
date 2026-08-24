@@ -317,9 +317,11 @@ export default function DetalleAlbaran({ albaranes, simularFirma, updateFirma, s
       const resultado = await generarPDF(a, opts)
       if (opts.preview && resultado) setPreviewPdf(resultado)
     } finally {
-      // Con los logos ya precargados puede terminar en menos de un frame:
-      // forzamos una duración mínima visible para que el loader se note.
-      const espera = 400 - (Date.now() - inicio)
+      // Con los logos ya precargados puede terminar en muy poco tiempo: si la
+      // ventana visible es más corta que un ciclo de la animación (0.7s) no
+      // da tiempo a percibir movimiento. Forzamos que se vea al menos un
+      // par de ciclos completos.
+      const espera = 900 - (Date.now() - inicio)
       if (espera > 0) await new Promise(r => setTimeout(r, espera))
       setGenerandoPdf(prev => ({ ...prev, [modo]: false }))
     }
