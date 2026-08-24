@@ -232,7 +232,7 @@ export default function Usuarios({ usuario }) {
 
       {/* ── Modal crear usuario ── */}
       {modal && (
-        <div style={{position:'fixed',inset:0,background:'rgba(0,0,0,0.4)',display:'flex',alignItems:'center',justifyContent:'center',zIndex:100,padding:20}}>
+        <div style={{position:'fixed',inset:0,background:'rgba(0,0,0,0.4)',display:'flex',alignItems:'center',justifyContent:'center',zIndex:200,padding:20}}>
           <div style={{background:'#fff',borderRadius:'var(--radius-xl)',padding:28,width:'100%',maxWidth:420,boxShadow:'0 20px 60px rgba(0,0,0,0.15)'}}>
             <div style={{fontSize:16,fontWeight:600,marginBottom:20}}>Nuevo usuario</div>
             <div style={{display:'flex',flexDirection:'column',gap:12}}>

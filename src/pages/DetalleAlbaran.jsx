@@ -1,6 +1,6 @@
 import { useRef, useState, useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
-import { ExternalLink, CheckCircle, Clock, FileDown, Upload, Eye, FileText, AlertTriangle, Copy, Pencil, X, Check, Trash2, MapPin, Share2, Truck, RotateCcw } from 'lucide-react'
+import { ArrowLeft, ExternalLink, CheckCircle, Clock, FileDown, Upload, Eye, FileText, AlertTriangle, Copy, Pencil, X, Check, Trash2, MapPin, Share2, Truck, RotateCcw } from 'lucide-react'
 import { Badge } from '../components/Badge'
 import PdfLoadingOverlay from '../components/PdfLoadingOverlay'
 import { generarPDF, generarPDFA5, cargarLogos } from '../utils/generarPDF'
@@ -595,7 +595,7 @@ export default function DetalleAlbaran({ albaranes, simularFirma, updateFirma, s
         </div>
       )}
       {duplicarOpen && (
-        <div style={{position:'fixed',inset:0,background:'rgba(0,0,0,0.4)',display:'flex',alignItems:'center',justifyContent:'center',zIndex:100,padding:20}}
+        <div style={{position:'fixed',inset:0,background:'rgba(0,0,0,0.4)',display:'flex',alignItems:'center',justifyContent:'center',zIndex:200,padding:20}}
           onClick={() => !duplicando && setDuplicarOpen(false)}>
           <div style={{background:'#fff',borderRadius:'var(--radius-xl)',padding:28,maxWidth:360,width:'100%',boxShadow:'0 20px 60px rgba(0,0,0,0.15)'}}
             onClick={e => e.stopPropagation()}>
@@ -629,7 +629,7 @@ export default function DetalleAlbaran({ albaranes, simularFirma, updateFirma, s
       )}
 
       {confirmModal && (
-        <div style={{position:'fixed',inset:0,background:'rgba(0,0,0,0.4)',display:'flex',alignItems:'center',justifyContent:'center',zIndex:100,padding:20}}>
+        <div style={{position:'fixed',inset:0,background:'rgba(0,0,0,0.4)',display:'flex',alignItems:'center',justifyContent:'center',zIndex:200,padding:20}}>
           <div style={{background:'#fff',borderRadius:'var(--radius-xl)',padding:28,maxWidth:400,width:'100%',boxShadow:'0 20px 60px rgba(0,0,0,0.15)'}}>
             <div style={{display:'flex',alignItems:'center',gap:10,marginBottom:14}}>
               <AlertTriangle size={20} color="var(--amber-400)" />
@@ -655,6 +655,9 @@ export default function DetalleAlbaran({ albaranes, simularFirma, updateFirma, s
       )}
 
       <div className="page-header">
+        <button className="btn btn-ghost" onClick={() => navigate(-1)} style={{marginBottom:12}}>
+          <ArrowLeft size={14} /> Volver
+        </button>
 <div style={{display:'flex',alignItems:'center',justifyContent:'space-between'}}>
           <div style={{display:'flex',alignItems:'center',gap:12,flexWrap:'wrap'}}>
             <div className="page-title" style={{fontFamily:'var(--font-mono)',fontSize:18}}>{a.id}</div>
