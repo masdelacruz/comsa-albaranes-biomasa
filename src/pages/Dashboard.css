@@ -43,15 +43,15 @@
 }
 
 /* Gráfico de barras — minimalista, solo lo real (sin ejes densos ni leyendas) */
-.dashboard .dash-act-plot { position:relative; height:128px; margin-left:26px; }
-.dashboard .dash-act-gridline { position:absolute; left:-26px; right:0; border-top:1px dashed var(--gray-100); }
-.dashboard .dash-act-gridline-label { position:absolute; left:0; top:0; transform:translateY(-30%); width:20px; text-align:right; font-size:10.5px; line-height:1; color:var(--gray-300); }
+.dashboard .dash-act-plot { position:relative; height:128px; margin-left:28px; }
+.dashboard .dash-act-gridline { position:absolute; left:0; right:0; border-top:1px dashed var(--gray-100); }
+.dashboard .dash-act-gridline-label { position:absolute; right:calc(100% + 6px); top:0; transform:translateY(-50%); width:20px; text-align:right; font-size:10.5px; line-height:1; color:var(--gray-300); }
 .dashboard .dash-act-bars { position:absolute; inset:0; display:flex; align-items:flex-end; gap:10px; }
 .dashboard .dash-act-col { flex:1; display:flex; flex-direction:column; align-items:center; justify-content:flex-end; height:100%; }
 .dashboard .dash-act-val { font-size:11px; font-weight:700; color:var(--gray-700); margin-bottom:4px; }
 .dashboard .dash-act-bar { width:60%; max-width:34px; border-radius:4px 4px 0 0; background:var(--green-400); min-height:3px; transition:height 0.4s ease; }
 .dashboard .dash-act-bar.vacio { background:var(--gray-100); }
-.dashboard .dash-act-daylabels { display:flex; gap:10px; margin-left:26px; margin-top:10px; }
+.dashboard .dash-act-daylabels { display:flex; gap:10px; margin-left:28px; margin-top:10px; }
 .dashboard .dash-act-daylabel { flex:1; text-align:center; font-size:10.5px; color:var(--gray-400); line-height:1.4; }
 
 /* Requieren atención */
