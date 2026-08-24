@@ -1,10 +1,12 @@
 import { useState, useEffect, useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { AlertTriangle, Plus, Trash2, Search, Filter, Package, CalendarClock, PenLine, CheckCircle2 } from 'lucide-react'
+import { AlertTriangle, Plus, Trash2, Search, Filter, Package, CalendarClock, PenLine, CheckCircle2, Calendar, ChevronRight } from 'lucide-react'
 import { Badge, FirmaSteps } from '../components/Badge'
-import { labelSemanaActual, isoWeek, isoWeekYear } from '../utils/semana'
+import { labelSemanaActual, isoWeek, isoWeekYear, lunesDeSemana } from '../utils/semana'
 import '../components/shared.css'
 import './Dashboard.css'
+
+const DIAS_CORTOS = ['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom']
 
 export default function Dashboard({ albaranes, empresas = [], usuario, borrarAlbaran }) {
   const navigate = useNavigate()
@@ -21,7 +23,7 @@ export default function Dashboard({ albaranes, empresas = [], usuario, borrarAlb
   const [soloActivos,        setSoloActivos]        = useState('activos')
   const [confirmBorrar,      setConfirmBorrar]      = useState(null)
   const [pagina,             setPagina]             = useState(1)
-  const POR_PAGINA = 25
+  const [porPagina,          setPorPagina]          = useState(25)
 
   const hoy = new Date()
   const semanaActual = isoWeek(hoy)
@@ -37,10 +39,26 @@ export default function Dashboard({ albaranes, empresas = [], usuario, borrarAlb
   const totalActivos   = albaranes.filter(a => !ESTADOS_TERMINAL.includes(a.estado) && !ESTADOS_RECHAZADO.includes(a.estado)).length
   const totalRechazados = albaranes.filter(a => ESTADOS_RECHAZADO.includes(a.estado)).length
   const programados    = albaranes.filter(a => a.estado === 'programado').length
-  const pendienteFirma = albaranes.filter(a => a.estado === 'pendiente_campo' || a.estado === 'pendiente_oficina').length
+  const albaranesPendientesFirma = albaranes.filter(a => a.estado === 'pendiente_campo' || a.estado === 'pendiente_oficina')
   const cerrados       = albaranes.filter(a => a.estado === 'cerrado').length
   const conIncidencia  = albaranes.filter(a => a.estado === 'humedad_pendiente').length
   const alertas        = albaranes.filter(a => a.estado === 'humedad_pendiente')
+
+  // Actividad de la semana: nº de albaranes por día, lunes a domingo
+  const lunes = lunesDeSemana(hoy)
+  const diasActividad = Array.from({ length: 7 }, (_, i) => {
+    const d = new Date(lunes)
+    d.setDate(lunes.getDate() + i)
+    const clave = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
+    const fechaLabel = `${String(d.getDate()).padStart(2, '0')}/${String(d.getMonth() + 1).padStart(2, '0')}`
+    return {
+      clave,
+      dia: DIAS_CORTOS[i],
+      fechaLabel,
+      count: albaranes.filter(a => a.fecha?.slice(0, 10) === clave).length,
+    }
+  })
+  const maxActividad = Math.max(3, ...diasActividad.map(d => d.count))
 
   const empresasByTipo = (tipo) => empresas.filter(e => e.tipo === tipo).map(e => e.nombre)
   const instalaciones   = [...new Set([...empresasByTipo('instalacion'),   ...albaranes.map(a => a.instalacion)  ].filter(Boolean))].sort()
@@ -69,10 +87,10 @@ export default function Dashboard({ albaranes, empresas = [], usuario, borrarAlb
   }), [albaranes, soloActivos, busqueda, filtroInstalacion, filtroAstilladora, filtroProveedor, filtroTransportista, filtroEstado, filtroFechaDesde, filtroFechaHasta])
 
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  useEffect(() => { setPagina(1) }, [soloActivos, busqueda, filtroInstalacion, filtroAstilladora, filtroProveedor, filtroTransportista, filtroEstado, filtroFechaDesde, filtroFechaHasta])
+  useEffect(() => { setPagina(1) }, [soloActivos, busqueda, filtroInstalacion, filtroAstilladora, filtroProveedor, filtroTransportista, filtroEstado, filtroFechaDesde, filtroFechaHasta, porPagina])
 
-  const totalPaginas = Math.ceil(filtrados.length / POR_PAGINA)
-  const paginados    = filtrados.slice((pagina - 1) * POR_PAGINA, pagina * POR_PAGINA)
+  const totalPaginas = Math.ceil(filtrados.length / porPagina)
+  const paginados    = filtrados.slice((pagina - 1) * porPagina, pagina * porPagina)
 
   const hayFiltros = busqueda || filtroInstalacion || filtroAstilladora || filtroProveedor || filtroTransportista || filtroEstado || filtroFechaDesde || filtroFechaHasta
   const TAB_ADJETIVO = { activos: 'activos', cerrados: 'cerrados', rechazados: 'rechazados' }
@@ -90,7 +108,7 @@ export default function Dashboard({ albaranes, empresas = [], usuario, borrarAlb
   const kpis = [
     { key: 'semana',   label: 'Albaranes esta semana', value: albaranesSemana.length, icon: Package,       tone: 'green' },
     { key: 'prog',     label: 'Programados',           value: programados,            icon: CalendarClock, tone: 'blue', onClick: programados > 0 ? () => setFiltroEstado('programado') : undefined },
-    { key: 'firma',    label: 'Pendientes de firma',   value: pendienteFirma,         icon: PenLine,       tone: 'amber' },
+    { key: 'firma',    label: 'Pendientes de firma',   value: albaranesPendientesFirma.length, icon: PenLine, tone: 'amber' },
     { key: 'cerrados', label: 'Cerrados',              value: cerrados,               icon: CheckCircle2,  tone: 'green' },
     { key: 'inc',      label: 'Con incidencia',        value: conIncidencia,          icon: AlertTriangle, tone: 'red' },
   ]
@@ -142,6 +160,85 @@ export default function Dashboard({ albaranes, empresas = [], usuario, borrarAlb
             <span className="alerta-link">Ver →</span>
           </div>
         ))}
+
+        {/* Actividad de la semana + Requieren atención */}
+        <div className="dash-insights">
+          <div className="dash-activity-card">
+            <div className="dash-activity-head">
+              <div>
+                <div className="dash-activity-title">Actividad de la semana</div>
+                <div className="dash-activity-sub">Albaranes creados por día</div>
+              </div>
+              <div className="dash-activity-select">
+                <Calendar size={13} /> Esta semana
+              </div>
+            </div>
+
+            <div className="dash-act-plot">
+              {[maxActividad, Math.round(maxActividad * 2 / 3), Math.round(maxActividad / 3), 0].map((v, i) => (
+                <div key={i} className="dash-act-gridline" style={{ bottom: `${(v / maxActividad) * 100}%` }}>
+                  <span className="dash-act-gridline-label">{v}</span>
+                </div>
+              ))}
+              <div className="dash-act-bars">
+                {diasActividad.map(d => (
+                  <div key={d.clave} className="dash-act-col">
+                    {d.count > 0 && <div className="dash-act-val">{d.count}</div>}
+                    <div className={`dash-act-bar${d.count === 0 ? ' vacio' : ''}`} style={{ height: `${(d.count / maxActividad) * 100}%` }} />
+                  </div>
+                ))}
+              </div>
+            </div>
+            <div className="dash-act-daylabels">
+              {diasActividad.map(d => (
+                <div key={d.clave} className="dash-act-daylabel">{d.dia} {d.fechaLabel}</div>
+              ))}
+            </div>
+          </div>
+
+          <div className="dash-atencion-card">
+            <div className="dash-atencion-head">
+              <div>
+                <div className="dash-atencion-title-row">
+                  <span className="dash-atencion-title">Requieren atención</span>
+                  {albaranesPendientesFirma.length > 0 && <span className="dash-atencion-count">{albaranesPendientesFirma.length}</span>}
+                </div>
+                <div className="dash-atencion-sub">Pendientes de firma</div>
+              </div>
+            </div>
+
+            {albaranesPendientesFirma.length === 0 ? (
+              <div className="dash-atencion-empty">
+                <CheckCircle2 size={22} color="var(--green-400)" />
+                <span>Todo al día</span>
+              </div>
+            ) : (
+              <div className="dash-atencion-list">
+                {albaranesPendientesFirma.slice(0, 3).map(a => (
+                  <div key={a.id} className="dash-atencion-item" onClick={() => navigate(`/albaran/${a.id}`)}>
+                    <div>
+                      <div className="dash-atencion-item-id">{a.id}</div>
+                      <div className="dash-atencion-item-empresa">{a.proveedor || a.instalacion}</div>
+                      <div className="dash-atencion-item-motivo"><PenLine size={11} /> Pendiente de firma</div>
+                    </div>
+                    <div className="dash-atencion-item-right">
+                      <Badge estado={a.estado} />
+                      <button className="btn dash-atencion-ver" onClick={e => { e.stopPropagation(); navigate(`/albaran/${a.id}`) }}>
+                        Ver albarán <ChevronRight size={13} />
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {albaranesPendientesFirma.length > 0 && (
+              <button className="dash-atencion-vertodos" onClick={() => document.querySelector('.dash-main')?.scrollIntoView({ behavior: 'smooth', block: 'start' })}>
+                Ver todos los pendientes <ChevronRight size={13} />
+              </button>
+            )}
+          </div>
+        </div>
 
         {/* Bloque principal: título + tabs + filtros + tabla, unificados */}
         <div className="dash-main">
@@ -269,12 +366,28 @@ export default function Dashboard({ albaranes, empresas = [], usuario, borrarAlb
           </div>
 
           {/* Paginación — pie de la misma tarjeta, no un bloque aparte */}
-          {totalPaginas > 1 && (
+          {filtrados.length > 0 && (
             <div className="list-pagination">
               <div className="list-pagination-info">
-                Mostrando {(pagina-1)*POR_PAGINA+1}–{Math.min(pagina*POR_PAGINA, filtrados.length)} de {filtrados.length}
+                {(() => {
+                  const desde = (pagina-1)*porPagina+1
+                  const hasta = Math.min(pagina*porPagina, filtrados.length)
+                  const plural = filtrados.length !== 1 ? 'es' : ''
+                  return desde === hasta
+                    ? `Mostrando ${desde} de ${filtrados.length} albarán${plural}`
+                    : `Mostrando ${desde}–${hasta} de ${filtrados.length} albaranes`
+                })()}
               </div>
               <div className="list-pagination-pages">
+                <div className="dash-page-size">
+                  <span>Filas por página:</span>
+                  <select value={porPagina} onChange={e => setPorPagina(Number(e.target.value))}>
+                    <option value={10}>10</option>
+                    <option value={25}>25</option>
+                    <option value={50}>50</option>
+                    <option value={100}>100</option>
+                  </select>
+                </div>
                 <button className="btn" disabled={pagina===1} onClick={() => setPagina(1)}>«</button>
                 <button className="btn" disabled={pagina===1} onClick={() => setPagina(p => p-1)}>‹</button>
                 {Array.from({length:Math.min(5,totalPaginas)}, (_,i) => {

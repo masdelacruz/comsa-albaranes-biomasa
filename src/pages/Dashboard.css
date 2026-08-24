@@ -16,6 +16,76 @@
 .dashboard .alerta-bar:hover { background:var(--amber-100); }
 .dashboard .alerta-link { margin-left:auto; font-weight:500; white-space:nowrap; }
 
+/* ── Actividad de la semana + Requieren atención ─────────────────────
+   Misma tarjeta que el resto del dashboard (fondo blanco, borde suave,
+   sombra mínima); ocupan la fila entre los KPI y el bloque principal
+   para que la mitad superior de la pantalla no quede vacía. ──────── */
+.dashboard .dash-insights { display:grid; grid-template-columns:1.75fr 1fr; gap:16px; margin-bottom:20px; }
+
+.dashboard .dash-activity-card,
+.dashboard .dash-atencion-card {
+  background:#fff; border:1px solid #E8E8E5; border-radius:14px;
+  padding:20px 22px; box-shadow:0 1px 2px rgba(20,20,15,0.03);
+  display:flex; flex-direction:column;
+}
+
+.dashboard .dash-activity-head,
+.dashboard .dash-atencion-head { display:flex; align-items:flex-start; justify-content:space-between; gap:12px; margin-bottom:22px; }
+.dashboard .dash-activity-title,
+.dashboard .dash-atencion-title { font-size:14px; font-weight:700; color:var(--gray-900); }
+.dashboard .dash-activity-sub,
+.dashboard .dash-atencion-sub { font-size:12px; color:var(--gray-400); margin-top:3px; }
+
+.dashboard .dash-activity-select {
+  display:flex; align-items:center; gap:6px; flex-shrink:0; white-space:nowrap;
+  padding:6px 10px; border:1px solid var(--gray-200); border-radius:8px;
+  font-size:12px; font-weight:500; color:var(--gray-600); background:var(--gray-50);
+}
+
+/* Gráfico de barras — minimalista, solo lo real (sin ejes densos ni leyendas) */
+.dashboard .dash-act-plot { position:relative; height:128px; margin-left:26px; }
+.dashboard .dash-act-gridline { position:absolute; left:-26px; right:0; border-top:1px dashed var(--gray-100); }
+.dashboard .dash-act-gridline-label { position:absolute; left:0; top:-6px; width:20px; text-align:right; font-size:10.5px; color:var(--gray-300); }
+.dashboard .dash-act-bars { position:absolute; inset:0; display:flex; align-items:flex-end; gap:10px; }
+.dashboard .dash-act-col { flex:1; display:flex; flex-direction:column; align-items:center; justify-content:flex-end; height:100%; }
+.dashboard .dash-act-val { font-size:11px; font-weight:700; color:var(--gray-700); margin-bottom:4px; }
+.dashboard .dash-act-bar { width:60%; max-width:34px; border-radius:4px 4px 0 0; background:var(--green-400); min-height:3px; transition:height 0.4s ease; }
+.dashboard .dash-act-bar.vacio { background:var(--gray-100); }
+.dashboard .dash-act-daylabels { display:flex; gap:10px; margin-left:26px; margin-top:10px; }
+.dashboard .dash-act-daylabel { flex:1; text-align:center; font-size:10.5px; color:var(--gray-400); line-height:1.4; }
+
+/* Requieren atención */
+.dashboard .dash-atencion-title-row { display:flex; align-items:center; }
+.dashboard .dash-atencion-count {
+  font-size:11px; font-weight:700; color:var(--amber-700); background:var(--amber-100);
+  border-radius:99px; padding:1px 7px; margin-left:7px;
+}
+.dashboard .dash-atencion-list { display:flex; flex-direction:column; gap:10px; flex:1; }
+.dashboard .dash-atencion-item {
+  display:flex; align-items:center; justify-content:space-between; gap:12px;
+  padding:14px 16px; border:1px solid var(--amber-100); border-left:3px solid var(--amber-400);
+  border-radius:10px; background:var(--amber-50); cursor:pointer; transition:background 0.15s;
+}
+.dashboard .dash-atencion-item:hover { background:#fef6e3; }
+.dashboard .dash-atencion-item-id { font-family:var(--font-mono); font-size:13px; font-weight:700; color:var(--blue-700); }
+.dashboard .dash-atencion-item-empresa { font-size:13px; font-weight:600; color:var(--gray-800); margin-top:1px; }
+.dashboard .dash-atencion-item-motivo { display:flex; align-items:center; gap:4px; font-size:11.5px; color:var(--amber-700); margin-top:5px; }
+.dashboard .dash-atencion-item-right { display:flex; align-items:center; gap:10px; flex-shrink:0; }
+.dashboard .dash-atencion-ver { display:flex; align-items:center; gap:4px; font-size:12px; padding:6px 10px; white-space:nowrap; }
+
+.dashboard .dash-atencion-empty { flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:8px; color:var(--gray-400); font-size:13px; padding:24px 0; }
+
+.dashboard .dash-atencion-vertodos {
+  display:flex; align-items:center; gap:4px; justify-content:center;
+  margin-top:14px; padding:8px; background:none; border:none; cursor:pointer;
+  font-size:12.5px; font-weight:600; color:var(--green-600);
+}
+.dashboard .dash-atencion-vertodos:hover { text-decoration:underline; }
+
+@media (max-width: 1280px) {
+  .dashboard .dash-insights { grid-template-columns:1fr; }
+}
+
 /* ── Bloque principal unificado (título + tabs + filtros + tabla) ──── */
 .dashboard .dash-main { background:#fff; border:1px solid #E8E8E5; border-radius:12px; overflow:hidden; }
 
@@ -43,9 +113,14 @@
 /* Envoltorio de filtros dentro del bloque unificado: fondo + separadores */
 .dashboard .dash-filtros-wrap { padding:14px 20px; background:var(--gray-50); border-top:1px solid #F0F0EC; border-bottom:1px solid #F0F0EC; }
 
-/* Tabla */
-.dashboard .table-wrap { overflow-x:auto; }
+/* Tabla — altura mínima para que con pocos registros el panel no
+   termine abruptamente (espacio interno real, no filas ficticias) */
+.dashboard .table-wrap { overflow-x:auto; min-height:280px; }
 .dashboard .albaran-table { min-width:700px; }
+
+/* Selector "Filas por página" en el pie de la tabla */
+.dashboard .dash-page-size { display:flex; align-items:center; gap:6px; font-size:12px; color:var(--gray-500); margin-right:12px; }
+.dashboard .dash-page-size select { height:28px; width:auto; padding:0 6px; font-size:12px; border:1px solid var(--gray-200); border-radius:6px; }
 
 /* Alineación numérica: Peso neto / Humedad */
 .dashboard .albaran-table th:nth-child(9),  .dashboard .albaran-table td:nth-child(9),

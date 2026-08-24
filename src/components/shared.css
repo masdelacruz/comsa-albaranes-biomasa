@@ -99,22 +99,22 @@
 .date-range-sep { width:1px; height:20px; background:var(--gray-200); flex-shrink:0; }
 
 /* ── Tarjetas de estadística (KPIs / resúmenes) ──────────────────────── */
-.stat-grid { display:grid; grid-template-columns:repeat(5,minmax(0,1fr)); gap:12px; }
+.stat-grid { display:grid; grid-template-columns:repeat(5,minmax(0,1fr)); gap:14px; }
 .stat-card {
   background:#fff;
   border:1px solid #E8E8E5;
-  border-radius:12px;
-  padding:16px 18px;
+  border-radius:14px;
+  padding:20px 20px 18px;
   box-shadow:0 1px 2px rgba(20,20,15,0.03);
   transition:border-color 0.15s, box-shadow 0.15s;
 }
 .stat-clickable { cursor:pointer; }
 .stat-clickable:hover { border-color:var(--gray-300); box-shadow:0 2px 8px rgba(20,20,15,0.06); }
-.stat-top { display:flex; align-items:flex-start; justify-content:space-between; gap:8px; margin-bottom:12px; }
-.stat-label { font-size:12px; color:var(--gray-500); font-weight:500; line-height:1.3; }
-.stat-icon { width:26px; height:26px; border-radius:8px; display:flex; align-items:center; justify-content:center; flex-shrink:0; }
-.stat-val { font-size:25px; font-weight:700; letter-spacing:-0.5px; color:var(--gray-900); line-height:1; }
-.stat-sub { font-size:11px; color:var(--gray-400); margin-top:4px; }
+.stat-top { display:flex; align-items:flex-start; justify-content:space-between; gap:8px; margin-bottom:18px; }
+.stat-label { font-size:12.5px; color:var(--gray-500); font-weight:500; line-height:1.3; }
+.stat-icon { width:34px; height:34px; border-radius:50%; display:flex; align-items:center; justify-content:center; flex-shrink:0; }
+.stat-val { font-size:30px; font-weight:700; letter-spacing:-0.6px; color:var(--gray-900); line-height:1; }
+.stat-sub { font-size:11px; color:var(--gray-400); margin-top:5px; }
 
 .stat-green  .stat-icon { background:var(--green-50); color:var(--green-600); }
 .stat-blue   .stat-icon { background:var(--blue-50);  color:var(--blue-700);  }
@@ -140,7 +140,7 @@
 
 @media (max-width: 1400px) {
   .stat-grid { grid-template-columns:repeat(3,1fr); gap:10px; }
-  .stat-val { font-size:22px; }
+  .stat-val { font-size:25px; }
   .data-table th, .data-table td { padding:11px 10px; }
 }
 @media (max-width: 1280px) {
@@ -149,6 +149,6 @@
 }
 @media (max-width: 1100px) {
   .stat-grid { grid-template-columns:repeat(2,1fr); }
-  .stat-val { font-size:21px; }
+  .stat-val { font-size:23px; }
   .data-table th, .data-table td { padding:8px 6px; }
 }

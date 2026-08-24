@@ -17,7 +17,7 @@ export function isoWeekYear(date) {
 }
 
 /** Lunes de la semana ISO que contiene `date` */
-function lunesDeSemana(date) {
+export function lunesDeSemana(date) {
   const d = new Date(date)
   d.setHours(0, 0, 0, 0)
   const day = (d.getDay() + 6) % 7   // lun=0 … dom=6
