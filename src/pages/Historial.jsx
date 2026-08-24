@@ -1,6 +1,6 @@
 import { useState, useMemo, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Download, Search, FileSpreadsheet, CheckSquare, Upload, Trash2, Square, X, Send, Package, CheckCircle2, Scale, Droplet, Clock } from 'lucide-react'
+import { Download, Search, FileSpreadsheet, CheckSquare, Upload, Trash2, Square, X, Send } from 'lucide-react'
 import ExcelJS from 'exceljs'
 import { Badge, FirmaSteps } from '../components/Badge'
 import PdfLoadingOverlay from '../components/PdfLoadingOverlay'
@@ -137,17 +137,6 @@ export default function Historial({ albaranes, empresas = [], usuario, refetch, 
   const totalPaginas = Math.ceil(filtrados.length / POR_PAGINA)
   const paginados    = filtrados.slice((pagina - 1) * POR_PAGINA, pagina * POR_PAGINA)
 
-  const totalPesoNeto = filtrados.reduce((acc, a) => {
-    if (a.pesada.entrada && a.pesada.salida) return acc + (a.pesada.entrada - a.pesada.salida)
-    return acc
-  }, 0)
-
-  const cerrados = filtrados.filter(a => a.estado === 'cerrado').length
-  const humedadMedia = filtrados.filter(a => { const h = Number(a.pesada?.humedad); return a.pesada?.humedad != null && !isNaN(h) })
-  const mediaHumedad = humedadMedia.length
-    ? (humedadMedia.reduce((acc, a) => acc + Number(a.pesada.humedad), 0) / humedadMedia.length).toFixed(1)
-    : '—'
-
   const exportarExcel = async () => {
     const wb = new ExcelJS.Workbook()
     wb.creator = 'Comsa Service'
@@ -258,34 +247,6 @@ export default function Historial({ albaranes, empresas = [], usuario, refetch, 
       </div>
 
       <div className="historial-content">
-        <div className="stat-grid">
-          <div className="stat-card stat-green">
-            <div className="stat-top"><span className="stat-label">Total albaranes</span><span className="stat-icon"><Package size={15} /></span></div>
-            <div className="stat-val">{filtrados.length}</div>
-            <div className="stat-sub">en selección actual</div>
-          </div>
-          <div className="stat-card stat-green">
-            <div className="stat-top"><span className="stat-label">Cerrados</span><span className="stat-icon"><CheckCircle2 size={15} /></span></div>
-            <div className="stat-val">{cerrados}</div>
-            <div className="stat-sub">de {filtrados.length} totales</div>
-          </div>
-          <div className="stat-card stat-blue">
-            <div className="stat-top"><span className="stat-label">Peso neto total</span><span className="stat-icon"><Scale size={15} /></span></div>
-            <div className="stat-val">{totalPesoNeto > 0 ? (totalPesoNeto/1000).toFixed(1)+' t' : '—'}</div>
-            <div className="stat-sub">con pesada registrada</div>
-          </div>
-          <div className="stat-card stat-blue">
-            <div className="stat-top"><span className="stat-label">Humedad media</span><span className="stat-icon"><Droplet size={15} /></span></div>
-            <div className="stat-val">{mediaHumedad}{mediaHumedad !== '—' ? '%' : ''}</div>
-            <div className="stat-sub">{humedadMedia.length} muestras</div>
-          </div>
-          <div className="stat-card stat-amber">
-            <div className="stat-top"><span className="stat-label">Pendientes</span><span className="stat-icon"><Clock size={15} /></span></div>
-            <div className="stat-val">{filtrados.length - cerrados}</div>
-            <div className="stat-sub">sin cerrar</div>
-          </div>
-        </div>
-
         <div className="filters-bar historial-filtros">
           <div className="search-field">
             <Search size={14} className="search-field-icon" />
