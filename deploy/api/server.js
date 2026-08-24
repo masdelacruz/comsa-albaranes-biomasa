@@ -85,6 +85,7 @@ app.use('/api/usuarios',  require('./routes/usuarios'))
 app.use('/api/storage',   require('./routes/storage'))
 app.use('/api/email',     require('./routes/email'))
 app.use('/api/elementos', require('./routes/elementos'))
+app.use('/api/notificaciones', require('./routes/notificaciones'))
 
 app.get('/api/health', (_req, res) => res.json({ ok: true, ts: new Date().toISOString() }))
 

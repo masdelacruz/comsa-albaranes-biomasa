@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { useParams, useNavigate, useLocation } from 'react-router-dom'
 import { CheckCircle, ChevronRight, Leaf, RefreshCw, Clock } from 'lucide-react'
+import NotificacionesBell from '../components/NotificacionesBell'
 import './PanelInstalacion.css'
 
 const slugify = s => s.toLowerCase().replace(/\s+/g, '_').replace(/[^a-z0-9_]/g, '')
@@ -413,6 +414,7 @@ export default function PanelInstalacion() {
               Cambios
             </span>
           )}
+          <NotificacionesBell tipo="instalacion" nombre={nombreInstalacion} />
           <button
             className={`pi-refresh${refreshing ? ' pi-refresh-spin' : ''}`}
             onClick={() => fetchData(true)}

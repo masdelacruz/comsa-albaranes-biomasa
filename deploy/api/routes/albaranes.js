@@ -1,7 +1,8 @@
 const router = require('express').Router()
 const pool   = require('../db')
 const { requireAuth } = require('./auth')
-const { enviarNotificacion, enviarNotificacionCamionEnviado } = require('../emailSender')
+const { enviarNotificacion, enviarNotificacionAlbaranACampo, enviarNotificacionCamionEnviado } = require('../emailSender')
+const { crearNotificacion } = require('../notificacionesCliente')
 
 // ── Helper: normaliza nombre a Title Case ─────────────────────────
 function toTitleCase(str) {
@@ -58,6 +59,21 @@ async function fetchOne(id) {
     })
   }
   return buildAlbaran(a, fRes.rows, pRes.rows[0], dRes.rows, actRes.rows, obsRes.rows, empresaFirmaMap, empresaDataMap)
+}
+
+// Notifica (email + notificación persistente en su panel) a la astilladora
+// de que se le ha puesto a disposición un albarán al enviarlo a campo.
+// Fire & forget — no debe bloquear ni hacer fallar la respuesta al cliente.
+function notificarEnvioACampo(albaran) {
+  if (!albaran?.astilladora) return
+  crearNotificacion({
+    empresaTipo: 'astilladora',
+    empresaNombre: albaran.astilladora,
+    albaranId: albaran.id,
+    tipo: 'enviado_a_campo',
+    mensaje: `Se ha puesto a tu disposición el albarán ${albaran.id}.`,
+  }).catch(() => {})
+  enviarNotificacionAlbaranACampo(albaran).catch(() => {})
 }
 
 function buildAlbaran(a, firmas, pesada, docs, actividad, observacionesPost, empresaFirmaMap = {}, empresaDataMap = {}) {
@@ -422,6 +438,7 @@ router.post('/enviar-a-campo', requireAuth, async (req, res) => {
         'INSERT INTO actividad (albaran_id,ts,texto,actor) VALUES ($1,$2,$3,$4)',
         [id, fecha, 'Enviado a campo', actor]
       )
+      fetchOne(id).then(notificarEnvioACampo).catch(() => {})
     }
   }
   res.json({ ok: true })
@@ -442,6 +459,7 @@ router.post('/:id/enviar-a-campo', requireAuth, async (req, res) => {
     [id, fecha, 'Enviado a campo', actor]
   )
   const albaran = await fetchOne(id)
+  notificarEnvioACampo(albaran)
   res.json({ albaran })
 })
 
@@ -732,6 +750,15 @@ router.post('/:id/firmas/:rol', async (req, res) => {
     }
     if (rol === 'astilladora') {
       enviarNotificacionCamionEnviado(albaran).catch(() => {})
+      if (albaran.instalacion) {
+        crearNotificacion({
+          empresaTipo: 'instalacion',
+          empresaNombre: albaran.instalacion,
+          albaranId: albaran.id,
+          tipo: 'astilladora_firmo',
+          mensaje: `Astilladora ha confirmado el albarán ${albaran.id} — en camino hacia ${albaran.instalacion}.`,
+        }).catch(() => {})
+      }
     }
   }
 

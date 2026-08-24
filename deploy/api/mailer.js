@@ -44,15 +44,16 @@ async function destinatarios(tipo) {
 
 /**
  * Devuelve el email (o emails, separados por coma) configurado en
- * Administración para la instalación indicada, junto con su contacto.
+ * Administración para la empresa indicada (instalación o astilladora),
+ * junto con su contacto.
  */
-async function destinatarioInstalacion(nombreInstalacion) {
-  if (!nombreInstalacion) return { emails: [], contacto: null }
+async function destinatarioEmpresa(tipo, nombre) {
+  if (!nombre) return { emails: [], contacto: null }
   const { rows } = await pool.query(
     `SELECT email, contacto FROM proveedores
-     WHERE tipo = 'instalacion' AND nombre = $1 AND activo = true
+     WHERE tipo = $1 AND nombre = $2 AND activo = true
      LIMIT 1`,
-    [nombreInstalacion]
+    [tipo, nombre]
   )
   const row = rows[0]
   if (!row?.email) return { emails: [], contacto: null }
@@ -61,6 +62,9 @@ async function destinatarioInstalacion(nombreInstalacion) {
     contacto: row.contacto || null,
   }
 }
+
+const destinatarioInstalacion  = (nombre) => destinatarioEmpresa('instalacion', nombre)
+const destinatarioAstilladora  = (nombre) => destinatarioEmpresa('astilladora', nombre)
 
 /**
  * URL del logotipo corporativo configurado en Administración
@@ -71,4 +75,4 @@ async function logoComsaUrl() {
   return rows[0]?.url || null
 }
 
-module.exports = { transport, destinatarios, destinatarioInstalacion, logoComsaUrl }
+module.exports = { transport, destinatarios, destinatarioInstalacion, destinatarioAstilladora, logoComsaUrl }

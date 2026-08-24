@@ -2,7 +2,7 @@
  * emailSender.js — construcción de templates y envío de notificaciones.
  * Puede llamarse desde rutas autenticadas O desde el propio backend (firmas).
  */
-const { transport, destinatarios, destinatarioInstalacion, logoComsaUrl } = require('./mailer')
+const { transport, destinatarios, destinatarioInstalacion, destinatarioAstilladora, logoComsaUrl } = require('./mailer')
 
 const APP_URL = process.env.APP_URL || 'https://biomasa.cserintranet.com'
 
@@ -240,6 +240,24 @@ function buildEmail(tipo, albaran) {
       <tr><td style="padding:8px 40px 40px;" align="center">${boton('Registrar humedad', `${APP_URL}/albaran/${albaran.id}`)}</td></tr>
     `, 'Humedad pendiente', albaran.logoUrl)
 
+  } else if (tipo === 'albaran_a_campo') {
+    const astilladoraSlug = String(albaran.astilladora || '').trim().replace(/\s+/g, '-')
+    const primerNombreAst = albaran.contactoAstilladora ? albaran.contactoAstilladora.split(' ')[0] : null
+
+    subject = `Nuevo albarán a campo - ${resumenAsunto}`
+    html = emailWrapper(`
+      <tr>
+        <td style="padding:32px 40px 8px;">
+          <p style="margin:0 0 10px;font-family:Arial,Helvetica,sans-serif;font-size:24px;font-weight:700;color:${TEXT_TITLE};">Hola${primerNombreAst ? ' ' + primerNombreAst : ''},</p>
+          <p style="margin:0 0 24px;font-family:Arial,Helvetica,sans-serif;font-size:14px;color:${TEXT_MUTED};line-height:1.6;">
+            Se ha puesto a tu disposición un nuevo albarán el <strong style="color:${TEXT_TITLE};">${fechaHora}</strong>, pendiente de tu confirmación.
+          </p>
+        </td>
+      </tr>
+      <tr><td style="padding:0 40px 24px;">${tablaAlbaran}</td></tr>
+      <tr><td style="padding:8px 40px 40px;" align="center">${boton('Ver en el panel', `${APP_URL}/campo/astilladora/${astilladoraSlug}`)}</td></tr>
+    `, 'A campo', albaran.logoUrl)
+
   } else if (tipo === 'camion_enviado') {
     const meses = ['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre']
     const fmtFechaHoraLarga = (f) => {
@@ -297,6 +315,21 @@ async function enviarNotificacion(tipo, albaran) {
   }
 }
 
+async function enviarNotificacionAlbaranACampo(albaran) {
+  const [{ emails, contacto }, logoUrl] = await Promise.all([
+    destinatarioAstilladora(albaran.astilladora),
+    logoComsaUrl(),
+  ])
+  if (!emails.length) return
+  const built = buildEmail('albaran_a_campo', { ...albaran, contactoAstilladora: contacto, logoUrl })
+  if (!built) return
+  try {
+    await transport.sendMail({ from: process.env.SMTP_FROM, to: emails.join(', '), subject: built.subject, html: built.html })
+  } catch (e) {
+    console.error('Email error (albaran_a_campo):', e.message)
+  }
+}
+
 async function enviarNotificacionCamionEnviado(albaran) {
   const [{ emails, contacto }, logoUrl] = await Promise.all([
     destinatarioInstalacion(albaran.instalacion),
@@ -312,4 +345,4 @@ async function enviarNotificacionCamionEnviado(albaran) {
   }
 }
 
-module.exports = { enviarNotificacion, enviarNotificacionCamionEnviado, buildEmail }
+module.exports = { enviarNotificacion, enviarNotificacionAlbaranACampo, enviarNotificacionCamionEnviado, buildEmail }
