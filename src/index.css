@@ -56,7 +56,9 @@
 html { font-size: 14px; }
 body {
   font-family: var(--font-main);
-  background: var(--gray-50);
+  /* Anclado abajo-izquierda: es la esquina que casi siempre queda libre de
+     tarjetas/contenido (el dock flotante va centrado, no a los lados). */
+  background: var(--gray-50) url('./assets/app-bg.png') left bottom / 55vw auto no-repeat fixed;
   color: var(--gray-900);
   line-height: 1.5;
   -webkit-font-smoothing: antialiased;

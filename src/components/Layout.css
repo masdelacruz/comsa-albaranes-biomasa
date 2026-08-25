@@ -7,6 +7,8 @@
 .main-area {
   min-height: 100vh;
   overflow-x: clip;
-  background: var(--gray-50);
+  /* transparente a propósito: deja ver el fondo del body (degradado de
+     hojas muy sutil) en los huecos — antes lo tapaba por completo. */
+  background: transparent;
   padding-bottom: 84px;
 }
