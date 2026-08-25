@@ -14,6 +14,7 @@ import Usuarios from './pages/Usuarios'
 import Login from './pages/Login'
 import SelectorApp from './pages/SelectorApp'
 import Trabajo from './pages/Trabajo'
+import Perfil from './pages/Perfil'
 import { useAlbaranes } from './hooks/useAlbaranes'
 import { api } from './lib/api'
 import { useAlbaranActions } from './hooks/useAlbaranActions'
@@ -137,7 +138,7 @@ function AppConDatos({ usuario, logout, actualizarUsuario }) {
       } />
       <Route path="/" element={
         tieneBiomasa
-          ? <Layout usuario={usuario} logout={logout} albaranes={albaranes} actualizarUsuario={actualizarUsuario} />
+          ? <Layout usuario={usuario} albaranes={albaranes} />
           : <Navigate to={tieneTrabajo ? '/trabajo' : '/apps'} replace />
       }>
         <Route index element={<InicioRedirect usuario={usuario} />} />
@@ -148,6 +149,7 @@ function AppConDatos({ usuario, logout, actualizarUsuario }) {
         <Route path="estadisticas"   element={<Estadisticas albaranes={albaranes} />} />
         <Route path="administracion" element={<Administracion usuario={usuario} />} />
         <Route path="usuarios"       element={<Usuarios usuario={usuario} />} />
+        <Route path="perfil"         element={<Perfil usuario={usuario} actualizarUsuario={actualizarUsuario} logout={logout} />} />
       </Route>
     </Routes>
   )
