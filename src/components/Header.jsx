@@ -1,5 +1,6 @@
 import { useNavigate, useLocation } from 'react-router-dom'
-import { Leaf, LayoutGrid, LogOut } from 'lucide-react'
+import { LayoutGrid, LogOut } from 'lucide-react'
+import logoIcon from '../assets/logo_biomasa.png'
 import './Header.css'
 
 export default function Header({ usuario, logout }) {
@@ -23,7 +24,7 @@ export default function Header({ usuario, logout }) {
   return (
     <header className="app-header">
       <button className="ah-brand" onClick={irInicio}>
-        <span className="ah-brand-icon"><Leaf size={15} /></span>
+        <span className="ah-brand-icon"><img src={logoIcon} alt="COMSA Biomasa" className="ah-brand-icon-img" /></span>
         <span className="ah-brand-text">COMSA Service</span>
       </button>
 
