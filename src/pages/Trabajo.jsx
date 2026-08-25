@@ -1,5 +1,6 @@
 import { useNavigate } from 'react-router-dom'
-import { HardHat, ArrowLeft, LogOut } from 'lucide-react'
+import { HardHat, ArrowLeft } from 'lucide-react'
+import Header from '../components/Header'
 import '../components/shared.css'
 import './Trabajo.css'
 
@@ -12,19 +13,19 @@ export default function Trabajo({ usuario, logout }) {
 
   return (
     <div className="tr-page">
-      <div className="tr-card">
-        <div className="tr-icon"><HardHat size={26} /></div>
-        <div className="tr-title">Trabajo</div>
-        <div className="tr-sub">Esta aplicación está en construcción. Muy pronto podrás usarla desde aquí.</div>
-        <div className="tr-actions">
+      <Header usuario={usuario} logout={logout} />
+      <div className="tr-content">
+        <div className="tr-card">
+          <div className="tr-icon"><HardHat size={26} /></div>
+          <div className="tr-title">Trabajo</div>
+          <div className="tr-sub">Esta aplicación está en construcción. Muy pronto podrás usarla desde aquí.</div>
           {puedeVolver && (
-            <button className="btn" onClick={() => navigate('/apps')}>
-              <ArrowLeft size={14} /> Volver al selector
-            </button>
+            <div className="tr-actions">
+              <button className="btn" onClick={() => navigate('/apps')}>
+                <ArrowLeft size={14} /> Volver al selector
+              </button>
+            </div>
           )}
-          <button className="btn btn-ghost" onClick={logout}>
-            <LogOut size={14} /> Cerrar sesión
-          </button>
         </div>
       </div>
     </div>

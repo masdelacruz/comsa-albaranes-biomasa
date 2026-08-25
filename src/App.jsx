@@ -138,7 +138,7 @@ function AppConDatos({ usuario, logout, actualizarUsuario }) {
       } />
       <Route path="/" element={
         tieneBiomasa
-          ? <Layout usuario={usuario} albaranes={albaranes} />
+          ? <Layout usuario={usuario} albaranes={albaranes} logout={logout} />
           : <Navigate to={tieneTrabajo ? '/trabajo' : '/apps'} replace />
       }>
         <Route index element={<InicioRedirect usuario={usuario} />} />

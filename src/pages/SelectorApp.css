@@ -1,13 +1,5 @@
 .sa-page { min-height:100vh; display:flex; flex-direction:column; }
 
-.sa-topbar { display:flex; align-items:center; justify-content:space-between; padding:20px 32px; }
-.sa-brand { font-size:14px; font-weight:700; letter-spacing:0.3px; color:var(--gray-800); }
-.sa-user { display:flex; align-items:center; gap:9px; }
-.sa-avatar { width:28px; height:28px; border-radius:50%; background:var(--green-400); color:#fff; font-size:11px; font-weight:600; display:flex; align-items:center; justify-content:center; flex-shrink:0; }
-.sa-user-nombre { font-size:13px; font-weight:500; color:var(--gray-700); }
-.sa-logout { background:none; border:none; cursor:pointer; color:var(--gray-400); padding:6px; border-radius:8px; display:flex; align-items:center; transition:background 0.15s, color 0.15s; }
-.sa-logout:hover { background:var(--gray-100); color:var(--red-400); }
-
 .sa-content { flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center; padding:20px; }
 
 .sa-heading { text-align:center; margin-bottom:36px; }

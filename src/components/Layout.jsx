@@ -2,9 +2,10 @@ import { useEffect } from 'react'
 import { Outlet, useNavigate, useLocation } from 'react-router-dom'
 import { LayoutDashboard, PlusCircle, Clock, BarChart2, Settings, Users, LayoutGrid } from 'lucide-react'
 import Dock from './Dock'
+import Header from './Header'
 import './Layout.css'
 
-export default function Layout({ usuario, albaranes = [] }) {
+export default function Layout({ usuario, albaranes = [], logout }) {
   const navigate = useNavigate()
   const location = useLocation()
 
@@ -50,6 +51,7 @@ export default function Layout({ usuario, albaranes = [] }) {
 
   return (
     <div className="layout">
+      <Header usuario={usuario} logout={logout} />
       <main className="main-area"><Outlet /></main>
       <Dock items={dockItems} />
     </div>

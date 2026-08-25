@@ -1,23 +1,14 @@
 import { useNavigate } from 'react-router-dom'
-import { Leaf, HardHat, ArrowRight, LogOut } from 'lucide-react'
+import { Leaf, HardHat, ArrowRight } from 'lucide-react'
+import Header from '../components/Header'
 import './SelectorApp.css'
 
 export default function SelectorApp({ usuario, logout }) {
   const navigate = useNavigate()
-  const iniciales = usuario?.nombre
-    ? usuario.nombre.split(' ').map(n => n[0]).slice(0, 2).join('').toUpperCase()
-    : '?'
 
   return (
     <div className="sa-page">
-      <div className="sa-topbar">
-        <span className="sa-brand">COMSA Service</span>
-        <div className="sa-user">
-          <span className="sa-avatar">{iniciales}</span>
-          <span className="sa-user-nombre">{usuario?.nombre}</span>
-          <button className="sa-logout" onClick={logout} title="Cerrar sesión"><LogOut size={14} /></button>
-        </div>
-      </div>
+      <Header usuario={usuario} logout={logout} />
 
       <div className="sa-content">
         <div className="sa-heading">
