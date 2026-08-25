@@ -1,0 +1,11 @@
+.tr-page { min-height:100vh; background:var(--gray-50); display:flex; align-items:center; justify-content:center; padding:20px; }
+
+.tr-card {
+  width:100%; max-width:380px; background:#fff; border:1px solid #E8E8E5; border-radius:var(--radius-xl);
+  box-shadow:0 1px 2px rgba(20,20,15,0.03); padding:36px 32px; text-align:center;
+}
+.tr-icon { width:52px; height:52px; border-radius:16px; background:var(--blue-50); color:var(--blue-700); display:flex; align-items:center; justify-content:center; margin:0 auto 18px; }
+.tr-title { font-size:20px; font-weight:700; color:var(--gray-900); letter-spacing:-0.3px; }
+.tr-sub { font-size:13.5px; color:var(--gray-400); margin-top:8px; line-height:1.5; }
+.tr-actions { display:flex; flex-direction:column; gap:8px; margin-top:26px; }
+.tr-actions .btn { justify-content:center; }

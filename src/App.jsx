@@ -12,6 +12,8 @@ import Estadisticas from './pages/Estadisticas'
 import Administracion from './pages/Administracion'
 import Usuarios from './pages/Usuarios'
 import Login from './pages/Login'
+import SelectorApp from './pages/SelectorApp'
+import Trabajo from './pages/Trabajo'
 import { useAlbaranes } from './hooks/useAlbaranes'
 import { api } from './lib/api'
 import { useAlbaranActions } from './hooks/useAlbaranActions'
@@ -99,6 +101,16 @@ function VistaCampoPublica() {
   )
 }
 
+// Decide a dónde ir desde "/": si el usuario tiene acceso a las dos apps,
+// pasa por el selector; si solo tiene una, entra directo a esa.
+function InicioRedirect({ usuario }) {
+  const tieneBiomasa = usuario?.acceso_biomasa !== false
+  const tieneTrabajo = !!usuario?.acceso_trabajo
+  if (tieneBiomasa && tieneTrabajo) return <Navigate to="/apps" replace />
+  if (tieneTrabajo && !tieneBiomasa) return <Navigate to="/trabajo" replace />
+  return <Navigate to="/dashboard" replace />
+}
+
 function AppConDatos({ usuario, logout, actualizarUsuario }) {
   const { albaranes, loading: dataLoading, refetch } = useAlbaranes()
   const { addAlbaran, enviarACampoAlbaran, updateFirma, simularFirmaOficina, subirDocumento, subirTicketPesada, actualizarAlbaran, borrarAlbaran, reabrirAlbaran } = useAlbaranActions(refetch, usuario)
@@ -108,10 +120,27 @@ function AppConDatos({ usuario, logout, actualizarUsuario }) {
 
   if (dataLoading) return <Spinner />
 
+  const tieneBiomasa = usuario?.acceso_biomasa !== false
+  const tieneTrabajo = !!usuario?.acceso_trabajo
+
   return (
     <Routes>
-      <Route path="/" element={<Layout usuario={usuario} logout={logout} albaranes={albaranes} actualizarUsuario={actualizarUsuario} />}>
-        <Route index element={<Navigate to="/dashboard" replace />} />
+      <Route path="/apps" element={
+        tieneBiomasa && tieneTrabajo
+          ? <SelectorApp usuario={usuario} logout={logout} />
+          : <Navigate to={tieneTrabajo ? '/trabajo' : '/dashboard'} replace />
+      } />
+      <Route path="/trabajo/*" element={
+        tieneTrabajo
+          ? <Trabajo usuario={usuario} logout={logout} />
+          : <Navigate to={tieneBiomasa ? '/dashboard' : '/apps'} replace />
+      } />
+      <Route path="/" element={
+        tieneBiomasa
+          ? <Layout usuario={usuario} logout={logout} albaranes={albaranes} actualizarUsuario={actualizarUsuario} />
+          : <Navigate to={tieneTrabajo ? '/trabajo' : '/apps'} replace />
+      }>
+        <Route index element={<InicioRedirect usuario={usuario} />} />
         <Route path="dashboard"      element={<Dashboard albaranes={albaranes} empresas={empresas} usuario={usuario} borrarAlbaran={borrarAlbaran} refetch={refetch} />} />
         <Route path="nuevo"          element={<NuevoAlbaran addAlbaran={addAlbaran} usuario={usuario} />} />
         <Route path="albaran/:id"    element={<DetalleAlbaran albaranes={albaranes} simularFirma={simularFirmaOficina} updateFirma={updateFirma} subirDocumento={subirDocumento} subirTicketPesada={subirTicketPesada} actualizarAlbaran={actualizarAlbaran} borrarAlbaran={borrarAlbaran} reabrirAlbaran={reabrirAlbaran} enviarACampoAlbaran={enviarACampoAlbaran} usuario={usuario} refetch={refetch} />} />

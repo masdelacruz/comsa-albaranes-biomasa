@@ -60,6 +60,7 @@ router.post('/login', loginRateLimit, async (req, res) => {
       id: user.id, nombre: user.nombre, email: user.email,
       rol: user.rol, nivel: user.nivel, activo: user.activo,
       notificaciones: user.notificaciones || {},
+      acceso_biomasa: user.acceso_biomasa, acceso_trabajo: user.acceso_trabajo,
     },
   })
 })
@@ -67,7 +68,7 @@ router.post('/login', loginRateLimit, async (req, res) => {
 // ── GET /auth/me ──────────────────────────────────────────────────
 router.get('/me', requireAuth, async (req, res) => {
   const { rows } = await pool.query(
-    'SELECT id, nombre, email, rol, nivel, activo, notificaciones FROM usuarios WHERE id = $1',
+    'SELECT id, nombre, email, rol, nivel, activo, notificaciones, acceso_biomasa, acceso_trabajo FROM usuarios WHERE id = $1',
     [req.user.id]
   )
   const user = rows[0]

@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { Outlet, useNavigate, useLocation } from 'react-router-dom'
-import { LayoutDashboard, PlusCircle, Clock, BarChart2, Settings, LogOut, User, X, Mail, Briefcase, Shield, Users, Bell, BellOff } from 'lucide-react'
+import { LayoutDashboard, PlusCircle, Clock, BarChart2, Settings, LogOut, User, X, Mail, Briefcase, Shield, Users, Bell, BellOff, LayoutGrid } from 'lucide-react'
 import { api } from '../lib/api'
 import { useScrollLock } from '../hooks/useScrollLock'
 import Dock from './Dock'
@@ -96,6 +96,9 @@ export default function Layout({ usuario, logout, albaranes = [], actualizarUsua
     { key: 'administracion', label: 'Administración', icon: <Settings size={18} />,        active: location.pathname === '/administracion', onClick: irA('/administracion') },
     ...(esSuperadmin ? [
       { key: 'usuarios', label: 'Usuarios', icon: <Users size={18} />, active: location.pathname === '/usuarios', onClick: irA('/usuarios') },
+    ] : []),
+    ...(usuario?.acceso_biomasa !== false && usuario?.acceso_trabajo ? [
+      { key: 'apps', label: 'Cambiar de aplicación', icon: <LayoutGrid size={18} />, onClick: () => navigate('/apps') },
     ] : []),
     { key: 'perfil', label: usuario?.nombre || 'Perfil', isAvatar: true, initials: iniciales, onClick: () => setPerfilOpen(true) },
   ]

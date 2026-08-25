@@ -14,7 +14,7 @@ const ROLES_DISPONIBLES = [
   'Resp. Operaciones',
 ]
 
-const EMPTY_FORM = { nombre: '', email: '', rol: ROLES_DISPONIBLES[0], nivel: 'usuario', password: '' }
+const EMPTY_FORM = { nombre: '', email: '', rol: ROLES_DISPONIBLES[0], nivel: 'usuario', password: '', accesoBiomasa: true, accesoTrabajo: true }
 
 // Silenciado si el flag está activo O si todas las notifs individuales están desactivadas
 const esSilenciado = (notifs) => {
@@ -67,6 +67,8 @@ export default function Usuarios({ usuario }) {
         rol:      form.rol,
         nivel:    form.nivel,
         password: form.password || 'Comsa2025!',
+        acceso_biomasa: form.accesoBiomasa,
+        acceso_trabajo: form.accesoTrabajo,
       })
     } catch (err) {
       setError(err.message || 'Error al guardar')
@@ -90,7 +92,7 @@ export default function Usuarios({ usuario }) {
     }
   }
 
-  const colSpan = esSuperadmin ? 8 : 6
+  const colSpan = esSuperadmin ? 9 : 7
 
   return (
     <div className="usuarios-page">
@@ -124,6 +126,7 @@ export default function Usuarios({ usuario }) {
                 <th>Email</th>
                 <th>Rol</th>
                 <th>Nivel</th>
+                <th>Apps</th>
                 <th>Cuenta</th>
                 <th>Notificaciones</th>
                 {esSuperadmin && <th>Contraseña</th>}
@@ -152,6 +155,21 @@ export default function Usuarios({ usuario }) {
                       <span className={`nivel-badge ${u.nivel === 'superadmin' ? 'nivel-superadmin' : 'nivel-usuario'}`}>
                         {u.nivel === 'superadmin' ? '★ Superadmin' : 'Usuario'}
                       </span>
+                    </td>
+                    {/* Acceso a apps */}
+                    <td>
+                      <div style={{display:'flex',gap:5}}>
+                        <span title="Biomasa" style={{fontSize:10,fontWeight:600,padding:'2px 7px',borderRadius:20,
+                          background: u.acceso_biomasa !== false ? 'var(--green-50)' : 'var(--gray-100)',
+                          color:      u.acceso_biomasa !== false ? 'var(--green-600)' : 'var(--gray-300)'}}>
+                          Biomasa
+                        </span>
+                        <span title="Trabajo" style={{fontSize:10,fontWeight:600,padding:'2px 7px',borderRadius:20,
+                          background: u.acceso_trabajo ? 'var(--blue-50)' : 'var(--gray-100)',
+                          color:      u.acceso_trabajo ? 'var(--blue-700)' : 'var(--gray-300)'}}>
+                          Trabajo
+                        </span>
+                      </div>
                     </td>
                     {/* Estado de cuenta */}
                     <td>
@@ -257,6 +275,19 @@ export default function Usuarios({ usuario }) {
                     <option value="usuario">Usuario</option>
                     <option value="superadmin">Superadmin</option>
                   </select>
+                </div>
+              </div>
+              <div style={{display:'flex',flexDirection:'column',gap:5}}>
+                <label style={{fontSize:12,fontWeight:500,color:'var(--gray-600)'}}>Acceso a aplicaciones</label>
+                <div style={{display:'flex',gap:14}}>
+                  <label style={{display:'flex',alignItems:'center',gap:6,fontSize:13,color:'var(--gray-700)',cursor:'pointer'}}>
+                    <input type="checkbox" checked={form.accesoBiomasa} onChange={e => set('accesoBiomasa', e.target.checked)} />
+                    Biomasa
+                  </label>
+                  <label style={{display:'flex',alignItems:'center',gap:6,fontSize:13,color:'var(--gray-700)',cursor:'pointer'}}>
+                    <input type="checkbox" checked={form.accesoTrabajo} onChange={e => set('accesoTrabajo', e.target.checked)} />
+                    Trabajo
+                  </label>
                 </div>
               </div>
               <div style={{display:'flex',flexDirection:'column',gap:5}}>

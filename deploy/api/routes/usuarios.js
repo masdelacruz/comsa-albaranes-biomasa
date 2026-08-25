@@ -12,7 +12,7 @@ function requireSuperadmin(req, res, next) {
   next()
 }
 
-const SELECT_COLS = 'id, nombre, email, rol, nivel, activo, notificaciones'
+const SELECT_COLS = 'id, nombre, email, rol, nivel, activo, notificaciones, acceso_biomasa, acceso_trabajo'
 
 // ── GET /usuarios ─────────────────────────────────────────────────
 router.get('/', requireAuth, async (_req, res) => {
@@ -40,15 +40,16 @@ router.patch('/me/notificaciones', requireAuth, async (req, res) => {
 
 // ── POST /usuarios  (solo superadmin) ────────────────────────────
 router.post('/', requireAuth, requireSuperadmin, async (req, res) => {
-  const { nombre, email, rol, nivel, password } = req.body
+  const { nombre, email, rol, nivel, password, acceso_biomasa, acceso_trabajo } = req.body
   const pw   = password || 'Comsa2025!'
   const hash = await bcrypt.hash(pw, SALT_ROUNDS)
   const id   = uuidv4()
 
   await pool.query(
-    `INSERT INTO usuarios (id, nombre, email, password_hash, password_visible, rol, nivel, activo)
-     VALUES ($1,$2,$3,$4,$5,$6,$7,true)`,
-    [id, nombre, email.toLowerCase(), hash, pw, rol, nivel || 'usuario']
+    `INSERT INTO usuarios (id, nombre, email, password_hash, password_visible, rol, nivel, activo, acceso_biomasa, acceso_trabajo)
+     VALUES ($1,$2,$3,$4,$5,$6,$7,true,$8,$9)`,
+    [id, nombre, email.toLowerCase(), hash, pw, rol, nivel || 'usuario',
+     acceso_biomasa !== false, acceso_trabajo !== false]
   )
   const { rows } = await pool.query(
     `SELECT ${SELECT_COLS} FROM usuarios WHERE id=$1`, [id]
@@ -58,7 +59,7 @@ router.post('/', requireAuth, requireSuperadmin, async (req, res) => {
 
 // ── PATCH /usuarios/:id  (solo superadmin) ───────────────────────
 router.patch('/:id', requireAuth, requireSuperadmin, async (req, res) => {
-  const { nombre, rol, nivel, password, activo, notificaciones } = req.body
+  const { nombre, rol, nivel, password, activo, notificaciones, acceso_biomasa, acceso_trabajo } = req.body
   const updates = []
   const vals    = []
   let idx = 1
@@ -68,6 +69,8 @@ router.patch('/:id', requireAuth, requireSuperadmin, async (req, res) => {
   if (nivel           !== undefined) { updates.push(`nivel=$${idx++}`);          vals.push(nivel) }
   if (activo          !== undefined) { updates.push(`activo=$${idx++}`);         vals.push(activo) }
   if (notificaciones  !== undefined) { updates.push(`notificaciones=$${idx++}`); vals.push(JSON.stringify(notificaciones)) }
+  if (acceso_biomasa  !== undefined) { updates.push(`acceso_biomasa=$${idx++}`); vals.push(acceso_biomasa) }
+  if (acceso_trabajo  !== undefined) { updates.push(`acceso_trabajo=$${idx++}`); vals.push(acceso_trabajo) }
   if (password) {
     const hash = await bcrypt.hash(password, SALT_ROUNDS)
     updates.push(`password_hash=$${idx++}`, `password_visible=$${idx++}`)

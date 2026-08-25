@@ -32,6 +32,8 @@ export default function PerfilUsuario({ usuario, viewer, onClose, onGuardado }) 
     nivel:    usuario.nivel,
     activo:   usuario.activo,
     password: '',
+    accesoBiomasa: usuario.acceso_biomasa !== false,
+    accesoTrabajo: !!usuario.acceso_trabajo,
   })
   const [notifs,    setNotifs]    = useState(usuario.notificaciones || { silenciado: true })
   const [showPw,    setShowPw]    = useState(false)
@@ -58,6 +60,10 @@ export default function PerfilUsuario({ usuario, viewer, onClose, onGuardado }) 
         rol:    form.rol,
         nivel:  form.nivel,
         notificaciones: notifs,
+      }
+      if (esSuperadmin) {
+        body.acceso_biomasa = form.accesoBiomasa
+        body.acceso_trabajo = form.accesoTrabajo
       }
       if (puedeEditarActivo && form.activo !== usuario.activo)
         body.activo = form.activo
@@ -147,6 +153,34 @@ export default function PerfilUsuario({ usuario, viewer, onClose, onGuardado }) 
               )}
             </div>
           </section>
+
+          {/* Acceso a apps — solo superadmin lo configura */}
+          {esSuperadmin && (
+            <section className="pu-sec">
+              <div className="pu-sec-lbl">Acceso a aplicaciones</div>
+              <div className="pu-fields">
+                {[
+                  { key: 'accesoBiomasa', label: 'Biomasa',  desc: 'Gestión de albaranes de biomasa', color: 'var(--green-400)' },
+                  { key: 'accesoTrabajo', label: 'Trabajo',  desc: 'Próximamente',                     color: 'var(--blue-400)' },
+                ].map(({ key, label, desc, color }) => (
+                  <div key={key} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 12px', background: 'var(--gray-50)', borderRadius: 'var(--radius-md)', border: 'var(--border)' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                      <span style={{ width: 8, height: 8, borderRadius: '50%', background: color, flexShrink: 0 }} />
+                      <div>
+                        <div style={{ fontSize: 13, fontWeight: 500, color: 'var(--gray-700)' }}>{label}</div>
+                        <div style={{ fontSize: 11, color: 'var(--gray-400)', marginTop: 2 }}>{desc}</div>
+                      </div>
+                    </div>
+                    <div
+                      onClick={() => set(key, !form[key])}
+                      style={{ width: 38, height: 21, background: form[key] ? 'var(--green-400)' : 'var(--gray-200)', borderRadius: 11, position: 'relative', cursor: 'pointer', transition: 'background 0.2s', flexShrink: 0 }}>
+                      <div style={{ position: 'absolute', top: 3, left: form[key] ? 18 : 3, width: 15, height: 15, background: '#fff', borderRadius: '50%', transition: 'left 0.2s', boxShadow: '0 1px 3px rgba(0,0,0,0.2)' }} />
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </section>
+          )}
 
           {/* Notificaciones */}
           <section className="pu-sec">
