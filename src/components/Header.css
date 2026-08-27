@@ -27,26 +27,17 @@
 }
 .ah-brand:hover { background: var(--gray-100); }
 
-/* Recorta solo los iconos (círculo rojo + cuadrado azul) de la esquina
-   superior izquierda del logo completo, escalando la imagen y ocultando
-   el resto con overflow:hidden — misma técnica que el sidebar antiguo. */
 .ah-brand-icon {
-  width: 26px;
   height: 26px;
-  border-radius: 8px;
-  background: #fff;
-  border: 1px solid var(--gray-200);
-  overflow: hidden;
   display: flex;
-  align-items: flex-start;
+  align-items: center;
   justify-content: flex-start;
   flex-shrink: 0;
 }
 .ah-brand-icon-img {
   display: block;
-  width: 64px;
-  height: auto;
-  margin-top: -1px;
+  height: 100%;
+  width: auto;
 }
 
 .ah-brand-text {

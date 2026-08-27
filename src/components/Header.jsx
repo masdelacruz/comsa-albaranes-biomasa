@@ -1,6 +1,6 @@
 import { useNavigate, useLocation } from 'react-router-dom'
 import { LayoutGrid, LogOut } from 'lucide-react'
-import logoIcon from '../assets/logo_biomasa.png'
+import logoIcon from '../assets/logo_biomasa_full.png'
 import './Header.css'
 
 export default function Header({ usuario, logout }) {
