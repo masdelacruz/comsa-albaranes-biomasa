@@ -69,6 +69,9 @@ services:
       SMTP_PASS:         ${SMTP_PASS}
       SMTP_FROM:         ${SMTP_FROM}
       APP_URL:           https://biomasa.cserintranet.com
+      AZURE_AD_TENANT_ID:     ${AZURE_AD_TENANT_ID}
+      AZURE_AD_CLIENT_ID:     ${AZURE_AD_CLIENT_ID}
+      AZURE_AD_CLIENT_SECRET: ${AZURE_AD_CLIENT_SECRET}
     depends_on:
       db:
         condition: service_healthy

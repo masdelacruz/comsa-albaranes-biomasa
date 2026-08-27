@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Mail, Lock, Eye, EyeOff, ArrowRight, ShieldCheck, MapPin } from 'lucide-react'
 import { api } from '../lib/api'
 import logoFull from '../assets/logo_biomasa_full.png'
@@ -7,6 +7,13 @@ import './Login.css'
 const EMAIL_ADMIN = 'biomasa@cserintranet.com'
 const MAILTO_OLVIDO = `mailto:${EMAIL_ADMIN}?subject=${encodeURIComponent('Recuperación de contraseña — Comsa Albaranes')}&body=${encodeURIComponent('Hola,\n\nHe olvidado mi contraseña de acceso a la plataforma de albaranes.\nMi email de usuario es: ')}`
 
+const ERRORES_SSO = {
+  usuario_no_registrado: 'Tu cuenta de Microsoft no está dada de alta. Contacta con administración (biomasa@cserintranet.com).',
+  cuenta_bloqueada: 'Tu cuenta está desactivada. Contacta con administración (biomasa@cserintranet.com).',
+  dominio_no_permitido: 'Solo se admiten cuentas @comsa.com.',
+}
+const ERROR_SSO_GENERICO = 'No se pudo iniciar sesión con Microsoft. Inténtalo de nuevo.'
+
 export default function Login() {
   const [email, setEmail]           = useState('')
   const [password, setPassword]     = useState('')
@@ -14,6 +21,19 @@ export default function Login() {
   const [recordarme, setRecordarme] = useState(true)
   const [error, setError]           = useState('')
   const [loading, setLoading]       = useState(false)
+  const [msEnabled, setMsEnabled]   = useState(false)
+
+  useEffect(() => {
+    api.get('/auth/microsoft/status').then(d => setMsEnabled(!!d?.enabled)).catch(() => {})
+
+    const ssoError = sessionStorage.getItem('sso_error')
+    if (ssoError) {
+      sessionStorage.removeItem('sso_error')
+      setError(ERRORES_SSO[ssoError] || ERROR_SSO_GENERICO)
+    }
+  }, [])
+
+  const loginMicrosoft = () => { window.location.href = '/api/auth/microsoft/login' }
 
   const handleLogin = async (e) => {
     e.preventDefault()
@@ -109,6 +129,21 @@ export default function Login() {
               <span className="login-btn-text">{loading ? 'Accediendo...' : 'Acceder'}</span>
             </button>
           </form>
+
+          {msEnabled && (
+            <>
+              <div className="login-divider"><span>o</span></div>
+              <button type="button" className="login-btn-microsoft" onClick={loginMicrosoft}>
+                <svg width="16" height="16" viewBox="0 0 21 21" aria-hidden="true">
+                  <rect x="1" y="1" width="9" height="9" fill="#f25022" />
+                  <rect x="11" y="1" width="9" height="9" fill="#7fba00" />
+                  <rect x="1" y="11" width="9" height="9" fill="#00a4ef" />
+                  <rect x="11" y="11" width="9" height="9" fill="#ffb900" />
+                </svg>
+                Iniciar sesión con Microsoft
+              </button>
+            </>
+          )}
 
           <div className="login-shield-divider">
             <ShieldCheck size={14} />

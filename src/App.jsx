@@ -12,6 +12,7 @@ import Estadisticas from './pages/Estadisticas'
 import Administracion from './pages/Administracion'
 import Usuarios from './pages/Usuarios'
 import Login from './pages/Login'
+import AuthCallback from './pages/AuthCallback'
 import SelectorApp from './pages/SelectorApp'
 import Trabajo from './pages/Trabajo'
 import Perfil from './pages/Perfil'
@@ -169,6 +170,7 @@ export default function App() {
   return (
     <BrowserRouter>
       <Routes>
+        <Route path="/auth/callback" element={<AuthCallback />} />
         <Route path="/campo/instalacion/:nombre" element={<PanelInstalacion />} />
         <Route path="/campo/astilladora/:nombre" element={<PanelAstilladora />} />
         <Route path="/campo/:id" element={<VistaCampoPublica />} />

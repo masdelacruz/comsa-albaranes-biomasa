@@ -288,6 +288,41 @@
 .login-btn:disabled .arr-1,
 .login-btn:disabled .arr-2 { display: none; }
 
+/* ── Divisor "o" + botón de login con Microsoft ──────────────────────── */
+.login-divider {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 18px 0 14px;
+  color: var(--gray-400);
+  font-size: 12px;
+}
+.login-divider::before,
+.login-divider::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: var(--gray-200);
+}
+
+.login-btn-microsoft {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  width: 100%;
+  padding: 12px;
+  border: var(--border);
+  border-radius: 16px;
+  background: #fff;
+  color: var(--gray-800);
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s;
+}
+.login-btn-microsoft:hover { background: var(--gray-50); border-color: var(--gray-300); }
+
 .login-error {
   background: var(--red-50);
   border: 1px solid var(--red-100);

@@ -79,6 +79,7 @@ app.use(express.json({ limit: '2mb' }))
 
 // ── API routes bajo /api ──────────────────────────────────────────
 app.use('/api/auth',      require('./routes/auth'))
+app.use('/api/auth',      require('./routes/auth-microsoft'))
 app.use('/api/albaranes', require('./routes/albaranes'))
 app.use('/api/empresas',  require('./routes/empresas'))
 app.use('/api/usuarios',  require('./routes/usuarios'))
