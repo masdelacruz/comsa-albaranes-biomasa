@@ -1,5 +1,5 @@
 import { useNavigate } from 'react-router-dom'
-import { ArrowRight } from 'lucide-react'
+import { ArrowRight, LayoutGrid } from 'lucide-react'
 import Header from '../components/Header'
 import logoBiomasa from '../assets/logo_biomasa_full.png'
 import iconTrabajo from '../assets/icon_trabajo.png'
@@ -14,8 +14,9 @@ export default function SelectorApp({ usuario, logout }) {
 
       <div className="sa-content">
         <div className="sa-heading">
-          <div className="sa-title">¿Qué aplicación quieres abrir?</div>
-          <div className="sa-sub">Puedes cambiar entre ellas cuando quieras.</div>
+          <span className="sa-heading-icon"><LayoutGrid size={22} /></span>
+          <div className="sa-title">Selecciona una aplicación</div>
+          <div className="sa-sub">Accede a las aplicaciones disponibles para gestionar tus albaranes de forma eficiente.</div>
         </div>
 
         <div className="sa-grid">
