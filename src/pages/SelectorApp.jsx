@@ -1,6 +1,8 @@
 import { useNavigate } from 'react-router-dom'
-import { Leaf, HardHat, ArrowRight } from 'lucide-react'
+import { ArrowRight } from 'lucide-react'
 import Header from '../components/Header'
+import logoBiomasa from '../assets/logo_biomasa_full.png'
+import iconTrabajo from '../assets/icon_trabajo.png'
 import './SelectorApp.css'
 
 export default function SelectorApp({ usuario, logout }) {
@@ -18,14 +20,14 @@ export default function SelectorApp({ usuario, logout }) {
 
         <div className="sa-grid">
           <button className="sa-card sa-card-biomasa" onClick={() => navigate('/dashboard')}>
-            <span className="sa-card-icon"><Leaf size={24} /></span>
+            <span className="sa-card-icon"><img src={logoBiomasa} alt="" /></span>
             <span className="sa-card-name">Biomasa</span>
             <span className="sa-card-desc">Gestión de albaranes de biomasa</span>
             <span className="sa-card-cta">Entrar <ArrowRight size={14} /></span>
           </button>
 
           <button className="sa-card sa-card-trabajo" onClick={() => navigate('/trabajo')}>
-            <span className="sa-card-icon"><HardHat size={24} /></span>
+            <span className="sa-card-icon"><img src={iconTrabajo} alt="" /></span>
             <span className="sa-card-name">Trabajo</span>
             <span className="sa-card-desc">Próximamente</span>
             <span className="sa-card-cta">Entrar <ArrowRight size={14} /></span>

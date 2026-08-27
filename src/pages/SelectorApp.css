@@ -16,8 +16,10 @@
 }
 .sa-card:hover { transform:translateY(-3px); box-shadow:0 10px 28px rgba(20,20,15,0.09); }
 
-.sa-card-icon { width:46px; height:46px; border-radius:14px; display:flex; align-items:center; justify-content:center; margin-bottom:14px; }
+.sa-card-icon { width:46px; height:46px; border-radius:14px; display:flex; align-items:center; justify-content:center; margin-bottom:14px; overflow:hidden; }
+.sa-card-icon img { width:100%; height:100%; object-fit:cover; }
 .sa-card-biomasa .sa-card-icon { background:var(--green-50); color:var(--green-600); }
+.sa-card-biomasa .sa-card-icon img { object-fit:contain; padding:4px; }
 .sa-card-biomasa:hover { border-color:var(--green-400); }
 .sa-card-trabajo .sa-card-icon { background:var(--blue-50); color:var(--blue-700); }
 .sa-card-trabajo:hover { border-color:var(--blue-400); }
