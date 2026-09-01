@@ -1,6 +1,6 @@
 import { useEffect } from 'react'
 import { Outlet, useNavigate, useLocation } from 'react-router-dom'
-import { LayoutDashboard, PlusCircle, Clock, BarChart2, Settings, Users, LayoutGrid } from 'lucide-react'
+import { LayoutDashboard, PlusCircle, FileClock, BarChart2, Settings, Users, LayoutGrid } from 'lucide-react'
 import Dock from './Dock'
 import Header from './Header'
 import './Layout.css'
@@ -37,7 +37,7 @@ export default function Layout({ usuario, albaranes = [], logout }) {
   const dockItems = [
     { key: 'dashboard',      label: 'Dashboard',      icon: <LayoutDashboard size={18} />, active: location.pathname === '/dashboard',      badge: pendientesOficina, onClick: irA('/dashboard') },
     { key: 'nuevo',          label: 'Nuevo albarán',  icon: <PlusCircle size={18} />,      active: location.pathname === '/nuevo',          onClick: irA('/nuevo') },
-    { key: 'historial',      label: 'Historial',      icon: <Clock size={18} />,           active: location.pathname === '/historial',      onClick: irA('/historial') },
+    { key: 'historial',      label: 'Historial',      icon: <FileClock size={18} />,       active: location.pathname === '/historial',      onClick: irA('/historial') },
     { key: 'estadisticas',   label: 'Estadísticas',   icon: <BarChart2 size={18} />,       active: location.pathname === '/estadisticas',   onClick: irA('/estadisticas') },
     { key: 'administracion', label: 'Administración', icon: <Settings size={18} />,        active: location.pathname === '/administracion', onClick: irA('/administracion') },
     ...(esSuperadmin ? [
