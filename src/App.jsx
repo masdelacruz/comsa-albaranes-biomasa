@@ -11,6 +11,7 @@ import Historial from './pages/Historial'
 import Estadisticas from './pages/Estadisticas'
 import Administracion from './pages/Administracion'
 import Usuarios from './pages/Usuarios'
+import Auditoria from './pages/Auditoria'
 import Login from './pages/Login'
 import AuthCallback from './pages/AuthCallback'
 import SelectorApp from './pages/SelectorApp'
@@ -154,6 +155,11 @@ function AppConDatos({ usuario, logout, actualizarUsuario }) {
             : <Navigate to="/dashboard" replace />
         } />
         <Route path="usuarios"       element={<Usuarios usuario={usuario} />} />
+        <Route path="auditoria"      element={
+          usuario?.nivel === 'superadmin'
+            ? <Auditoria />
+            : <Navigate to="/dashboard" replace />
+        } />
         <Route path="perfil"         element={<Perfil usuario={usuario} actualizarUsuario={actualizarUsuario} logout={logout} />} />
       </Route>
     </Routes>

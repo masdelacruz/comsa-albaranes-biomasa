@@ -3,6 +3,7 @@ const bcrypt = require('bcrypt')
 const { v4: uuidv4 } = require('uuid')
 const pool   = require('../db')
 const { requireAuth } = require('./auth')
+const { registrarAuditoria } = require('../lib/auditoria')
 
 const SALT_ROUNDS = 12
 
@@ -54,6 +55,10 @@ router.post('/', requireAuth, requireSuperadmin, async (req, res) => {
   const { rows } = await pool.query(
     `SELECT ${SELECT_COLS} FROM usuarios WHERE id=$1`, [id]
   )
+  registrarAuditoria({
+    usuario: req.user, accion: 'crear', entidad: 'usuario', entidadId: id,
+    detalle: `Usuario creado: ${nombre} (${email.toLowerCase()}) · nivel ${nivel || 'usuario'}`,
+  })
   res.json(rows[0])
 })
 
@@ -86,12 +91,32 @@ router.patch('/:id', requireAuth, requireSuperadmin, async (req, res) => {
   const { rows } = await pool.query(
     `SELECT ${SELECT_COLS} FROM usuarios WHERE id=$1`, [req.params.id]
   )
+
+  const cambios = []
+  if (nombre          !== undefined) cambios.push(`nombre → "${nombre}"`)
+  if (rol             !== undefined) cambios.push(`rol → "${rol}"`)
+  if (nivel           !== undefined) cambios.push(`nivel → "${nivel}"`)
+  if (activo          !== undefined) cambios.push(`cuenta ${activo ? 'activada' : 'desactivada'}`)
+  if (acceso_biomasa  !== undefined) cambios.push(`acceso Biomasa → ${acceso_biomasa}`)
+  if (acceso_trabajo  !== undefined) cambios.push(`acceso Trabajo → ${acceso_trabajo}`)
+  if (password) cambios.push('contraseña restablecida')
+  if (cambios.length) {
+    registrarAuditoria({
+      usuario: req.user, accion: 'editar', entidad: 'usuario', entidadId: req.params.id,
+      detalle: `Usuario editado: ${rows[0]?.nombre || req.params.id} — ${cambios.join(', ')}`,
+    })
+  }
   res.json(rows[0])
 })
 
 // ── DELETE /usuarios/:id  (solo superadmin) ──────────────────────
 router.delete('/:id', requireAuth, requireSuperadmin, async (req, res) => {
+  const { rows } = await pool.query('SELECT nombre, email FROM usuarios WHERE id=$1', [req.params.id])
   await pool.query('DELETE FROM usuarios WHERE id=$1', [req.params.id])
+  registrarAuditoria({
+    usuario: req.user, accion: 'borrar', entidad: 'usuario', entidadId: req.params.id,
+    detalle: rows[0] ? `Usuario eliminado: ${rows[0].nombre} (${rows[0].email})` : 'Usuario eliminado',
+  })
   res.json({ ok: true })
 })
 

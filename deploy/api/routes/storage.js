@@ -2,6 +2,7 @@ const router = require('express').Router()
 const multer = require('multer')
 const pool   = require('../db')
 const { requireAuth, requireConfigAccess } = require('./auth')
+const { registrarAuditoria } = require('../lib/auditoria')
 
 const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 50 * 1024 * 1024 } })
 
@@ -118,6 +119,10 @@ router.post('/upload/empresa/:empresaId/firma', requireAuth, requireConfigAccess
     'UPDATE proveedores SET firma_imagen=$1 WHERE id=$2',
     [url, empresaId]
   )
+  registrarAuditoria({
+    usuario: req.user, accion: 'editar', entidad: 'firma_empresa', entidadId: empresaId,
+    detalle: 'Firma oficial de empresa actualizada',
+  })
   res.json({ url })
 })
 
@@ -141,6 +146,10 @@ router.post('/upload/logos/:logoId', requireAuth, requireConfigAccess, upload.si
      ON CONFLICT (id) DO UPDATE SET url=$2, updated_at=NOW()`,
     [logoId, url]
   )
+  registrarAuditoria({
+    usuario: req.user, accion: 'editar', entidad: 'logo', entidadId: logoId,
+    detalle: `Logo actualizado: ${logoId}`,
+  })
   res.json({ url })
 })
 
@@ -157,6 +166,10 @@ router.delete('/logos/:logoId', requireAuth, requireConfigAccess, async (req, re
     if (path) await minio.removeObject(bucket, path).catch(() => {})
   }
   await pool.query('DELETE FROM logos WHERE id=$1', [logoId])
+  registrarAuditoria({
+    usuario: req.user, accion: 'borrar', entidad: 'logo', entidadId: logoId,
+    detalle: `Logo eliminado: ${logoId}`,
+  })
   res.json({ ok: true })
 })
 

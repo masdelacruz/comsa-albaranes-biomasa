@@ -2,6 +2,7 @@ const router = require('express').Router()
 const { v4: uuidv4 } = require('uuid')
 const pool   = require('../db')
 const { requireAuth, requireConfigAccess } = require('./auth')
+const { registrarAuditoria } = require('../lib/auditoria')
 
 function toTitleCase(str) {
   if (!str || typeof str !== 'string') return str
@@ -31,6 +32,10 @@ router.post('/', requireAuth, requireConfigAccess, async (req, res) => {
      JSON.stringify(trabajadores||[]), JSON.stringify(maquinas||[]), horario||null]
   )
   const { rows } = await pool.query('SELECT * FROM proveedores WHERE id=$1', [id])
+  registrarAuditoria({
+    usuario: req.user, accion: 'crear', entidad: 'proveedor', entidadId: id,
+    detalle: `${tipo}: ${rows[0]?.nombre}`,
+  })
   res.json(rows[0])
 })
 
@@ -52,12 +57,21 @@ router.patch('/:id', requireAuth, requireConfigAccess, async (req, res) => {
   vals.push(req.params.id)
   await pool.query(`UPDATE proveedores SET ${updates.join(',')} WHERE id=$${idx}`, vals)
   const { rows } = await pool.query('SELECT * FROM proveedores WHERE id=$1', [req.params.id])
+  registrarAuditoria({
+    usuario: req.user, accion: 'editar', entidad: 'proveedor', entidadId: req.params.id,
+    detalle: `${rows[0]?.nombre} — campos: ${fields.filter(f => req.body[f] !== undefined).join(', ')}`,
+  })
   res.json(rows[0])
 })
 
 // ── DELETE /empresas/:id ──────────────────────────────────────────
 router.delete('/:id', requireAuth, requireConfigAccess, async (req, res) => {
+  const { rows } = await pool.query('SELECT nombre, tipo FROM proveedores WHERE id=$1', [req.params.id])
   await pool.query('DELETE FROM proveedores WHERE id=$1', [req.params.id])
+  registrarAuditoria({
+    usuario: req.user, accion: 'borrar', entidad: 'proveedor', entidadId: req.params.id,
+    detalle: rows[0] ? `${rows[0].tipo}: ${rows[0].nombre}` : null,
+  })
   res.json({ ok: true })
 })
 

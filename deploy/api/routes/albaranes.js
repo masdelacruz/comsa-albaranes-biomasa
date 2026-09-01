@@ -1,6 +1,7 @@
 const router = require('express').Router()
 const pool   = require('../db')
 const { requireAuth } = require('./auth')
+const { registrarAuditoria } = require('../lib/auditoria')
 const { enviarNotificacion, enviarNotificacionAlbaranACampo, enviarNotificacionCamionEnviado } = require('../emailSender')
 const { crearNotificacion } = require('../notificacionesCliente')
 
@@ -418,6 +419,10 @@ router.post('/:id/cancelar', requireAuth, async (req, res) => {
     'INSERT INTO actividad (albaran_id,ts,texto,actor) VALUES ($1,$2,$3,$4)',
     [id, fecha, textoActividad, actor]
   )
+  registrarAuditoria({
+    usuario: req.user, accion: 'anular', entidad: 'albaran', entidadId: id,
+    detalle: motivoTrimmed || null,
+  })
   const albaran = await fetchOne(id)
   res.json({ albaran })
 })
@@ -533,6 +538,10 @@ router.post('/', requireAuth, async (req, res) => {
     )
 
     await client.query('COMMIT')
+    registrarAuditoria({
+      usuario: req.user, accion: 'crear', entidad: 'albaran', entidadId: id,
+      detalle: `${f.tipo || ''} · proveedor ${f.proveedor || '—'} · ${f.instalacion || f.astilladora || ''}`,
+    })
     res.json({ id })
   } catch (e) {
     await client.query('ROLLBACK')
@@ -559,12 +568,12 @@ router.patch('/:id', requireAuth, async (req, res) => {
   const actorNombre = req.user.nombre || 'Oficina'
   const esSuperadmin = req.user.nivel === 'superadmin'
 
+  const { rows: estadoRows } = await pool.query('SELECT estado FROM albaranes WHERE id=$1', [id])
+  const estabaCerrado = estadoRows[0]?.estado === 'cerrado'
+
   // Bloquear edición de albarán cerrado para usuarios no-superadmin
-  if (!esSuperadmin) {
-    const { rows } = await pool.query('SELECT estado FROM albaranes WHERE id=$1', [id])
-    if (rows[0]?.estado === 'cerrado') {
-      return res.status(403).json({ error: 'El albarán está cerrado y no puede editarse.' })
-    }
+  if (!esSuperadmin && estabaCerrado) {
+    return res.status(403).json({ error: 'El albarán está cerrado y no puede editarse.' })
   }
 
   if (campos && Object.keys(campos).length) {
@@ -608,6 +617,13 @@ router.patch('/:id', requireAuth, async (req, res) => {
     [id, fecha, descripcion || 'Datos editados manualmente', actorNombre]
   )
 
+  if (estabaCerrado) {
+    registrarAuditoria({
+      usuario: req.user, accion: 'editar_cerrado', entidad: 'albaran', entidadId: id,
+      detalle: descripcion || 'Edición de albarán ya cerrado (override superadmin)',
+    })
+  }
+
   const albaran = await fetchOne(id)
   res.json(albaran)
 })
@@ -643,6 +659,10 @@ router.post('/:id/reabrir', requireAuth, async (req, res) => {
     'INSERT INTO actividad (albaran_id,ts,texto,actor) VALUES ($1,$2,$3,$4)',
     [id, fecha, 'Albarán reabierto por superadmin — firma de oficina reseteada', actorNombre]
   )
+  registrarAuditoria({
+    usuario: req.user, accion: 'reabrir', entidad: 'albaran', entidadId: id,
+    detalle: 'Firma de oficina reseteada',
+  })
 
   const albaran = await fetchOne(id)
   res.json(albaran)
@@ -858,7 +878,12 @@ router.post('/:id/duplicar', requireAuth, async (req, res) => {
 router.delete('/:id', requireAuth, async (req, res) => {
   if (req.user.nivel !== 'superadmin') return res.status(403).json({ error: 'Solo superadmin puede borrar albaranes' })
   const { id } = req.params
+  const { rows } = await pool.query('SELECT tipo, proveedor, estado FROM albaranes WHERE id=$1', [id])
   await pool.query('DELETE FROM albaranes WHERE id = $1', [id])
+  registrarAuditoria({
+    usuario: req.user, accion: 'borrar', entidad: 'albaran', entidadId: id,
+    detalle: rows[0] ? `${rows[0].tipo || ''} · proveedor ${rows[0].proveedor || '—'} · estado ${rows[0].estado}` : null,
+  })
   res.json({ ok: true })
 })
 

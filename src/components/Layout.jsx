@@ -1,6 +1,6 @@
 import { useEffect } from 'react'
 import { Outlet, useNavigate, useLocation } from 'react-router-dom'
-import { LayoutDashboard, PlusCircle, FileClock, BarChart2, Settings, Users, LayoutGrid } from 'lucide-react'
+import { LayoutDashboard, PlusCircle, FileClock, BarChart2, Settings, Users, ShieldAlert, LayoutGrid } from 'lucide-react'
 import Dock from './Dock'
 import Header from './Header'
 import './Layout.css'
@@ -45,6 +45,7 @@ export default function Layout({ usuario, albaranes = [], logout }) {
     ] : []),
     ...(esSuperadmin ? [
       { key: 'usuarios', label: 'Usuarios', icon: <Users size={18} />, active: location.pathname === '/usuarios', onClick: irA('/usuarios') },
+      { key: 'auditoria', label: 'Auditoría', icon: <ShieldAlert size={18} />, active: location.pathname === '/auditoria', onClick: irA('/auditoria') },
     ] : []),
     ...(usuario?.acceso_biomasa !== false && usuario?.acceso_trabajo ? [
       { key: 'apps', label: 'Cambiar de aplicación', icon: <LayoutGrid size={18} />, onClick: () => navigate('/apps') },

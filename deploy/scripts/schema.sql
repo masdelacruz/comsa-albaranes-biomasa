@@ -122,6 +122,19 @@ CREATE TABLE IF NOT EXISTS logos (
   updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
+-- ── Auditoría (acciones administrativas/destructivas, solo superadmin) ──
+CREATE TABLE IF NOT EXISTS auditoria (
+  id             SERIAL PRIMARY KEY,
+  ts             TEXT NOT NULL,
+  usuario_id     UUID REFERENCES usuarios(id) ON DELETE SET NULL,
+  usuario_nombre TEXT NOT NULL,
+  accion         TEXT NOT NULL,   -- 'crear' | 'editar' | 'borrar' | 'reabrir' | 'anular'
+  entidad        TEXT NOT NULL,   -- 'albaran' | 'usuario' | 'proveedor' | 'elemento' | 'logo' | 'firma_empresa'
+  entidad_id     TEXT,
+  detalle        TEXT,
+  created_at     TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
 -- ── Función: ID correlativo de albarán ────────────────────────────
 -- Formato: número entero correlativo (ej. 20020, 20021, ...)
 CREATE OR REPLACE FUNCTION next_albaran_id() RETURNS TEXT AS $$
@@ -144,3 +157,4 @@ CREATE INDEX IF NOT EXISTS idx_pesada_albaran        ON pesada(albaran_id);
 CREATE INDEX IF NOT EXISTS idx_docs_albaran          ON docs(albaran_id);
 CREATE INDEX IF NOT EXISTS idx_actividad_albaran     ON actividad(albaran_id);
 CREATE INDEX IF NOT EXISTS idx_proveedores_tipo      ON proveedores(tipo);
+CREATE INDEX IF NOT EXISTS idx_auditoria_created_at  ON auditoria(created_at DESC);
