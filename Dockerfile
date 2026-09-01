@@ -8,6 +8,7 @@ RUN npm run build
 
 # ── Stage 2: API Express + ficheros estáticos ─────────────────────
 FROM node:20-alpine
+ENV TZ=Europe/Madrid
 WORKDIR /app
 COPY deploy/api/package*.json ./
 RUN npm install --omit=dev

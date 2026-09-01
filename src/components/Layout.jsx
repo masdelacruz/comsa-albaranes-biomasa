@@ -31,6 +31,7 @@ export default function Layout({ usuario, albaranes = [], logout }) {
     : '?'
 
   const esSuperadmin = usuario?.nivel === 'superadmin'
+  const puedeConfiguracion = usuario?.nivel !== 'basico'
 
   const pendientesOficina = albaranes.filter(a => a.estado === 'pendiente_oficina').length
 
@@ -39,7 +40,9 @@ export default function Layout({ usuario, albaranes = [], logout }) {
     { key: 'nuevo',          label: 'Nuevo albarán',  icon: <PlusCircle size={18} />,      active: location.pathname === '/nuevo',          onClick: irA('/nuevo') },
     { key: 'historial',      label: 'Historial',      icon: <FileClock size={18} />,       active: location.pathname === '/historial',      onClick: irA('/historial') },
     { key: 'estadisticas',   label: 'Estadísticas',   icon: <BarChart2 size={18} />,       active: location.pathname === '/estadisticas',   onClick: irA('/estadisticas') },
-    { key: 'administracion', label: 'Administración', icon: <Settings size={18} />,        active: location.pathname === '/administracion', onClick: irA('/administracion') },
+    ...(puedeConfiguracion ? [
+      { key: 'configuracion', label: 'Configuración', icon: <Settings size={18} />, active: location.pathname === '/configuracion', onClick: irA('/configuracion') },
+    ] : []),
     ...(esSuperadmin ? [
       { key: 'usuarios', label: 'Usuarios', icon: <Users size={18} />, active: location.pathname === '/usuarios', onClick: irA('/usuarios') },
     ] : []),

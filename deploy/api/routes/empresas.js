@@ -1,7 +1,7 @@
 const router = require('express').Router()
 const { v4: uuidv4 } = require('uuid')
 const pool   = require('../db')
-const { requireAuth } = require('./auth')
+const { requireAuth, requireConfigAccess } = require('./auth')
 
 function toTitleCase(str) {
   if (!str || typeof str !== 'string') return str
@@ -21,7 +21,7 @@ router.get('/', requireAuth, async (req, res) => {
 })
 
 // ── POST /empresas ────────────────────────────────────────────────
-router.post('/', requireAuth, async (req, res) => {
+router.post('/', requireAuth, requireConfigAccess, async (req, res) => {
   const { nombre, tipo, contacto, email, telefono, notas, activo, trabajadores, maquinas, horario } = req.body
   const id = uuidv4()
   await pool.query(
@@ -35,7 +35,7 @@ router.post('/', requireAuth, async (req, res) => {
 })
 
 // ── PATCH /empresas/:id ───────────────────────────────────────────
-router.patch('/:id', requireAuth, async (req, res) => {
+router.patch('/:id', requireAuth, requireConfigAccess, async (req, res) => {
   if (req.body.nombre) req.body.nombre = toTitleCase(req.body.nombre)
   if (req.body.contacto) req.body.contacto = toTitleCase(req.body.contacto)
   const fields = ['nombre','tipo','contacto','email','telefono','notas','activo','firma_imagen','trabajadores','maquinas','horario']
@@ -56,7 +56,7 @@ router.patch('/:id', requireAuth, async (req, res) => {
 })
 
 // ── DELETE /empresas/:id ──────────────────────────────────────────
-router.delete('/:id', requireAuth, async (req, res) => {
+router.delete('/:id', requireAuth, requireConfigAccess, async (req, res) => {
   await pool.query('DELETE FROM proveedores WHERE id=$1', [req.params.id])
   res.json({ ok: true })
 })

@@ -152,8 +152,8 @@ export default function Usuarios({ usuario }) {
                     <td style={{color:'var(--gray-600)'}}>{u.email}</td>
                     <td>{u.rol}</td>
                     <td>
-                      <span className={`nivel-badge ${u.nivel === 'superadmin' ? 'nivel-superadmin' : 'nivel-usuario'}`}>
-                        {u.nivel === 'superadmin' ? '★ Superadmin' : 'Usuario'}
+                      <span className={`nivel-badge ${u.nivel === 'superadmin' ? 'nivel-superadmin' : u.nivel === 'usuario' ? 'nivel-usuario' : 'nivel-basico'}`}>
+                        {u.nivel === 'superadmin' ? '★ Superadmin' : u.nivel === 'usuario' ? 'Usuario' : 'Básico'}
                       </span>
                     </td>
                     {/* Acceso a apps */}
@@ -272,6 +272,7 @@ export default function Usuarios({ usuario }) {
                 <div style={{display:'flex',flexDirection:'column',gap:5,flex:1}}>
                   <label style={{fontSize:12,fontWeight:500,color:'var(--gray-600)'}}>Nivel</label>
                   <select value={form.nivel} onChange={e => set('nivel', e.target.value)}>
+                    <option value="basico">Básico</option>
                     <option value="usuario">Usuario</option>
                     <option value="superadmin">Superadmin</option>
                   </select>

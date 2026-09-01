@@ -69,9 +69,7 @@ const LOGOS_SECTIONS = [
 // Lista plana para compatibilidad con funciones de subida/borrado
 const LOGOS_CONFIG = LOGOS_SECTIONS.flatMap(s => s.logos)
 
-export default function Administracion({ usuario }) {
-  const esSuperadmin = usuario?.nivel === 'superadmin'
-
+export default function Administracion() {
   const [proveedores, setProveedores]     = useState([])
   const [loading, setLoading]             = useState(true)
   const [tab, setTab]                     = useState('proveedor')
@@ -305,7 +303,7 @@ export default function Administracion({ usuario }) {
       <div className="page-header">
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
           <div>
-            <div className="page-title">Administración</div>
+            <div className="page-title">Configuración</div>
             <div className="page-sub">Gestión de astilladoras, transportistas e instalaciones</div>
           </div>
           {tab !== 'logos' && tab !== 'elementos' && (
@@ -333,14 +331,12 @@ export default function Administracion({ usuario }) {
           >
             Elementos
           </button>
-          {esSuperadmin && (
-            <button
-              className={`admin-tab ${tab === 'logos' ? 'active' : ''}`}
-              onClick={() => setTab('logos')}
-            >
-              Logos
-            </button>
-          )}
+          <button
+            className={`admin-tab ${tab === 'logos' ? 'active' : ''}`}
+            onClick={() => setTab('logos')}
+          >
+            Logos
+          </button>
         </div>
 
         {/* ── Elementos panel ── */}

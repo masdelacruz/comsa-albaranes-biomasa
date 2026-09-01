@@ -116,6 +116,7 @@ export default function PerfilUsuario({ usuario, viewer, onClose, onGuardado }) 
                 <div className="pu-fg" style={{ flex: 1 }}>
                   <label>Nivel</label>
                   <select value={form.nivel} onChange={e => set('nivel', e.target.value)}>
+                    <option value="basico">Básico</option>
                     <option value="usuario">Usuario</option>
                     <option value="superadmin">Superadmin</option>
                   </select>

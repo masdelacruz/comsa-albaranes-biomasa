@@ -33,6 +33,13 @@ function requireAuth(req, res, next) {
   }
 }
 
+// ── Middleware: nivel 'usuario' o 'superadmin' (bloquea 'basico') ──
+function requireConfigAccess(req, res, next) {
+  if (req.user?.nivel === 'basico')
+    return res.status(403).json({ error: 'Sin acceso a Configuración' })
+  next()
+}
+
 // ── POST /auth/login ──────────────────────────────────────────────
 router.post('/login', loginRateLimit, async (req, res) => {
   const { email, password } = req.body
@@ -79,3 +86,4 @@ router.get('/me', requireAuth, async (req, res) => {
 
 module.exports = router
 module.exports.requireAuth = requireAuth
+module.exports.requireConfigAccess = requireConfigAccess

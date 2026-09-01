@@ -93,7 +93,7 @@ CREATE TABLE IF NOT EXISTS usuarios (
   password_hash    TEXT NOT NULL,
   password_visible TEXT,                       -- visible para superadmin
   rol              TEXT,
-  nivel            TEXT NOT NULL DEFAULT 'usuario',  -- 'usuario' | 'superadmin'
+  nivel            TEXT NOT NULL DEFAULT 'usuario',  -- 'basico' | 'usuario' | 'superadmin'
   activo           BOOLEAN NOT NULL DEFAULT TRUE,
   notificaciones   JSONB NOT NULL DEFAULT '{"silenciado": true}'::jsonb,
   created_at       TIMESTAMPTZ NOT NULL DEFAULT NOW()

@@ -1,6 +1,6 @@
 const router = require('express').Router()
 const pool   = require('../db')
-const { requireAuth } = require('./auth')
+const { requireAuth, requireConfigAccess } = require('./auth')
 
 // GET /elementos  (público — usado en campo y oficina)
 router.get('/', async (_req, res) => {
@@ -13,8 +13,8 @@ router.get('/', async (_req, res) => {
   res.json(result)
 })
 
-// POST /elementos  (requiere auth)
-router.post('/', requireAuth, async (req, res) => {
+// POST /elementos  (requiere acceso a Configuración)
+router.post('/', requireAuth, requireConfigAccess, async (req, res) => {
   const { tipo, valor } = req.body
   if (!tipo || !valor?.trim()) return res.status(400).json({ error: 'tipo y valor son obligatorios' })
   try {
@@ -31,8 +31,8 @@ router.post('/', requireAuth, async (req, res) => {
   }
 })
 
-// DELETE /elementos/:id  (requiere auth)
-router.delete('/:id', requireAuth, async (req, res) => {
+// DELETE /elementos/:id  (requiere acceso a Configuración)
+router.delete('/:id', requireAuth, requireConfigAccess, async (req, res) => {
   await pool.query('DELETE FROM elementos WHERE id = $1', [req.params.id])
   res.json({ ok: true })
 })

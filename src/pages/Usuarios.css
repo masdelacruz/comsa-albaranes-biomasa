@@ -16,6 +16,7 @@
 .nivel-badge { display:inline-block; padding:2px 8px; border-radius:20px; font-size:11px; font-weight:600; white-space:nowrap; }
 .nivel-superadmin { background:#fef3c7; color:#92400e; }
 .nivel-usuario    { background:var(--gray-100); color:var(--gray-600); }
+.nivel-basico     { background:var(--gray-50); color:var(--gray-400); }
 
 .usuarios-tr-click { cursor:pointer; transition:background 0.12s; }
 .usuarios-tr-click:hover td { background:var(--gray-50); }

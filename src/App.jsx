@@ -148,7 +148,11 @@ function AppConDatos({ usuario, logout, actualizarUsuario }) {
         <Route path="albaran/:id"    element={<DetalleAlbaran albaranes={albaranes} simularFirma={simularFirmaOficina} updateFirma={updateFirma} subirDocumento={subirDocumento} subirTicketPesada={subirTicketPesada} actualizarAlbaran={actualizarAlbaran} borrarAlbaran={borrarAlbaran} reabrirAlbaran={reabrirAlbaran} enviarACampoAlbaran={enviarACampoAlbaran} usuario={usuario} refetch={refetch} />} />
         <Route path="historial"      element={<Historial albaranes={albaranes} empresas={empresas} usuario={usuario} refetch={refetch} borrarAlbaran={borrarAlbaran} enviarACampoAlbaran={enviarACampoAlbaran} />} />
         <Route path="estadisticas"   element={<Estadisticas albaranes={albaranes} />} />
-        <Route path="administracion" element={<Administracion usuario={usuario} />} />
+        <Route path="configuracion"  element={
+          usuario?.nivel !== 'basico'
+            ? <Administracion />
+            : <Navigate to="/dashboard" replace />
+        } />
         <Route path="usuarios"       element={<Usuarios usuario={usuario} />} />
         <Route path="perfil"         element={<Perfil usuario={usuario} actualizarUsuario={actualizarUsuario} logout={logout} />} />
       </Route>

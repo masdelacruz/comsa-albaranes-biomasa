@@ -1,7 +1,7 @@
 const router = require('express').Router()
 const multer = require('multer')
 const pool   = require('../db')
-const { requireAuth } = require('./auth')
+const { requireAuth, requireConfigAccess } = require('./auth')
 
 const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 50 * 1024 * 1024 } })
 
@@ -101,8 +101,8 @@ router.post('/upload/:albaranId/ticket', upload.single('file'), async (req, res)
   res.json({ url })
 })
 
-// ── POST /storage/upload/empresa/:empresaId/firma  (requiere auth) ──
-router.post('/upload/empresa/:empresaId/firma', requireAuth, upload.single('file'), async (req, res) => {
+// ── POST /storage/upload/empresa/:empresaId/firma  (Configuración) ──
+router.post('/upload/empresa/:empresaId/firma', requireAuth, requireConfigAccess, upload.single('file'), async (req, res) => {
   const minio  = req.app.get('minio')
   const bucket = req.app.get('minio_bucket')
   const { empresaId } = req.params
@@ -121,8 +121,8 @@ router.post('/upload/empresa/:empresaId/firma', requireAuth, upload.single('file
   res.json({ url })
 })
 
-// ── POST /storage/upload/:albaranId/logo  (requiere auth) ────────
-router.post('/upload/logos/:logoId', requireAuth, upload.single('file'), async (req, res) => {
+// ── POST /storage/upload/:albaranId/logo  (Configuración) ────────
+router.post('/upload/logos/:logoId', requireAuth, requireConfigAccess, upload.single('file'), async (req, res) => {
   const minio  = req.app.get('minio')
   const bucket = req.app.get('minio_bucket')
   const { logoId } = req.params
@@ -144,8 +144,8 @@ router.post('/upload/logos/:logoId', requireAuth, upload.single('file'), async (
   res.json({ url })
 })
 
-// ── DELETE /storage/logos/:logoId  (requiere auth) ───────────────
-router.delete('/logos/:logoId', requireAuth, async (req, res) => {
+// ── DELETE /storage/logos/:logoId  (Configuración) ───────────────
+router.delete('/logos/:logoId', requireAuth, requireConfigAccess, async (req, res) => {
   const minio  = req.app.get('minio')
   const bucket = req.app.get('minio_bucket')
   const { logoId } = req.params

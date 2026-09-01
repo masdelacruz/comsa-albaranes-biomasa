@@ -26,6 +26,7 @@ export default function Perfil({ usuario, actualizarUsuario, logout }) {
     ? usuario.nombre.split(' ').map(n => n[0]).slice(0, 2).join('').toUpperCase()
     : '?'
   const esSuperadmin = usuario?.nivel === 'superadmin'
+  const labelAcceso = esSuperadmin ? 'Superadministrador' : usuario?.nivel === 'usuario' ? 'Usuario avanzado' : 'Usuario básico'
   const tieneBiomasa = usuario?.acceso_biomasa !== false
   const tieneTrabajo = !!usuario?.acceso_trabajo
   const numApps = (tieneBiomasa ? 1 : 0) + (tieneTrabajo ? 1 : 0)
@@ -73,7 +74,7 @@ export default function Perfil({ usuario, actualizarUsuario, logout }) {
             <div className="perfil-email"><Mail size={12} /> {usuario?.email}</div>
             <div className="perfil-chips">
               <span className="perfil-chip"><Briefcase size={11} /> {usuario?.rol || '—'}</span>
-              <span className="perfil-chip"><Shield size={11} /> {esSuperadmin ? 'Superadministrador' : 'Usuario estándar'}</span>
+              <span className="perfil-chip"><Shield size={11} /> {labelAcceso}</span>
               <span className="perfil-chip"><LayoutGrid size={11} /> {numApps} app{numApps !== 1 ? 's' : ''} activa{numApps !== 1 ? 's' : ''}</span>
               <span className="perfil-chip"><BellOff size={11} /> {silenciado ? 'Notificaciones off' : `${numActivas}/${NOTIFS.length} notificaciones`}</span>
             </div>
