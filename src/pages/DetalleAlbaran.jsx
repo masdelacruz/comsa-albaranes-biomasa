@@ -1,6 +1,6 @@
 import { useRef, useState, useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
-import { ArrowLeft, ExternalLink, CheckCircle, Clock, FileDown, Upload, Eye, FileText, AlertTriangle, Copy, Pencil, X, Check, Trash2, MapPin, Share2, Truck, RotateCcw } from 'lucide-react'
+import { ArrowLeft, ExternalLink, CheckCircle, Clock, FileDown, Upload, Eye, FileText, AlertTriangle, Copy, Pencil, X, Check, Trash2, MapPin, Share2, Truck, RotateCcw, RefreshCw } from 'lucide-react'
 import { Badge } from '../components/Badge'
 import PdfLoadingOverlay from '../components/PdfLoadingOverlay'
 import { generarPDF, generarPDFA5, cargarLogos } from '../utils/generarPDF'
@@ -118,7 +118,7 @@ function BannerRevision({ albaranId, onReabrir }) {
   )
 }
 
-export default function DetalleAlbaran({ albaranes, simularFirma, updateFirma, subirDocumento, subirTicketPesada, actualizarAlbaran, borrarAlbaran, reabrirAlbaran, enviarACampoAlbaran, usuario, refetch }) {
+export default function DetalleAlbaran({ albaranes, simularFirma, updateFirma, subirDocumento, subirTicketPesada, actualizarAlbaran, borrarAlbaran, reabrirAlbaran, enviarACampoAlbaran, regenerarEnlaceCampo, usuario, refetch }) {
   const { id } = useParams()
   const navigate = useNavigate()
   const fileRefs    = useRef({})
@@ -127,6 +127,7 @@ export default function DetalleAlbaran({ albaranes, simularFirma, updateFirma, s
   const [subiendoTicket, setSubiendoTicket] = useState(false)
   const [confirmModal, setConfirmModal]     = useState(null)
   const [copiado, setCopiado]               = useState('')
+  const [regenerando, setRegenerando]       = useState(false)
   const [dragOverDoc, setDragOverDoc]       = useState(null)   // nombre del doc sobre el que se arrastra
   const [dragOverTicket, setDragOverTicket] = useState(false)
   // Un flag por botón (preview / descargar): antes era un único booleano
@@ -232,7 +233,7 @@ export default function DetalleAlbaran({ albaranes, simularFirma, updateFirma, s
       ? `${window.location.origin}/campo/instalacion/${a.instalacion.replace(/\s+/g, '-')}?desde=${a.id}`
       : siguientePaso === 'astilladora'
       ? `${window.location.origin}/campo/astilladora/${a.astilladora.replace(/\s+/g, '-')}?desde=${a.id}`
-      : `${window.location.origin}/campo/${a.id}/${siguientePaso}`
+      : `${window.location.origin}/campo/${a.id}/${siguientePaso}?t=${encodeURIComponent(a.campoToken || '')}`
     : null
 
   const getRolLabel = (roles) => {
@@ -244,6 +245,15 @@ export default function DetalleAlbaran({ albaranes, simularFirma, updateFirma, s
     navigator.clipboard.writeText(texto)
     setCopiado(clave)
     setTimeout(() => setCopiado(''), 2000)
+  }
+
+  const handleRegenerarEnlace = async () => {
+    if (!window.confirm('El enlace actual dejará de funcionar. ¿Generar uno nuevo?')) return
+    setRegenerando(true)
+    try {
+      await regenerarEnlaceCampo(a.id)
+    } catch {}
+    setRegenerando(false)
   }
 
   const getFirmasASimular = (rol) => {
@@ -1204,6 +1214,12 @@ export default function DetalleAlbaran({ albaranes, simularFirma, updateFirma, s
                     <button className="btn" style={{fontSize:11,padding:'5px 8px'}}
                       onClick={() => window.open(urlSiguientePaso, '_blank')}>
                       <ExternalLink size={11} />
+                    </button>
+                    <button className="btn" style={{fontSize:11,padding:'5px 8px'}}
+                      disabled={regenerando}
+                      title="Invalida este enlace y genera uno nuevo"
+                      onClick={handleRegenerarEnlace}>
+                      <RefreshCw size={11} />
                     </button>
                   </div>
                   {/* Compartir */}

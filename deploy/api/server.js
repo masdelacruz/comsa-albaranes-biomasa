@@ -6,6 +6,15 @@ const { Client: MinioClient } = require('minio')
 const app  = express()
 const PORT = process.env.PORT || 3001
 
+const REQUIRED_SECRETS = ['JWT_SECRET', 'POSTGRES_PASSWORD', 'MINIO_ACCESS_KEY', 'MINIO_SECRET_KEY']
+const missingSecrets = REQUIRED_SECRETS.filter(name => !process.env[name])
+if (process.env.NODE_ENV === 'production' && missingSecrets.length) {
+  throw new Error(`Configuración de seguridad incompleta: ${missingSecrets.join(', ')}`)
+}
+if (process.env.NODE_ENV === 'production' && Buffer.byteLength(process.env.JWT_SECRET || '', 'utf8') < 32) {
+  throw new Error('JWT_SECRET debe tener al menos 32 bytes en producción')
+}
+
 // ── MinIO client ──────────────────────────────────────────────────
 const minio = new MinioClient({
   endPoint:  process.env.MINIO_ENDPOINT  || 'minio',
@@ -21,12 +30,19 @@ async function initMinio() {
   const exists = await minio.bucketExists(BUCKET)
   if (!exists) {
     await minio.makeBucket(BUCKET)
-    const policy = JSON.stringify({
-      Version: '2012-10-17',
-      Statement: [{ Effect: 'Allow', Principal: { AWS: ['*'] }, Action: ['s3:GetObject'], Resource: [`arn:aws:s3:::${BUCKET}/*`] }],
-    })
-    await minio.setBucketPolicy(BUCKET, policy)
-    console.log(`Bucket '${BUCKET}' creado.`)
+    console.log(`Bucket '${BUCKET}' creado (privado — sin política de lectura pública).`)
+  }
+  // Fase 0 (0C): el bucket ya no debe ser de lectura pública. Si el
+  // contenedor arranca contra un bucket creado por una versión anterior
+  // (que sí tenía política pública), se retira aquí en cada arranque.
+  try {
+    const policy = await minio.getBucketPolicy(BUCKET)
+    if (policy) {
+      await minio.setBucketPolicy(BUCKET, '')
+      console.log(`Bucket '${BUCKET}': política de lectura pública retirada.`)
+    }
+  } catch {
+    // Sin política (ya privado) → MinIO responde con error; es el caso normal.
   }
 }
 

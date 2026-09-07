@@ -2,10 +2,11 @@ const router = require('express').Router()
 const bcrypt = require('bcrypt')
 const { v4: uuidv4 } = require('uuid')
 const pool   = require('../db')
-const { requireAuth } = require('./auth')
+const { requireAuth, passwordPolicy } = require('./auth')
 const { registrarAuditoria } = require('../lib/auditoria')
 
 const SALT_ROUNDS = 12
+const NIVELES = new Set(['basico', 'usuario', 'superadmin'])
 
 function requireSuperadmin(req, res, next) {
   if (req.user?.nivel !== 'superadmin')
@@ -16,7 +17,7 @@ function requireSuperadmin(req, res, next) {
 const SELECT_COLS = 'id, nombre, email, rol, nivel, activo, notificaciones, acceso_biomasa, acceso_trabajo'
 
 // ── GET /usuarios ─────────────────────────────────────────────────
-router.get('/', requireAuth, async (_req, res) => {
+router.get('/', requireAuth, requireSuperadmin, async (_req, res) => {
   const { rows } = await pool.query(
     `SELECT ${SELECT_COLS} FROM usuarios ORDER BY nombre`
   )
@@ -42,14 +43,17 @@ router.patch('/me/notificaciones', requireAuth, async (req, res) => {
 // ── POST /usuarios  (solo superadmin) ────────────────────────────
 router.post('/', requireAuth, requireSuperadmin, async (req, res) => {
   const { nombre, email, rol, nivel, password, acceso_biomasa, acceso_trabajo } = req.body
-  const pw   = password || 'Comsa2025!'
-  const hash = await bcrypt.hash(pw, SALT_ROUNDS)
+  if (!nombre?.trim() || !email?.trim()) return res.status(400).json({ error: 'Nombre y email son obligatorios' })
+  if (!NIVELES.has(nivel || 'usuario')) return res.status(400).json({ error: 'Nivel inválido' })
+  const policyError = passwordPolicy(password)
+  if (policyError) return res.status(400).json({ error: policyError })
+  const hash = await bcrypt.hash(password, SALT_ROUNDS)
   const id   = uuidv4()
 
   await pool.query(
-    `INSERT INTO usuarios (id, nombre, email, password_hash, password_visible, rol, nivel, activo, acceso_biomasa, acceso_trabajo)
-     VALUES ($1,$2,$3,$4,$5,$6,$7,true,$8,$9)`,
-    [id, nombre, email.toLowerCase(), hash, pw, rol, nivel || 'usuario',
+    `INSERT INTO usuarios (id, nombre, email, password_hash, rol, nivel, activo, acceso_biomasa, acceso_trabajo)
+     VALUES ($1,$2,$3,$4,$5,$6,true,$7,$8)`,
+    [id, nombre, email.toLowerCase(), hash, rol, nivel || 'usuario',
      acceso_biomasa !== false, acceso_trabajo !== false]
   )
   const { rows } = await pool.query(
@@ -69,6 +73,10 @@ router.patch('/:id', requireAuth, requireSuperadmin, async (req, res) => {
   const vals    = []
   let idx = 1
 
+  if (nivel !== undefined && !NIVELES.has(nivel)) return res.status(400).json({ error: 'Nivel inválido' })
+  if (req.params.id === req.user.id && (activo === false || (nivel && nivel !== 'superadmin')))
+    return res.status(400).json({ error: 'No puedes desactivar ni degradar tu propia cuenta' })
+
   if (nombre          !== undefined) { updates.push(`nombre=$${idx++}`);         vals.push(nombre) }
   if (rol             !== undefined) { updates.push(`rol=$${idx++}`);            vals.push(rol) }
   if (nivel           !== undefined) { updates.push(`nivel=$${idx++}`);          vals.push(nivel) }
@@ -77,10 +85,16 @@ router.patch('/:id', requireAuth, requireSuperadmin, async (req, res) => {
   if (acceso_biomasa  !== undefined) { updates.push(`acceso_biomasa=$${idx++}`); vals.push(acceso_biomasa) }
   if (acceso_trabajo  !== undefined) { updates.push(`acceso_trabajo=$${idx++}`); vals.push(acceso_trabajo) }
   if (password) {
+    const policyError = passwordPolicy(password)
+    if (policyError) return res.status(400).json({ error: policyError })
     const hash = await bcrypt.hash(password, SALT_ROUNDS)
-    updates.push(`password_hash=$${idx++}`, `password_visible=$${idx++}`)
-    vals.push(hash, password)
+    updates.push(`password_hash=$${idx++}`)
+    vals.push(hash)
   }
+
+  const revocaSesion = activo !== undefined || nivel !== undefined || password ||
+    acceso_biomasa !== undefined || acceso_trabajo !== undefined
+  if (revocaSesion) updates.push('token_version=COALESCE(token_version, 1)+1')
 
   if (!updates.length) return res.status(400).json({ error: 'Sin cambios' })
 
@@ -111,6 +125,7 @@ router.patch('/:id', requireAuth, requireSuperadmin, async (req, res) => {
 
 // ── DELETE /usuarios/:id  (solo superadmin) ──────────────────────
 router.delete('/:id', requireAuth, requireSuperadmin, async (req, res) => {
+  if (req.params.id === req.user.id) return res.status(400).json({ error: 'No puedes eliminar tu propia cuenta' })
   const { rows } = await pool.query('SELECT nombre, email FROM usuarios WHERE id=$1', [req.params.id])
   await pool.query('DELETE FROM usuarios WHERE id=$1', [req.params.id])
   registrarAuditoria({

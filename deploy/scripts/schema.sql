@@ -30,6 +30,7 @@ CREATE TABLE IF NOT EXISTS albaranes (
   certificacion       TEXT[],
   grupo_id            TEXT,        -- agrupa albaranes creados juntos (flota)
   camion_orden        INTEGER DEFAULT 1,  -- posición dentro del grupo
+  campo_token         TEXT NOT NULL UNIQUE DEFAULT encode(gen_random_bytes(24), 'hex'),
   created_at          TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
@@ -91,12 +92,12 @@ CREATE TABLE IF NOT EXISTS usuarios (
   nombre           TEXT NOT NULL,
   email            TEXT NOT NULL UNIQUE,
   password_hash    TEXT NOT NULL,
-  password_visible TEXT,                       -- visible para superadmin
   rol              TEXT,
   nivel            TEXT NOT NULL DEFAULT 'usuario',  -- 'basico' | 'usuario' | 'superadmin'
   activo           BOOLEAN NOT NULL DEFAULT TRUE,
   notificaciones   JSONB NOT NULL DEFAULT '{"silenciado": true}'::jsonb,
-  created_at       TIMESTAMPTZ NOT NULL DEFAULT NOW()
+  created_at       TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  token_version    INTEGER NOT NULL DEFAULT 1
 );
 
 -- ── Proveedores / Empresas ────────────────────────────────────────

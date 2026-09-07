@@ -1,7 +1,10 @@
 import { api } from '../lib/api'
 import { notificarNuevoAlbaran } from '../utils/notificaciones'
 
-export function useAlbaranActions(refetch, usuario) {
+export function useAlbaranActions(refetch, usuario, campoToken = null) {
+  // Los enlaces de campo llevan su token como query string en cada
+  // llamada pública — es lo que autoriza la acción sin sesión de oficina.
+  const conToken = (path) => campoToken ? `${path}${path.includes('?') ? '&' : '?'}t=${encodeURIComponent(campoToken)}` : path
 
   const addAlbaran = async (form, enviarACampo = false) => {
     const { id } = await api.post('/albaranes', {
@@ -22,7 +25,7 @@ export function useAlbaranActions(refetch, usuario) {
 
   const updateFirma = async (albaranId, rol, actor, nombrePersona = null, pesadaData = null, firmaImagen = null, campoData = null, observacionesFirma = null, telefonoPersona = null) => {
     const { albaran, cerrado, humedadPendiente } = await api.post(
-      `/albaranes/${albaranId}/firmas/${rol}`,
+      conToken(`/albaranes/${albaranId}/firmas/${rol}`),
       { actor, nombrePersona, telefonoPersona, firmaImagen, pesadaData, campoData, observacionesFirma }
     )
     // Las notificaciones de firma/cierre/humedad las envía el backend directamente
@@ -45,7 +48,7 @@ export function useAlbaranActions(refetch, usuario) {
     const fd = new FormData()
     fd.append('file', fichero)
     if (actorExterno) fd.append('actor', actorExterno)
-    await api.upload(`/storage/upload/${albaranId}/ticket`, fd)
+    await api.upload(conToken(`/storage/upload/${albaranId}/ticket`), fd)
     await refetch()
   }
 
@@ -64,5 +67,12 @@ export function useAlbaranActions(refetch, usuario) {
     await refetch()
   }
 
-  return { addAlbaran, enviarACampoAlbaran, updateFirma, simularFirmaOficina, subirDocumento, subirTicketPesada, actualizarAlbaran, borrarAlbaran, reabrirAlbaran }
+  // Invalida el enlace de campo actual y genera uno nuevo (revocación).
+  const regenerarEnlaceCampo = async (albaranId) => {
+    const { campoToken } = await api.post(`/albaranes/${albaranId}/regenerar-enlace-campo`, {})
+    await refetch()
+    return campoToken
+  }
+
+  return { addAlbaran, enviarACampoAlbaran, updateFirma, simularFirmaOficina, subirDocumento, subirTicketPesada, actualizarAlbaran, borrarAlbaran, reabrirAlbaran, regenerarEnlaceCampo }
 }

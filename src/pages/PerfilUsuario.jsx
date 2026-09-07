@@ -67,7 +67,7 @@ export default function PerfilUsuario({ usuario, viewer, onClose, onGuardado }) 
       }
       if (puedeEditarActivo && form.activo !== usuario.activo)
         body.activo = form.activo
-      if (form.password.trim() && form.password !== (usuario.password_visible || ''))
+      if (form.password.trim())
         body.password = form.password
       await api.patch(`/usuarios/${usuario.id}`, body)
       await onGuardado?.()
@@ -126,6 +126,8 @@ export default function PerfilUsuario({ usuario, viewer, onClose, onGuardado }) 
                   <div style={{ position: 'relative' }}>
                     <input
                       type={showPw ? 'text' : 'password'}
+                      minLength={12}
+                      autoComplete="new-password"
                       placeholder="••••••••"
                       value={form.password}
                       onChange={e => set('password', e.target.value)}

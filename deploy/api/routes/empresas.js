@@ -2,7 +2,12 @@ const router = require('express').Router()
 const { v4: uuidv4 } = require('uuid')
 const pool   = require('../db')
 const { requireAuth, requireConfigAccess } = require('./auth')
+const { signPath } = require('../lib/signedUrl')
 const { registrarAuditoria } = require('../lib/auditoria')
+
+function conFirmaFirmada(row) {
+  return { ...row, firma_imagen: signPath(row.firma_imagen) || null }
+}
 
 function toTitleCase(str) {
   if (!str || typeof str !== 'string') return str
@@ -18,7 +23,7 @@ router.get('/', requireAuth, async (req, res) => {
   if (activo) { vals.push(activo === 'true'); query += ` AND activo=$${vals.length}` }
   query += ' ORDER BY nombre'
   const { rows } = await pool.query(query, vals)
-  res.json(rows)
+  res.json(rows.map(conFirmaFirmada))
 })
 
 // ── POST /empresas ────────────────────────────────────────────────
@@ -36,7 +41,7 @@ router.post('/', requireAuth, requireConfigAccess, async (req, res) => {
     usuario: req.user, accion: 'crear', entidad: 'proveedor', entidadId: id,
     detalle: `${tipo}: ${rows[0]?.nombre}`,
   })
-  res.json(rows[0])
+  res.json(conFirmaFirmada(rows[0]))
 })
 
 // ── PATCH /empresas/:id ───────────────────────────────────────────
@@ -61,7 +66,7 @@ router.patch('/:id', requireAuth, requireConfigAccess, async (req, res) => {
     usuario: req.user, accion: 'editar', entidad: 'proveedor', entidadId: req.params.id,
     detalle: `${rows[0]?.nombre} — campos: ${fields.filter(f => req.body[f] !== undefined).join(', ')}`,
   })
-  res.json(rows[0])
+  res.json(conFirmaFirmada(rows[0]))
 })
 
 // ── DELETE /empresas/:id ──────────────────────────────────────────

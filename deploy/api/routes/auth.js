@@ -6,6 +6,16 @@ const pool    = require('../db')
 const SECRET  = process.env.JWT_SECRET
 const EXPIRY  = '8h'
 
+function passwordPolicy(password) {
+  if (typeof password !== 'string' || password.length < 12)
+    return 'La contraseña debe tener al menos 12 caracteres'
+  if (Buffer.byteLength(password, 'utf8') > 72)
+    return 'La contraseña no puede superar 72 bytes'
+  if (!/[a-z]/.test(password) || !/[A-Z]/.test(password) || !/\d/.test(password) || !/[^A-Za-z0-9]/.test(password))
+    return 'La contraseña debe incluir mayúsculas, minúsculas, números y símbolos'
+  return null
+}
+
 // ── Rate limit en login: máx 10 intentos / 15 min por IP ─────────
 const _loginAttempts = new Map()
 function loginRateLimit(req, res, next) {
@@ -21,12 +31,22 @@ function loginRateLimit(req, res, next) {
 }
 
 // ── Middleware: verifica JWT ──────────────────────────────────────
-function requireAuth(req, res, next) {
+async function requireAuth(req, res, next) {
   const header = req.headers.authorization || ''
   const token  = header.startsWith('Bearer ') ? header.slice(7) : null
   if (!token) return res.status(401).json({ error: 'No autenticado' })
   try {
-    req.user = jwt.verify(token, SECRET)
+    const claims = jwt.verify(token, SECRET)
+    const { rows } = await pool.query(
+      `SELECT id, nombre, email, rol, nivel, activo, acceso_biomasa, acceso_trabajo,
+              COALESCE(token_version, 1) AS token_version
+       FROM usuarios WHERE id=$1`,
+      [claims.id]
+    )
+    const user = rows[0]
+    if (!user || !user.activo) return res.status(403).json({ error: 'cuenta_bloqueada' })
+    if (claims.ver !== user.token_version) return res.status(401).json({ error: 'Sesión revocada' })
+    req.user = user
     next()
   } catch {
     res.status(401).json({ error: 'Token inválido o expirado' })
@@ -55,8 +75,10 @@ router.post('/login', loginRateLimit, async (req, res) => {
   const ok = await bcrypt.compare(password, user.password_hash)
   if (!ok) return res.status(401).json({ error: 'Email o contraseña incorrectos' })
 
+  _loginAttempts.delete((req.headers['x-forwarded-for'] || '').split(',')[0].trim() || req.ip || 'unknown')
+
   const token = jwt.sign(
-    { id: user.id, email: user.email, nivel: user.nivel, nombre: user.nombre },
+    { id: user.id, ver: user.token_version || 1 },
     SECRET,
     { expiresIn: EXPIRY }
   )
@@ -87,3 +109,4 @@ router.get('/me', requireAuth, async (req, res) => {
 module.exports = router
 module.exports.requireAuth = requireAuth
 module.exports.requireConfigAccess = requireConfigAccess
+module.exports.passwordPolicy = passwordPolicy

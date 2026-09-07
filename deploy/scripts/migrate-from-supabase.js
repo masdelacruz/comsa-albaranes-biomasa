@@ -128,13 +128,15 @@ async function run() {
     console.log('→ Usuarios...')
     const usuarios = await fetchAll('usuarios')
     for (const u of usuarios) {
-      // Genera hash a partir del password_visible guardado
-      const pw   = u.password_visible || 'Comsa2025!'
+      // El origen histórico puede tener una credencial legible, pero el
+      // destino conserva exclusivamente su hash.
+      const pw = u.password_visible
+      if (!pw) throw new Error(`El usuario ${u.email} no tiene credencial migrable; restablece su contraseña`)
       const hash = await bcrypt.hash(pw, 12)
       await client.query(
-        `INSERT INTO usuarios (id,nombre,email,password_hash,password_visible,rol,nivel,activo,created_at)
-         VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9) ON CONFLICT (id) DO NOTHING`,
-        [u.id, u.nombre, u.email, hash, u.password_visible, u.rol, u.nivel, u.activo, u.created_at]
+        `INSERT INTO usuarios (id,nombre,email,password_hash,rol,nivel,activo,created_at)
+         VALUES ($1,$2,$3,$4,$5,$6,$7,$8) ON CONFLICT (id) DO NOTHING`,
+        [u.id, u.nombre, u.email, hash, u.rol, u.nivel, u.activo, u.created_at]
       )
     }
     console.log(`   ${usuarios.length} usuarios migrados`)

@@ -160,7 +160,7 @@ function TarjetaCamion({ a, esUltimo, esDesde }) {
     <div
       ref={ref}
       className={`pi-camion ${estadoClass}${esDesde ? ' pi-desde-active' : ''}`}
-      onClick={planificado ? undefined : () => navigate(`/campo/${a.id}/astilladora`)}
+      onClick={planificado ? undefined : () => navigate(`/campo/${a.id}/astilladora?t=${encodeURIComponent(a.campoToken || '')}`)}
       style={{ cursor: planificado ? 'default' : 'pointer', borderBottom: esUltimo ? 'none' : undefined }}
     >
       <div className="pi-camion-left">

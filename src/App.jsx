@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
-import { BrowserRouter, Routes, Route, Navigate, useParams } from 'react-router-dom'
+import { BrowserRouter, Routes, Route, Navigate, useParams, useSearchParams } from 'react-router-dom'
 import Layout from './components/Layout'
 import Dashboard from './pages/Dashboard'
 import NuevoAlbaran from './pages/NuevoAlbaran'
@@ -41,15 +41,21 @@ const Bloqueado = () => (
 
 function VistaCampoPublica() {
   const { id } = useParams()
+  const [searchParams] = useSearchParams()
+  const token = searchParams.get('t') || ''
   const [albaran,          setAlbaran]          = useState(null)
   const [loading,          setLoading]          = useState(true)
+  const [notFound,         setNotFound]         = useState(false)
   const [hayActualizacion, setHayActualizacion] = useState(false)
   const pendingRef = useRef(null)
   const currentRef = useRef(null)
 
+  const urlAlbaran = `/api/albaranes/${id}?t=${encodeURIComponent(token)}`
+
   const refetchAlbaran = useCallback(async () => {
     try {
-      const res  = await fetch(`/api/albaranes/${id}`)
+      const res  = await fetch(urlAlbaran)
+      if (!res.ok) { setNotFound(true); return }
       const data = await res.json()
       if (data?.id) {
         setAlbaran(data)
@@ -58,7 +64,7 @@ function VistaCampoPublica() {
         pendingRef.current = null
       }
     } catch {}
-  }, [id])
+  }, [urlAlbaran])
 
   useEffect(() => {
     refetchAlbaran().finally(() => setLoading(false))
@@ -68,7 +74,8 @@ function VistaCampoPublica() {
   useEffect(() => {
     const check = async () => {
       try {
-        const res  = await fetch(`/api/albaranes/${id}`)
+        const res  = await fetch(urlAlbaran)
+        if (!res.ok) return
         const data = await res.json()
         if (!data?.id) return
         if (currentRef.current && JSON.stringify(data) !== currentRef.current) {
@@ -79,7 +86,7 @@ function VistaCampoPublica() {
     }
     const timer = setInterval(check, 30000)
     return () => clearInterval(timer)
-  }, [id])
+  }, [urlAlbaran])
 
   const aplicarActualizacion = () => {
     if (pendingRef.current) {
@@ -90,16 +97,22 @@ function VistaCampoPublica() {
     }
   }
 
-  const { updateFirma, subirTicketPesada } = useAlbaranActions(refetchAlbaran, null)
+  const { updateFirma, subirTicketPesada } = useAlbaranActions(refetchAlbaran, null, token)
 
   if (loading) return <Spinner />
+  if (notFound || !albaran) return (
+    <div style={{padding:40,textAlign:'center',color:'#999'}}>
+      Enlace no válido o caducado. Pide a la oficina que te envíe uno nuevo.
+    </div>
+  )
   return (
     <VistaCampo
-      albaranes={albaran ? [albaran] : []}
+      albaranes={[albaran]}
       updateFirma={updateFirma}
       subirTicketPesada={subirTicketPesada}
       hayActualizacion={hayActualizacion}
       onAplicarActualizacion={aplicarActualizacion}
+      token={token}
     />
   )
 }
@@ -116,7 +129,7 @@ function InicioRedirect({ usuario }) {
 
 function AppConDatos({ usuario, logout, actualizarUsuario }) {
   const { albaranes, loading: dataLoading, refetch } = useAlbaranes()
-  const { addAlbaran, enviarACampoAlbaran, updateFirma, simularFirmaOficina, subirDocumento, subirTicketPesada, actualizarAlbaran, borrarAlbaran, reabrirAlbaran } = useAlbaranActions(refetch, usuario)
+  const { addAlbaran, enviarACampoAlbaran, updateFirma, simularFirmaOficina, subirDocumento, subirTicketPesada, actualizarAlbaran, borrarAlbaran, reabrirAlbaran, regenerarEnlaceCampo } = useAlbaranActions(refetch, usuario)
 
   const [empresas, setEmpresas] = useState([])
   useEffect(() => { api.get('/empresas').then(d => setEmpresas(d || [])).catch(() => {}) }, [])
@@ -146,7 +159,7 @@ function AppConDatos({ usuario, logout, actualizarUsuario }) {
         <Route index element={<InicioRedirect usuario={usuario} />} />
         <Route path="dashboard"      element={<Dashboard albaranes={albaranes} empresas={empresas} usuario={usuario} borrarAlbaran={borrarAlbaran} refetch={refetch} />} />
         <Route path="nuevo"          element={<NuevoAlbaran addAlbaran={addAlbaran} usuario={usuario} />} />
-        <Route path="albaran/:id"    element={<DetalleAlbaran albaranes={albaranes} simularFirma={simularFirmaOficina} updateFirma={updateFirma} subirDocumento={subirDocumento} subirTicketPesada={subirTicketPesada} actualizarAlbaran={actualizarAlbaran} borrarAlbaran={borrarAlbaran} reabrirAlbaran={reabrirAlbaran} enviarACampoAlbaran={enviarACampoAlbaran} usuario={usuario} refetch={refetch} />} />
+        <Route path="albaran/:id"    element={<DetalleAlbaran albaranes={albaranes} simularFirma={simularFirmaOficina} updateFirma={updateFirma} subirDocumento={subirDocumento} subirTicketPesada={subirTicketPesada} actualizarAlbaran={actualizarAlbaran} borrarAlbaran={borrarAlbaran} reabrirAlbaran={reabrirAlbaran} enviarACampoAlbaran={enviarACampoAlbaran} regenerarEnlaceCampo={regenerarEnlaceCampo} usuario={usuario} refetch={refetch} />} />
         <Route path="historial"      element={<Historial albaranes={albaranes} empresas={empresas} usuario={usuario} refetch={refetch} borrarAlbaran={borrarAlbaran} enviarACampoAlbaran={enviarACampoAlbaran} />} />
         <Route path="estadisticas"   element={<Estadisticas albaranes={albaranes} />} />
         <Route path="configuracion"  element={

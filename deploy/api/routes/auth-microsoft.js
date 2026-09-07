@@ -88,7 +88,7 @@ router.get('/microsoft/callback', async (req, res) => {
     }
 
     const token = jwt.sign(
-      { id: user.id, email: user.email, nivel: user.nivel, nombre: user.nombre },
+      { id: user.id, ver: user.token_version || 1 },
       SECRET,
       { expiresIn: EXPIRY }
     )

@@ -1,9 +1,14 @@
 const router = require('express').Router()
+const crypto = require('crypto')
 const pool   = require('../db')
 const { requireAuth } = require('./auth')
+const { requireAuthOrCampoToken } = require('../lib/campoAuth')
+const { signPath } = require('../lib/signedUrl')
 const { registrarAuditoria } = require('../lib/auditoria')
 const { enviarNotificacion, enviarNotificacionAlbaranACampo, enviarNotificacionCamionEnviado } = require('../emailSender')
 const { crearNotificacion } = require('../notificacionesCliente')
+
+const ROLES_VALIDOS = new Set(['proveedor', 'astilladora', 'transportista', 'instalacion', 'oficina'])
 
 // ── Helper: normaliza nombre a Title Case ─────────────────────────
 function toTitleCase(str) {
@@ -86,7 +91,7 @@ function buildAlbaran(a, firmas, pesada, docs, actividad, observacionesPost, emp
     firmasObj[f.rol] = {
       firmado: f.firmado, fecha: f.fecha, actor: f.actor,
       nombrePersona: f.nombre_persona || null,
-      firmaImagen: f.firma_imagen || null,
+      firmaImagen: signPath(f.firma_imagen) || null,
       ipOrigen: f.ip_origen || null,
       observacionesFirma: f.observaciones_firma || null,
       observacionesExtra: obsExtra,
@@ -96,12 +101,15 @@ function buildAlbaran(a, firmas, pesada, docs, actividad, observacionesPost, emp
   const docsObj = {}
   docs.forEach(d => {
     docsObj[d.nombre] = {
-      adjunto: d.adjunto, url: d.url || null,
+      adjunto: d.adjunto, url: signPath(d.url) || null,
       nombreFichero: d.nombre_fichero || null,
       tipoFichero: d.tipo_fichero || null,
       tamanyo: d.tamanyo || null,
     }
   })
+  const empresaFirmaMapFirmada = Object.fromEntries(
+    Object.entries(empresaFirmaMap).map(([k, v]) => [k, signPath(v)])
+  )
   return {
     id: a.id, fecha: a.fecha ? new Date(a.fecha).toISOString().slice(0,10) : null,
     hora: a.hora, numCamiones: a.num_camiones,
@@ -114,14 +122,14 @@ function buildAlbaran(a, firmas, pesada, docs, actividad, observacionesPost, emp
     matriculaTractora: a.matricula_tractora, matriculaRemolque: a.matricula_remolque,
     chofer: a.chofer, certificacion: a.certificacion || [],
     firmas: firmasObj,
-    empresaFirmaMap,
+    empresaFirmaMap: empresaFirmaMapFirmada,
     empresaDataMap,
     pesada: {
       entrada: p.entrada || null, salida: p.salida || null,
       humedad: p.humedad || null,
       numeroPesada: p.numero_pesada || null,
       ticketAdjunto: p.ticket_adjunto || false,
-      ticketUrl: p.ticket_url || null,
+      ticketUrl: signPath(p.ticket_url) || null,
     },
     docs: docsObj,
     actividad: actividad.map(ev => ({ ts: ev.ts, texto: ev.texto, actor: ev.actor })),
@@ -162,8 +170,8 @@ router.get('/', requireAuth, async (_req, res) => {
     })
   }
 
-  const result = albs.map(a =>
-    buildAlbaran(
+  const result = albs.map(a => ({
+    ...buildAlbaran(
       a,
       fRes.rows.filter(f => f.albaran_id === a.id),
       pRes.rows.find(p => p.albaran_id === a.id),
@@ -172,8 +180,12 @@ router.get('/', requireAuth, async (_req, res) => {
       obsRes.rows.filter(o => o.albaran_id === a.id),
       empresaFirmaMap,
       empresaDataMap,
-    )
-  )
+    ),
+    // El token de enlace de campo solo se expone a sesiones de oficina
+    // autenticadas (este endpoint requiere requireAuth) — nunca en las
+    // respuestas públicas de campo.
+    campoToken: a.campo_token,
+  }))
   res.json(result)
 })
 
@@ -185,7 +197,7 @@ router.get('/instalacion/:nombre', async (req, res) => {
        a.id, a.fecha, a.hora, a.grupo_id, a.camion_orden, a.num_camiones,
        a.astilladora, a.proveedor, a.transportista, a.especie, a.tipo_biomasa, a.estella,
        a.matricula_tractora, a.matricula_remolque, a.chofer, a.estado, a.origen,
-       a.motivo_rechazo_campo,
+       a.motivo_rechazo_campo, a.campo_token,
        (a.estado = 'programado') AS planificado
      FROM albaranes a
      WHERE a.instalacion = $1
@@ -224,6 +236,7 @@ router.get('/instalacion/:nombre', async (req, res) => {
       chofer: a.chofer, estado: a.estado, origen: a.origen,
       motivoRechazoCampo: a.motivo_rechazo_campo || null,
       planificado:        a.planificado || false,
+      campoToken:         a.campo_token,
       instalacionFirmada: fInst?.firmado || false,
       instalacionFecha:   fInst?.fecha   || null,
       astilladoraFirmada: a.planificado ? false : (fAsti?.firmado || false),
@@ -257,6 +270,7 @@ router.get('/astilladora/:nombre', async (req, res) => {
        a.astilladora, a.proveedor, a.instalacion, a.transportista,
        a.especie, a.tipo_biomasa, a.estella,
        a.matricula_tractora, a.matricula_remolque, a.chofer, a.estado, a.origen,
+       a.campo_token,
        (a.estado = 'programado') AS planificado
      FROM albaranes a
      WHERE a.astilladora = $1
@@ -294,6 +308,7 @@ router.get('/astilladora/:nombre', async (req, res) => {
       chofer: a.chofer, estado: a.estado, origen: a.origen,
       astilladoraFirmada: a.planificado ? false : (fAsti?.firmado || false),
       astilladoraFecha:   fAsti?.fecha || null,
+      campoToken:         a.campo_token,
     }
   })
 
@@ -312,8 +327,8 @@ router.get('/astilladora/:nombre', async (req, res) => {
   res.json(result)
 })
 
-// ── POST /albaranes/:id/solicitar-revision  (PÚBLICO — campo) ────
-router.post('/:id/solicitar-revision', async (req, res) => {
+// ── POST /albaranes/:id/solicitar-revision  (oficina o token de campo) ──
+router.post('/:id/solicitar-revision', requireAuthOrCampoToken(), async (req, res) => {
   const { id } = req.params
   const { rows } = await pool.query('SELECT id FROM albaranes WHERE id=$1', [id])
   if (!rows.length) return res.status(404).json({ error: 'No encontrado' })
@@ -351,8 +366,8 @@ router.delete('/:id/solicitar-revision', requireAuth, async (req, res) => {
   res.json({ ok: true })
 })
 
-// ── POST /albaranes/:id/rechazar-campo  (PÚBLICO — campo) ────────
-router.post('/:id/rechazar-campo', async (req, res) => {
+// ── POST /albaranes/:id/rechazar-campo  (oficina o token de campo) ──
+router.post('/:id/rechazar-campo', requireAuthOrCampoToken(), async (req, res) => {
   const { id } = req.params
   const { rol, motivo } = req.body
   if (!['astilladora', 'instalacion'].includes(rol)) return res.status(400).json({ error: 'rol inválido' })
@@ -468,11 +483,32 @@ router.post('/:id/enviar-a-campo', requireAuth, async (req, res) => {
   res.json({ albaran })
 })
 
-// ── GET /albaranes/:id  (PÚBLICO — usado por vista de campo) ──────
-router.get('/:id', async (req, res) => {
+// ── GET /albaranes/:id  (oficina o token de campo — usado por vista de campo) ──
+router.get('/:id', requireAuthOrCampoToken(), async (req, res) => {
   const albaran = await fetchOne(req.params.id)
   if (!albaran) return res.status(404).json({ error: 'No encontrado' })
   res.json(albaran)
+})
+
+// ── POST /albaranes/:id/regenerar-enlace-campo  (requiere auth) ──
+// Revoca el enlace de campo actual (deja de funcionar) y genera uno nuevo.
+router.post('/:id/regenerar-enlace-campo', requireAuth, async (req, res) => {
+  const { id } = req.params
+  const nuevoToken = crypto.randomBytes(24).toString('hex')
+  const { rowCount } = await pool.query(
+    'UPDATE albaranes SET campo_token=$1 WHERE id=$2', [nuevoToken, id]
+  )
+  if (!rowCount) return res.status(404).json({ error: 'No encontrado' })
+  const fecha = new Date().toLocaleString('es-ES')
+  await pool.query(
+    'INSERT INTO actividad (albaran_id,ts,texto,actor) VALUES ($1,$2,$3,$4)',
+    [id, fecha, 'Enlace de campo regenerado — el enlace anterior ha dejado de funcionar', req.user.nombre || 'Oficina']
+  )
+  registrarAuditoria({
+    usuario: req.user, accion: 'editar', entidad: 'albaran', entidadId: id,
+    detalle: 'Enlace de campo regenerado',
+  })
+  res.json({ campoToken: nuevoToken })
 })
 
 // ── POST /albaranes  (requiere auth) ─────────────────────────────
@@ -668,14 +704,37 @@ router.post('/:id/reabrir', requireAuth, async (req, res) => {
   res.json(albaran)
 })
 
-// ── POST /albaranes/:id/firmas/:rol  (PÚBLICO — campo) ───────────
-router.post('/:id/firmas/:rol', async (req, res) => {
+// ── POST /albaranes/:id/firmas/:rol  (oficina o token de campo) ──
+router.post('/:id/firmas/:rol', requireAuthOrCampoToken(), async (req, res) => {
   const { id, rol } = req.params
   const { actor, firmaImagen, pesadaData, campoData } = req.body
   const nombrePersona = toTitleCase(req.body.nombrePersona)
   const observacionesFirma = req.body.observacionesFirma || null
   const fecha = new Date().toLocaleString('es-ES')
   const ROL_LABEL = { oficina:'Oficina', proveedor:'Proveedor', astilladora:'Astilladora', transportista:'Transportista', instalacion:'Instalación' }
+
+  if (!ROLES_VALIDOS.has(rol)) return res.status(400).json({ error: 'Rol inválido' })
+  // La firma de oficina solo puede registrarla una sesión de oficina autenticada,
+  // nunca un enlace de campo (aunque sea válido para este albarán).
+  if (rol === 'oficina' && !req.user) return res.status(403).json({ error: 'No autorizado' })
+
+  const { rows: estadoRows } = await pool.query('SELECT estado FROM albaranes WHERE id=$1', [id])
+  if (!estadoRows.length) return res.status(404).json({ error: 'No encontrado' })
+  const estadoActual = estadoRows[0].estado
+  if (['cerrado', 'cancelado', 'rechazado_campo_astilladora', 'rechazado_campo_instalacion'].includes(estadoActual)) {
+    return res.status(409).json({ error: 'Este albarán ya no admite firmas' })
+  }
+
+  const { rows: firmaRows } = await pool.query(
+    'SELECT firmado FROM firmas WHERE albaran_id=$1 AND rol=$2', [id, rol]
+  )
+  if (!firmaRows.length) return res.status(404).json({ error: 'Este rol no aplica a este albarán' })
+  // Un enlace de campo no puede sobrescribir una firma ya registrada
+  // (evita que se repita o modifique en silencio); la oficina autenticada sí
+  // puede corregir, con su acción quedando registrada en la actividad.
+  if (firmaRows[0].firmado && !req.user) {
+    return res.status(409).json({ error: 'Este rol ya está firmado' })
+  }
 
   const ip = (req.headers['x-forwarded-for'] || '').split(',')[0].trim()
           || req.headers['x-real-ip']
@@ -785,8 +844,8 @@ router.post('/:id/firmas/:rol', async (req, res) => {
   res.json({ albaran, cerrado: todasFirmadas, humedadPendiente })
 })
 
-// ── POST /albaranes/:id/observaciones  (PÚBLICO — campo astilladora) ────
-router.post('/:id/observaciones', async (req, res) => {
+// ── POST /albaranes/:id/observaciones  (oficina o token de campo) ────
+router.post('/:id/observaciones', requireAuthOrCampoToken(), async (req, res) => {
   const { id } = req.params
   const { rol, texto } = req.body
   if (!rol || !texto?.trim()) return res.status(400).json({ error: 'Faltan datos' })

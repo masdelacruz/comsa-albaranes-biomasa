@@ -59,7 +59,7 @@ function ListaObservaciones({ obs }) {
   ))
 }
 
-function VistaFirmadaAstilladora({ a }) {
+function VistaFirmadaAstilladora({ a, token }) {
   const firma = a.firmas?.astilladora
   const [texto,   setTexto]   = useState('')
   const [enviando, setEnviando] = useState(false)
@@ -76,7 +76,7 @@ function VistaFirmadaAstilladora({ a }) {
     setEnviando(true)
     setErrorEnvio('')
     try {
-      const res  = await fetch(`/api/albaranes/${a.id}/observaciones`, {
+      const res  = await fetch(`/api/albaranes/${a.id}/observaciones?t=${encodeURIComponent(token || '')}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ rol: 'astilladora', texto: texto.trim() }),
@@ -126,7 +126,7 @@ function VistaFirmadaAstilladora({ a }) {
   )
 }
 
-function VistaFirmadaInstalacion({ a }) {
+function VistaFirmadaInstalacion({ a, token }) {
   const [solicitando, setSolicitando] = useState(false)
   const [solicitado,  setSolicitado]  = useState(a.solicitaRevision || false)
 
@@ -136,7 +136,7 @@ function VistaFirmadaInstalacion({ a }) {
   const handleSolicitar = async () => {
     setSolicitando(true)
     try {
-      await fetch(`/api/albaranes/${a.id}/solicitar-revision`, { method: 'POST' })
+      await fetch(`/api/albaranes/${a.id}/solicitar-revision?t=${encodeURIComponent(token || '')}`, { method: 'POST' })
       setSolicitado(true)
     } catch {}
     setSolicitando(false)
@@ -211,7 +211,7 @@ function VistaFirmadaInstalacion({ a }) {
   )
 }
 
-function PasoFirma({ rol, a, updateFirma, subirTicketPesada, onCompletado, totalPasos, pasoActual, panelUrl }) {
+function PasoFirma({ rol, a, updateFirma, subirTicketPesada, onCompletado, totalPasos, pasoActual, panelUrl, token }) {
   const navigate  = useNavigate()
   const config    = ROLES_CONFIG[rol]
   const yaFirmado = a.firmas?.[rol]?.firmado
@@ -294,12 +294,12 @@ function PasoFirma({ rol, a, updateFirma, subirTicketPesada, onCompletado, total
 
   // Instalación firmada → vista lectura + solicitar revisión
   if (rol === 'instalacion' && (yaFirmado || firmado)) {
-    return <VistaFirmadaInstalacion a={a} />
+    return <VistaFirmadaInstalacion a={a} token={token} />
   }
 
   // Astilladora ya firmada → vista lectura + observaciones
   if (rol === 'astilladora' && yaFirmado) {
-    return <VistaFirmadaAstilladora a={a} />
+    return <VistaFirmadaAstilladora a={a} token={token} />
   }
 
   if (yaFirmado || firmado) return (
@@ -525,7 +525,7 @@ function PasoFirma({ rol, a, updateFirma, subirTicketPesada, onCompletado, total
                 onClick={async () => {
                   setEnviandoRechazo(true)
                   try {
-                    await fetch(`/api/albaranes/${a.id}/rechazar-campo`, {
+                    await fetch(`/api/albaranes/${a.id}/rechazar-campo?t=${encodeURIComponent(token || '')}`, {
                       method: 'POST',
                       headers: { 'Content-Type': 'application/json' },
                       body: JSON.stringify({ rol, motivo: motivoRej }),
@@ -568,7 +568,7 @@ function PasoFirma({ rol, a, updateFirma, subirTicketPesada, onCompletado, total
   )
 }
 
-export default function VistaCampo({ albaranes, updateFirma, subirTicketPesada, hayActualizacion, onAplicarActualizacion }) {
+export default function VistaCampo({ albaranes, updateFirma, subirTicketPesada, hayActualizacion, onAplicarActualizacion, token }) {
   const { id, roles: rolesParam } = useParams()
   const navigate = useNavigate()
 
@@ -830,7 +830,7 @@ export default function VistaCampo({ albaranes, updateFirma, subirTicketPesada, 
               updateFirma={updateFirma} subirTicketPesada={subirTicketPesada}
               onCompletado={() => handleCompletadoPaso(r)}
               totalPasos={rolesDirectos.length} pasoActual={i + 1}
-              panelUrl={panelUrl}
+              panelUrl={panelUrl} token={token}
             />
           ) : pasosCompletados.includes(r) ? (
             <div key={r} className="campo-card" style={{display:'flex',alignItems:'center',gap:10,padding:'14px 16px'}}>
@@ -894,7 +894,7 @@ export default function VistaCampo({ albaranes, updateFirma, subirTicketPesada, 
         updateFirma={updateFirma} subirTicketPesada={subirTicketPesada}
         onCompletado={() => rolSeleccionado !== 'instalacion' && setTodoCompletado(true)}
         totalPasos={1} pasoActual={1}
-        panelUrl={panelUrl}
+        panelUrl={panelUrl} token={token}
       />
     </div>
   )

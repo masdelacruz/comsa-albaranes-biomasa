@@ -33,7 +33,6 @@ export default function Usuarios({ usuario }) {
   const [confirmDelete, setConfirmDelete] = useState(null)
   const [deleteError, setDeleteError]     = useState('')
   const [showPassword, setShowPassword]   = useState(false)
-  const [pwVisible, setPwVisible]         = useState({})
 
   useScrollLock(modal)
 
@@ -66,7 +65,7 @@ export default function Usuarios({ usuario }) {
         email:    form.email,
         rol:      form.rol,
         nivel:    form.nivel,
-        password: form.password || 'Comsa2025!',
+        password: form.password,
         acceso_biomasa: form.accesoBiomasa,
         acceso_trabajo: form.accesoTrabajo,
       })
@@ -92,7 +91,7 @@ export default function Usuarios({ usuario }) {
     }
   }
 
-  const colSpan = esSuperadmin ? 9 : 7
+  const colSpan = esSuperadmin ? 8 : 7
 
   return (
     <div className="usuarios-page">
@@ -129,7 +128,6 @@ export default function Usuarios({ usuario }) {
                 <th>Apps</th>
                 <th>Cuenta</th>
                 <th>Notificaciones</th>
-                {esSuperadmin && <th>Contraseña</th>}
                 {esSuperadmin && <th>Acciones</th>}
               </tr>
             </thead>
@@ -190,23 +188,6 @@ export default function Usuarios({ usuario }) {
                         }
                       </span>
                     </td>
-                    {esSuperadmin && (
-                      <td onClick={e => e.stopPropagation()}>
-                        {u.password_visible ? (
-                          <div style={{display:'flex',alignItems:'center',gap:6}}>
-                            <span style={{fontFamily:'monospace',fontSize:12,color:'var(--gray-700)',letterSpacing: pwVisible[u.id] ? 0 : 2}}>
-                              {pwVisible[u.id] ? u.password_visible : '••••••••'}
-                            </span>
-                            <button type="button" onClick={() => setPwVisible(v => ({...v, [u.id]: !v[u.id]}))}
-                              style={{background:'none',border:'none',cursor:'pointer',padding:2,color:'var(--gray-400)',display:'flex',alignItems:'center'}}>
-                              {pwVisible[u.id] ? <EyeOff size={13} /> : <Eye size={13} />}
-                            </button>
-                          </div>
-                        ) : (
-                          <span style={{fontSize:11,color:'var(--gray-300)'}}>—</span>
-                        )}
-                      </td>
-                    )}
                     {esSuperadmin && (
                       <td onClick={e => e.stopPropagation()}>
                         <div style={{display:'flex',gap:6,alignItems:'center'}}>
@@ -292,9 +273,9 @@ export default function Usuarios({ usuario }) {
                 </div>
               </div>
               <div style={{display:'flex',flexDirection:'column',gap:5}}>
-                <label style={{fontSize:12,fontWeight:500,color:'var(--gray-600)'}}>Contraseña provisional</label>
+                <label style={{fontSize:12,fontWeight:500,color:'var(--gray-600)'}}>Contraseña provisional *</label>
                 <div style={{position:'relative',display:'flex',alignItems:'center'}}>
-                  <input type={showPassword?'text':'password'} placeholder="Comsa2025!" value={form.password} onChange={e => set('password', e.target.value)} style={{paddingRight:36,width:'100%'}} />
+                  <input type={showPassword?'text':'password'} minLength={12} autoComplete="new-password" placeholder="Mínimo 12 caracteres" value={form.password} onChange={e => set('password', e.target.value)} style={{paddingRight:36,width:'100%'}} />
                   <button type="button" onClick={() => setShowPassword(v=>!v)} style={{position:'absolute',right:8,background:'none',border:'none',cursor:'pointer',padding:4,color:'var(--gray-400)',display:'flex',alignItems:'center'}} tabIndex={-1}>
                     {showPassword ? <EyeOff size={15} /> : <Eye size={15} />}
                   </button>
@@ -304,7 +285,7 @@ export default function Usuarios({ usuario }) {
             </div>
             <div style={{display:'flex',gap:8,justifyContent:'flex-end',marginTop:20,paddingTop:16,borderTop:'var(--border)'}}>
               <button className="btn" onClick={cerrarModal}>Cancelar</button>
-              <button className="btn btn-primary" onClick={handleGuardar} disabled={!form.nombre.trim()||!form.email.trim()||guardando}>
+              <button className="btn btn-primary" onClick={handleGuardar} disabled={!form.nombre.trim()||!form.email.trim()||form.password.length<12||guardando}>
                 {guardando ? 'Creando...' : <><Check size={14}/> Crear usuario</>}
               </button>
             </div>
