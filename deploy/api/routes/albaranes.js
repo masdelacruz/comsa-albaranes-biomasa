@@ -2,7 +2,7 @@ const router = require('express').Router()
 const crypto = require('crypto')
 const pool   = require('../db')
 const { requireAuth } = require('./auth')
-const { requireAuthOrCampoToken } = require('../lib/campoAuth')
+const { requireAuthOrCampoToken, requireAuthOrEmpresaCodigo } = require('../lib/campoAuth')
 const { signPath } = require('../lib/signedUrl')
 const { registrarAuditoria } = require('../lib/auditoria')
 const { enviarNotificacion, enviarNotificacionAlbaranACampo, enviarNotificacionCamionEnviado } = require('../emailSender')
@@ -189,8 +189,8 @@ router.get('/', requireAuth, async (_req, res) => {
   res.json(result)
 })
 
-// ── GET /albaranes/instalacion/:nombre  (PÚBLICO — panel instalación) ────
-router.get('/instalacion/:nombre', async (req, res) => {
+// ── GET /albaranes/instalacion/:nombre  (oficina o código de la empresa) ──
+router.get('/instalacion/:nombre', requireAuthOrEmpresaCodigo('instalacion'), async (req, res) => {
   const nombre = decodeURIComponent(req.params.nombre).replace(/-/g, ' ')
   const { rows } = await pool.query(
     `SELECT
@@ -261,8 +261,8 @@ router.get('/instalacion/:nombre', async (req, res) => {
   res.json(result)
 })
 
-// ── GET /albaranes/astilladora/:nombre  (PÚBLICO — panel astilladora) ────
-router.get('/astilladora/:nombre', async (req, res) => {
+// ── GET /albaranes/astilladora/:nombre  (oficina o código de la empresa) ──
+router.get('/astilladora/:nombre', requireAuthOrEmpresaCodigo('astilladora'), async (req, res) => {
   const nombre = decodeURIComponent(req.params.nombre).replace(/-/g, ' ')
   const { rows } = await pool.query(
     `SELECT

@@ -102,14 +102,29 @@ Los JWT emitidos antes de esta entrega quedan invalidados deliberadamente.
 - Ver también en 0B: validación de rol, estado del albarán y firma ya
   registrada antes de aceptar una firma.
 
+## Entrega 0B (cierre): código de acceso por empresa
+
+### Controles implantados
+
+- Cada empresa (proveedor/astilladora/transportista/instalación) tiene un
+  `acceso_codigo` propio (16 bytes aleatorios). Los paneles públicos por
+  nombre (`/campo/instalacion/:nombre`, `/campo/astilladora/:nombre`) y sus
+  notificaciones exigen ahora sesión de oficina o `?c=<acceso_codigo>`
+  correcto — adivinar o conocer el nombre de la empresa ya no basta para ver
+  su cola de entregas.
+- Botones en Configuración → Empresas para copiar el enlace del panel (con
+  su código) y para regenerarlo (revocación — el enlace anterior deja de
+  funcionar al instante).
+
+### Despliegue
+
+Ejecutar `scripts/migrate_016_empresa_acceso_codigo.sql` (genera el código de
+cada empresa existente) antes de desplegar la imagen nueva. Los enlaces de
+panel ya compartidos con las empresas (guardados como favorito, impresos,
+etc.) dejarán de funcionar hasta que se les reenvíe el enlace nuevo con
+`?c=`.
+
 ## Entregas pendientes de Fase 0
 
 - 0E: rate limiting compartido y registro de eventos de autenticación en
   todos los endpoints públicos (hoy solo existe en login).
-- Los paneles públicos por nombre de empresa (`/campo/instalacion/:nombre`,
-  `/campo/astilladora/:nombre`) siguen identificándose solo por el nombre de
-  la empresa en la URL — no llevan token propio. Quien conozca o adivine el
-  nombre exacto de una instalación o astilladora puede ver su cola de
-  entregas pendientes (aunque ya no puede actuar sobre albaranes de otras
-  empresas sin su token). Cerrar esto del todo requeriría un código de acceso
-  por empresa, pendiente de decidir como mejora de producto.

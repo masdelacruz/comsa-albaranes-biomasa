@@ -5,18 +5,18 @@ import './NotificacionesBell.css'
 // Campanita de notificaciones para los paneles públicos de cliente
 // (astilladora / instalación). Sin usuario logueado detrás — se identifica
 // por tipo + nombre de empresa, igual que el resto del panel.
-export default function NotificacionesBell({ tipo, nombre }) {
+export default function NotificacionesBell({ tipo, nombre, codigo }) {
   const [notifs, setNotifs] = useState([])
   const [open,   setOpen]   = useState(false)
   const wrapRef = useRef(null)
 
   const fetchNotifs = useCallback(async () => {
     try {
-      const res  = await fetch(`/api/notificaciones/${tipo}/${encodeURIComponent(nombre)}`)
+      const res  = await fetch(`/api/notificaciones/${tipo}/${encodeURIComponent(nombre)}?c=${encodeURIComponent(codigo || '')}`)
       const data = await res.json()
       setNotifs(Array.isArray(data) ? data : [])
     } catch {}
-  }, [tipo, nombre])
+  }, [tipo, nombre, codigo])
 
   useEffect(() => {
     fetchNotifs()
@@ -43,7 +43,7 @@ export default function NotificacionesBell({ tipo, nombre }) {
     if (next && noLeidas > 0) {
       setNotifs(prev => prev.map(n => ({ ...n, leida: true })))
       try {
-        await fetch(`/api/notificaciones/${tipo}/${encodeURIComponent(nombre)}/marcar-leidas`, { method: 'POST' })
+        await fetch(`/api/notificaciones/${tipo}/${encodeURIComponent(nombre)}/marcar-leidas?c=${encodeURIComponent(codigo || '')}`, { method: 'POST' })
       } catch {}
     }
   }

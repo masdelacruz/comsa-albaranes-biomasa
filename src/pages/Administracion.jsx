@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react'
-import { Plus, Search, Pencil, Trash2, X, Check, Upload, Image, ExternalLink, Clock } from 'lucide-react'
+import { Plus, Search, Pencil, Trash2, X, Check, Upload, Image, ExternalLink, Clock, Copy, RefreshCw } from 'lucide-react'
 import { api } from '../lib/api'
 import '../components/shared.css'
 import './Administracion.css'
@@ -79,6 +79,8 @@ export default function Administracion() {
   const [form, setForm]                   = useState(EMPTY_FORM)
   const [guardando, setGuardando]         = useState(false)
   const [confirmDelete, setConfirmDelete] = useState(null)
+  const [copiadoPanel, setCopiadoPanel]   = useState(null)
+  const [regenerandoCodigo, setRegenerandoCodigo] = useState(null)
   const [subiendoFirma, setSubiendoFirma]         = useState(false)
   const [firmaUrl, setFirmaUrl]                   = useState(null)
   const [firmaModalEmpresa, setFirmaModalEmpresa] = useState(null)
@@ -255,6 +257,29 @@ export default function Administracion() {
   const handleToggleActivo = async (p) => {
     await api.patch(`/empresas/${p.id}`, { activo: !p.activo })
     await fetchProveedores()
+  }
+
+  const panelUrl = (p) => {
+    const base = p.tipo === 'astilladora'
+      ? `/campo/astilladora/${p.nombre.replace(/\s+/g, '-')}`
+      : `/campo/instalacion/${p.nombre.replace(/\s+/g, '-')}`
+    return `${window.location.origin}${base}?c=${encodeURIComponent(p.acceso_codigo || '')}`
+  }
+
+  const handleCopiarPanel = (p) => {
+    navigator.clipboard.writeText(panelUrl(p))
+    setCopiadoPanel(p.id)
+    setTimeout(() => setCopiadoPanel(null), 2000)
+  }
+
+  const handleRegenerarCodigo = async (p) => {
+    if (!window.confirm(`El enlace del panel actual de "${p.nombre}" dejará de funcionar. ¿Generar uno nuevo?`)) return
+    setRegenerandoCodigo(p.id)
+    try {
+      await api.post(`/empresas/${p.id}/regenerar-codigo-acceso`, {})
+      await fetchProveedores()
+    } catch {}
+    setRegenerandoCodigo(null)
   }
 
   const handleEliminar = async (id) => {
@@ -570,19 +595,36 @@ export default function Administracion() {
                             </button>
                           )}
                           {(p.tipo === 'astilladora' || p.tipo === 'instalacion') && (
-                            <a
-                              className="btn btn-ghost"
-                              style={{ padding: '4px 8px', fontSize: 11, color: 'var(--gray-500)', textDecoration: 'none' }}
-                              href={p.tipo === 'astilladora'
-                                ? `/campo/astilladora/${p.nombre.replace(/\s+/g, '-')}`
-                                : `/campo/instalacion/${p.nombre.replace(/\s+/g, '-')}`}
-                              target="_blank"
-                              rel="noreferrer"
-                              onClick={e => e.stopPropagation()}
-                              title="Abrir panel externo"
-                            >
-                              <ExternalLink size={12} /> Panel
-                            </a>
+                            <>
+                              <a
+                                className="btn btn-ghost"
+                                style={{ padding: '4px 8px', fontSize: 11, color: 'var(--gray-500)', textDecoration: 'none' }}
+                                href={panelUrl(p)}
+                                target="_blank"
+                                rel="noreferrer"
+                                onClick={e => e.stopPropagation()}
+                                title="Abrir panel externo"
+                              >
+                                <ExternalLink size={12} /> Panel
+                              </a>
+                              <button
+                                className="btn btn-ghost"
+                                style={{ padding: '4px 8px', fontSize: 11, color: copiadoPanel === p.id ? 'var(--green-600)' : 'var(--gray-500)' }}
+                                onClick={() => handleCopiarPanel(p)}
+                                title="Copiar enlace del panel (con código de acceso)"
+                              >
+                                {copiadoPanel === p.id ? <Check size={12} /> : <Copy size={12} />}
+                              </button>
+                              <button
+                                className="btn btn-ghost"
+                                style={{ padding: '4px 8px', fontSize: 11, color: 'var(--gray-500)' }}
+                                disabled={regenerandoCodigo === p.id}
+                                onClick={() => handleRegenerarCodigo(p)}
+                                title="Regenerar código de acceso (el enlace anterior deja de funcionar)"
+                              >
+                                <RefreshCw size={12} />
+                              </button>
+                            </>
                           )}
                           {confirmDelete === p.id ? (
                             <div style={{ display: 'flex', gap: 4, alignItems: 'center' }}>

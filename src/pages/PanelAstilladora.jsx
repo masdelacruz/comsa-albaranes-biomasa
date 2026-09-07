@@ -231,12 +231,14 @@ export default function PanelAstilladora() {
   const nombreAstilladora = decodeURIComponent(nombre).replace(/-/g, ' ')
 
   const [desdeId] = useState(() => new URLSearchParams(location.search).get('desde'))
+  const [codigo]  = useState(() => new URLSearchParams(location.search).get('c') || '')
   useEffect(() => {
-    if (desdeId) navigate(location.pathname, { replace: true })
+    if (desdeId) navigate(location.pathname + (codigo ? `?c=${encodeURIComponent(codigo)}` : ''), { replace: true })
   }, []) // eslint-disable-line
 
   const [albaranes,      setAlbaranes]     = useState([])
   const [loading,        setLoading]       = useState(true)
+  const [codigoInvalido, setCodigoInvalido] = useState(false)
   const [lastUpdate,     setLastUpdate]    = useState(null)
   const [refreshing,     setRefreshing]    = useState(false)
   const [showOk,         setShowOk]        = useState(false)
@@ -316,7 +318,8 @@ export default function PanelAstilladora() {
   const fetchData = useCallback(async (manual = false) => {
     if (manual) setRefreshing(true)
     try {
-      const res  = await fetch(`/api/albaranes/astilladora/${encodeURIComponent(nombreAstilladora)}`)
+      const res  = await fetch(`/api/albaranes/astilladora/${encodeURIComponent(nombreAstilladora)}?c=${encodeURIComponent(codigo)}`)
+      if (res.status === 401 || res.status === 403) { setCodigoInvalido(true); setLoading(false); if (manual) setRefreshing(false); return }
       const data = await res.json()
       const arr  = Array.isArray(data) ? data : []
       const sig  = arr.map(a => `${a.id}:${a.astilladoraFirmada}:${a.estado}`).join('|')
@@ -337,7 +340,7 @@ export default function PanelAstilladora() {
     } catch {}
     setLoading(false)
     if (manual) setRefreshing(false)
-  }, [nombreAstilladora])
+  }, [nombreAstilladora, codigo])
 
   useEffect(() => {
     fetchData()
@@ -398,7 +401,7 @@ export default function PanelAstilladora() {
               Cambios
             </span>
           )}
-          <NotificacionesBell tipo="astilladora" nombre={nombreAstilladora} />
+          <NotificacionesBell tipo="astilladora" nombre={nombreAstilladora} codigo={codigo} />
           <button
             className={`pi-refresh${refreshing ? ' pi-refresh-spin' : ''}`}
             onClick={() => fetchData(true)}
@@ -410,7 +413,12 @@ export default function PanelAstilladora() {
         </div>
       </div>
 
-      {loading ? (
+      {codigoInvalido ? (
+        <div className="pi-empty">
+          <div className="pi-empty-title">Enlace no válido</div>
+          <div className="pi-empty-sub">Falta el código de acceso o es incorrecto. Pide a oficina el enlace correcto de este panel.</div>
+        </div>
+      ) : loading ? (
         <div className="pi-spinner-wrap"><div className="pi-spinner" /></div>
       ) : albaranes.length === 0 ? (
         <div className="pi-empty">

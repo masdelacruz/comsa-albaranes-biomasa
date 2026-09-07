@@ -1,4 +1,5 @@
 const router = require('express').Router()
+const crypto = require('crypto')
 const { v4: uuidv4 } = require('uuid')
 const pool   = require('../db')
 const { requireAuth, requireConfigAccess } = require('./auth')
@@ -67,6 +68,23 @@ router.patch('/:id', requireAuth, requireConfigAccess, async (req, res) => {
     detalle: `${rows[0]?.nombre} — campos: ${fields.filter(f => req.body[f] !== undefined).join(', ')}`,
   })
   res.json(conFirmaFirmada(rows[0]))
+})
+
+// ── POST /empresas/:id/regenerar-codigo-acceso ──────────────────────
+// Invalida el enlace de panel público actual de la empresa (con su código
+// viejo) y genera uno nuevo.
+router.post('/:id/regenerar-codigo-acceso', requireAuth, requireConfigAccess, async (req, res) => {
+  const nuevoCodigo = crypto.randomBytes(16).toString('hex')
+  const { rows } = await pool.query(
+    'UPDATE proveedores SET acceso_codigo=$1 WHERE id=$2 RETURNING nombre',
+    [nuevoCodigo, req.params.id]
+  )
+  if (!rows.length) return res.status(404).json({ error: 'No encontrado' })
+  registrarAuditoria({
+    usuario: req.user, accion: 'editar', entidad: 'proveedor', entidadId: req.params.id,
+    detalle: `Código de acceso al panel regenerado: ${rows[0].nombre}`,
+  })
+  res.json({ acceso_codigo: nuevoCodigo })
 })
 
 // ── DELETE /empresas/:id ──────────────────────────────────────────

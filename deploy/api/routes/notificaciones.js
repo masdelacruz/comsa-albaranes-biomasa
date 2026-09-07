@@ -5,11 +5,12 @@
  */
 const router = require('express').Router()
 const pool   = require('../db')
+const { requireAuthOrEmpresaCodigo } = require('../lib/campoAuth')
 
 const TIPOS_VALIDOS = ['astilladora', 'instalacion']
 
-// ── GET /notificaciones/:tipo/:nombre  (PÚBLICO — panel cliente) ────────
-router.get('/:tipo/:nombre', async (req, res) => {
+// ── GET /notificaciones/:tipo/:nombre  (oficina o código de la empresa) ──
+router.get('/:tipo/:nombre', requireAuthOrEmpresaCodigo(), async (req, res) => {
   const { tipo } = req.params
   if (!TIPOS_VALIDOS.includes(tipo)) return res.status(400).json({ error: 'tipo inválido' })
   const nombre = decodeURIComponent(req.params.nombre).replace(/-/g, ' ')
@@ -32,8 +33,8 @@ router.get('/:tipo/:nombre', async (req, res) => {
   })))
 })
 
-// ── POST /notificaciones/:tipo/:nombre/marcar-leidas  (PÚBLICO) ─────────
-router.post('/:tipo/:nombre/marcar-leidas', async (req, res) => {
+// ── POST /notificaciones/:tipo/:nombre/marcar-leidas  (oficina o código) ──
+router.post('/:tipo/:nombre/marcar-leidas', requireAuthOrEmpresaCodigo(), async (req, res) => {
   const { tipo } = req.params
   if (!TIPOS_VALIDOS.includes(tipo)) return res.status(400).json({ error: 'tipo inválido' })
   const nombre = decodeURIComponent(req.params.nombre).replace(/-/g, ' ')

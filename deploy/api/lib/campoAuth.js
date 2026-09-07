@@ -58,4 +58,30 @@ function requireAuthOrCampoToken() {
   }
 }
 
-module.exports = { requireAuthOrCampoToken }
+// Autoriza el panel público de una empresa (instalación/astilladora): o bien
+// sesión de oficina válida, o bien el código de acceso propio de esa empresa
+// (query ?c=). El nombre viaja en la URL desde siempre (no es secreto); lo
+// que ahora hace falta además es el código para poder leer su cola de
+// entregas — adivinar el nombre ya no basta.
+function requireAuthOrEmpresaCodigo(tipoFijo) {
+  return async function (req, res, next) {
+    if (await tryAuth(req)) return next()
+
+    const tipo   = tipoFijo || req.params.tipo
+    const nombre = decodeURIComponent(req.params.nombre).replace(/-/g, ' ')
+    const codigo = req.query.c
+    if (!codigo) return res.status(401).json({ error: 'Falta el código de acceso' })
+
+    const { rows } = await pool.query(
+      'SELECT acceso_codigo FROM proveedores WHERE tipo=$1 AND nombre=$2',
+      [tipo, nombre]
+    )
+    if (!rows.length) return res.status(404).json({ error: 'No encontrado' })
+    if (!constantTimeEqual(rows[0].acceso_codigo, String(codigo))) {
+      return res.status(403).json({ error: 'Código de acceso incorrecto' })
+    }
+    next()
+  }
+}
+
+module.exports = { requireAuthOrCampoToken, requireAuthOrEmpresaCodigo }
