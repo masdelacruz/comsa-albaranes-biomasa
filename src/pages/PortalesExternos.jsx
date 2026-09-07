@@ -8,11 +8,14 @@ const SECCIONES = [
   { tipo: 'instalacion', titulo: 'Instalaciones', icon: Building2, color: '#f5a623' },
 ]
 
+const slugify = s => s.toLowerCase().replace(/\s+/g, '_').replace(/[^a-z0-9_]/g, '')
+
 // Enlace único y permanente del panel externo de cada empresa. Solo cambia
 // si se regenera el código (por ejemplo, tras detectar una anomalía) — el
 // enlace anterior deja de funcionar en ese momento y muestra un aviso.
 export default function PortalesExternos() {
   const [proveedores, setProveedores] = useState([])
+  const [logos,       setLogos]       = useState({})
   const [loading,     setLoading]     = useState(true)
   const [busqueda,    setBusqueda]    = useState('')
   const [copiadoId,        setCopiadoId]        = useState(null)
@@ -26,7 +29,14 @@ export default function PortalesExternos() {
     setLoading(false)
   }
 
-  useEffect(() => { fetchProveedores() }, [])
+  const fetchLogos = async () => {
+    try {
+      const map = await api.get('/storage/logos')
+      setLogos(map || {})
+    } catch {}
+  }
+
+  useEffect(() => { fetchProveedores(); fetchLogos() }, [])
 
   const panelUrl = (p) => {
     const base = p.tipo === 'astilladora'
@@ -57,7 +67,7 @@ export default function PortalesExternos() {
   return (
     <div>
       <div className="page-header">
-        <div className="page-title">Portales externos</div>
+        <div className="page-title">Portales de clientes</div>
         <div className="page-sub">Enlace único y permanente al panel de cada astilladora e instalación</div>
       </div>
 
@@ -87,11 +97,23 @@ export default function PortalesExternos() {
                     <div style={{ padding: 20, textAlign: 'center', color: 'var(--gray-400)', fontSize: 13 }}>
                       Sin {titulo.toLowerCase()} registradas
                     </div>
-                  ) : lista.map((p, i) => (
+                  ) : lista.map((p, i) => {
+                    const logoUrl = logos[`empresa_${slugify(p.nombre)}`]
+                    return (
                     <div key={p.id} style={{
                       display: 'flex', alignItems: 'center', gap: 10, padding: '12px 16px',
                       borderBottom: i === lista.length - 1 ? 'none' : 'var(--border)',
                     }}>
+                      <div style={{
+                        width: 36, height: 36, borderRadius: 'var(--radius-sm)', flexShrink: 0,
+                        display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden',
+                        background: logoUrl ? '#fff' : `${color}1a`,
+                        border: logoUrl ? 'var(--border)' : 'none',
+                      }}>
+                        {logoUrl
+                          ? <img src={logoUrl} alt="" style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
+                          : <Icon size={16} color={color} />}
+                      </div>
                       <div style={{ flex: 1, minWidth: 0 }}>
                         <div style={{ fontSize: 13, fontWeight: 500, color: 'var(--gray-800)' }}>{p.nombre}</div>
                         <code style={{ fontSize: 11, color: 'var(--gray-400)', wordBreak: 'break-all' }}>{panelUrl(p)}</code>
@@ -113,7 +135,7 @@ export default function PortalesExternos() {
                         </button>
                       </div>
                     </div>
-                  ))}
+                  )})}
                 </div>
               </div>
             )
