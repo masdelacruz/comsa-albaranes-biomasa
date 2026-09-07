@@ -230,9 +230,9 @@ export default function DetalleAlbaran({ albaranes, simularFirma, updateFirma, s
   const siguientePaso    = getSiguientePaso()
   const urlSiguientePaso = siguientePaso
     ? siguientePaso === 'instalacion'
-      ? `${window.location.origin}/campo/instalacion/${a.instalacion.replace(/\s+/g, '-')}?desde=${a.id}`
+      ? (a.panelInstalacionUrl ? `${a.panelInstalacionUrl}&desde=${a.id}` : null)
       : siguientePaso === 'astilladora'
-      ? `${window.location.origin}/campo/astilladora/${a.astilladora.replace(/\s+/g, '-')}?desde=${a.id}`
+      ? (a.panelAstilladoraUrl ? `${a.panelAstilladoraUrl}&desde=${a.id}` : null)
       : `${window.location.origin}/campo/${a.id}/${siguientePaso}?t=${encodeURIComponent(a.campoToken || '')}`
     : null
 
@@ -546,14 +546,14 @@ export default function DetalleAlbaran({ albaranes, simularFirma, updateFirma, s
   const astiEmpresa = todasEmpresas.find(e => e.nombre === a.astilladora)
   const instEmpresa = todasEmpresas.find(e => e.nombre === a.instalacion)
   const paneles = [
-    a.astilladora && {
+    a.astilladora && a.panelAstilladoraUrl && {
       rol: 'astilladora', nombre: a.astilladora,
-      url: `${window.location.origin}/campo/astilladora/${a.astilladora.replace(/\s+/g, '-')}`,
+      url: a.panelAstilladoraUrl,
       tel: normalTel(astiEmpresa?.telefono || ''),
     },
-    a.instalacion && {
+    a.instalacion && a.panelInstalacionUrl && {
       rol: 'instalacion', nombre: a.instalacion,
-      url: `${window.location.origin}/campo/instalacion/${a.instalacion.replace(/\s+/g, '-')}`,
+      url: a.panelInstalacionUrl,
       tel: normalTel(instEmpresa?.telefono || ''),
     },
   ].filter(Boolean)

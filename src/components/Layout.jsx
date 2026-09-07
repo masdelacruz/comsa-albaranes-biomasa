@@ -1,6 +1,6 @@
 import { useEffect } from 'react'
 import { Outlet, useNavigate, useLocation } from 'react-router-dom'
-import { LayoutDashboard, PlusCircle, FileClock, BarChart2, Settings, Users, ShieldAlert, LayoutGrid } from 'lucide-react'
+import { LayoutDashboard, PlusCircle, FileClock, BarChart2, Settings, Users, ShieldAlert, LayoutGrid, Link2 } from 'lucide-react'
 import Dock from './Dock'
 import Header from './Header'
 import './Layout.css'
@@ -41,6 +41,7 @@ export default function Layout({ usuario, albaranes = [], logout }) {
     { key: 'historial',      label: 'Historial',      icon: <FileClock size={18} />,       active: location.pathname === '/historial',      onClick: irA('/historial') },
     { key: 'estadisticas',   label: 'Estadísticas',   icon: <BarChart2 size={18} />,       active: location.pathname === '/estadisticas',   onClick: irA('/estadisticas') },
     ...(puedeConfiguracion ? [
+      { key: 'portales', label: 'Portales externos', icon: <Link2 size={18} />, active: location.pathname === '/portales', onClick: irA('/portales') },
       { key: 'configuracion', label: 'Configuración', icon: <Settings size={18} />, active: location.pathname === '/configuracion', onClick: irA('/configuracion') },
     ] : []),
     ...(esSuperadmin ? [

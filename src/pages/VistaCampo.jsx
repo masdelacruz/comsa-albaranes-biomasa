@@ -579,15 +579,20 @@ export default function VistaCampo({ albaranes, updateFirma, subirTicketPesada, 
 
   const a = albaranes.find(x => x.id === id)
 
-  // URL del panel de origen para volver tras firmar
+  // URL del panel de origen para volver tras firmar — el mismo enlace fijo
+  // (con código de acceso) que usa esa empresa siempre, no uno nuevo.
+  const relativizar = (absUrl) => {
+    if (!absUrl) return null
+    try { const u = new URL(absUrl); return u.pathname + u.search } catch { return null }
+  }
   const rolesDirectos = rolesParam ? rolesParam.split(',').filter(r => ROLES_CONFIG[r]) : null
   const esInstalacionSola = rolesDirectos?.length === 1 && rolesDirectos[0] === 'instalacion'
   const esAstilladoraSola = rolesDirectos?.length === 1 && rolesDirectos[0] === 'astilladora'
   const panelUrl = (() => {
-    if ((esInstalacionSola || rolSeleccionado === 'instalacion') && a?.instalacion)
-      return `/campo/instalacion/${a.instalacion.replace(/\s+/g, '-')}?desde=${id}`
-    if ((esAstilladoraSola || rolSeleccionado === 'astilladora') && a?.astilladora)
-      return `/campo/astilladora/${a.astilladora.replace(/\s+/g, '-')}?desde=${id}`
+    if ((esInstalacionSola || rolSeleccionado === 'instalacion') && a?.panelInstalacionUrl)
+      return `${relativizar(a.panelInstalacionUrl)}&desde=${id}`
+    if ((esAstilladoraSola || rolSeleccionado === 'astilladora') && a?.panelAstilladoraUrl)
+      return `${relativizar(a.panelAstilladoraUrl)}&desde=${id}`
     return null
   })()
 

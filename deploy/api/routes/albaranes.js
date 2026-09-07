@@ -35,6 +35,14 @@ function esVisibleEnPanel(fechaISO) {
   return Date.now() <= limite.getTime()
 }
 
+// ── Helper: URL fija del panel externo de una empresa (con su código) ────
+// Es siempre la misma mientras no se regenere el código — un único enlace
+// por empresa, reutilizado en todos sus albaranes.
+function panelUrlDe(tipo, nombre, codigo) {
+  if (!nombre || !codigo) return null
+  return `${process.env.APP_URL}/campo/${tipo}/${nombre.replace(/\s+/g, '-')}?c=${codigo}`
+}
+
 // ── Helper: arma el objeto completo de un albarán ─────────────────
 async function fetchOne(id) {
   const [aRes, fRes, pRes, dRes, actRes, obsRes] = await Promise.all([
@@ -48,11 +56,12 @@ async function fetchOne(id) {
   const a = aRes.rows[0]
   if (!a) return null
   const empresasNombres = [a.proveedor, a.astilladora, a.transportista, a.instalacion].filter(Boolean)
-  const empresaFirmaMap = {}
-  const empresaDataMap  = {}
+  const empresaFirmaMap  = {}
+  const empresaDataMap   = {}
+  const empresaCodigoMap = {}
   if (empresasNombres.length) {
     const eRes = await pool.query(
-      'SELECT nombre, firma_imagen, trabajadores, maquinas, horario FROM proveedores WHERE nombre = ANY($1)',
+      'SELECT nombre, firma_imagen, trabajadores, maquinas, horario, acceso_codigo FROM proveedores WHERE nombre = ANY($1)',
       [empresasNombres]
     )
     eRes.rows.forEach(e => {
@@ -62,9 +71,10 @@ async function fetchOne(id) {
         maquinas:     e.maquinas     || [],
         horario:      e.horario      || null,
       }
+      empresaCodigoMap[e.nombre] = e.acceso_codigo
     })
   }
-  return buildAlbaran(a, fRes.rows, pRes.rows[0], dRes.rows, actRes.rows, obsRes.rows, empresaFirmaMap, empresaDataMap)
+  return buildAlbaran(a, fRes.rows, pRes.rows[0], dRes.rows, actRes.rows, obsRes.rows, empresaFirmaMap, empresaDataMap, empresaCodigoMap)
 }
 
 // Notifica (email + notificación persistente en su panel) a la astilladora
@@ -82,7 +92,7 @@ function notificarEnvioACampo(albaran) {
   enviarNotificacionAlbaranACampo(albaran).catch(() => {})
 }
 
-function buildAlbaran(a, firmas, pesada, docs, actividad, observacionesPost, empresaFirmaMap = {}, empresaDataMap = {}) {
+function buildAlbaran(a, firmas, pesada, docs, actividad, observacionesPost, empresaFirmaMap = {}, empresaDataMap = {}, empresaCodigoMap = {}) {
   const firmasObj = {}
   firmas.forEach(f => {
     const obsExtra = (observacionesPost || [])
@@ -135,6 +145,11 @@ function buildAlbaran(a, firmas, pesada, docs, actividad, observacionesPost, emp
     actividad: actividad.map(ev => ({ ts: ev.ts, texto: ev.texto, actor: ev.actor })),
     solicitaRevision: a.solicita_revision || false,
     motivoRechazoCampo: a.motivo_rechazo_campo || null,
+    // Enlace fijo del panel externo de cada empresa (uno solo, con su
+    // código de acceso) — para volver a él desde el flujo de campo o para
+    // compartirlo desde el detalle del albarán en oficina.
+    panelInstalacionUrl: panelUrlDe('instalacion', a.instalacion, empresaCodigoMap[a.instalacion]),
+    panelAstilladoraUrl: panelUrlDe('astilladora', a.astilladora, empresaCodigoMap[a.astilladora]),
   }
 }
 
@@ -157,16 +172,18 @@ router.get('/', requireAuth, async (_req, res) => {
   const allNombres = [...new Set(
     albs.flatMap(a => [a.proveedor, a.astilladora, a.transportista, a.instalacion].filter(Boolean))
   )]
-  const empresaFirmaMap = {}
-  const empresaDataMap  = {}
+  const empresaFirmaMap  = {}
+  const empresaDataMap   = {}
+  const empresaCodigoMap = {}
   if (allNombres.length) {
     const eRes = await pool.query(
-      'SELECT nombre, firma_imagen, trabajadores, maquinas, horario FROM proveedores WHERE nombre = ANY($1)',
+      'SELECT nombre, firma_imagen, trabajadores, maquinas, horario, acceso_codigo FROM proveedores WHERE nombre = ANY($1)',
       [allNombres]
     )
     eRes.rows.forEach(e => {
       if (e.firma_imagen) empresaFirmaMap[e.nombre] = e.firma_imagen
       empresaDataMap[e.nombre] = { trabajadores: e.trabajadores || [], maquinas: e.maquinas || [], horario: e.horario || null }
+      empresaCodigoMap[e.nombre] = e.acceso_codigo
     })
   }
 
@@ -180,6 +197,7 @@ router.get('/', requireAuth, async (_req, res) => {
       obsRes.rows.filter(o => o.albaran_id === a.id),
       empresaFirmaMap,
       empresaDataMap,
+      empresaCodigoMap,
     ),
     // El token de enlace de campo solo se expone a sesiones de oficina
     // autenticadas (este endpoint requiere requireAuth) — nunca en las
