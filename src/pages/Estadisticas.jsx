@@ -1,5 +1,6 @@
 import { useMemo } from 'react'
-import { Package, CheckCircle2, Scale, Building2, Factory, PieChart, TrendingUp, TrendingDown, Minus, Table2 } from 'lucide-react'
+import { Package, CheckCircle2, Scale, Building2, PieChart, TrendingUp, TrendingDown, Minus, Table2 } from 'lucide-react'
+import AstilladoraIcon from '../components/AstilladoraIcon'
 import { ultimas4Semanas } from '../utils/semana'
 import '../components/shared.css'
 import './Estadisticas.css'
@@ -132,7 +133,7 @@ export default function Estadisticas({ albaranes }) {
           <div className="es-card">
             <div className="es-card-head">
               <div className="es-card-head-left">
-                <span className="es-icon tone-orange"><Factory size={14} /></span>
+                <span className="es-icon tone-orange"><AstilladoraIcon size={14} /></span>
                 <span className="es-card-title">Albaranes por astilladora</span>
               </div>
             </div>

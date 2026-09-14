@@ -1,10 +1,11 @@
 import { useState, useEffect } from 'react'
-import { ExternalLink, Copy, Check, RefreshCw, Factory, Building2 } from 'lucide-react'
+import { ExternalLink, Copy, Check, RefreshCw, Building2 } from 'lucide-react'
 import { api } from '../lib/api'
+import AstilladoraIcon from '../components/AstilladoraIcon'
 import '../components/shared.css'
 
 const SECCIONES = [
-  { tipo: 'astilladora', titulo: 'Astilladoras', icon: Factory,   color: '#1D9E75' },
+  { tipo: 'astilladora', titulo: 'Astilladoras', icon: AstilladoraIcon, color: '#1D9E75' },
   { tipo: 'instalacion', titulo: 'Instalaciones', icon: Building2, color: '#f5a623' },
 ]
 
