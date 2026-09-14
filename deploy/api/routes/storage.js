@@ -118,33 +118,6 @@ router.post('/upload/:albaranId/ticket', requireAuthOrCampoToken(), upload.singl
 
 const ALLOWED_IMG_EXTS = new Set(['png', 'jpg', 'jpeg', 'webp'])
 
-// ── POST /storage/upload/empresa/:empresaId/firma  (Configuración) ──
-router.post('/upload/empresa/:empresaId/firma', requireAuth, requireConfigAccess, upload.single('file'), async (req, res) => {
-  const minio  = req.app.get('minio')
-  const bucket = req.app.get('minio_bucket')
-  const { empresaId } = req.params
-  const fichero = req.file
-  if (!fichero) return res.status(400).json({ error: 'Falta el fichero' })
-
-  const ext = (fichero.originalname.split('.').pop() || 'png').toLowerCase()
-  if (!ALLOWED_IMG_EXTS.has(ext) || !contentMatchesAllowlist(fichero.buffer, [ext])) {
-    return res.status(400).json({ error: 'La firma debe ser una imagen (PNG, JPG o WEBP)' })
-  }
-  const path = `firmas_empresa/${empresaId}.${ext}`
-
-  await minio.putObject(bucket, path, fichero.buffer, fichero.size, { 'Content-Type': fichero.mimetype })
-
-  await pool.query(
-    'UPDATE proveedores SET firma_imagen=$1 WHERE id=$2',
-    [path, empresaId]
-  )
-  registrarAuditoria({
-    usuario: req.user, accion: 'editar', entidad: 'firma_empresa', entidadId: empresaId,
-    detalle: 'Firma oficial de empresa actualizada',
-  })
-  res.json({ url: signPath(path) })
-})
-
 // ── POST /storage/upload/:albaranId/logo  (Configuración) ────────
 router.post('/upload/logos/:logoId', requireAuth, requireConfigAccess, upload.single('file'), async (req, res) => {
   const minio  = req.app.get('minio')

@@ -26,7 +26,7 @@ function normalizarTelefono(raw) {
 }
 
 const ROLES_CONFIG = {
-  proveedor:     { label: 'Proveedor',    sub: 'Confirma carga y firma',     icon: <User     size={18} color="#8b5cf6" />, color: '#8b5cf6', bg: '#f5f3ff' },
+  proveedor:     { label: 'Proveedor',    sub: 'Confirma carga',             icon: <User     size={18} color="#8b5cf6" />, color: '#8b5cf6', bg: '#f5f3ff' },
   astilladora:   { label: 'Astilladora',  sub: 'Confirma carga y firma',     icon: <Factory  size={18} color="#1D9E75" />, color: '#1D9E75', bg: '#f0faf5' },
   transportista: { label: 'Transportista',sub: 'Confirma transporte',        icon: <Truck    size={18} color="#3b82f6" />, color: '#3b82f6', bg: '#eff6ff' },
   instalacion:   { label: 'Instalación',  sub: 'Confirma recepción y firma', icon: <Building2 size={18} color="#f5a623" />, color: '#f5a623', bg: '#fffbf0' },
@@ -34,8 +34,10 @@ const ROLES_CONFIG = {
 
 const ROLES_ORDEN = ['proveedor', 'astilladora', 'transportista', 'instalacion']
 
-// ¿Este rol requiere firma de empresa?
-const ROL_REQUIERE_FIRMA = { proveedor: true, astilladora: false, transportista: false, instalacion: true }
+// ¿Este rol exige firma de empresa para poder confirmar? Solo astilladora e
+// instalación pueden tener logo configurado (que hace también de firma/sello);
+// en astilladora es opcional, en instalación sigue siendo obligatorio.
+const ROL_REQUIERE_FIRMA = { proveedor: false, astilladora: false, transportista: false, instalacion: true }
 
 function Placa({ texto }) {
   if (!texto) return null
@@ -268,7 +270,7 @@ function PasoFirma({ rol, a, updateFirma, subirTicketPesada, onCompletado, total
   const handleFirmar = async () => {
     setFirmando(true)
     setErrorFirma('')
-    const firmaImagen = requiereFirma ? (empresaFirmaUrl || null) : null
+    const firmaImagen = empresaFirmaUrl || null
     const pesadaData  = (rol === 'transportista' || rol === 'instalacion') && (pesoBruto || tara) ? {
       entrada: parseFloat(pesoBruto) || null,
       salida:  parseFloat(tara)      || null,
@@ -468,7 +470,7 @@ function PasoFirma({ rol, a, updateFirma, subirTicketPesada, onCompletado, total
       </div>
 
       {/* ── SELLO EMPRESA (solo si está registrado) ───────────────── */}
-      {requiereFirma && empresaFirmaUrl && (
+      {empresaFirmaUrl && (
         <div style={{marginBottom:14}}>
           <div style={{fontSize:12,fontWeight:600,color:'var(--gray-500)',textTransform:'uppercase',letterSpacing:'0.5px',marginBottom:10}}>
             Sello de {empresaNombre}

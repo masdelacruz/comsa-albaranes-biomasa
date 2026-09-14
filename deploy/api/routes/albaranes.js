@@ -43,6 +43,46 @@ function panelUrlDe(tipo, nombre, codigo) {
   return `${process.env.APP_URL}/campo/${tipo}/${nombre.replace(/\s+/g, '-')}?c=${codigo}`
 }
 
+const slugify = s => s.toLowerCase().replace(/\s+/g, '_').replace(/[^a-z0-9_]/g, '')
+
+// ── Helper: datos de empresas (astilladora/instalacion/proveedor/transportista)
+// implicadas en un conjunto de albaranes. El logo de astilladoras e
+// instalaciones hace también de firma/sello — no hay imagen de firma aparte.
+async function buildEmpresaMaps(nombres) {
+  const empresaFirmaMap  = {}
+  const empresaDataMap   = {}
+  const empresaCodigoMap = {}
+  if (!nombres.length) return { empresaFirmaMap, empresaDataMap, empresaCodigoMap }
+
+  const eRes = await pool.query(
+    'SELECT nombre, tipo, trabajadores, maquinas, horario, acceso_codigo FROM proveedores WHERE nombre = ANY($1)',
+    [nombres]
+  )
+  const logoIdToNombre = {}
+  eRes.rows.forEach(e => {
+    empresaDataMap[e.nombre] = {
+      trabajadores: e.trabajadores || [],
+      maquinas:     e.maquinas     || [],
+      horario:      e.horario      || null,
+    }
+    empresaCodigoMap[e.nombre] = e.acceso_codigo
+    if (e.tipo === 'astilladora' || e.tipo === 'instalacion') {
+      logoIdToNombre[`empresa_${slugify(e.nombre)}`] = e.nombre
+    }
+  })
+
+  const logoIds = Object.keys(logoIdToNombre)
+  if (logoIds.length) {
+    const lRes = await pool.query('SELECT id, url FROM logos WHERE id = ANY($1)', [logoIds])
+    lRes.rows.forEach(l => {
+      const nombre = logoIdToNombre[l.id]
+      if (nombre && l.url) empresaFirmaMap[nombre] = l.url
+    })
+  }
+
+  return { empresaFirmaMap, empresaDataMap, empresaCodigoMap }
+}
+
 // ── Helper: arma el objeto completo de un albarán ─────────────────
 async function fetchOne(id) {
   const [aRes, fRes, pRes, dRes, actRes, obsRes] = await Promise.all([
@@ -56,24 +96,7 @@ async function fetchOne(id) {
   const a = aRes.rows[0]
   if (!a) return null
   const empresasNombres = [a.proveedor, a.astilladora, a.transportista, a.instalacion].filter(Boolean)
-  const empresaFirmaMap  = {}
-  const empresaDataMap   = {}
-  const empresaCodigoMap = {}
-  if (empresasNombres.length) {
-    const eRes = await pool.query(
-      'SELECT nombre, firma_imagen, trabajadores, maquinas, horario, acceso_codigo FROM proveedores WHERE nombre = ANY($1)',
-      [empresasNombres]
-    )
-    eRes.rows.forEach(e => {
-      if (e.firma_imagen) empresaFirmaMap[e.nombre] = e.firma_imagen
-      empresaDataMap[e.nombre] = {
-        trabajadores: e.trabajadores || [],
-        maquinas:     e.maquinas     || [],
-        horario:      e.horario      || null,
-      }
-      empresaCodigoMap[e.nombre] = e.acceso_codigo
-    })
-  }
+  const { empresaFirmaMap, empresaDataMap, empresaCodigoMap } = await buildEmpresaMaps(empresasNombres)
   return buildAlbaran(a, fRes.rows, pRes.rows[0], dRes.rows, actRes.rows, obsRes.rows, empresaFirmaMap, empresaDataMap, empresaCodigoMap)
 }
 
@@ -172,20 +195,7 @@ router.get('/', requireAuth, async (_req, res) => {
   const allNombres = [...new Set(
     albs.flatMap(a => [a.proveedor, a.astilladora, a.transportista, a.instalacion].filter(Boolean))
   )]
-  const empresaFirmaMap  = {}
-  const empresaDataMap   = {}
-  const empresaCodigoMap = {}
-  if (allNombres.length) {
-    const eRes = await pool.query(
-      'SELECT nombre, firma_imagen, trabajadores, maquinas, horario, acceso_codigo FROM proveedores WHERE nombre = ANY($1)',
-      [allNombres]
-    )
-    eRes.rows.forEach(e => {
-      if (e.firma_imagen) empresaFirmaMap[e.nombre] = e.firma_imagen
-      empresaDataMap[e.nombre] = { trabajadores: e.trabajadores || [], maquinas: e.maquinas || [], horario: e.horario || null }
-      empresaCodigoMap[e.nombre] = e.acceso_codigo
-    })
-  }
+  const { empresaFirmaMap, empresaDataMap, empresaCodigoMap } = await buildEmpresaMaps(allNombres)
 
   const result = albs.map(a => ({
     ...buildAlbaran(

@@ -3,12 +3,7 @@ const crypto = require('crypto')
 const { v4: uuidv4 } = require('uuid')
 const pool   = require('../db')
 const { requireAuth, requireConfigAccess } = require('./auth')
-const { signPath } = require('../lib/signedUrl')
 const { registrarAuditoria } = require('../lib/auditoria')
-
-function conFirmaFirmada(row) {
-  return { ...row, firma_imagen: signPath(row.firma_imagen) || null }
-}
 
 function toTitleCase(str) {
   if (!str || typeof str !== 'string') return str
@@ -24,7 +19,7 @@ router.get('/', requireAuth, async (req, res) => {
   if (activo) { vals.push(activo === 'true'); query += ` AND activo=$${vals.length}` }
   query += ' ORDER BY nombre'
   const { rows } = await pool.query(query, vals)
-  res.json(rows.map(conFirmaFirmada))
+  res.json(rows)
 })
 
 // ── POST /empresas ────────────────────────────────────────────────
@@ -42,14 +37,14 @@ router.post('/', requireAuth, requireConfigAccess, async (req, res) => {
     usuario: req.user, accion: 'crear', entidad: 'proveedor', entidadId: id,
     detalle: `${tipo}: ${rows[0]?.nombre}`,
   })
-  res.json(conFirmaFirmada(rows[0]))
+  res.json(rows[0])
 })
 
 // ── PATCH /empresas/:id ───────────────────────────────────────────
 router.patch('/:id', requireAuth, requireConfigAccess, async (req, res) => {
   if (req.body.nombre) req.body.nombre = toTitleCase(req.body.nombre)
   if (req.body.contacto) req.body.contacto = toTitleCase(req.body.contacto)
-  const fields = ['nombre','tipo','contacto','email','telefono','notas','activo','firma_imagen','trabajadores','maquinas','horario']
+  const fields = ['nombre','tipo','contacto','email','telefono','notas','activo','trabajadores','maquinas','horario']
   const jsonbFields = new Set(['trabajadores', 'maquinas'])
   const updates = [], vals = []
   let idx = 1
@@ -67,7 +62,7 @@ router.patch('/:id', requireAuth, requireConfigAccess, async (req, res) => {
     usuario: req.user, accion: 'editar', entidad: 'proveedor', entidadId: req.params.id,
     detalle: `${rows[0]?.nombre} — campos: ${fields.filter(f => req.body[f] !== undefined).join(', ')}`,
   })
-  res.json(conFirmaFirmada(rows[0]))
+  res.json(rows[0])
 })
 
 // ── POST /empresas/:id/regenerar-codigo-acceso ──────────────────────

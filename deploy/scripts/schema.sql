@@ -110,7 +110,6 @@ CREATE TABLE IF NOT EXISTS proveedores (
   telefono     TEXT,
   notas        TEXT,
   activo       BOOLEAN NOT NULL DEFAULT TRUE,
-  firma_imagen TEXT,             -- URL a MinIO con la imagen de firma oficial
   horario      TEXT,             -- horario de apertura (astilladora / instalacion)
   acceso_codigo TEXT NOT NULL UNIQUE DEFAULT encode(gen_random_bytes(16), 'hex'),
   created_at   TIMESTAMPTZ NOT NULL DEFAULT NOW()
