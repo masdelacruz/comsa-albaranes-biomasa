@@ -104,7 +104,7 @@ export default function Usuarios({ usuario, embedded = false }) {
             </div>
             {esSuperadmin && (
               <button className="btn btn-primary" onClick={abrirNuevo}>
-                <Plus size={15} /> Nuevo usuario
+                <Plus size={15} /> Nuevo
               </button>
             )}
           </div>
@@ -117,7 +117,7 @@ export default function Usuarios({ usuario, embedded = false }) {
             <div className="page-sub">{usuarios.length} usuarios registrados</div>
             {esSuperadmin && (
               <button className="btn btn-primary" onClick={abrirNuevo}>
-                <Plus size={15} /> Nuevo usuario
+                <Plus size={15} /> Nuevo
               </button>
             )}
           </div>
