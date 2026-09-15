@@ -283,17 +283,8 @@ export default function Administracion({ usuario }) {
   return (
     <div className="admin-page">
       <div className="page-header">
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-          <div>
-            <div className="page-title">Configuración</div>
-            <div className="page-sub">{SUBTITULOS[tab] || SUBTITULO_DEFECTO}</div>
-          </div>
-          {!['logos', 'elementos', 'usuarios', 'auditoria'].includes(tab) && (
-            <button className="btn btn-primary" onClick={abrirNuevo}>
-              <Plus size={15} /> Nuevo
-            </button>
-          )}
-        </div>
+        <div className="page-title">Configuración</div>
+        <div className="page-sub">{SUBTITULOS[tab] || SUBTITULO_DEFECTO}</div>
       </div>
 
       <div className="admin-content">
@@ -502,18 +493,23 @@ export default function Administracion({ usuario }) {
           /* ── Providers panel ── */
           <>
             <div className="admin-toolbar">
-              <div className="admin-search">
-                <Search size={13} className="admin-search-icon" />
-                <input
-                  type="text"
-                  placeholder={`Buscar ${TIPO_LABELS[tab].toLowerCase()}...`}
-                  value={busqueda}
-                  onChange={e => setBusqueda(e.target.value)}
-                />
+              <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                <div className="admin-search">
+                  <Search size={13} className="admin-search-icon" />
+                  <input
+                    type="text"
+                    placeholder={`Buscar ${TIPO_LABELS[tab].toLowerCase()}...`}
+                    value={busqueda}
+                    onChange={e => setBusqueda(e.target.value)}
+                  />
+                </div>
+                <div style={{ fontSize: 12, color: 'var(--gray-400)' }}>
+                  {filtrados.length} {filtrados.length === 1 ? 'registro' : 'registros'}
+                </div>
               </div>
-              <div style={{ fontSize: 12, color: 'var(--gray-400)' }}>
-                {filtrados.length} {filtrados.length === 1 ? 'registro' : 'registros'}
-              </div>
+              <button className="btn btn-primary" onClick={abrirNuevo}>
+                <Plus size={15} /> Nuevo
+              </button>
             </div>
 
             <div className="card" style={{ padding: 0, overflow: 'hidden' }}>
