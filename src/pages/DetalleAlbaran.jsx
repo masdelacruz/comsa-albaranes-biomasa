@@ -1151,14 +1151,14 @@ export default function DetalleAlbaran({ albaranes, simularFirma, updateFirma, s
                     <div className="firma-block-header">
                       <div>
                         <div className="firma-actor">{FIRMA_LABELS[key]}</div>
-                        <div className="firma-sub">{firma.actor}</div>
+                        {key !== 'oficina' && <div className="firma-sub">{firma.actor}</div>}
                       </div>
                       {firma.firmado
                         ? <span className="badge badge-green"><CheckCircle size={10} /> Firmado</span>
                         : <span className="badge badge-amber"><Clock size={10} /> Pendiente</span>
                       }
                     </div>
-                    {firma.firmado && firma.nombrePersona && (
+                    {firma.firmado && firma.nombrePersona && key !== 'oficina' && (
                       <div style={{fontSize:11,color:'var(--gray-500)',marginTop:2}}>
                         Persona: {firma.nombrePersona}
                         {firma.telefonoPersona && <span style={{marginLeft:8}}>· Tel: {normalizarTelefono(firma.telefonoPersona)}</span>}
