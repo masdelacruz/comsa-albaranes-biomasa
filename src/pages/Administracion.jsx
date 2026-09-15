@@ -1,6 +1,9 @@
 import { useState, useEffect, useRef } from 'react'
+import { useSearchParams } from 'react-router-dom'
 import { Plus, Search, Pencil, Trash2, X, Check, Upload, Image, ExternalLink, Clock, Copy, RefreshCw } from 'lucide-react'
 import { api } from '../lib/api'
+import Usuarios from './Usuarios'
+import Auditoria from './Auditoria'
 import '../components/shared.css'
 import './Administracion.css'
 
@@ -31,6 +34,14 @@ function normalizarTelefono(raw) {
 
 const TIPOS = ['proveedor', 'astilladora', 'transportista', 'instalacion']
 const TIPO_LABELS = { proveedor: 'Proveedor', astilladora: 'Astilladora', transportista: 'Transportista', instalacion: 'Instalación' }
+
+const SUBTITULOS = {
+  elementos: 'Valores de los desplegables de biomasa y especie en los albaranes',
+  logos:     'Logos y certificaciones para la cabecera de los albaranes PDF',
+  usuarios:  'Gestión de usuarios y accesos a la aplicación',
+  auditoria: 'Registro de acciones administrativas',
+}
+const SUBTITULO_DEFECTO = 'Gestión de astilladoras, transportistas e instalaciones'
 
 const EMPTY_FORM = { nombre: '', tipo: 'proveedor', contacto: '', email: '', telefono: '', notas: '', activo: true, trabajadores: [], maquinas: [], horario: '' }
 
@@ -69,10 +80,16 @@ const LOGOS_SECTIONS = [
 // Lista plana para compatibilidad con funciones de subida/borrado
 const LOGOS_CONFIG = LOGOS_SECTIONS.flatMap(s => s.logos)
 
-export default function Administracion() {
+export default function Administracion({ usuario }) {
+  const [searchParams] = useSearchParams()
+  const esSuperadmin = usuario?.nivel === 'superadmin'
+
   const [proveedores, setProveedores]     = useState([])
   const [loading, setLoading]             = useState(true)
-  const [tab, setTab]                     = useState('proveedor')
+  const [tab, setTab]                     = useState(() => {
+    const t = searchParams.get('tab')
+    return t === 'auditoria' && esSuperadmin ? 'auditoria' : t === 'usuarios' ? 'usuarios' : 'proveedor'
+  })
   const [busqueda, setBusqueda]           = useState('')
   const [modal, setModal]                 = useState(false)
   const [editando, setEditando]           = useState(null)
@@ -269,9 +286,9 @@ export default function Administracion() {
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
           <div>
             <div className="page-title">Configuración</div>
-            <div className="page-sub">Gestión de astilladoras, transportistas e instalaciones</div>
+            <div className="page-sub">{SUBTITULOS[tab] || SUBTITULO_DEFECTO}</div>
           </div>
-          {tab !== 'logos' && tab !== 'elementos' && (
+          {!['logos', 'elementos', 'usuarios', 'auditoria'].includes(tab) && (
             <button className="btn btn-primary" onClick={abrirNuevo}>
               <Plus size={15} /> Nuevo
             </button>
@@ -302,6 +319,21 @@ export default function Administracion() {
           >
             Logos
           </button>
+          <span style={{ width: 1, alignSelf: 'stretch', background: 'var(--gray-200)', margin: '4px 2px' }} />
+          <button
+            className={`admin-tab ${tab === 'usuarios' ? 'active' : ''}`}
+            onClick={() => setTab('usuarios')}
+          >
+            Usuarios
+          </button>
+          {esSuperadmin && (
+            <button
+              className={`admin-tab ${tab === 'auditoria' ? 'active' : ''}`}
+              onClick={() => setTab('auditoria')}
+            >
+              Auditoría
+            </button>
+          )}
         </div>
 
         {/* ── Elementos panel ── */}
@@ -456,6 +488,16 @@ export default function Administracion() {
               )
             })()}
           </div>
+        ) : tab === 'usuarios' ? (
+          <div style={{ marginTop: 16 }}>
+            <Usuarios usuario={usuario} embedded />
+          </div>
+        ) : tab === 'auditoria' ? (
+          esSuperadmin && (
+            <div style={{ marginTop: 16 }}>
+              <Auditoria embedded />
+            </div>
+          )
         ) : tab !== 'elementos' ? (
           /* ── Providers panel ── */
           <>

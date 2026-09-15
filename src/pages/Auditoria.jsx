@@ -30,7 +30,7 @@ const ENTIDAD_LABEL = {
 
 const POR_PAGINA = 50
 
-export default function Auditoria() {
+export default function Auditoria({ embedded = false }) {
   const [registros, setRegistros] = useState([])
   const [loading,   setLoading]   = useState(true)
   const [cargandoMas, setCargandoMas] = useState(false)
@@ -58,13 +58,15 @@ export default function Auditoria() {
   }
 
   return (
-    <div className="auditoria-page">
-      <div className="page-header">
-        <div className="page-title">Auditoría</div>
-        <div className="page-sub">Registro de acciones administrativas — solo visible para superadmin</div>
-      </div>
+    <div className={embedded ? '' : 'auditoria-page'}>
+      {!embedded && (
+        <div className="page-header">
+          <div className="page-title">Auditoría</div>
+          <div className="page-sub">Registro de acciones administrativas — solo visible para superadmin</div>
+        </div>
+      )}
 
-      <div style={{ padding: '0 28px' }}>
+      <div style={embedded ? undefined : { padding: '0 28px' }}>
         <div className="card" style={{ padding: 0, overflow: 'hidden' }}>
           <div style={{ padding: 14, borderBottom: 'var(--border)' }}>
             <div className="filters-bar">

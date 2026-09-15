@@ -49,7 +49,7 @@ export default function Dock({ items }) {
       >
         {items.map((item, i) => (
           <span key={item.key} style={{ display: 'flex', alignItems: 'flex-end' }}>
-            {item.isAvatar && i > 0 && <span className="dock-divider" />}
+            {item.dividerBefore && i > 0 && <span className="dock-divider" />}
             <DockButton item={item} mouseX={mouseX} />
           </span>
         ))}

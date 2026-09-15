@@ -102,22 +102,21 @@ export default function PortalesExternos() {
                     const logoUrl = logos[`empresa_${slugify(p.nombre)}`]
                     return (
                     <div key={p.id} style={{
-                      display: 'flex', alignItems: 'center', gap: 10, padding: '12px 16px',
+                      display: 'flex', alignItems: 'center', gap: 14, padding: '14px 16px',
                       borderBottom: i === lista.length - 1 ? 'none' : 'var(--border)',
                     }}>
                       <div style={{
-                        width: 36, height: 36, borderRadius: 'var(--radius-sm)', flexShrink: 0,
+                        width: 48, height: 48, borderRadius: 'var(--radius-sm)', flexShrink: 0,
                         display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden',
                         background: logoUrl ? '#fff' : `${color}1a`,
                         border: logoUrl ? 'var(--border)' : 'none',
                       }}>
                         {logoUrl
                           ? <img src={logoUrl} alt="" style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
-                          : <Icon size={16} color={color} />}
+                          : <Icon size={22} color={color} />}
                       </div>
                       <div style={{ flex: 1, minWidth: 0 }}>
-                        <div style={{ fontSize: 13, fontWeight: 500, color: 'var(--gray-800)' }}>{p.nombre}</div>
-                        <code style={{ fontSize: 11, color: 'var(--gray-400)', wordBreak: 'break-all' }}>{panelUrl(p)}</code>
+                        <div style={{ fontSize: 16, fontWeight: 600, color: 'var(--gray-900)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{p.nombre}</div>
                       </div>
                       <div style={{ display: 'flex', gap: 6, flexShrink: 0 }}>
                         <a className="btn btn-ghost" style={{ padding: '5px 9px', fontSize: 11 }}

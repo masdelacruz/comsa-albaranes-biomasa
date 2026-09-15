@@ -22,7 +22,7 @@ const esSilenciado = (notifs) => {
   return ['nuevo', 'firma', 'cerrado', 'humedad'].every(k => notifs?.[k] === false)
 }
 
-export default function Usuarios({ usuario }) {
+export default function Usuarios({ usuario, embedded = false }) {
   const [usuarios, setUsuarios]           = useState([])
   const [loading, setLoading]             = useState(true)
   const [modal, setModal]                 = useState(false)
@@ -94,22 +94,34 @@ export default function Usuarios({ usuario }) {
   const colSpan = esSuperadmin ? 8 : 7
 
   return (
-    <div className="usuarios-page">
-      <div className="page-header">
-        <div style={{display:'flex',alignItems:'center',justifyContent:'space-between'}}>
-          <div>
-            <div className="page-title">Gestión de usuarios</div>
-            <div className="page-sub">{usuarios.length} usuarios registrados</div>
+    <div className={embedded ? '' : 'usuarios-page'}>
+      {!embedded && (
+        <div className="page-header">
+          <div style={{display:'flex',alignItems:'center',justifyContent:'space-between'}}>
+            <div>
+              <div className="page-title">Gestión de usuarios</div>
+              <div className="page-sub">{usuarios.length} usuarios registrados</div>
+            </div>
+            {esSuperadmin && (
+              <button className="btn btn-primary" onClick={abrirNuevo}>
+                <Plus size={15} /> Nuevo usuario
+              </button>
+            )}
           </div>
-          {esSuperadmin && (
-            <button className="btn btn-primary" onClick={abrirNuevo}>
-              <Plus size={15} /> Nuevo usuario
-            </button>
-          )}
         </div>
-      </div>
+      )}
 
-      <div className="usuarios-content">
+      <div className={embedded ? '' : 'usuarios-content'}>
+        {embedded && (
+          <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:14}}>
+            <div className="page-sub">{usuarios.length} usuarios registrados</div>
+            {esSuperadmin && (
+              <button className="btn btn-primary" onClick={abrirNuevo}>
+                <Plus size={15} /> Nuevo usuario
+              </button>
+            )}
+          </div>
+        )}
         {deleteError && (
           <div style={{marginBottom:12,background:'var(--red-50)',border:'1px solid var(--red-100)',borderRadius:'var(--radius-md)',padding:'10px 14px',fontSize:13,color:'var(--red-700)',display:'flex',alignItems:'center',justifyContent:'space-between'}}>
             {deleteError}
