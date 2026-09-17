@@ -69,12 +69,11 @@
   border-radius:99px; padding:1px 7px; margin-left:7px;
 }
 /* Filas compactas de una sola línea — como mucho 3 (slice en el JSX),
-   así que caben siempre sin scroll interno. flex:1 + justify-content:
-   center reparte el alto disponible de forma lógica: con la tarjeta
-   estirada a la altura de "Actividad de la semana", las filas se
-   centran en el hueco en vez de quedar pegadas arriba con un bloque
-   de vacío debajo. */
-.dashboard .dash-atencion-list { display:flex; flex-direction:column; justify-content:center; gap:10px; flex:1; }
+   así que caben siempre sin scroll interno. flex:1 sin centrar: las
+   filas arrancan pegadas a la cabecera (igual que la gráfica de al
+   lado) y, si sobra alto porque hay pocos pendientes, el hueco queda
+   abajo del todo en vez de crear un espacio raro encima del listado. */
+.dashboard .dash-atencion-list { display:flex; flex-direction:column; gap:10px; flex:1; }
 .dashboard .dash-atencion-item {
   display:flex; align-items:center; gap:10px;
   padding:9px 10px; border-radius:8px;
