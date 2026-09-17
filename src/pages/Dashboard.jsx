@@ -209,7 +209,7 @@ export default function Dashboard({ albaranes, empresas = [], usuario, borrarAlb
 
             {albaranesPendientesFirma.length === 0 ? (
               <div className="dash-atencion-empty">
-                <CheckCircle2 size={16} color="var(--green-400)" />
+                <CheckCircle2 size={26} color="var(--green-400)" />
                 <span>Todo al día, sin pendientes de firma</span>
               </div>
             ) : (
