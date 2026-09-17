@@ -209,32 +209,25 @@ export default function Dashboard({ albaranes, empresas = [], usuario, borrarAlb
 
             {albaranesPendientesFirma.length === 0 ? (
               <div className="dash-atencion-empty">
-                <CheckCircle2 size={22} color="var(--green-400)" />
-                <span>Todo al día</span>
+                <CheckCircle2 size={16} color="var(--green-400)" />
+                <span>Todo al día, sin pendientes de firma</span>
               </div>
             ) : (
               <div className="dash-atencion-list">
                 {albaranesPendientesFirma.slice(0, 3).map(a => (
                   <div key={a.id} className="dash-atencion-item" onClick={() => navigate(`/albaran/${a.id}`)}>
-                    <div>
-                      <div className="dash-atencion-item-id">{a.id}</div>
-                      <div className="dash-atencion-item-empresa">{a.proveedor || a.instalacion}</div>
-                      <div className="dash-atencion-item-motivo"><PenLine size={11} /> Pendiente de firma</div>
-                    </div>
-                    <div className="dash-atencion-item-right">
-                      <Badge estado={a.estado} />
-                      <button className="btn dash-atencion-ver" onClick={e => { e.stopPropagation(); navigate(`/albaran/${a.id}`) }}>
-                        Ver albarán <ChevronRight size={13} />
-                      </button>
-                    </div>
+                    <span className="dash-atencion-item-id">{a.id}</span>
+                    <span className="dash-atencion-item-empresa">{a.proveedor || a.instalacion}</span>
+                    <Badge estado={a.estado} />
+                    <ChevronRight size={14} className="dash-atencion-item-chevron" />
                   </div>
                 ))}
               </div>
             )}
 
-            {albaranesPendientesFirma.length > 0 && (
+            {albaranesPendientesFirma.length > 3 && (
               <button className="dash-atencion-vertodos" onClick={() => document.querySelector('.dash-main')?.scrollIntoView({ behavior: 'smooth', block: 'start' })}>
-                Ver todos los pendientes <ChevronRight size={13} />
+                Ver los {albaranesPendientesFirma.length} pendientes <ChevronRight size={13} />
               </button>
             )}
           </div>
