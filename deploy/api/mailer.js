@@ -4,6 +4,7 @@
  */
 const nodemailer = require('nodemailer')
 const pool       = require('./db')
+const { signPath } = require('./lib/signedUrl')
 
 const transport = nodemailer.createTransport({
   host:            process.env.SMTP_HOST,
@@ -70,9 +71,14 @@ const destinatarioAstilladora  = (nombre) => destinatarioEmpresa('astilladora', 
  * URL del logotipo corporativo configurado en Administración
  * (el mismo que se usa como cabecera de los PDF de los albaranes).
  */
+const LOGO_URL_TTL_MS = 10 * 365 * 24 * 60 * 60 * 1000 // 10 años: un email puede abrirse mucho después de enviarse
+
 async function logoComsaUrl() {
   const { rows } = await pool.query(`SELECT url FROM logos WHERE id = 'comsa'`)
-  return rows[0]?.url || null
+  if (!rows[0]?.url) return null
+  // El bucket es privado: la URL guardada en BD es solo el path interno de
+  // MinIO, hay que firmarla para que el cliente de correo pueda cargarla.
+  return signPath(rows[0].url, LOGO_URL_TTL_MS)
 }
 
 module.exports = { transport, destinatarios, destinatarioInstalacion, destinatarioAstilladora, logoComsaUrl }
