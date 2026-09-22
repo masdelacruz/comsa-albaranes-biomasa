@@ -1,7 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
-import { CheckCircle, Upload, Leaf, ArrowLeft, Truck, Building2, User, Clock } from 'lucide-react'
-import AstilladoraIcon from '../components/AstilladoraIcon'
+import { CheckCircle, Upload, Leaf, ArrowLeft, Truck, Building2, Factory, User, Clock } from 'lucide-react'
 import '../components/shared.css'
 import './VistaCampo.css'
 
@@ -28,7 +27,7 @@ function normalizarTelefono(raw) {
 
 const ROLES_CONFIG = {
   proveedor:     { label: 'Proveedor',    sub: 'Confirma carga',             icon: <User     size={18} color="#8b5cf6" />, color: '#8b5cf6', bg: '#f5f3ff' },
-  astilladora:   { label: 'Astilladora',  sub: 'Confirma carga y firma',     icon: <AstilladoraIcon size={18} color="#1D9E75" />, color: '#1D9E75', bg: '#f0faf5' },
+  astilladora:   { label: 'Astilladora',  sub: 'Confirma carga y firma',     icon: <Factory size={18} color="#1D9E75" />, color: '#1D9E75', bg: '#f0faf5' },
   transportista: { label: 'Transportista',sub: 'Confirma transporte',        icon: <Truck    size={18} color="#3b82f6" />, color: '#3b82f6', bg: '#eff6ff' },
   instalacion:   { label: 'Instalación',  sub: 'Confirma recepción y firma', icon: <Building2 size={18} color="#f5a623" />, color: '#f5a623', bg: '#fffbf0' },
 }
