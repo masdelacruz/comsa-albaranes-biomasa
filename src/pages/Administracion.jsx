@@ -88,7 +88,8 @@ export default function Administracion({ usuario }) {
   const [loading, setLoading]             = useState(true)
   const [tab, setTab]                     = useState(() => {
     const t = searchParams.get('tab')
-    return t === 'auditoria' && esSuperadmin ? 'auditoria' : t === 'usuarios' ? 'usuarios' : 'proveedor'
+    if (t === 'auditoria') return esSuperadmin ? 'auditoria' : 'proveedor'
+    return t === 'usuarios' || TIPOS.includes(t) ? t : 'proveedor'
   })
   const [busqueda, setBusqueda]           = useState('')
   const [modal, setModal]                 = useState(false)
@@ -154,6 +155,16 @@ export default function Administracion({ usuario }) {
       setLogos(map || {})
     } catch {}
   }
+
+  // Desde la ficha de un cliente se llega con ?editar=<id>: abre directamente
+  // el modal de edición de esa empresa en cuanto se cargan.
+  const editarInicial = useRef(searchParams.get('editar'))
+  useEffect(() => {
+    if (!editarInicial.current || !proveedores.length) return
+    const p = proveedores.find(x => String(x.id) === editarInicial.current)
+    editarInicial.current = null
+    if (p) abrirEditar(p)
+  }, [proveedores])
 
   useEffect(() => {
     fetchProveedores()

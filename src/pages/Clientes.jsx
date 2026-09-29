@@ -1,30 +1,28 @@
 import { useState, useEffect } from 'react'
-import { ExternalLink, Copy, Check, RefreshCw, Building2, Factory } from 'lucide-react'
+import { useNavigate } from 'react-router-dom'
+import { ExternalLink, Copy, Check, RefreshCw, ChevronRight, Search } from 'lucide-react'
 import { api } from '../lib/api'
+import { SECCIONES_CLIENTES, slugify, panelUrl } from '../utils/clientes'
 import '../components/shared.css'
+import './Clientes.css'
 
-const SECCIONES = [
-  { tipo: 'astilladora', titulo: 'Astilladoras', icon: Factory, color: '#1D9E75' },
-  { tipo: 'instalacion', titulo: 'Instalaciones', icon: Building2, color: '#f5a623' },
-]
+// Listado de astilladoras e instalaciones. Cada fila abre la ficha del
+// cliente; los botones de la derecha gestionan su enlace único y permanente
+// al panel externo — solo cambia si se regenera el código (por ejemplo, tras
+// detectar una anomalía) y el enlace anterior deja de funcionar.
+export default function Clientes({ albaranes = [] }) {
+  const navigate = useNavigate()
+  const [clientes,      setClientes]      = useState([])
+  const [logos,         setLogos]         = useState({})
+  const [loading,       setLoading]       = useState(true)
+  const [busqueda,      setBusqueda]      = useState('')
+  const [copiadoId,     setCopiadoId]     = useState(null)
+  const [regenerandoId, setRegenerandoId] = useState(null)
 
-const slugify = s => s.toLowerCase().replace(/\s+/g, '_').replace(/[^a-z0-9_]/g, '')
-
-// Enlace único y permanente del panel externo de cada empresa. Solo cambia
-// si se regenera el código (por ejemplo, tras detectar una anomalía) — el
-// enlace anterior deja de funcionar en ese momento y muestra un aviso.
-export default function PortalesExternos() {
-  const [proveedores, setProveedores] = useState([])
-  const [logos,       setLogos]       = useState({})
-  const [loading,     setLoading]     = useState(true)
-  const [busqueda,    setBusqueda]    = useState('')
-  const [copiadoId,        setCopiadoId]        = useState(null)
-  const [regenerandoId,    setRegenerandoId]    = useState(null)
-
-  const fetchProveedores = async () => {
+  const fetchClientes = async () => {
     try {
-      const data = await api.get('/empresas?activo=true')
-      setProveedores(data || [])
+      const data = await api.get('/empresas')
+      setClientes((data || []).filter(p => p.tipo === 'astilladora' || p.tipo === 'instalacion'))
     } catch {}
     setLoading(false)
   }
@@ -36,14 +34,7 @@ export default function PortalesExternos() {
     } catch {}
   }
 
-  useEffect(() => { fetchProveedores(); fetchLogos() }, [])
-
-  const panelUrl = (p) => {
-    const base = p.tipo === 'astilladora'
-      ? `/campo/astilladora/${p.nombre.replace(/\s+/g, '-')}`
-      : `/campo/instalacion/${p.nombre.replace(/\s+/g, '-')}`
-    return `${window.location.origin}${base}?c=${encodeURIComponent(p.acceso_codigo || '')}`
-  }
+  useEffect(() => { fetchClientes(); fetchLogos() }, [])
 
   const handleCopiar = (p) => {
     navigator.clipboard.writeText(panelUrl(p))
@@ -56,10 +47,12 @@ export default function PortalesExternos() {
     setRegenerandoId(p.id)
     try {
       await api.post(`/empresas/${p.id}/regenerar-codigo-acceso`, {})
-      await fetchProveedores()
+      await fetchClientes()
     } catch {}
     setRegenerandoId(null)
   }
+
+  const numAlbaranes = (p) => albaranes.filter(a => a[p.tipo] === p.nombre).length
 
   const q = busqueda.trim().toLowerCase()
   const filtrar = (lista) => q ? lista.filter(p => p.nombre.toLowerCase().includes(q)) : lista
@@ -67,24 +60,22 @@ export default function PortalesExternos() {
   return (
     <div>
       <div className="page-header">
-        <div className="page-title">Portales de clientes</div>
-        <div className="page-sub">Enlace único y permanente al panel de cada astilladora e instalación</div>
+        <div className="page-title">Clientes</div>
+        <div className="page-sub">Astilladoras e instalaciones · pulsa en un cliente para ver su ficha</div>
       </div>
 
       <div style={{ padding: '0 28px 28px' }}>
-        <input
-          type="text"
-          placeholder="Buscar empresa..."
-          value={busqueda}
-          onChange={e => setBusqueda(e.target.value)}
-          style={{ width: '100%', maxWidth: 320, marginBottom: 20, padding: '8px 12px', borderRadius: 'var(--radius-sm)', border: 'var(--border)', fontSize: 13 }}
-        />
+        <div className="cli-search">
+          <Search size={14} className="cli-search-icon" />
+          <input type="text" placeholder="Buscar cliente..." value={busqueda} onChange={e => setBusqueda(e.target.value)} />
+        </div>
 
         {loading ? (
           <div style={{ padding: 32, textAlign: 'center', color: 'var(--gray-400)' }}>Cargando...</div>
         ) : (
-          SECCIONES.map(({ tipo, titulo, icon: Icon, color }) => {
-            const lista = filtrar(proveedores.filter(p => p.tipo === tipo)).sort((a, b) => a.nombre.localeCompare(b.nombre))
+          SECCIONES_CLIENTES.map(({ tipo, titulo, icon: Icon, color }) => {
+            const lista = filtrar(clientes.filter(p => p.tipo === tipo))
+              .sort((a, b) => (b.activo - a.activo) || a.nombre.localeCompare(b.nombre))
             return (
               <div key={tipo} style={{ marginBottom: 28 }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10 }}>
@@ -97,27 +88,28 @@ export default function PortalesExternos() {
                     <div style={{ padding: 20, textAlign: 'center', color: 'var(--gray-400)', fontSize: 13 }}>
                       Sin {titulo.toLowerCase()} registradas
                     </div>
-                  ) : lista.map((p, i) => {
+                  ) : lista.map(p => {
                     const logoUrl = logos[`empresa_${slugify(p.nombre)}`]
+                    const n = numAlbaranes(p)
                     return (
-                    <div key={p.id} style={{
-                      display: 'flex', alignItems: 'center', gap: 14, padding: '14px 16px',
-                      borderBottom: i === lista.length - 1 ? 'none' : 'var(--border)',
-                    }}>
-                      <div style={{
-                        width: 48, height: 48, borderRadius: 'var(--radius-sm)', flexShrink: 0,
-                        display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden',
+                    <div key={p.id} className={`cli-row ${p.activo ? '' : 'inactivo'}`} onClick={() => navigate(`/clientes/${p.id}`)}>
+                      <div className="cli-logo" style={{
                         background: logoUrl ? '#fff' : `${color}1a`,
                         border: logoUrl ? 'var(--border)' : 'none',
                       }}>
                         {logoUrl
-                          ? <img src={logoUrl} alt="" style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
+                          ? <img src={logoUrl} alt="" />
                           : <Icon size={22} color={color} />}
                       </div>
                       <div style={{ flex: 1, minWidth: 0 }}>
-                        <div style={{ fontSize: 16, fontWeight: 600, color: 'var(--gray-900)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{p.nombre}</div>
+                        <div className="cli-nombre">{p.nombre}</div>
+                        <div className="cli-meta">
+                          {!p.activo && <span className="cli-tag-inactivo">Inactivo</span>}
+                          <span>{n} {n === 1 ? 'albarán' : 'albaranes'}</span>
+                          {p.contacto && <span>· {p.contacto}</span>}
+                        </div>
                       </div>
-                      <div style={{ display: 'flex', gap: 6, flexShrink: 0 }}>
+                      <div className="cli-acciones" onClick={e => e.stopPropagation()}>
                         <a className="btn btn-ghost" style={{ padding: '5px 9px', fontSize: 11 }}
                           href={panelUrl(p)} target="_blank" rel="noreferrer" title="Abrir panel">
                           <ExternalLink size={12} />
@@ -133,6 +125,7 @@ export default function PortalesExternos() {
                           <RefreshCw size={12} />
                         </button>
                       </div>
+                      <ChevronRight size={16} className="cli-chevron" />
                     </div>
                   )})}
                 </div>

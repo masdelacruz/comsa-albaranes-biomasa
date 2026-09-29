@@ -10,7 +10,8 @@ import PanelAstilladora from './pages/PanelAstilladora'
 import Historial from './pages/Historial'
 import Estadisticas from './pages/Estadisticas'
 import Administracion from './pages/Administracion'
-import PortalesExternos from './pages/PortalesExternos'
+import Clientes from './pages/Clientes'
+import ClienteDetalle from './pages/ClienteDetalle'
 import Login from './pages/Login'
 import AuthCallback from './pages/AuthCallback'
 import SelectorApp from './pages/SelectorApp'
@@ -161,11 +162,17 @@ function AppConDatos({ usuario, logout, actualizarUsuario }) {
         <Route path="albaran/:id"    element={<DetalleAlbaran albaranes={albaranes} simularFirma={simularFirmaOficina} updateFirma={updateFirma} subirDocumento={subirDocumento} subirTicketPesada={subirTicketPesada} actualizarAlbaran={actualizarAlbaran} borrarAlbaran={borrarAlbaran} reabrirAlbaran={reabrirAlbaran} enviarACampoAlbaran={enviarACampoAlbaran} regenerarEnlaceCampo={regenerarEnlaceCampo} usuario={usuario} refetch={refetch} />} />
         <Route path="historial"      element={<Historial albaranes={albaranes} empresas={empresas} usuario={usuario} refetch={refetch} borrarAlbaran={borrarAlbaran} enviarACampoAlbaran={enviarACampoAlbaran} />} />
         <Route path="estadisticas"   element={<Estadisticas albaranes={albaranes} />} />
-        <Route path="portales"       element={
+        <Route path="clientes"       element={
           usuario?.nivel !== 'basico'
-            ? <PortalesExternos />
+            ? <Clientes albaranes={albaranes} />
             : <Navigate to="/dashboard" replace />
         } />
+        <Route path="clientes/:id"   element={
+          usuario?.nivel !== 'basico'
+            ? <ClienteDetalle albaranes={albaranes} />
+            : <Navigate to="/dashboard" replace />
+        } />
+        <Route path="portales"       element={<Navigate to="/clientes" replace />} />
         <Route path="configuracion"  element={
           usuario?.nivel !== 'basico'
             ? <Administracion usuario={usuario} />
