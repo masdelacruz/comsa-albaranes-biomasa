@@ -1,7 +1,7 @@
 import { Building2, Factory } from 'lucide-react'
 
 export const SECCIONES_CLIENTES = [
-  { tipo: 'astilladora', titulo: 'Astilladoras', singular: 'Astilladora', icon: Factory,   color: '#1D9E75' },
+  { tipo: 'astilladora', titulo: 'Astilladoras', singular: 'Astilladora', icon: Factory,   color: '#8B5A3C' },
   { tipo: 'instalacion', titulo: 'Instalaciones', singular: 'Instalación', icon: Building2, color: '#f5a623' },
 ]
 

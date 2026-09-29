@@ -7,6 +7,7 @@ import {
 } from 'lucide-react'
 import { api } from '../lib/api'
 import { Badge } from '../components/Badge'
+import EmpresaModal from '../components/EmpresaModal'
 import { SECCIONES_CLIENTES, slugify, panelUrl } from '../utils/clientes'
 import '../components/shared.css'
 import './Clientes.css'
@@ -52,7 +53,8 @@ export default function ClienteDetalle({ albaranes = [] }) {
   const { id } = useParams()
   const navigate = useNavigate()
   const [cliente,     setCliente]     = useState(null)
-  const [logoUrl,     setLogoUrl]     = useState(null)
+  const [logos,       setLogos]       = useState({})
+  const [editando,    setEditando]    = useState(false)
   const [loading,     setLoading]     = useState(true)
   const [copiado,     setCopiado]     = useState(null)
   const [regenerando, setRegenerando] = useState(false)
@@ -70,7 +72,7 @@ export default function ClienteDetalle({ albaranes = [] }) {
       if (c) {
         try {
           const map = await api.get('/storage/logos')
-          setLogoUrl(map?.[`empresa_${slugify(c.nombre)}`] || null)
+          setLogos(map || {})
         } catch {}
       }
     } catch {}
@@ -153,6 +155,7 @@ export default function ClienteDetalle({ albaranes = [] }) {
 
   const { icon: Icon, color, singular, titulo: tituloSeccion } = SECCIONES_CLIENTES.find(s => s.tipo === cliente.tipo)
   const esAstilladora = cliente.tipo === 'astilladora'
+  const logoUrl = logos[`empresa_${slugify(cliente.nombre)}`]
   const url = panelUrl(cliente)
   const trabajadores = cliente.trabajadores || []
   const maquinas = cliente.maquinas || []
@@ -240,7 +243,7 @@ export default function ClienteDetalle({ albaranes = [] }) {
                 </div>
               )}
             </div>
-            <button className="cd-btn cd-btn-primary" onClick={() => navigate(`/configuracion?tab=${cliente.tipo}&editar=${cliente.id}`)}>
+            <button className="cd-btn cd-btn-primary" onClick={() => setEditando(true)}>
               <Pencil size={14} /> Editar
             </button>
           </div>
@@ -451,6 +454,16 @@ export default function ClienteDetalle({ albaranes = [] }) {
           ) : <Vacio icon={FileText} titulo="Sin albaranes" texto="Todavía no hay albaranes asociados a este cliente." />}
         </div>
       </section>
+
+      {editando && (
+        <EmpresaModal
+          empresa={cliente}
+          logos={logos}
+          onLogoChange={(lid, u) => setLogos(l => { const n = { ...l }; if (u) n[lid] = u; else delete n[lid]; return n })}
+          onClose={() => setEditando(false)}
+          onSaved={fetchCliente}
+        />
+      )}
     </div>
   )
 }
