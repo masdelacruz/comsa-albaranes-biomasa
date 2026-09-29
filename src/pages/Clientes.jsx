@@ -52,7 +52,7 @@ export default function Clientes({ albaranes = [] }) {
     setRegenerandoId(null)
   }
 
-  const numAlbaranes = (p) => albaranes.filter(a => a[p.tipo] === p.nombre).length
+  const numAlbaranes = (p) => albaranes.filter(a => a[p.tipo] === p.nombre && a.estado !== 'cancelado').length
 
   const q = busqueda.trim().toLowerCase()
   const filtrar = (lista) => q ? lista.filter(p => p.nombre.toLowerCase().includes(q)) : lista

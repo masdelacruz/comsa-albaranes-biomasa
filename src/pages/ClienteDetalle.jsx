@@ -212,7 +212,7 @@ export default function ClienteDetalle({ albaranes = [] }) {
             <div className="cd-hero-sub">
               {stats.ultimo
                 ? <>Último albarán el <b>{fmtFecha(stats.ultimo)}</b> · {stats.total} {stats.total === 1 ? 'albarán registrado' : 'albaranes registrados'}</>
-                : 'Todavía sin albaranes registrados'}
+                : stats.propios.length ? `Sin albaranes activos · ${stats.propios.length} ${stats.propios.length === 1 ? 'anulado' : 'anulados'}` : 'Todavía sin albaranes registrados'}
             </div>
           </div>
 
