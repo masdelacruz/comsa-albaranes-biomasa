@@ -49,8 +49,9 @@ function CardHead({ icon: I, titulo, extra, children }) {
 // Ficha de un cliente (astilladora o instalación): datos de contacto, enlace
 // del panel externo y su actividad a partir de los albaranes. La edición se
 // hace en Configuración, que sigue siendo el único sitio donde se modifican.
-export default function ClienteDetalle({ albaranes = [] }) {
+export default function ClienteDetalle({ albaranes = [], usuario }) {
   const { id } = useParams()
+  const puedeGestionar = usuario?.nivel !== 'basico'
   const navigate = useNavigate()
   const [cliente,     setCliente]     = useState(null)
   const [logos,       setLogos]       = useState({})
@@ -224,9 +225,12 @@ export default function ClienteDetalle({ albaranes = [] }) {
             <button className={`cd-btn ${copiado === 'url' ? 'ok' : ''}`} onClick={() => copiar(url, 'url')}>
               {copiado === 'url' ? <Check size={14} /> : <Copy size={14} />} {copiado === 'url' ? 'Copiado' : 'Copiar enlace'}
             </button>
-            <button className="cd-btn cd-btn-icon" onClick={handleRegenerar} disabled={regenerando} title="Regenerar enlace (el actual deja de funcionar)">
-              <RefreshCw size={14} className={regenerando ? 'cd-girando' : ''} />
-            </button>
+            {puedeGestionar && (
+              <button className="cd-btn cd-btn-icon" onClick={handleRegenerar} disabled={regenerando} title="Regenerar enlace (el actual deja de funcionar)">
+                <RefreshCw size={14} className={regenerando ? 'cd-girando' : ''} />
+              </button>
+            )}
+            {(puedeGestionar || cliente.telefono || cliente.email) && (
             <div className="cd-menu-wrap" ref={menuRef}>
               <button className={`cd-btn cd-btn-icon ${menuAbierto ? 'activo' : ''}`} onClick={() => setMenuAbierto(v => !v)} title="Más opciones">
                 <Ellipsis size={16} />
@@ -237,15 +241,22 @@ export default function ClienteDetalle({ albaranes = [] }) {
                   {cliente.email && <a href={`mailto:${cliente.email}`} onClick={() => setMenuAbierto(false)}><Send size={14} /> Enviar email</a>}
                   {cliente.telefono && <button onClick={() => { copiar(cliente.telefono, 'tel'); setMenuAbierto(false) }}><Copy size={14} /> Copiar teléfono</button>}
                   {cliente.email && <button onClick={() => { copiar(cliente.email, 'email'); setMenuAbierto(false) }}><Copy size={14} /> Copiar email</button>}
-                  {(cliente.telefono || cliente.email) && <div className="cd-menu-sep" />}
-                  <button onClick={() => navigate(`/configuracion?tab=${cliente.tipo}`)}><Settings size={14} /> Ver en Configuración</button>
-                  <button className="peligro" onClick={handleRegenerar}><RefreshCw size={14} /> Regenerar enlace</button>
+                  {puedeGestionar && (
+                    <>
+                      {(cliente.telefono || cliente.email) && <div className="cd-menu-sep" />}
+                      <button onClick={() => navigate(`/configuracion?tab=${cliente.tipo}`)}><Settings size={14} /> Ver en Configuración</button>
+                      <button className="peligro" onClick={handleRegenerar}><RefreshCw size={14} /> Regenerar enlace</button>
+                    </>
+                  )}
                 </div>
               )}
             </div>
-            <button className="cd-btn cd-btn-primary" onClick={() => setEditando(true)}>
-              <Pencil size={14} /> Editar
-            </button>
+            )}
+            {puedeGestionar && (
+              <button className="cd-btn cd-btn-primary" onClick={() => setEditando(true)}>
+                <Pencil size={14} /> Editar
+              </button>
+            )}
           </div>
         </div>
 
@@ -352,16 +363,16 @@ export default function ClienteDetalle({ albaranes = [] }) {
             <span title={url}>{url.replace(/^https?:\/\//, '')}</span>
             <button onClick={() => copiar(url, 'url')} title="Copiar">{copiado === 'url' ? <Check size={14} /> : <Copy size={14} />}</button>
           </div>
-          <div className="cd-panel-acciones">
+          <div className={`cd-panel-acciones ${puedeGestionar ? "" : "dos"}`}>
             <a className="cd-btn" href={url} target="_blank" rel="noreferrer"><ExternalLink size={14} /> Abrir</a>
             <button className={`cd-btn ${copiado === 'url' ? 'ok' : ''}`} onClick={() => copiar(url, 'url')}>
               {copiado === 'url' ? <Check size={14} /> : <Copy size={14} />} {copiado === 'url' ? 'Copiado' : 'Copiar'}
             </button>
-            <button className="cd-btn" onClick={handleRegenerar} disabled={regenerando}><RefreshCw size={14} className={regenerando ? 'cd-girando' : ''} /> Regenerar</button>
+            {puedeGestionar && <button className="cd-btn" onClick={handleRegenerar} disabled={regenerando}><RefreshCw size={14} className={regenerando ? 'cd-girando' : ''} /> Regenerar</button>}
           </div>
           <div className="cd-nota-info">
             <Info size={14} />
-            <div>Puedes compartir este enlace con el cliente. Si lo regeneras, el anterior dejará de funcionar al momento.</div>
+            <div>Puedes compartir este enlace con el cliente.{puedeGestionar && " Si lo regeneras, el anterior dejará de funcionar al momento."}</div>
           </div>
         </div>
 
@@ -455,7 +466,7 @@ export default function ClienteDetalle({ albaranes = [] }) {
         </div>
       </section>
 
-      {editando && (
+      {editando && puedeGestionar && (
         <EmpresaModal
           empresa={cliente}
           logos={logos}

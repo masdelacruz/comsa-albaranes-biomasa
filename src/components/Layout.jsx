@@ -38,8 +38,8 @@ export default function Layout({ usuario, albaranes = [], logout }) {
     { key: 'dashboard',      label: 'Dashboard',      icon: <LayoutDashboard size={18} />, active: location.pathname === '/dashboard',      badge: pendientesOficina, onClick: irA('/dashboard') },
     { key: 'historial',      label: 'Historial',      icon: <FileClock size={18} />,       active: location.pathname === '/historial',      onClick: irA('/historial') },
     { key: 'estadisticas',   label: 'Estadísticas',   icon: <BarChart2 size={18} />,       active: location.pathname === '/estadisticas',   onClick: irA('/estadisticas') },
+    { key: 'clientes',       label: 'Clientes',       icon: <Handshake size={18} />,       active: location.pathname.startsWith('/clientes'), onClick: irA('/clientes') },
     ...(puedeConfiguracion ? [
-      { key: 'clientes', label: 'Clientes', icon: <Handshake size={18} />, active: location.pathname.startsWith('/clientes'), onClick: irA('/clientes') },
       { key: 'configuracion', label: 'Configuración', icon: <Settings size={18} />, active: location.pathname.startsWith('/configuracion'), onClick: irA('/configuracion') },
     ] : []),
     { key: 'perfil', label: usuario?.nombre || 'Perfil', isAvatar: true, initials: iniciales, active: location.pathname === '/perfil', dividerBefore: true, onClick: irA('/perfil') },

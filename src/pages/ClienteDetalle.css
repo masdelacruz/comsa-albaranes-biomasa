@@ -1,6 +1,6 @@
 /* ══ Ficha de cliente ══════════════════════════════════════════════════
    Ocupa todo el ancho útil; retícula de 12 columnas. --cd-color es el
-   color del tipo de cliente (verde astilladora / ámbar instalación) y
+   color del tipo de cliente (madera astilladora / ámbar instalación) y
    solo se usa como acento — la acción principal sigue el verde de marca. */
 .cd-page {
   --cd-surface: #fff;
@@ -255,3 +255,4 @@
   .cd-grid > .cd-card { grid-column:span 12; }
   .cd-chart-bars { gap:5px; }
 }
+.cd-panel-acciones.dos { grid-template-columns:repeat(2, minmax(0,1fr)); }
