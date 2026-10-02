@@ -26,21 +26,16 @@ const TIPO_KEY = {
   humedad_pendiente: 'humedad',
 }
 
+// Buzón único de Comsa al que llegan todas las notificaciones internas
+// (en vez de a cada usuario según sus preferencias).
+const EMAIL_NOTIFICACIONES_INTERNAS = process.env.EMAIL_NOTIFICACIONES || 'albaranes.bio@comsa.com'
+
 /**
- * Devuelve los emails de usuarios activos que tienen activa
- * la notificación del tipo indicado (o sin preferencia explícita → true por defecto).
+ * Devuelve los destinatarios de una notificación interna del tipo indicado.
  */
 async function destinatarios(tipo) {
-  const key = TIPO_KEY[tipo]
-  if (!key) return []
-  const { rows } = await pool.query(
-    `SELECT email FROM usuarios
-     WHERE activo = true
-       AND (notificaciones->>'silenciado')::boolean IS NOT TRUE
-       AND (notificaciones->$1)::boolean IS NOT FALSE`,
-    [key]
-  )
-  return rows.map(r => r.email)
+  if (!TIPO_KEY[tipo]) return []
+  return [EMAIL_NOTIFICACIONES_INTERNAS]
 }
 
 /**
