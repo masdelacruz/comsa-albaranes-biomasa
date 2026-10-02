@@ -123,10 +123,10 @@ export default function Login() {
 
             {error && <div className="login-error">{error}</div>}
             <button type="submit" className="login-btn" disabled={loading}>
-              <span className="login-btn-circle" />
-              <ArrowRight size={18} className="arr-1" />
-              <ArrowRight size={18} className="arr-2" />
-              <span className="login-btn-text">{loading ? 'Accediendo...' : 'Acceder'}</span>
+              {loading ? 'Accediendo...' : 'Acceder'}
+              <span className="icon">
+                <ArrowRight size={18} strokeWidth={2.5} />
+              </span>
             </button>
           </form>
 
