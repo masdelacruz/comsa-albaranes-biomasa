@@ -12,9 +12,9 @@ import './Clientes.css'
 // detectar una anomalía) y el enlace anterior deja de funcionar.
 export default function Clientes({ albaranes = [], usuario }) {
   const navigate = useNavigate()
-  // El usuario básico solo consulta: puede abrir y copiar el enlace del
-  // panel, pero no regenerarlo ni editar.
-  const puedeGestionar = usuario?.nivel !== 'basico'
+  // Regenerar el enlace del panel (revoca el actual) es solo del superadmin;
+  // el resto puede abrirlo y copiarlo.
+  const puedeRegenerar = usuario?.nivel === 'superadmin'
   const [clientes,      setClientes]      = useState([])
   const [logos,         setLogos]         = useState({})
   const [loading,       setLoading]       = useState(true)
@@ -122,7 +122,7 @@ export default function Clientes({ albaranes = [], usuario }) {
                           onClick={() => handleCopiar(p)} title="Copiar enlace">
                           {copiadoId === p.id ? <Check size={12} /> : <Copy size={12} />}
                         </button>
-                        {puedeGestionar && (
+                        {puedeRegenerar && (
                           <button className="btn btn-ghost" style={{ padding: '5px 9px', fontSize: 11, color: 'var(--gray-500)' }}
                             disabled={regenerandoId === p.id}
                             onClick={() => handleRegenerar(p)} title="Regenerar código (revoca el enlace actual)">

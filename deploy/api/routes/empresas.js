@@ -2,7 +2,7 @@ const router = require('express').Router()
 const crypto = require('crypto')
 const { v4: uuidv4 } = require('uuid')
 const pool   = require('../db')
-const { requireAuth, requireConfigAccess } = require('./auth')
+const { requireAuth, requireConfigAccess, requireSuperadmin } = require('./auth')
 const { registrarAuditoria } = require('../lib/auditoria')
 
 function toTitleCase(str) {
@@ -67,8 +67,8 @@ router.patch('/:id', requireAuth, requireConfigAccess, async (req, res) => {
 
 // ── POST /empresas/:id/regenerar-codigo-acceso ──────────────────────
 // Invalida el enlace de panel público actual de la empresa (con su código
-// viejo) y genera uno nuevo.
-router.post('/:id/regenerar-codigo-acceso', requireAuth, requireConfigAccess, async (req, res) => {
+// viejo) y genera uno nuevo. Solo superadmin.
+router.post('/:id/regenerar-codigo-acceso', requireAuth, requireSuperadmin, async (req, res) => {
   const nuevoCodigo = crypto.randomBytes(16).toString('hex')
   const { rows } = await pool.query(
     'UPDATE proveedores SET acceso_codigo=$1 WHERE id=$2 RETURNING nombre',

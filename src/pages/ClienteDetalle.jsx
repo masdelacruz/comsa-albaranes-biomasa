@@ -52,6 +52,8 @@ function CardHead({ icon: I, titulo, extra, children }) {
 export default function ClienteDetalle({ albaranes = [], usuario }) {
   const { id } = useParams()
   const puedeGestionar = usuario?.nivel !== 'basico'
+  // Regenerar el enlace del panel (revoca el actual) es solo del superadmin.
+  const puedeRegenerar = usuario?.nivel === 'superadmin'
   const navigate = useNavigate()
   const [cliente,     setCliente]     = useState(null)
   const [logos,       setLogos]       = useState({})
@@ -225,7 +227,7 @@ export default function ClienteDetalle({ albaranes = [], usuario }) {
             <button className={`cd-btn ${copiado === 'url' ? 'ok' : ''}`} onClick={() => copiar(url, 'url')}>
               {copiado === 'url' ? <Check size={14} /> : <Copy size={14} />} {copiado === 'url' ? 'Copiado' : 'Copiar enlace'}
             </button>
-            {puedeGestionar && (
+            {puedeRegenerar && (
               <button className="cd-btn cd-btn-icon" onClick={handleRegenerar} disabled={regenerando} title="Regenerar enlace (el actual deja de funcionar)">
                 <RefreshCw size={14} className={regenerando ? 'cd-girando' : ''} />
               </button>
@@ -245,7 +247,7 @@ export default function ClienteDetalle({ albaranes = [], usuario }) {
                     <>
                       {(cliente.telefono || cliente.email) && <div className="cd-menu-sep" />}
                       <button onClick={() => navigate(`/configuracion?tab=${cliente.tipo}`)}><Settings size={14} /> Ver en Configuración</button>
-                      <button className="peligro" onClick={handleRegenerar}><RefreshCw size={14} /> Regenerar enlace</button>
+                      {puedeRegenerar && <button className="peligro" onClick={handleRegenerar}><RefreshCw size={14} /> Regenerar enlace</button>}
                     </>
                   )}
                 </div>
@@ -363,16 +365,16 @@ export default function ClienteDetalle({ albaranes = [], usuario }) {
             <span title={url}>{url.replace(/^https?:\/\//, '')}</span>
             <button onClick={() => copiar(url, 'url')} title="Copiar">{copiado === 'url' ? <Check size={14} /> : <Copy size={14} />}</button>
           </div>
-          <div className={`cd-panel-acciones ${puedeGestionar ? "" : "dos"}`}>
+          <div className={`cd-panel-acciones ${puedeRegenerar ? "" : "dos"}`}>
             <a className="cd-btn" href={url} target="_blank" rel="noreferrer"><ExternalLink size={14} /> Abrir</a>
             <button className={`cd-btn ${copiado === 'url' ? 'ok' : ''}`} onClick={() => copiar(url, 'url')}>
               {copiado === 'url' ? <Check size={14} /> : <Copy size={14} />} {copiado === 'url' ? 'Copiado' : 'Copiar'}
             </button>
-            {puedeGestionar && <button className="cd-btn" onClick={handleRegenerar} disabled={regenerando}><RefreshCw size={14} className={regenerando ? 'cd-girando' : ''} /> Regenerar</button>}
+            {puedeRegenerar && <button className="cd-btn" onClick={handleRegenerar} disabled={regenerando}><RefreshCw size={14} className={regenerando ? 'cd-girando' : ''} /> Regenerar</button>}
           </div>
           <div className="cd-nota-info">
             <Info size={14} />
-            <div>Puedes compartir este enlace con el cliente.{puedeGestionar && " Si lo regeneras, el anterior dejará de funcionar al momento."}</div>
+            <div>Puedes compartir este enlace con el cliente.{puedeRegenerar && " Si lo regeneras, el anterior dejará de funcionar al momento."}</div>
           </div>
         </div>
 

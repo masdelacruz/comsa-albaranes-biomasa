@@ -60,7 +60,8 @@ export default function Administracion({ usuario }) {
   const [tab, setTab]                     = useState(() => {
     const t = searchParams.get('tab')
     if (t === 'auditoria') return esSuperadmin ? 'auditoria' : 'proveedor'
-    return t === 'usuarios' || TIPOS.includes(t) ? t : 'proveedor'
+    if (t === 'usuarios') return esSuperadmin ? 'usuarios' : 'proveedor'
+    return TIPOS.includes(t) ? t : 'proveedor'
   })
   const [busqueda, setBusqueda]           = useState('')
   const [modal, setModal]                 = useState(null)
@@ -250,13 +251,17 @@ export default function Administracion({ usuario }) {
           >
             Logos
           </button>
-          <span style={{ width: 1, alignSelf: 'stretch', background: 'var(--gray-200)', margin: '4px 2px' }} />
-          <button
-            className={`admin-tab ${tab === 'usuarios' ? 'active' : ''}`}
-            onClick={() => setTab('usuarios')}
-          >
-            Usuarios
-          </button>
+          {esSuperadmin && (
+            <>
+              <span style={{ width: 1, alignSelf: 'stretch', background: 'var(--gray-200)', margin: '4px 2px' }} />
+              <button
+                className={`admin-tab ${tab === 'usuarios' ? 'active' : ''}`}
+                onClick={() => setTab('usuarios')}
+              >
+                Usuarios
+              </button>
+            </>
+          )}
           {esSuperadmin && (
             <button
               className={`admin-tab ${tab === 'auditoria' ? 'active' : ''}`}
@@ -421,7 +426,7 @@ export default function Administracion({ usuario }) {
           </div>
         ) : tab === 'usuarios' ? (
           <div style={{ marginTop: 16 }}>
-            <Usuarios usuario={usuario} embedded />
+            {esSuperadmin && <Usuarios usuario={usuario} embedded />}
           </div>
         ) : tab === 'auditoria' ? (
           esSuperadmin && (
@@ -525,15 +530,17 @@ export default function Administracion({ usuario }) {
                               >
                                 {copiadoPanel === p.id ? <Check size={12} /> : <Copy size={12} />}
                               </button>
-                              <button
-                                className="btn btn-ghost"
-                                style={{ padding: '4px 8px', fontSize: 11, color: 'var(--gray-500)' }}
-                                disabled={regenerandoCodigo === p.id}
-                                onClick={() => handleRegenerarCodigo(p)}
-                                title="Regenerar código de acceso (el enlace anterior deja de funcionar)"
-                              >
-                                <RefreshCw size={12} />
-                              </button>
+                              {esSuperadmin && (
+                                <button
+                                  className="btn btn-ghost"
+                                  style={{ padding: '4px 8px', fontSize: 11, color: 'var(--gray-500)' }}
+                                  disabled={regenerandoCodigo === p.id}
+                                  onClick={() => handleRegenerarCodigo(p)}
+                                  title="Regenerar código de acceso (el enlace anterior deja de funcionar)"
+                                >
+                                  <RefreshCw size={12} />
+                                </button>
+                              )}
                             </>
                           )}
                           {confirmDelete === p.id ? (

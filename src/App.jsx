@@ -171,7 +171,7 @@ function AppConDatos({ usuario, logout, actualizarUsuario }) {
             : <Navigate to="/dashboard" replace />
         } />
         <Route path="usuarios"       element={
-          usuario?.nivel !== 'basico'
+          usuario?.nivel === 'superadmin'
             ? <Navigate to="/configuracion?tab=usuarios" replace />
             : <Navigate to="/dashboard" replace />
         } />

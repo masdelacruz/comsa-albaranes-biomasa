@@ -60,6 +60,13 @@ function requireConfigAccess(req, res, next) {
   next()
 }
 
+// ── Middleware: solo 'superadmin' ──
+function requireSuperadmin(req, res, next) {
+  if (req.user?.nivel !== 'superadmin')
+    return res.status(403).json({ error: 'Solo superadmin' })
+  next()
+}
+
 // ── POST /auth/login ──────────────────────────────────────────────
 router.post('/login', loginRateLimit, async (req, res) => {
   const { email, password } = req.body
@@ -109,4 +116,5 @@ router.get('/me', requireAuth, async (req, res) => {
 module.exports = router
 module.exports.requireAuth = requireAuth
 module.exports.requireConfigAccess = requireConfigAccess
+module.exports.requireSuperadmin = requireSuperadmin
 module.exports.passwordPolicy = passwordPolicy
