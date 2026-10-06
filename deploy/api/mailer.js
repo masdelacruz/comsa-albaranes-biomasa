@@ -6,7 +6,7 @@ const nodemailer = require('nodemailer')
 const pool       = require('./db')
 const { signPath } = require('./lib/signedUrl')
 
-const transport = nodemailer.createTransport({
+const smtp = nodemailer.createTransport({
   host:            process.env.SMTP_HOST,
   port:            parseInt(process.env.SMTP_PORT || '587'),
   secure:          parseInt(process.env.SMTP_PORT || '587') === 465,
@@ -17,6 +17,79 @@ const transport = nodemailer.createTransport({
   socketTimeout:   10000,
   greetingTimeout: 10000,
 })
+
+// ── Envío por Microsoft Graph desde el buzón compartido de COMSA ──
+// comsa.com está en Microsoft 365 con DMARC en cuarentena: para enviar como
+// albaranes.bio@comsa.com hay que salir por Microsoft. Se usa una app de
+// Entra ID con permiso de aplicación Mail.Send (limitado por IT a ese buzón).
+// Si no está configurado, o Graph falla, se envía por el SMTP de siempre.
+const GRAPH = {
+  tenant:   process.env.MAIL_GRAPH_TENANT_ID,
+  clientId: process.env.MAIL_GRAPH_CLIENT_ID,
+  secret:   process.env.MAIL_GRAPH_CLIENT_SECRET,
+  buzon:    process.env.MAIL_GRAPH_SENDER || 'albaranes.bio@comsa.com',
+  nombre:   process.env.MAIL_GRAPH_SENDER_NAME || 'Albaranes Biomasa · COMSA',
+}
+const graphActivo = !!(GRAPH.tenant && GRAPH.clientId && GRAPH.secret)
+
+let tokenGraph = null   // { valor, caduca }
+async function obtenerTokenGraph() {
+  if (tokenGraph && Date.now() < tokenGraph.caduca) return tokenGraph.valor
+  const res = await fetch(`https://login.microsoftonline.com/${GRAPH.tenant}/oauth2/v2.0/token`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+    body: new URLSearchParams({
+      client_id: GRAPH.clientId,
+      client_secret: GRAPH.secret,
+      scope: 'https://graph.microsoft.com/.default',
+      grant_type: 'client_credentials',
+    }),
+  })
+  const data = await res.json().catch(() => ({}))
+  if (!res.ok || !data.access_token) throw new Error(`Token Graph: ${data.error_description || data.error || res.status}`)
+  // Margen de 5 min antes de la caducidad real
+  tokenGraph = { valor: data.access_token, caduca: Date.now() + (data.expires_in - 300) * 1000 }
+  return tokenGraph.valor
+}
+
+const listaEmails = (to) => (Array.isArray(to) ? to : String(to || '').split(','))
+  .map(e => e.trim()).filter(Boolean)
+
+async function enviarPorGraph({ to, subject, html }) {
+  const token = await obtenerTokenGraph()
+  const res = await fetch(`https://graph.microsoft.com/v1.0/users/${encodeURIComponent(GRAPH.buzon)}/sendMail`, {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      message: {
+        subject,
+        body: { contentType: 'HTML', content: html },
+        from: { emailAddress: { address: GRAPH.buzon, name: GRAPH.nombre } },
+        toRecipients: listaEmails(to).map(address => ({ emailAddress: { address } })),
+      },
+      saveToSentItems: true,
+    }),
+  })
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}))
+    throw new Error(`Graph sendMail ${res.status}: ${err.error?.message || res.statusText}`)
+  }
+}
+
+// Misma interfaz que nodemailer (sendMail) para no tocar a quien lo usa.
+const transport = {
+  async sendMail(msg) {
+    if (graphActivo) {
+      try {
+        return await enviarPorGraph(msg)
+      } catch (e) {
+        console.error('Email Graph falló, se reintenta por SMTP:', e.message)
+      }
+    }
+    return smtp.sendMail(msg)
+  },
+}
+console.log(`Correo saliente: ${graphActivo ? `Microsoft Graph (${GRAPH.buzon}) con respaldo SMTP` : 'SMTP'}`)
 
 // tipo → clave en la columna JSONB notificaciones
 const TIPO_KEY = {
