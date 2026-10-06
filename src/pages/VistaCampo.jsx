@@ -469,23 +469,6 @@ function PasoFirma({ rol, a, updateFirma, subirTicketPesada, onCompletado, total
         />
       </div>
 
-      {/* ── SELLO EMPRESA (solo si está registrado) ───────────────── */}
-      {empresaFirmaUrl && (
-        <div style={{marginBottom:14}}>
-          <div style={{fontSize:12,fontWeight:600,color:'var(--gray-500)',textTransform:'uppercase',letterSpacing:'0.5px',marginBottom:10}}>
-            Sello de {empresaNombre}
-          </div>
-          <div style={{border:'1px solid var(--gray-200)',borderRadius:'var(--radius-md)',padding:'12px 16px',textAlign:'center',background:'#fafafa'}}>
-            <img src={empresaFirmaUrl} alt="Sello"
-              style={{maxHeight:100,maxWidth:'100%',objectFit:'contain',filter:'drop-shadow(0 1px 3px rgba(0,0,0,0.15))'}}
-            />
-            <div style={{fontSize:11,color:'var(--green-600)',marginTop:8,fontWeight:500}}>
-              ✓ Sello digital · Se estampará al confirmar
-            </div>
-          </div>
-        </div>
-      )}
-
       {errorFirma && (
         <div style={{padding:'10px 12px',background:'#fff1f1',border:'1px solid #fca5a5',borderRadius:8,color:'#b91c1c',fontSize:13,marginBottom:12}}>
           {errorFirma}
