@@ -447,38 +447,49 @@ router.get('/astilladora/:nombre', requireAuthOrEmpresaCodigo('astilladora'), as
 })
 
 // ── GET /albaranes/proveedor/:nombre  (oficina o código de la empresa) ──
-// Panel del proveedor (Opción 2 — proveedor directo): sus albaranes para
-// que adjunte su propio albarán y complete el origen si oficina lo dejó
-// vacío. Los cerrados siguen visibles 30 días como histórico.
+// Panel del proveedor (Opción 2 — proveedor directo): igual que los de
+// astilladora/instalación, sus albaranes en curso para que adjunte su propio
+// albarán y complete el origen si oficina lo dejó vacío.
 router.get('/proveedor/:nombre', requireAuthOrEmpresaCodigo('proveedor'), async (req, res) => {
   const nombre = decodeURIComponent(req.params.nombre).replace(/-/g, ' ')
   const { rows } = await pool.query(
-    `SELECT a.id, a.fecha, a.hora, a.instalacion, a.especie, a.tipo_biomasa, a.estella,
-            a.origen, a.estado, a.referencia_sure, a.matricula_tractora, a.matricula_remolque,
+    `SELECT a.id, a.fecha, a.hora, a.grupo_id, a.camion_orden, a.num_camiones,
+            a.instalacion, a.transportista, a.especie, a.tipo_biomasa, a.estella,
+            a.origen, a.estado, a.matricula_tractora, a.matricula_remolque,
+            (a.estado = 'programado') AS planificado,
+            f.firmado AS paso_firmado, f.fecha AS paso_fecha,
             d.adjunto AS doc_adjunto, d.url AS doc_url, d.nombre_fichero AS doc_nombre
      FROM albaranes a
+     LEFT JOIN firmas f ON f.albaran_id = a.id AND f.rol = 'proveedor'
      LEFT JOIN docs d ON d.albaran_id = a.id AND d.nombre = $2
      WHERE a.proveedor = $1 AND a.tipo LIKE 'Opción 2%'
-       AND a.estado != 'cancelado'
-       AND (a.estado != 'cerrado' OR a.fecha >= CURRENT_DATE - 30)
-     ORDER BY a.fecha DESC NULLS LAST, a.created_at DESC`,
+       AND (
+         a.estado NOT IN ('cerrado','programado','cancelado')
+         OR (a.estado = 'programado' AND a.fecha >= CURRENT_DATE)
+       )
+     ORDER BY a.created_at ASC`,
     [nombre, DOC_ALBARAN_PROVEEDOR]
   )
-  res.json(rows.map(a => ({
-    id: a.id,
-    fecha: a.fecha ? new Date(a.fecha).toISOString().slice(0,10) : null,
-    hora: a.hora,
-    instalacion: a.instalacion,
-    especie: a.especie, tipoBiomasa: a.tipo_biomasa, estella: a.estella,
-    origen: a.origen || null,
-    estado: a.estado,
-    cerrado: a.estado === 'cerrado',
-    referenciaSure: a.referencia_sure || null,
-    matriculaTractora: a.matricula_tractora, matriculaRemolque: a.matricula_remolque,
-    albaranProveedor: a.doc_adjunto
-      ? { url: signPath(a.doc_url), nombreFichero: a.doc_nombre }
-      : null,
-  })))
+  res.json(rows.map(a => {
+    const origen = a.origen?.trim() || null
+    return {
+      id: a.id,
+      fecha: a.fecha ? new Date(a.fecha).toISOString().slice(0,10) : null,
+      hora: a.hora,
+      grupoId: a.grupo_id || null, camionOrden: a.camion_orden || 1, numCamiones: a.num_camiones || 1,
+      planificado: a.planificado || false,
+      instalacion: a.instalacion, transportista: a.transportista,
+      especie: a.especie, tipoBiomasa: a.tipo_biomasa, estella: a.estella,
+      matriculaTractora: a.matricula_tractora, matriculaRemolque: a.matricula_remolque,
+      estado: a.estado,
+      origen,
+      albaranProveedor: a.doc_adjunto
+        ? { url: signPath(a.doc_url), nombreFichero: a.doc_nombre }
+        : null,
+      completado: !!a.paso_firmado || (!!origen && !!a.doc_adjunto),
+      completadoFecha: a.paso_fecha || null,
+    }
+  }))
 })
 
 // ── POST /albaranes/proveedor/:nombre/:id/origen  (oficina o código) ──

@@ -1,16 +1,30 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { useParams, useLocation } from 'react-router-dom'
-import { CheckCircle, Leaf, RefreshCw, MapPin, FileText, Upload, ShieldCheck } from 'lucide-react'
+import { CheckCircle, ChevronRight, ChevronDown, Leaf, RefreshCw, MapPin, FileText, Upload } from 'lucide-react'
 import './PanelInstalacion.css'
 
-// Panel público del proveedor (Opción 2 — proveedor directo). Acceso con el
-// código de la empresa (?c=), igual que los paneles de astilladora e
-// instalación. Por cada albarán el proveedor puede adjuntar su propio
-// albarán y, si oficina no lo indicó, rellenar el origen.
+// Panel público del proveedor (Opción 2 — proveedor directo). Misma
+// estructura que los paneles de astilladora e instalación; lo único que se
+// le pide por albarán es su albarán y el origen (si oficina no lo indicó).
 
 const fmtFecha = (f) => f ? String(f).slice(0,10).split('-').reverse().join('/') : null
+
+function fmtFirmaTs(ts) {
+  if (!ts) return ''
+  const [datePart, timePart] = String(ts).split(', ')
+  if (!datePart) return ts
+  const [d, m] = datePart.split('/')
+  const time = timePart ? timePart.slice(0, 5) : ''
+  return `${d.padStart(2,'0')}/${m.padStart(2,'0')} · ${time}`
+}
+
 const MESES_C   = ['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic']
+const DIAS_ABR  = ['L','M','X','J','V','S','D']
 const DIAS_FULL = ['domingo','lunes','martes','miércoles','jueves','viernes','sábado']
+
+function isoLocal(d) {
+  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`
+}
 
 function fmtHoyHeader() {
   const d = new Date()
@@ -18,34 +32,99 @@ function fmtHoyHeader() {
   return `${dia.charAt(0).toUpperCase()}${dia.slice(1,3)} · ${d.getDate()} ${MESES_C[d.getMonth()]}`
 }
 
-const pendiente = a => !a.cerrado && (!a.albaranProveedor || !a.origen)
+function labelFechaSec(fechaISO) {
+  if (!fechaISO || fechaISO === 'Sin fecha') return 'Sin fecha'
+  const [y, m, d] = fechaISO.split('-').map(Number)
+  const hoy = isoLocal(new Date())
+  const man = isoLocal(new Date(new Date().setDate(new Date().getDate() + 1)))
+  const aye = isoLocal(new Date(new Date().setDate(new Date().getDate() - 1)))
+  const dow  = new Date(y, m-1, d).getDay()
+  const base = `${DIAS_FULL[dow].slice(0,3)} ${d} ${MESES_C[m-1]}`
+  if (fechaISO === hoy) return `Hoy · ${base}`
+  if (fechaISO === man) return `Mañana · ${base}`
+  if (fechaISO === aye) return `Ayer · ${base}`
+  return base
+}
 
-function TarjetaAlbaran({ a, nombre, codigo, onCambio }) {
-  const [subiendo,  setSubiendo]  = useState(false)
+function CalendarioSemana({ albaranes, diaSeleccionado, onDiaClick }) {
+  const hoy    = new Date()
+  const hoyStr = isoLocal(hoy)
+
+  const dias = Array.from({ length: 7 }, (_, i) => {
+    const d   = new Date(hoy); d.setDate(hoy.getDate() + i)
+    const key = isoLocal(d)
+    return {
+      key, dow: DIAS_ABR[(d.getDay() + 6) % 7], diaN: d.getDate(),
+      countActivo: albaranes.filter(a => a.fecha === key && !a.planificado).length,
+      countPlan:   albaranes.filter(a => a.fecha === key &&  a.planificado).length,
+      esHoy: i === 0,
+    }
+  })
+
+  const atrasados = albaranes.filter(a => !a.planificado && a.fecha < hoyStr && !a.completado).length
+  const maxTotal = Math.max(...dias.map((d, i) => d.countActivo + d.countPlan + (i === 0 ? atrasados : 0)), 1)
+
+  const barStyleFor = (countActivo, countPlan, verdeIntenso) => {
+    const activoH = countActivo > 0 ? Math.max(4, Math.round((countActivo / maxTotal) * 28)) : 0
+    const planH   = countPlan   > 0 ? Math.max(3, Math.round((countPlan   / maxTotal) * 28)) : 0
+    const totalH  = Math.min(Math.max(activoH + planH, 2), 28)
+    const style = { height: `${totalH}px` }
+    if (planH > 0 && activoH > 0)
+      style.background = `linear-gradient(to top, var(--green-${verdeIntenso ? '500' : '400'}) ${activoH}px, var(--green-${verdeIntenso ? '200' : '100'}) ${activoH}px)`
+    else if (planH > 0)
+      style.background = verdeIntenso ? 'rgba(255,255,255,0.25)' : 'var(--green-100)'
+    return style
+  }
+
+  return (
+    <div className="pi-semana">
+      {dias.map((d, i) => {
+        const countActivo = d.countActivo + (i === 0 ? atrasados : 0)
+        const empty       = countActivo === 0 && d.countPlan === 0
+        const selected    = d.esHoy ? diaSeleccionado === 'hoy' : d.key === diaSeleccionado
+        return (
+          <div
+            key={d.key}
+            className={`pi-semana-dia${d.esHoy ? ' hoy' : ''}${selected ? ' seleccionado' : ''}`}
+            onClick={() => onDiaClick?.(d.esHoy || selected ? 'hoy' : d.key)}
+          >
+            {d.esHoy ? (
+              <>
+                <span className="pi-semana-dow" style={{ visibility: 'hidden' }}>·</span>
+                <span className="pi-semana-num pi-semana-num-hoy">HOY</span>
+              </>
+            ) : (
+              <>
+                <span className="pi-semana-dow">{d.dow}</span>
+                <span className="pi-semana-num">{d.diaN}</span>
+              </>
+            )}
+            <div className="pi-semana-bar-wrap">
+              <div className="pi-semana-bar" style={barStyleFor(countActivo, d.countPlan, d.esHoy)} />
+            </div>
+            <span className={`pi-semana-count${empty ? ' vacio' : countActivo === 0 ? ' plan' : ''}`}>
+              {countActivo > 0 ? countActivo : (d.countPlan > 0 ? `+${d.countPlan}` : '·')}
+            </span>
+            {d.esHoy && atrasados > 0 && (
+              <span className="pi-semana-hoy-dot" title={`${atrasados} atrasado${atrasados !== 1 ? 's' : ''} de días anteriores`} />
+            )}
+          </div>
+        )
+      })}
+    </div>
+  )
+}
+
+// Origen + albarán del proveedor: lo único que se le pide.
+function CompletarAlbaran({ a, nombre, codigo, onCambio }) {
   const [origen,    setOrigen]    = useState('')
   const [guardando, setGuardando] = useState(false)
+  const [subiendo,  setSubiendo]  = useState(false)
   const [error,     setError]     = useState('')
   const fileRef = useRef(null)
 
-  const qs = `?c=${encodeURIComponent(codigo)}`
+  const qs   = `?c=${encodeURIComponent(codigo)}`
   const base = encodeURIComponent(nombre)
-
-  const subir = async (file) => {
-    if (!file) return
-    setSubiendo(true); setError('')
-    try {
-      const fd = new FormData()
-      fd.append('file', file)
-      const res = await fetch(`/api/storage/upload-proveedor/${base}/${a.id}${qs}`, { method: 'POST', body: fd })
-      if (!res.ok) throw new Error((await res.json().catch(() => ({}))).error || 'No se pudo subir el fichero')
-      await onCambio()
-    } catch (e) {
-      setError(e.message)
-    } finally {
-      setSubiendo(false)
-      if (fileRef.current) fileRef.current.value = ''
-    }
-  }
 
   const guardarOrigen = async () => {
     if (!origen.trim()) return
@@ -58,108 +137,187 @@ function TarjetaAlbaran({ a, nombre, codigo, onCambio }) {
       })
       if (!res.ok) throw new Error((await res.json().catch(() => ({}))).error || 'No se pudo guardar el origen')
       await onCambio()
-    } catch (e) {
-      setError(e.message)
-    } finally {
-      setGuardando(false)
+    } catch (e) { setError(e.message) } finally { setGuardando(false) }
+  }
+
+  const subir = async (file) => {
+    if (!file) return
+    setSubiendo(true); setError('')
+    try {
+      const fd = new FormData()
+      fd.append('file', file)
+      const res = await fetch(`/api/storage/upload-proveedor/${base}/${a.id}${qs}`, { method: 'POST', body: fd })
+      if (!res.ok) throw new Error((await res.json().catch(() => ({}))).error || 'No se pudo subir el fichero')
+      await onCambio()
+    } catch (e) { setError(e.message) } finally {
+      setSubiendo(false)
+      if (fileRef.current) fileRef.current.value = ''
     }
   }
 
-  const completo = !pendiente(a)
-  const especie  = [a.especie, a.tipoBiomasa, a.estella].filter(Boolean).join(' · ')
-  const fechaHora = [fmtFecha(a.fecha), a.hora ? String(a.hora).slice(0,5) : null].filter(Boolean).join(' · ')
-  const fila = { display: 'flex', alignItems: 'center', gap: 10, padding: '10px 14px', borderTop: '1px solid var(--gray-100)' }
+  const etiqueta = { fontSize: 11, fontWeight: 600, color: 'var(--gray-500)', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 6 }
+  const input    = { flex: 1, minWidth: 0, padding: '9px 11px', fontSize: 14, border: '1px solid var(--gray-200)', borderRadius: 8, background: '#fff' }
+  const boton    = (activo) => ({ padding: '9px 14px', borderRadius: 8, border: 'none', fontSize: 13, fontWeight: 600, background: activo ? 'var(--green-400)' : 'var(--gray-200)', color: activo ? '#fff' : 'var(--gray-400)', cursor: activo ? 'pointer' : 'default', display: 'inline-flex', alignItems: 'center', gap: 6, flexShrink: 0 })
+
+  return (
+    <div style={{ padding: '4px 14px 14px', background: 'var(--gray-50)', borderBottom: '1px solid var(--gray-100)', display: 'flex', flexDirection: 'column', gap: 14 }} onClick={e => e.stopPropagation()}>
+      <div>
+        <div style={etiqueta}>Origen</div>
+        {a.origen ? (
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 14, color: 'var(--gray-800)' }}>
+            <CheckCircle size={16} color="var(--green-400)" /> {a.origen}
+          </div>
+        ) : (
+          <div style={{ display: 'flex', gap: 8 }}>
+            <input type="text" value={origen} onChange={e => setOrigen(e.target.value)} placeholder="Paraje / término municipal"
+              onKeyDown={e => { if (e.key === 'Enter') guardarOrigen() }} style={input} />
+            <button onClick={guardarOrigen} disabled={!origen.trim() || guardando} style={boton(origen.trim() && !guardando)}>
+              {guardando ? '…' : 'Guardar'}
+            </button>
+          </div>
+        )}
+      </div>
+
+      <div>
+        <div style={etiqueta}>Albarán</div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          {a.albaranProveedor ? (
+            <a href={a.albaranProveedor.url} target="_blank" rel="noreferrer"
+              style={{ flex: 1, minWidth: 0, display: 'flex', alignItems: 'center', gap: 8, fontSize: 14, color: 'var(--gray-800)', textDecoration: 'none' }}>
+              <CheckCircle size={16} color="var(--green-400)" style={{ flexShrink: 0 }} />
+              <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', textDecoration: 'underline', textDecorationColor: 'var(--gray-300)' }}>
+                {a.albaranProveedor.nombreFichero || 'Ver albarán'}
+              </span>
+            </a>
+          ) : (
+            <span style={{ flex: 1, display: 'flex', alignItems: 'center', gap: 8, fontSize: 13, color: 'var(--gray-400)' }}>
+              <FileText size={16} /> PDF o foto
+            </span>
+          )}
+          <button onClick={() => fileRef.current?.click()} disabled={subiendo}
+            style={a.albaranProveedor ? { ...boton(!subiendo), background: '#fff', color: 'var(--gray-600)', border: '1px solid var(--gray-200)' } : boton(!subiendo)}>
+            <Upload size={14} /> {subiendo ? 'Subiendo…' : a.albaranProveedor ? 'Cambiar' : 'Adjuntar'}
+          </button>
+          <input ref={fileRef} type="file" accept="application/pdf,image/jpeg,image/png,image/webp" style={{ display: 'none' }}
+            onChange={e => subir(e.target.files?.[0])} />
+        </div>
+      </div>
+
+      {error && <div style={{ fontSize: 12, color: 'var(--red-700)' }}>{error}</div>}
+    </div>
+  )
+}
+
+function InfoCamion({ a }) {
+  const especie    = [a.especie, a.estella].filter(Boolean).join(' · ')
+  const fechaHora  = [fmtFecha(a.fecha), a.hora ? String(a.hora).slice(0,5) : null].filter(Boolean).join(' · ')
+  const esAtrasado = !a.planificado && !a.completado && a.fecha && a.fecha < isoLocal(new Date())
+  const falta = [!a.origen && 'origen', !a.albaranProveedor && 'albarán'].filter(Boolean).join(' y ')
+
+  return (
+    <div>
+      <div className="pi-camion-id">
+        Albarán {a.id}
+        {esAtrasado && <span className="pi-camion-atrasado-tag">Atrasado</span>}
+      </div>
+      {a.transportista && <div className="pi-camion-matricula" style={{ fontFamily: 'inherit' }}>{a.transportista}</div>}
+      {especie   && <div className="pi-camion-meta">{especie}</div>}
+      {fechaHora && <div className="pi-camion-meta">{fechaHora}</div>}
+      {a.completado
+        ? <div className="pi-camion-meta verde">✓ Completado{a.completadoFecha ? ` · ${fmtFirmaTs(a.completadoFecha)}` : ''}</div>
+        : !a.planificado && falta && <div className="pi-camion-meta">Falta {falta}</div>}
+    </div>
+  )
+}
+
+function TarjetaCamion({ a, esUltimo, abierto, onToggle, nombre, codigo, onCambio }) {
+  const planificado = a.planificado
+  const estadoClass = planificado ? 'planificado' : (a.completado ? 'firmado' : 'pendiente')
+
+  return (
+    <>
+      <div
+        className={`pi-camion ${estadoClass}`}
+        onClick={planificado ? undefined : onToggle}
+        style={{ cursor: planificado ? 'default' : 'pointer', borderBottom: esUltimo && !abierto ? 'none' : undefined, opacity: abierto ? 1 : undefined }}
+      >
+        <div className="pi-camion-left">
+          <InfoCamion a={a} />
+        </div>
+        <div className="pi-camion-right">
+          {planificado
+            ? <span className="pi-camion-plan-tag">Planificado</span>
+            : a.completado && !abierto
+            ? <CheckCircle size={20} color="var(--green-400)" />
+            : <div className="pi-btn-firmar">{abierto ? <>Cerrar <ChevronDown size={14} /></> : <>Completar <ChevronRight size={14} /></>}</div>
+          }
+        </div>
+      </div>
+      {abierto && <CompletarAlbaran a={a} nombre={nombre} codigo={codigo} onCambio={onCambio} />}
+    </>
+  )
+}
+
+function GrupoInstalacion({ instalacion, albaranes, abiertoId, setAbiertoId, nombre, codigo, onCambio }) {
+  const activos    = albaranes.filter(a => !a.planificado)
+  const planSorted = albaranes.filter(a => a.planificado)
+    .sort((a, b) => (a.fecha || '').localeCompare(b.fecha || '') || 0)
+  const completos  = activos.filter(a => a.completado).length
+  const total      = activos.length
+  const pct        = total > 0 ? Math.round((completos / total) * 100) : 0
+
+  const sorted = [...activos].sort((a, b) => {
+    if (!a.completado && b.completado) return -1
+    if (a.completado && !b.completado) return 1
+    return (a.fecha || '').localeCompare(b.fecha || '')
+  })
+
+  const tarjeta = (a, esUltimo) => (
+    <TarjetaCamion key={a.id} a={a} esUltimo={esUltimo}
+      abierto={abiertoId === a.id}
+      onToggle={() => setAbiertoId(abiertoId === a.id ? null : a.id)}
+      nombre={nombre} codigo={codigo} onCambio={onCambio} />
+  )
 
   return (
     <div className="pi-flota">
       <div className="pi-flota-header">
         <div className="pi-flota-icon"><MapPin size={15} color="var(--green-600)" /></div>
         <div style={{ flex: 1, minWidth: 0 }}>
-          <div className="pi-flota-title">Albarán {a.id}</div>
-          <div className="pi-flota-sub">{[a.instalacion, fechaHora].filter(Boolean).join(' · ')}</div>
-          {especie && <div className="pi-flota-sub">{especie}</div>}
+          <div className="pi-flota-title" style={{ overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{instalacion}</div>
+          <div className="pi-flota-sub">{total} albarán{total !== 1 ? 'es' : ''}{planSorted.length > 0 ? ` · ${planSorted.length} planificado${planSorted.length !== 1 ? 's' : ''}` : ''}</div>
         </div>
-        {a.cerrado
-          ? <span className="pi-camion-plan-tag">Cerrado</span>
-          : completo
-          ? <CheckCircle size={20} color="var(--green-400)" />
-          : <span className="pi-camion-atrasado-tag">Pendiente</span>}
+        <div className="pi-flota-badge">{completos}/{total}</div>
       </div>
-
-      {a.referenciaSure && (
-        <div style={{ ...fila, fontSize: 12, color: 'var(--green-600)' }}>
-          <ShieldCheck size={14} /> SURE · {a.referenciaSure}
-        </div>
-      )}
-
-      {/* Albarán del proveedor */}
-      <div style={fila}>
-        <FileText size={15} color={a.albaranProveedor ? 'var(--green-400)' : 'var(--gray-300)'} style={{ flexShrink: 0 }} />
-        <div style={{ flex: 1, minWidth: 0 }}>
-          <div style={{ fontSize: 13, fontWeight: 500, color: 'var(--gray-800)' }}>Tu albarán</div>
-          {a.albaranProveedor
-            ? <a href={a.albaranProveedor.url} target="_blank" rel="noreferrer"
-                style={{ fontSize: 11, color: 'var(--blue-700)', display: 'block', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                {a.albaranProveedor.nombreFichero || 'Ver fichero'}
-              </a>
-            : <div style={{ fontSize: 11, color: 'var(--gray-400)' }}>Sin adjuntar · PDF o foto</div>}
-        </div>
-        {!a.cerrado && (
-          <>
-            <button className="pi-btn-firmar" disabled={subiendo} onClick={() => fileRef.current?.click()}
-              style={{ cursor: subiendo ? 'default' : 'pointer', opacity: subiendo ? 0.6 : 1 }}>
-              <Upload size={13} /> {subiendo ? 'Subiendo…' : a.albaranProveedor ? 'Cambiar' : 'Adjuntar'}
-            </button>
-            <input ref={fileRef} type="file" accept="application/pdf,image/jpeg,image/png,image/webp" style={{ display: 'none' }}
-              onChange={e => subir(e.target.files?.[0])} />
-          </>
-        )}
+      <div className="pi-progress-bar">
+        <div className="pi-progress-fill" style={{ width: `${pct}%` }} />
       </div>
-
-      {/* Origen */}
-      <div style={{ ...fila, alignItems: a.origen || a.cerrado ? 'center' : 'flex-start' }}>
-        <MapPin size={15} color={a.origen ? 'var(--green-400)' : 'var(--gray-300)'} style={{ flexShrink: 0, marginTop: a.origen || a.cerrado ? 0 : 8 }} />
-        <div style={{ flex: 1, minWidth: 0 }}>
-          <div style={{ fontSize: 13, fontWeight: 500, color: 'var(--gray-800)' }}>Origen</div>
-          {a.origen ? (
-            <div style={{ fontSize: 12, color: 'var(--gray-600)' }}>{a.origen}</div>
-          ) : a.cerrado ? (
-            <div style={{ fontSize: 11, color: 'var(--gray-400)' }}>—</div>
-          ) : (
-            <div style={{ display: 'flex', gap: 6, marginTop: 4 }}>
-              <input type="text" value={origen} onChange={e => setOrigen(e.target.value)}
-                onKeyDown={e => { if (e.key === 'Enter') guardarOrigen() }}
-                placeholder="Paraje / término municipal"
-                style={{ flex: 1, minWidth: 0, padding: '7px 10px', fontSize: 13, border: '1px solid var(--gray-200)', borderRadius: 8 }} />
-              <button className="pi-btn-firmar" onClick={guardarOrigen} disabled={!origen.trim() || guardando}
-                style={{ cursor: !origen.trim() || guardando ? 'default' : 'pointer', opacity: !origen.trim() || guardando ? 0.5 : 1 }}>
-                {guardando ? '…' : 'Guardar'}
-              </button>
-            </div>
-          )}
-        </div>
+      <div className="pi-camiones-list">
+        {sorted.map((a, i) => tarjeta(a, i === sorted.length - 1 && planSorted.length === 0))}
+        {planSorted.length > 0 && <div className="pi-planif-sep">Planificado</div>}
+        {planSorted.map((a, i) => tarjeta(a, i === planSorted.length - 1))}
       </div>
-
-      {error && (
-        <div style={{ padding: '8px 14px', fontSize: 12, color: 'var(--red-700)', background: 'var(--red-50)', borderTop: '1px solid var(--red-100)' }}>
-          {error}
-        </div>
-      )}
     </div>
   )
 }
 
+const VERDE_DEFAULT = '#14532d'
+
 export default function PanelProveedor() {
-  const { nombre } = useParams()
-  const location   = useLocation()
+  const { nombre }  = useParams()
+  const location    = useLocation()
   const nombreProveedor = decodeURIComponent(nombre).replace(/-/g, ' ')
   const [codigo] = useState(() => new URLSearchParams(location.search).get('c') || '')
 
-  const [albaranes,      setAlbaranes]      = useState([])
-  const [loading,        setLoading]        = useState(true)
-  const [codigoInvalido, setCodigoInvalido] = useState(false)
-  const [refreshing,     setRefreshing]     = useState(false)
-  const [lastUpdate,     setLastUpdate]     = useState(null)
+  const [albaranes,       setAlbaranes]      = useState([])
+  const [loading,         setLoading]        = useState(true)
+  const [codigoInvalido,  setCodigoInvalido] = useState(false)
+  const [lastUpdate,      setLastUpdate]     = useState(null)
+  const [refreshing,      setRefreshing]     = useState(false)
+  const [showOk,          setShowOk]         = useState(false)
+  const [diaSeleccionado, setDiaSeleccionado] = useState('hoy')
+  const [abiertoId,       setAbiertoId]      = useState(null)
+  const showOkTimer = useRef(null)
 
   const fetchData = useCallback(async (manual = false) => {
     if (manual) setRefreshing(true)
@@ -169,7 +327,12 @@ export default function PanelProveedor() {
       const data = await res.json()
       setAlbaranes(Array.isArray(data) ? data : [])
       setLastUpdate(new Date())
-    } catch {} finally {
+      if (manual) {
+        clearTimeout(showOkTimer.current)
+        setShowOk(true)
+        showOkTimer.current = setTimeout(() => setShowOk(false), 2500)
+      }
+    } catch { /* sin conexión: se reintenta en el siguiente ciclo */ } finally {
       setLoading(false)
       if (manual) setRefreshing(false)
     }
@@ -177,24 +340,53 @@ export default function PanelProveedor() {
 
   useEffect(() => {
     fetchData()
-    const id = setInterval(fetchData, 60000)
+    const id = setInterval(fetchData, 30000)
     return () => clearInterval(id)
   }, [fetchData])
 
-  const pendientes = albaranes.filter(pendiente)
-  const resto      = albaranes.filter(a => !pendiente(a))
+  const hoyStr = isoLocal(new Date())
+  const esTrabajableHoy = a =>
+    a.fecha === hoyStr || (!a.planificado && a.fecha < hoyStr && !a.completado)
+
+  const albaranesFiltrados = diaSeleccionado === 'hoy'
+    ? albaranes.filter(esTrabajableHoy)
+    : albaranes.filter(a => a.fecha === diaSeleccionado)
+
+  const grupos = {}
+  albaranesFiltrados.forEach(a => {
+    const key = a.instalacion || '—'
+    if (!grupos[key]) grupos[key] = []
+    grupos[key].push(a)
+  })
+  const gruposOrdenados = Object.entries(grupos).sort(([, a], [, b]) => {
+    const aPend = a.some(x => !x.planificado && !x.completado)
+    const bPend = b.some(x => !x.planificado && !x.completado)
+    if (aPend && !bPend) return -1
+    if (!aPend && bPend) return 1
+    return 0
+  })
+
+  const activos    = albaranesFiltrados.filter(a => !a.planificado)
+  const pendientes = activos.filter(a => !a.completado).length
+  const total      = activos.length
 
   return (
     <div className="pi-page">
-      <div className="pi-header" style={{ background: '#14532d' }}>
+      <div className="pi-header" style={{ background: VERDE_DEFAULT }}>
         <div className="pi-header-logo"><Leaf size={14} color="#fff" /></div>
         <div>
           <div className="pi-header-title">Proveedor</div>
           <div className="pi-header-sub">{nombreProveedor}</div>
           <div className="pi-header-date">{fmtHoyHeader()}</div>
         </div>
-        <div style={{ marginLeft: 'auto' }}>
-          <button className={`pi-refresh${refreshing ? ' pi-refresh-spin' : ''}`} onClick={() => fetchData(true)} title="Actualizar" disabled={refreshing}>
+        <div style={{ marginLeft:'auto', display:'flex', alignItems:'center', gap:8 }}>
+          {showOk && <span className="pi-refresh-ok">✓ Actualizado</span>}
+          <button
+            className={`pi-refresh${refreshing ? ' pi-refresh-spin' : ''}`}
+            onClick={() => fetchData(true)}
+            title="Actualizar"
+            disabled={refreshing}
+          >
             <RefreshCw size={14} />
           </button>
         </div>
@@ -211,38 +403,65 @@ export default function PanelProveedor() {
         <div className="pi-empty">
           <CheckCircle size={40} color="var(--green-400)" />
           <div className="pi-empty-title">Todo al día</div>
-          <div className="pi-empty-sub">No tienes albaranes en curso.</div>
+          <div className="pi-empty-sub">No hay albaranes pendientes.</div>
+          {lastUpdate && <div className="pi-last-update">{labelFechaSec(isoLocal(lastUpdate))} · {lastUpdate.toLocaleTimeString('es-ES', { hour:'2-digit', minute:'2-digit' })}</div>}
         </div>
       ) : (
         <>
           <div className="pi-resumen">
             <div className="pi-resumen-item">
-              <span className="pi-resumen-num">{pendientes.length}</span>
-              <span className="pi-resumen-label">pendiente{pendientes.length !== 1 ? 's' : ''}</span>
+              <span className="pi-resumen-num">{pendientes}</span>
+              <span className="pi-resumen-label">pendiente{pendientes !== 1 ? 's' : ''}</span>
             </div>
             <div className="pi-resumen-sep" />
             <div className="pi-resumen-item">
-              <span className="pi-resumen-num">{albaranes.length}</span>
+              <span className="pi-resumen-num">{total - pendientes}</span>
+              <span className="pi-resumen-label">completado{total - pendientes !== 1 ? 's' : ''}</span>
+            </div>
+            <div className="pi-resumen-sep" />
+            <div className="pi-resumen-item">
+              <span className="pi-resumen-num">{total}</span>
               <span className="pi-resumen-label">total</span>
             </div>
           </div>
 
-          {pendientes.length > 0 && (
-            <div className="pi-section">
-              <div className="pi-section-label">Pendientes de completar</div>
-              {pendientes.map(a => <TarjetaAlbaran key={a.id} a={a} nombre={nombreProveedor} codigo={codigo} onCambio={fetchData} />)}
+          <CalendarioSemana
+            albaranes={albaranes}
+            diaSeleccionado={diaSeleccionado}
+            onDiaClick={setDiaSeleccionado}
+          />
+
+          {diaSeleccionado !== 'hoy' && (
+            <div className="pi-filtro-dia-banner">
+              <span>{labelFechaSec(diaSeleccionado)}</span>
+              <button onClick={() => setDiaSeleccionado('hoy')}>Hoy</button>
             </div>
           )}
-          {resto.length > 0 && (
-            <div className="pi-section">
-              <div className="pi-section-label">Completados</div>
-              {resto.map(a => <TarjetaAlbaran key={a.id} a={a} nombre={nombreProveedor} codigo={codigo} onCambio={fetchData} />)}
-            </div>
-          )}
+          <div className="pi-section">
+            {albaranesFiltrados.length === 0 ? (
+              <div className="pi-empty-dia">
+                <div className="pi-empty-dia-title">{diaSeleccionado === 'hoy' ? 'Sin albaranes hoy' : 'Sin albaranes para este día'}</div>
+                {diaSeleccionado !== 'hoy' && (
+                  <button className="pi-empty-dia-btn" onClick={() => setDiaSeleccionado('hoy')}>Volver a hoy</button>
+                )}
+              </div>
+            ) : gruposOrdenados.map(([instalacion, albs]) => (
+              <GrupoInstalacion
+                key={instalacion}
+                instalacion={instalacion}
+                albaranes={albs}
+                abiertoId={abiertoId}
+                setAbiertoId={setAbiertoId}
+                nombre={nombreProveedor}
+                codigo={codigo}
+                onCambio={fetchData}
+              />
+            ))}
+          </div>
 
           {lastUpdate && (
             <div className="pi-last-update-bar">
-              Actualizado {lastUpdate.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' })} · Se actualiza automáticamente
+              {labelFechaSec(isoLocal(lastUpdate))} · {lastUpdate.toLocaleTimeString('es-ES', { hour:'2-digit', minute:'2-digit' })} · Se actualiza automáticamente
             </div>
           )}
         </>
