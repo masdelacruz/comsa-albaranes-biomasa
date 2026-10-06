@@ -485,7 +485,15 @@ export default function Administracion({ usuario }) {
                           </span>
                         )}
                       </td>
-                      <td className="contacto-col" style={{ color: 'var(--gray-600)' }}>{p.contacto || <span style={{ color: 'var(--gray-300)' }}>—</span>}</td>
+                      <td className="contacto-col" style={{ color: 'var(--gray-600)' }}>
+                        {p.contacto || <span style={{ color: 'var(--gray-300)' }}>—</span>}
+                        {(p.contactos?.length || 0) > 1 && (
+                          <span title={p.contactos.slice(1).map(c => c.nombre).filter(Boolean).join(', ')}
+                            style={{ marginLeft: 6, fontSize: 10.5, fontWeight: 600, color: 'var(--gray-500)', background: 'var(--gray-100)', borderRadius: 99, padding: '1px 6px' }}>
+                            +{p.contactos.length - 1}
+                          </span>
+                        )}
+                      </td>
                       <td style={{ color: 'var(--blue-700)' }}>
                         {p.email
                           ? <a href={`mailto:${p.email}`} onClick={e => e.stopPropagation()} style={{ color: 'var(--blue-700)' }}>{p.email}</a>

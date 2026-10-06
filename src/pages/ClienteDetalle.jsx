@@ -8,7 +8,7 @@ import {
 import { api } from '../lib/api'
 import { Badge } from '../components/Badge'
 import EmpresaModal from '../components/EmpresaModal'
-import { SECCIONES_CLIENTES, TIPOS_CLIENTE, slugify, panelUrl } from '../utils/clientes'
+import { SECCIONES_CLIENTES, TIPOS_CLIENTE, slugify, panelUrl, contactosEmpresa, telHref } from '../utils/clientes'
 import '../components/shared.css'
 import './Clientes.css'
 import './ClienteDetalle.css'
@@ -66,6 +66,7 @@ export default function ClienteDetalle({ albaranes = [], usuario }) {
   const menuRef   = useRef(null)
   const refActividad = useRef(null)
   const refAlbaranes = useRef(null)
+  const refContacto  = useRef(null)
 
   const fetchCliente = async () => {
     try {
@@ -167,14 +168,19 @@ export default function ClienteDetalle({ albaranes = [], usuario }) {
   const kgPeriodo = meses.reduce((s, m) => s + m.kg, 0)
   const maxRel = Math.max(1, ...stats.relaciones.map(r => r[1]))
   const [destacado, ...resto] = stats.propios
-  const telHref = cliente.telefono && `tel:${cliente.telefono.replace(/\s+/g, '')}`
+  const contactos = contactosEmpresa(cliente)
+  const principal = contactos[0] || null
+  const telPrincipal = telHref(principal?.telefono)
 
-  const datosContacto = [
-    { icon: UserRound, label: 'Persona de contacto', valor: cliente.contacto },
-    { icon: Phone,     label: 'Teléfono', valor: cliente.telefono, href: telHref },
+  // Franja superior: contacto principal (+N si hay más), su teléfono, email y horario
+  const datosHero = [
+    { icon: UserRound, label: contactos.length > 1 ? 'Contacto principal' : 'Persona de contacto', valor: principal?.nombre, extra: contactos.length > 1 ? `+${contactos.length - 1}` : null },
+    { icon: Phone,     label: 'Teléfono', valor: principal?.telefono, href: telPrincipal },
     { icon: Mail,      label: 'Email', valor: cliente.email, href: cliente.email && `mailto:${cliente.email}` },
     ...(cliente.tipo === 'proveedor' ? [] : [{ icon: Clock, label: 'Horario', valor: cliente.horario }]),
   ]
+  // Tarjeta Contacto: las personas van en su propia lista; aquí el resto
+  const datosEmpresa = datosHero.slice(2)
 
   const kpis = [
     { icon: FileText,  label: 'Albaranes',     valor: stats.total, sub: `${stats.cerrados} ${stats.cerrados === 1 ? 'cerrado' : 'cerrados'}`, ref: refAlbaranes, tono: 'green' },
@@ -233,20 +239,20 @@ export default function ClienteDetalle({ albaranes = [], usuario }) {
                 <RefreshCw size={14} className={regenerando ? 'cd-girando' : ''} />
               </button>
             )}
-            {(puedeGestionar || cliente.telefono || cliente.email) && (
+            {(puedeGestionar || principal?.telefono || cliente.email) && (
             <div className="cd-menu-wrap" ref={menuRef}>
               <button className={`cd-btn cd-btn-icon ${menuAbierto ? 'activo' : ''}`} onClick={() => setMenuAbierto(v => !v)} title="Más opciones">
                 <Ellipsis size={16} />
               </button>
               {menuAbierto && (
                 <div className="cd-menu">
-                  {cliente.telefono && <a href={telHref} onClick={() => setMenuAbierto(false)}><PhoneCall size={14} /> Llamar</a>}
+                  {principal?.telefono && <a href={telPrincipal} onClick={() => setMenuAbierto(false)}><PhoneCall size={14} /> Llamar</a>}
                   {cliente.email && <a href={`mailto:${cliente.email}`} onClick={() => setMenuAbierto(false)}><Send size={14} /> Enviar email</a>}
-                  {cliente.telefono && <button onClick={() => { copiar(cliente.telefono, 'tel'); setMenuAbierto(false) }}><Copy size={14} /> Copiar teléfono</button>}
+                  {principal?.telefono && <button onClick={() => { copiar(principal?.telefono, 'tel'); setMenuAbierto(false) }}><Copy size={14} /> Copiar teléfono</button>}
                   {cliente.email && <button onClick={() => { copiar(cliente.email, 'email'); setMenuAbierto(false) }}><Copy size={14} /> Copiar email</button>}
                   {puedeGestionar && (
                     <>
-                      {(cliente.telefono || cliente.email) && <div className="cd-menu-sep" />}
+                      {(principal?.telefono || cliente.email) && <div className="cd-menu-sep" />}
                       <button onClick={() => navigate(`/configuracion?tab=${cliente.tipo}`)}><Settings size={14} /> Ver en Configuración</button>
                       {puedeRegenerar && <button className="peligro" onClick={handleRegenerar}><RefreshCw size={14} /> Regenerar enlace</button>}
                     </>
@@ -264,13 +270,16 @@ export default function ClienteDetalle({ albaranes = [], usuario }) {
         </div>
 
         <div className="cd-hero-strip">
-          {datosContacto.map(({ icon: I, label, valor, href }) => (
+          {datosHero.map(({ icon: I, label, valor, href, extra }) => (
             <div key={label} className="cd-strip-item">
               <span className="cd-strip-icon"><I size={15} /></span>
               <div className="cd-strip-txt">
                 <div className="cd-strip-label">{label}</div>
                 {valor
-                  ? href ? <a href={href} className="cd-strip-val link">{valor}</a> : <div className="cd-strip-val">{valor}</div>
+                  ? <div className="cd-strip-val-wrap">
+                      {href ? <a href={href} className="cd-strip-val link">{valor}</a> : <div className="cd-strip-val">{valor}</div>}
+                      {extra && <button className="cd-strip-mas" onClick={() => irA(refContacto)} title="Ver todos los contactos">{extra}</button>}
+                    </div>
                   : <div className="cd-strip-val vacio">Sin indicar</div>}
               </div>
             </div>
@@ -296,10 +305,26 @@ export default function ClienteDetalle({ albaranes = [], usuario }) {
       {/* ══ Contenido ══ */}
       <section className="cd-grid">
         {/* Contacto */}
-        <div className="cd-card cd-a-contacto">
-          <CardHead icon={UserRound} titulo="Contacto" />
+        <div className="cd-card cd-a-contacto" ref={refContacto}>
+          <CardHead icon={UserRound} titulo="Contacto" extra={contactos.length > 1 ? contactos.length : null} />
+          <div className="cd-personas-contacto">
+            {contactos.length ? contactos.map((c, i) => (
+              <div key={i} className="cd-pc">
+                <span className="cd-avatar">{c.nombre ? iniciales(c.nombre) : <UserRound size={14} />}</span>
+                <div className="cd-pc-txt">
+                  <div className="cd-pc-nombre">
+                    {c.nombre || 'Sin nombre'}
+                    {i === 0 && contactos.length > 1 && <span className="cd-pc-tag">Principal</span>}
+                  </div>
+                  {c.telefono
+                    ? <a className="cd-pc-tel" href={telHref(c.telefono)}><Phone size={11} /> {c.telefono}</a>
+                    : <div className="cd-pc-tel vacio">Sin teléfono</div>}
+                </div>
+              </div>
+            )) : <div className="cd-contacto-val vacio" style={{ padding: '4px 0' }}>Sin personas de contacto</div>}
+          </div>
           <div className="cd-contacto-list">
-            {datosContacto.map(({ icon: I, label, valor, href }) => (
+            {datosEmpresa.map(({ icon: I, label, valor, href }) => (
               <div key={label} className="cd-contacto-row">
                 <span className="cd-contacto-icon"><I size={15} /></span>
                 <div style={{ minWidth: 0, flex: 1 }}>

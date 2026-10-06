@@ -30,18 +30,39 @@ async function propagarReferenciaSure(nombre, referencia) {
 // Una misma empresa puede estar dada de alta con varios tipos (p. ej.
 // proveedor y astilladora): cada tipo es una fila, pero sus datos de
 // contacto son los mismos y se mantienen sincronizados por nombre.
-const CAMPOS_COMPARTIDOS = ['contacto', 'email', 'telefono']
+const CAMPOS_COMPARTIDOS = ['contactos', 'contacto', 'email', 'telefono']
 
 async function sincronizarHermanas(id) {
   const { rows: [e] } = await pool.query(
-    'SELECT nombre, contacto, email, telefono FROM proveedores WHERE id=$1', [id]
+    'SELECT nombre, contactos, contacto, email, telefono FROM proveedores WHERE id=$1', [id]
   )
   if (!e) return
   await pool.query(
-    `UPDATE proveedores SET contacto=$1, email=$2, telefono=$3
-     WHERE lower(nombre)=lower($4) AND id<>$5`,
-    [e.contacto, e.email, e.telefono, e.nombre, id]
+    `UPDATE proveedores SET contactos=$1, contacto=$2, email=$3, telefono=$4
+     WHERE lower(nombre)=lower($5) AND id<>$6`,
+    [JSON.stringify(e.contactos || []), e.contacto, e.email, e.telefono, e.nombre, id]
   )
+}
+
+// Personas de contacto: lista de { nombre, telefono }. La primera es la
+// principal y se copia en contacto/telefono, que es lo que usan WhatsApp,
+// las llamadas y el saludo de los emails.
+function normalizarContactos(lista) {
+  if (!Array.isArray(lista)) return []
+  return lista
+    .map(c => ({
+      nombre:   toTitleCase(String(c?.nombre || '').trim()) || '',
+      telefono: String(c?.telefono || '').trim(),
+    }))
+    .filter(c => c.nombre || c.telefono)
+    .slice(0, 10)
+}
+
+function aplicarContactos(body) {
+  if (body.contactos === undefined) return
+  body.contactos = normalizarContactos(body.contactos)
+  body.contacto  = body.contactos[0]?.nombre   || null
+  body.telefono  = body.contactos[0]?.telefono || null
 }
 
 function toTitleCase(str) {
@@ -63,27 +84,33 @@ router.get('/', requireAuth, async (req, res) => {
 
 // ── POST /empresas ────────────────────────────────────────────────
 router.post('/', requireAuth, requireConfigAccess, async (req, res) => {
+  aplicarContactos(req.body)
   const { nombre, tipo, contacto, email, telefono, notas, activo, trabajadores, maquinas, horario } = req.body
   const esSure = tipo === 'proveedor' && !!req.body.es_sure
   const id = uuidv4()
   await pool.query(
-    `INSERT INTO proveedores (id,nombre,tipo,contacto,email,telefono,notas,activo,trabajadores,maquinas,horario,es_sure,referencia_sure)
-     VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13)`,
+    `INSERT INTO proveedores (id,nombre,tipo,contacto,email,telefono,notas,activo,trabajadores,maquinas,horario,es_sure,referencia_sure,contactos)
+     VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14)`,
     [id, toTitleCase(nombre), tipo, toTitleCase(contacto)||null, email||null, telefono||null, notas||null, activo??true,
      JSON.stringify(trabajadores||[]), JSON.stringify(maquinas||[]), horario||null,
-     esSure, refSure(esSure, req.body.referencia_sure)]
+     esSure, refSure(esSure, req.body.referencia_sure),
+     JSON.stringify(req.body.contactos || (contacto || telefono ? [{ nombre: toTitleCase(contacto) || '', telefono: telefono || '' }] : []))]
   )
   // Si la empresa ya existe con otro tipo, los datos que no se han indicado
   // se heredan de ella; los indicados pasan a ser los de todas.
   const { rows: [hermana] } = await pool.query(
-    'SELECT contacto, email, telefono FROM proveedores WHERE lower(nombre)=lower($1) AND id<>$2 LIMIT 1',
+    'SELECT contactos, contacto, email, telefono FROM proveedores WHERE lower(nombre)=lower($1) AND id<>$2 LIMIT 1',
     [toTitleCase(nombre), id]
   )
   if (hermana) {
-    const { rows: [nueva] } = await pool.query('SELECT contacto, email, telefono FROM proveedores WHERE id=$1', [id])
+    const { rows: [nueva] } = await pool.query('SELECT contactos, contacto, email, telefono FROM proveedores WHERE id=$1', [id])
+    // Los contactos van como bloque: o los nuevos, o los de la ficha existente
+    const deNueva = (nueva.contactos || []).length > 0
+    const origen  = deNueva ? nueva : hermana
     await pool.query(
-      'UPDATE proveedores SET contacto=$1, email=$2, telefono=$3 WHERE id=$4',
-      CAMPOS_COMPARTIDOS.map(c => nueva[c] || hermana[c] || null).concat(id)
+      'UPDATE proveedores SET contactos=$1, contacto=$2, telefono=$3, email=$4 WHERE id=$5',
+      [JSON.stringify(origen.contactos || []), origen.contacto || null, origen.telefono || null,
+       nueva.email || hermana.email || null, id]
     )
     await sincronizarHermanas(id)
   }
@@ -99,6 +126,7 @@ router.post('/', requireAuth, requireConfigAccess, async (req, res) => {
 router.patch('/:id', requireAuth, requireConfigAccess, async (req, res) => {
   if (req.body.nombre) req.body.nombre = toTitleCase(req.body.nombre)
   if (req.body.contacto) req.body.contacto = toTitleCase(req.body.contacto)
+  aplicarContactos(req.body)
   const { rows: prevRows } = await pool.query('SELECT nombre, tipo, es_sure, referencia_sure FROM proveedores WHERE id=$1', [req.params.id])
   if (!prevRows.length) return res.status(404).json({ error: 'No encontrado' })
   const prev = prevRows[0]
@@ -107,8 +135,8 @@ router.patch('/:id', requireAuth, requireConfigAccess, async (req, res) => {
     req.body.es_sure = esSure
     req.body.referencia_sure = refSure(esSure, req.body.referencia_sure ?? prev.referencia_sure)
   }
-  const fields = ['nombre','tipo','contacto','email','telefono','notas','activo','trabajadores','maquinas','horario','es_sure','referencia_sure']
-  const jsonbFields = new Set(['trabajadores', 'maquinas'])
+  const fields = ['nombre','tipo','contactos','contacto','email','telefono','notas','activo','trabajadores','maquinas','horario','es_sure','referencia_sure']
+  const jsonbFields = new Set(['trabajadores', 'maquinas', 'contactos'])
   const updates = [], vals = []
   let idx = 1
   for (const f of fields) {

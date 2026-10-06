@@ -21,7 +21,7 @@
   display: flex; align-items: center; justify-content: center;
   flex-shrink: 0;
 }
-.em-icon.proveedor     { background: #E1F5EE; color: #085041; }
+.em-icon.proveedor     { background: #F0ECFA; color: #5B3FA8; }
 .em-icon.astilladora   { background: #F3E8DA; color: #6B4423; }
 .em-icon.transportista { background: #E6F1FB; color: #0C447C; }
 .em-icon.instalacion   { background: #FAEEDA; color: #633806; }
@@ -109,4 +109,40 @@
   .em-body { padding: 4px 16px 8px; }
   .em-footer { padding: 12px 16px; }
   .em-modal .modal-grid { grid-template-columns: 1fr; }
+}
+
+/* Personas de contacto: una fila por persona, la primera es la principal */
+.em-contactos { display: flex; flex-direction: column; gap: 6px; }
+.em-contactos-head {
+  display: grid; grid-template-columns: 1.4fr 1fr 60px; gap: 8px;
+  font-size: 11.5px; font-weight: 500; color: var(--gray-600);
+  padding: 0 2px 2px;
+}
+.em-contacto {
+  display: grid; grid-template-columns: 1.4fr 1fr 28px 28px; gap: 8px; align-items: center;
+}
+.em-modal .em-contacto input { padding: 8px 11px; border-radius: 8px; min-width: 0; }
+.em-contacto-star,
+.em-contacto-quitar {
+  width: 28px; height: 28px; border-radius: 7px;
+  display: flex; align-items: center; justify-content: center;
+  background: none; color: var(--gray-300);
+}
+.em-contacto-star:hover:not(:disabled) { color: var(--green-400); background: var(--green-50); }
+.em-contacto.principal .em-contacto-star { color: var(--green-400); cursor: default; }
+.em-contacto-quitar:hover { color: var(--red-400); background: var(--red-50); }
+.em-contacto-anadir {
+  align-self: flex-start; margin-top: 2px;
+  display: inline-flex; align-items: center; gap: 5px;
+  padding: 5px 8px; border-radius: 7px;
+  font-size: 12px; font-weight: 500; color: var(--green-600); background: none;
+}
+.em-contacto-anadir:hover:not(:disabled) { background: var(--green-50); }
+.em-contacto-anadir:disabled { color: var(--gray-300); cursor: default; }
+
+@media (max-width: 520px) {
+  .em-contactos-head { display: none; }
+  .em-contacto { grid-template-columns: 1fr 28px 28px; }
+  .em-contacto input[type="tel"] { grid-column: 1; grid-row: 2; }
+  .em-contacto + .em-contacto { padding-top: 8px; border-top: var(--border-light); }
 }

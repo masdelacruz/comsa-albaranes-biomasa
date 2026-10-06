@@ -109,7 +109,7 @@ export default function Clientes({ albaranes = [], usuario }) {
                         <div className="cli-meta">
                           {!p.activo && <span className="cli-tag-inactivo">Inactivo</span>}
                           <span>{n} {n === 1 ? 'albarán' : 'albaranes'}</span>
-                          {p.contacto && <span>· {p.contacto}</span>}
+                          {p.contacto && <span>· {p.contacto}{(p.contactos?.length || 0) > 1 ? ` +${p.contactos.length - 1}` : ''}</span>}
                         </div>
                       </div>
                       <div className="cli-acciones" onClick={e => e.stopPropagation()}>

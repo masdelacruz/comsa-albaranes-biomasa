@@ -1,8 +1,15 @@
 import { useState, useRef } from 'react'
-import { Plus, Trash2, X, Check, Upload, Clock, Trees, Factory, Truck, Building2, User, Users, StickyNote, Image } from 'lucide-react'
+import { Plus, Trash2, X, Check, Upload, Clock, Star, Trees, Factory, Truck, Building2, User, Users, StickyNote, Image } from 'lucide-react'
 import { api } from '../lib/api'
 import '../pages/Administracion.css'
+import { contactosEmpresa } from '../utils/clientes'
 import './EmpresaModal.css'
+
+// Contactos para editar: siempre al menos una fila
+const contactosDe = (empresa) => {
+  const lista = contactosEmpresa(empresa).map(c => ({ nombre: c.nombre || '', telefono: c.telefono || '' }))
+  return lista.length ? lista : [CONTACTO_VACIO]
+}
 
 const TIPO_ICONS = { proveedor: Trees, astilladora: Factory, transportista: Truck, instalacion: Building2 }
 
@@ -33,7 +40,8 @@ export function normalizarTelefono(raw) {
 
 export const TIPOS = ['proveedor', 'astilladora', 'transportista', 'instalacion']
 export const TIPO_LABELS = { proveedor: 'Proveedor', astilladora: 'Astilladora', transportista: 'Transportista', instalacion: 'Instalación' }
-const EMPTY_FORM = { nombre: '', tipo: 'proveedor', contacto: '', email: '', telefono: '', notas: '', activo: true, trabajadores: [], maquinas: [], horario: '', es_sure: false, referencia_sure: '' }
+const CONTACTO_VACIO = { nombre: '', telefono: '' }
+const EMPTY_FORM = { nombre: '', tipo: 'proveedor', contactos: [CONTACTO_VACIO], email: '', notas: '', activo: true, trabajadores: [], maquinas: [], horario: '', es_sure: false, referencia_sure: '' }
 const slugify = s => s.toLowerCase().replace(/\s+/g, '_').replace(/[^a-z0-9_]/g, '')
 
 // Alta/edición de una empresa. Se usa desde Configuración y desde la ficha
@@ -46,7 +54,7 @@ const slugify = s => s.toLowerCase().replace(/\s+/g, '_').replace(/[^a-z0-9_]/g,
 export default function EmpresaModal({ empresa, tipoInicial = 'proveedor', logos = {}, onLogoChange, onClose, onSaved }) {
   const editando = empresa?.id || null
   const [form, setForm] = useState(() => empresa
-    ? { nombre: empresa.nombre, tipo: empresa.tipo, contacto: empresa.contacto || '', email: empresa.email || '', telefono: empresa.telefono || '', notas: empresa.notas || '', activo: empresa.activo, trabajadores: empresa.trabajadores || [], maquinas: empresa.maquinas || [], horario: empresa.horario || '', es_sure: !!empresa.es_sure, referencia_sure: empresa.referencia_sure || '' }
+    ? { nombre: empresa.nombre, tipo: empresa.tipo, contactos: contactosDe(empresa), email: empresa.email || '', notas: empresa.notas || '', activo: empresa.activo, trabajadores: empresa.trabajadores || [], maquinas: empresa.maquinas || [], horario: empresa.horario || '', es_sure: !!empresa.es_sure, referencia_sure: empresa.referencia_sure || '' }
     : { ...EMPTY_FORM, tipo: tipoInicial })
   const [guardando, setGuardando]                 = useState(false)
   const [subiendoLogo, setSubiendoLogo]           = useState({})
@@ -55,6 +63,15 @@ export default function EmpresaModal({ empresa, tipoInicial = 'proveedor', logos
   const logoFileRefs = useRef({})
 
   const set = (k, v) => setForm(f => ({ ...f, [k]: v }))
+
+  // Personas de contacto: la primera es la principal (WhatsApp, llamadas, emails)
+  const setContacto = (i, k, v) => setForm(f => ({ ...f, contactos: f.contactos.map((c, j) => j === i ? { ...c, [k]: v } : c) }))
+  const quitarContacto = (i) => setForm(f => {
+    const resto = f.contactos.filter((_, j) => j !== i)
+    return { ...f, contactos: resto.length ? resto : [CONTACTO_VACIO] }
+  })
+  const hacerPrincipal = (i) => setForm(f => ({ ...f, contactos: [f.contactos[i], ...f.contactos.filter((_, j) => j !== i)] }))
+  const anadirContacto = () => setForm(f => ({ ...f, contactos: [...f.contactos, CONTACTO_VACIO] }))
   const cerrarModal = onClose
 
   const handleGuardar = async () => {
@@ -65,8 +82,9 @@ export default function EmpresaModal({ empresa, tipoInicial = 'proveedor', logos
       const datos = {
         ...form,
         nombre:      toTitleCase(form.nombre.trim()),
-        contacto:    form.contacto ? toTitleCase(form.contacto.trim()) : '',
-        telefono:    normalizarTelefono(form.telefono),
+        contactos:   form.contactos
+          .map(c => ({ nombre: toTitleCase(c.nombre.trim()), telefono: normalizarTelefono(c.telefono) }))
+          .filter(c => c.nombre || c.telefono),
         trabajadores: (form.trabajadores || []).map(t => toTitleCase(t.trim())).filter(Boolean),
         maquinas:    (form.maquinas || []).filter(m => m.matricula?.trim()).map(m => ({ nombre: m.nombre?.trim() || '', matricula: m.matricula.trim().toUpperCase() })),
       }
@@ -165,18 +183,34 @@ export default function EmpresaModal({ empresa, tipoInicial = 'proveedor', logos
 
             <section className="em-section">
               <div className="em-section-title"><User size={12} /> Contacto</div>
-              <div className="modal-grid">
-                <div className="modal-field">
-                  <label>Persona de contacto</label>
-                  <input type="text" placeholder="Nombre y apellido" value={form.contacto} onChange={e => set('contacto', e.target.value)} onBlur={e => set('contacto', toTitleCase(e.target.value))} />
+              <div className="em-contactos">
+                <div className="em-contactos-head">
+                  <span>Persona de contacto</span>
+                  <span>Teléfono</span>
                 </div>
-                <div className="modal-field">
-                  <label>Teléfono</label>
-                  <input type="tel" placeholder="+34 600 000 000" value={form.telefono}
-                    onChange={e => set('telefono', e.target.value)}
-                    onBlur={e => set('telefono', normalizarTelefono(e.target.value))}
-                  />
-                </div>
+                {form.contactos.map((c, i) => (
+                  <div key={i} className={`em-contacto${i === 0 ? ' principal' : ''}`}>
+                    <input type="text" placeholder="Nombre y apellido" value={c.nombre}
+                      onChange={e => setContacto(i, 'nombre', e.target.value)}
+                      onBlur={e => setContacto(i, 'nombre', toTitleCase(e.target.value))} />
+                    <input type="tel" placeholder="+34 600 000 000" value={c.telefono}
+                      onChange={e => setContacto(i, 'telefono', e.target.value)}
+                      onBlur={e => setContacto(i, 'telefono', normalizarTelefono(e.target.value))} />
+                    <button type="button" className="em-contacto-star" disabled={i === 0}
+                      onClick={() => hacerPrincipal(i)}
+                      title={i === 0 ? 'Contacto principal · se usa para WhatsApp, llamadas y emails' : 'Marcar como contacto principal'}>
+                      <Star size={14} fill={i === 0 ? 'currentColor' : 'none'} />
+                    </button>
+                    <button type="button" className="em-contacto-quitar" onClick={() => quitarContacto(i)} title="Quitar contacto">
+                      <X size={14} />
+                    </button>
+                  </div>
+                ))}
+                <button type="button" className="em-contacto-anadir" onClick={anadirContacto} disabled={form.contactos.length >= 10}>
+                  <Plus size={13} /> Añadir contacto
+                </button>
+              </div>
+              <div className="modal-grid" style={{ marginTop: 14 }}>
                 <div className="modal-field full">
                   <label>Email</label>
                   <input type="email" placeholder="contacto@empresa.com" value={form.email} onChange={e => set('email', e.target.value)} />
