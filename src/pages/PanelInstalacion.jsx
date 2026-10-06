@@ -205,7 +205,7 @@ function GrupoHora({ hora, albaranes, desdeId }) {
         <div style={{ flex: 1, minWidth: 0 }}>
           <div className="pi-flota-title" style={{ overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{hora}</div>
           <div className="pi-flota-sub">
-            {total} albarán{total !== 1 ? 'es' : ''}
+            {total} {total !== 1 ? 'albaranes' : 'albarán'}
             {planifs.length > 0 ? ` · ${planifs.length} planificado${planifs.length !== 1 ? 's' : ''}` : ''}
           </div>
         </div>

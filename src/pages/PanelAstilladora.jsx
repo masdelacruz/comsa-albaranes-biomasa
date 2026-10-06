@@ -205,7 +205,7 @@ function GrupoInstalacion({ instalacion, albaranes, desdeId }) {
         <div className="pi-flota-icon"><MapPin size={15} color="var(--green-600)" /></div>
         <div style={{ flex: 1, minWidth: 0 }}>
           <div className="pi-flota-title" style={{ overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{instalacion}</div>
-          <div className="pi-flota-sub">{total} albarán{total !== 1 ? 'es' : ''}{planSorted.length > 0 ? ` · ${planSorted.length} planificado${planSorted.length !== 1 ? 's' : ''}` : ''}</div>
+          <div className="pi-flota-sub">{total} {total !== 1 ? 'albaranes' : 'albarán'}{planSorted.length > 0 ? ` · ${planSorted.length} planificado${planSorted.length !== 1 ? 's' : ''}` : ''}</div>
         </div>
         <div className="pi-flota-badge">{firmados}/{total}</div>
       </div>
