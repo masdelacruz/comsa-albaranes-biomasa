@@ -157,10 +157,9 @@ export default function Administracion({ usuario }) {
     await fetchProveedores()
   }
 
+  const tienePanel = (p) => p.tipo === 'astilladora' || p.tipo === 'instalacion' || p.tipo === 'proveedor'
   const panelUrl = (p) => {
-    const base = p.tipo === 'astilladora'
-      ? `/campo/astilladora/${p.nombre.replace(/\s+/g, '-')}`
-      : `/campo/instalacion/${p.nombre.replace(/\s+/g, '-')}`
+    const base = `/campo/${p.tipo}/${p.nombre.replace(/\s+/g, '-')}`
     return `${window.location.origin}${base}?c=${encodeURIComponent(p.acceso_codigo || '')}`
   }
 
@@ -477,7 +476,15 @@ export default function Administracion({ usuario }) {
                     <tr><td colSpan={6} className="empty-row">No hay {TIPO_LABELS[tab].toLowerCase()}s registrados</td></tr>
                   ) : filtrados.map(p => (
                     <tr key={p.id} onClick={() => abrirEditar(p)}>
-                      <td className="nombre-col" style={{ fontWeight: 500, color:'var(--blue-700)', textDecoration:'underline', textDecorationColor:'var(--gray-200)' }}>{p.nombre}</td>
+                      <td className="nombre-col" style={{ fontWeight: 500, color:'var(--blue-700)', textDecoration:'underline', textDecorationColor:'var(--gray-200)' }}>
+                        {p.nombre}
+                        {p.tipo === 'proveedor' && p.es_sure && (
+                          <span title={`Referencia SURE: ${p.referencia_sure || '—'}`}
+                            style={{ marginLeft: 8, fontSize: 10, fontWeight: 600, color: 'var(--green-600)', background: 'rgba(29,158,117,0.1)', border: '1px solid rgba(29,158,117,0.25)', borderRadius: 4, padding: '1px 6px', textDecoration: 'none', display: 'inline-block', verticalAlign: 'middle' }}>
+                            SURE · {p.referencia_sure || '—'}
+                          </span>
+                        )}
+                      </td>
                       <td className="contacto-col" style={{ color: 'var(--gray-600)' }}>{p.contacto || <span style={{ color: 'var(--gray-300)' }}>—</span>}</td>
                       <td style={{ color: 'var(--blue-700)' }}>
                         {p.email
@@ -509,7 +516,7 @@ export default function Administracion({ usuario }) {
                               <Image size={12} /> Logo
                             </button>
                           )}
-                          {(p.tipo === 'astilladora' || p.tipo === 'instalacion') && (
+                          {tienePanel(p) && (
                             <>
                               <a
                                 className="btn btn-ghost"

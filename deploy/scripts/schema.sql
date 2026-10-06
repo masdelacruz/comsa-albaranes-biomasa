@@ -31,6 +31,7 @@ CREATE TABLE IF NOT EXISTS albaranes (
   grupo_id            TEXT,        -- agrupa albaranes creados juntos (flota)
   camion_orden        INTEGER DEFAULT 1,  -- posición dentro del grupo
   campo_token         TEXT NOT NULL UNIQUE DEFAULT encode(gen_random_bytes(24), 'hex'),
+  referencia_sure     TEXT,        -- copiada del proveedor SURE (Opción 2)
   created_at          TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
@@ -112,6 +113,8 @@ CREATE TABLE IF NOT EXISTS proveedores (
   activo       BOOLEAN NOT NULL DEFAULT TRUE,
   horario      TEXT,             -- horario de apertura (astilladora / instalacion)
   acceso_codigo TEXT NOT NULL UNIQUE DEFAULT encode(gen_random_bytes(16), 'hex'),
+  es_sure      BOOLEAN NOT NULL DEFAULT FALSE,
+  referencia_sure TEXT,          -- solo proveedores SURE
   created_at   TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 

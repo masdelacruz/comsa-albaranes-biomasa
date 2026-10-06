@@ -2,7 +2,7 @@ const router = require('express').Router()
 const multer = require('multer')
 const pool   = require('../db')
 const { requireAuth, requireConfigAccess } = require('./auth')
-const { requireAuthOrCampoToken } = require('../lib/campoAuth')
+const { requireAuthOrCampoToken, requireAuthOrEmpresaCodigo } = require('../lib/campoAuth')
 const { signPath, verifySignedPath, toPath } = require('../lib/signedUrl')
 const { contentMatchesAllowlist } = require('../lib/sniffMime')
 const { registrarAuditoria } = require('../lib/auditoria')
@@ -114,6 +114,56 @@ router.post('/upload/:albaranId/ticket', requireAuthOrCampoToken(), upload.singl
     [albaranId, fecha, 'Ticket de pesada adjuntado', actor]
   )
   res.json({ url: signPath(path) })
+})
+
+// ── POST /storage/upload-proveedor/:nombre/:albaranId  (oficina o código) ──
+// El proveedor adjunta su propio albarán desde su panel (Opción 2). Solo
+// para albaranes suyos, de Opción 2 y aún abiertos; puede reemplazarlo.
+router.post('/upload-proveedor/:nombre/:albaranId', requireAuthOrEmpresaCodigo('proveedor'), upload.single('file'), async (req, res) => {
+  const minio  = req.app.get('minio')
+  const bucket = req.app.get('minio_bucket')
+  const nombre = decodeURIComponent(req.params.nombre).replace(/-/g, ' ')
+  const { albaranId } = req.params
+  const fichero = req.file
+  if (!fichero) return res.status(400).json({ error: 'Falta el fichero' })
+
+  const { rows } = await pool.query(
+    `SELECT id FROM albaranes WHERE id=$1 AND proveedor=$2 AND tipo LIKE 'Opción 2%'
+       AND estado NOT IN ('cerrado','cancelado')`,
+    [albaranId, nombre]
+  )
+  if (!rows.length) return res.status(404).json({ error: 'Albarán no encontrado o ya cerrado' })
+
+  const ext = (fichero.originalname.split('.').pop() || '').toLowerCase()
+  if (!ALLOWED_TICKET_EXTS.has(ext)) return res.status(400).json({ error: 'Formato no permitido (PDF, JPG, PNG o WEBP)' })
+  if (!contentMatchesAllowlist(fichero.buffer, [ext])) {
+    return res.status(400).json({ error: 'El contenido del fichero no coincide con su extensión' })
+  }
+
+  const docNombre = 'Albarán proveedor'
+  const path = `${albaranId}/${limpiarNombre(docNombre)}_${Date.now()}.${ext}`
+  await minio.putObject(bucket, path, fichero.buffer, fichero.size, {
+    'Content-Type': fichero.mimetype,
+  })
+
+  const upd = await pool.query(
+    `UPDATE docs SET adjunto=true, url=$1, nombre_fichero=$2, tipo_fichero=$3, tamanyo=$4
+     WHERE albaran_id=$5 AND nombre=$6`,
+    [path, fichero.originalname, fichero.mimetype, fichero.size, albaranId, docNombre]
+  )
+  if (upd.rowCount === 0) {
+    await pool.query(
+      `INSERT INTO docs (albaran_id, nombre, adjunto, url, nombre_fichero, tipo_fichero, tamanyo)
+       VALUES ($1, $2, true, $3, $4, $5, $6)`,
+      [albaranId, docNombre, path, fichero.originalname, fichero.mimetype, fichero.size]
+    )
+  }
+  const fecha = new Date().toLocaleString('es-ES')
+  await pool.query(
+    'INSERT INTO actividad (albaran_id,ts,texto,actor) VALUES ($1,$2,$3,$4)',
+    [albaranId, fecha, `Albarán del proveedor adjuntado desde su panel`, nombre]
+  )
+  res.json({ url: signPath(path), nombreFichero: fichero.originalname })
 })
 
 const ALLOWED_IMG_EXTS = new Set(['png', 'jpg', 'jpeg', 'webp'])

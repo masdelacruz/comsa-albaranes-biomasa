@@ -249,6 +249,16 @@ export async function dibujarAlbaranPDF(a, options, logos) {
   doc.setTextColor(...negro)
   doc.text(a.permiso || '.'.repeat(30), labelColX, y)
 
+  if (a.referenciaSure) {
+    doc.setFont('helvetica', 'bold')
+    doc.setTextColor(...grisOsc)
+    doc.text('Ref. SURE:', 115, y)
+    const refLW = doc.getTextWidth('Ref. SURE:')
+    doc.setFont('helvetica', 'normal')
+    doc.setTextColor(...negro)
+    doc.text(a.referenciaSure, 115 + refLW + sp, y)
+  }
+
   y += 7
   doc.setDrawColor(200, 200, 200)
   doc.line(margen, y, W - margen, y)

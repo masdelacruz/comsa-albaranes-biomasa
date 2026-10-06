@@ -545,7 +545,13 @@ export default function DetalleAlbaran({ albaranes, simularFirma, updateFirma, s
     : ''
   const astiEmpresa = todasEmpresas.find(e => e.nombre === a.astilladora)
   const instEmpresa = todasEmpresas.find(e => e.nombre === a.instalacion)
+  const provEmpresa = todasEmpresas.find(e => e.nombre === a.proveedor && e.tipo === 'proveedor')
   const paneles = [
+    a.proveedor && a.panelProveedorUrl && {
+      rol: 'proveedor', nombre: a.proveedor,
+      url: a.panelProveedorUrl,
+      tel: normalTel(provEmpresa?.telefono || ''),
+    },
     a.astilladora && a.panelAstilladoraUrl && {
       rol: 'astilladora', nombre: a.astilladora,
       url: a.panelAstilladoraUrl,
@@ -925,6 +931,9 @@ export default function DetalleAlbaran({ albaranes, simularFirma, updateFirma, s
                     ['Estella',              a.estella     || '—'],
                     ['Origen',              a.origen || '—'],
                     ['Permiso / Ref.',      a.permiso || '—'],
+                    ...(a.tipo?.includes('2') ? [
+                      ['Referencia SURE',    a.referenciaSure || '—'],
+                    ] : []),
                     ...(a.tipo?.includes('1') ? [
                       ['Matrícula astilladora', a.matriculaAstilladora || '—'],
                       ['Chófer',             a.chofer || '—'],
@@ -1079,7 +1088,8 @@ export default function DetalleAlbaran({ albaranes, simularFirma, updateFirma, s
               <div style={{display:'flex',flexDirection:'column',gap:0}}>
                 {Object.entries({
                   ...a.docs,
-                  ...('Albarán físico adjunto' in (a.docs || {}) ? {} : { 'Albarán físico adjunto': { adjunto: false, url: null, nombreFichero: null, tamanyo: null } })
+                  ...('Albarán físico adjunto' in (a.docs || {}) ? {} : { 'Albarán físico adjunto': { adjunto: false, url: null, nombreFichero: null, tamanyo: null } }),
+                  ...(!a.tipo?.includes('2') || 'Albarán proveedor' in (a.docs || {}) ? {} : { 'Albarán proveedor': { adjunto: false, url: null, nombreFichero: null, tamanyo: null } })
                 }).map(([nombre, doc]) => {
                   const isDragOver = dragOverDoc === nombre
                   return (
@@ -1275,7 +1285,7 @@ export default function DetalleAlbaran({ albaranes, simularFirma, updateFirma, s
                     {paneles.map(panel => (
                       <div key={panel.rol} style={{background:'var(--gray-50)',border:'var(--border)',borderRadius:'var(--radius-md)',padding:'8px 10px'}}>
                         <div style={{fontSize:11,fontWeight:600,color:'var(--gray-600)',marginBottom:3}}>
-                          {panel.rol === 'astilladora' ? 'Astilladora' : 'Instalación'} · {panel.nombre}
+                          {{ astilladora: 'Astilladora', instalacion: 'Instalación', proveedor: 'Proveedor' }[panel.rol]} · {panel.nombre}
                         </div>
                         <code style={{fontSize:10,color:'var(--gray-500)',wordBreak:'break-all',display:'block',marginBottom:6}}>
                           {panel.url}

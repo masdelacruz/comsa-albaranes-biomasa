@@ -45,6 +45,22 @@ function panelUrlDe(tipo, nombre, codigo) {
 
 const slugify = s => s.toLowerCase().replace(/\s+/g, '_').replace(/[^a-z0-9_]/g, '')
 
+const esOpcion2 = tipo => typeof tipo === 'string' && tipo.startsWith('Opción 2')
+
+// Documento que sube el proveedor desde su panel (Opción 2).
+const DOC_ALBARAN_PROVEEDOR = 'Albarán proveedor'
+
+// ── Helper: referencia SURE que hereda un albarán ─────────────────
+// Solo los de Opción 2 cuyo proveedor está marcado como SURE.
+async function referenciaSureDe(db, tipo, proveedor) {
+  if (!esOpcion2(tipo) || !proveedor) return null
+  const { rows } = await db.query(
+    "SELECT referencia_sure FROM proveedores WHERE tipo='proveedor' AND nombre=$1 AND es_sure",
+    [proveedor]
+  )
+  return rows[0]?.referencia_sure || null
+}
+
 // ── Helper: datos de empresas (astilladora/instalacion/proveedor/transportista)
 // implicadas en un conjunto de albaranes. El logo de astilladoras e
 // instalaciones hace también de firma/sello — no hay imagen de firma aparte.
@@ -151,6 +167,7 @@ function buildAlbaran(a, firmas, pesada, docs, actividad, observacionesPost, emp
     transportista: a.transportista, instalacion: a.instalacion,
     especie: a.especie, tipoBiomasa: a.tipo_biomasa, estella: a.estella || null,
     origen: a.origen, permiso: a.permiso, observaciones: a.observaciones,
+    referenciaSure: a.referencia_sure || null,
     estado: a.estado, mapsOrigen: a.maps_origen, mapsDestino: a.maps_destino,
     matriculaTractora: a.matricula_tractora, matriculaRemolque: a.matricula_remolque,
     chofer: a.chofer, certificacion: a.certificacion || [],
@@ -173,6 +190,7 @@ function buildAlbaran(a, firmas, pesada, docs, actividad, observacionesPost, emp
     // compartirlo desde el detalle del albarán en oficina.
     panelInstalacionUrl: panelUrlDe('instalacion', a.instalacion, empresaCodigoMap[a.instalacion]),
     panelAstilladoraUrl: panelUrlDe('astilladora', a.astilladora, empresaCodigoMap[a.astilladora]),
+    panelProveedorUrl: esOpcion2(a.tipo) ? panelUrlDe('proveedor', a.proveedor, empresaCodigoMap[a.proveedor]) : null,
   }
 }
 
@@ -353,6 +371,65 @@ router.get('/astilladora/:nombre', requireAuthOrEmpresaCodigo('astilladora'), as
   })
 
   res.json(result)
+})
+
+// ── GET /albaranes/proveedor/:nombre  (oficina o código de la empresa) ──
+// Panel del proveedor (Opción 2 — proveedor directo): sus albaranes para
+// que adjunte su propio albarán y complete el origen si oficina lo dejó
+// vacío. Los cerrados siguen visibles 30 días como histórico.
+router.get('/proveedor/:nombre', requireAuthOrEmpresaCodigo('proveedor'), async (req, res) => {
+  const nombre = decodeURIComponent(req.params.nombre).replace(/-/g, ' ')
+  const { rows } = await pool.query(
+    `SELECT a.id, a.fecha, a.hora, a.instalacion, a.especie, a.tipo_biomasa, a.estella,
+            a.origen, a.estado, a.referencia_sure, a.matricula_tractora, a.matricula_remolque,
+            d.adjunto AS doc_adjunto, d.url AS doc_url, d.nombre_fichero AS doc_nombre
+     FROM albaranes a
+     LEFT JOIN docs d ON d.albaran_id = a.id AND d.nombre = $2
+     WHERE a.proveedor = $1 AND a.tipo LIKE 'Opción 2%'
+       AND a.estado != 'cancelado'
+       AND (a.estado != 'cerrado' OR a.fecha >= CURRENT_DATE - 30)
+     ORDER BY a.fecha DESC NULLS LAST, a.created_at DESC`,
+    [nombre, DOC_ALBARAN_PROVEEDOR]
+  )
+  res.json(rows.map(a => ({
+    id: a.id,
+    fecha: a.fecha ? new Date(a.fecha).toISOString().slice(0,10) : null,
+    hora: a.hora,
+    instalacion: a.instalacion,
+    especie: a.especie, tipoBiomasa: a.tipo_biomasa, estella: a.estella,
+    origen: a.origen || null,
+    estado: a.estado,
+    cerrado: a.estado === 'cerrado',
+    referenciaSure: a.referencia_sure || null,
+    matriculaTractora: a.matricula_tractora, matriculaRemolque: a.matricula_remolque,
+    albaranProveedor: a.doc_adjunto
+      ? { url: signPath(a.doc_url), nombreFichero: a.doc_nombre }
+      : null,
+  })))
+})
+
+// ── POST /albaranes/proveedor/:nombre/:id/origen  (oficina o código) ──
+// El proveedor solo puede rellenar el origen si está vacío — no corrige lo
+// que ya puso oficina.
+router.post('/proveedor/:nombre/:id/origen', requireAuthOrEmpresaCodigo('proveedor'), async (req, res) => {
+  const nombre = decodeURIComponent(req.params.nombre).replace(/-/g, ' ')
+  const { id } = req.params
+  const origen = typeof req.body.origen === 'string' ? req.body.origen.trim().slice(0, 300) : ''
+  if (!origen) return res.status(400).json({ error: 'Indica el origen' })
+  const { rowCount } = await pool.query(
+    `UPDATE albaranes SET origen=$1
+     WHERE id=$2 AND proveedor=$3 AND tipo LIKE 'Opción 2%'
+       AND estado NOT IN ('cerrado','cancelado')
+       AND COALESCE(TRIM(origen), '') = ''`,
+    [origen, id, nombre]
+  )
+  if (!rowCount) return res.status(409).json({ error: 'El origen ya está informado o el albarán no admite cambios' })
+  const fecha = new Date().toLocaleString('es-ES')
+  await pool.query(
+    'INSERT INTO actividad (albaran_id,ts,texto,actor) VALUES ($1,$2,$3,$4)',
+    [id, fecha, `Origen indicado por el proveedor: ${origen}`, nombre]
+  )
+  res.json({ ok: true, origen })
 })
 
 // ── POST /albaranes/:id/solicitar-revision  (oficina o token de campo) ──
@@ -548,13 +625,15 @@ router.post('/', requireAuth, async (req, res) => {
   const esOp1 = f.tipo?.includes('1')
   const docs  = esOp1
     ? ['Autodeclaración', 'Acuerdo de cesión', 'Contrato prestación servicios', 'Permiso de corta']
-    : ['Autodeclaración', 'Certificado SURE', 'Permiso de obra', 'Contrato prestación servicios']
+    : ['Autodeclaración', 'Certificado SURE', 'Permiso de obra', 'Contrato prestación servicios', DOC_ALBARAN_PROVEEDOR]
 
   const certArray = Array.isArray(f.certificacion)
     ? f.certificacion
     : (typeof f.certificacion === 'string' && f.certificacion
         ? f.certificacion.split(',').filter(Boolean)
         : [])
+
+  const referenciaSure = await referenciaSureDe(pool, f.tipo, f.proveedor)
 
   const client = await pool.connect()
   try {
@@ -564,15 +643,15 @@ router.post('/', requireAuth, async (req, res) => {
       `INSERT INTO albaranes (id,fecha,hora,num_camiones,tipo,proveedor,astilladora,
        transportista,instalacion,especie,tipo_biomasa,estella,origen,permiso,observaciones,
        estado,maps_origen,maps_destino,matricula_tractora,matricula_remolque,
-       chofer,certificacion,grupo_id,camion_orden)
-       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22,$23,$24)`,
+       chofer,certificacion,grupo_id,camion_orden,referencia_sure)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22,$23,$24,$25)`,
       [id, f.fecha, f.hora, f.numCamiones, f.tipo, f.proveedor, f.astilladora,
        f.transportista, f.instalacion, f.especie, f.tipoBiomasa, f.estella || null, f.origen,
        f.permiso, f.observaciones,
        f.enviarACampo ? 'pendiente_campo' : 'programado',
        f.mapsOrigen, f.mapsDestino,
        f.matriculaTractora, f.matriculaRemolque, f.chofer,
-       certArray, f.grupoId || null, f.camionOrden || 1]
+       certArray, f.grupoId || null, f.camionOrden || 1, referenciaSure]
     )
 
     const firmasBase = []
@@ -651,6 +730,15 @@ router.patch('/:id', requireAuth, async (req, res) => {
       const sets = safeCols.map((k, i) => `${k} = $${i+2}`).join(', ')
       const vals = safeCols.map(k => campos[k])
       await pool.query(`UPDATE albaranes SET ${sets} WHERE id = $1`, [id, ...vals])
+    }
+    // Cambiar de proveedor o de tipo de operación cambia la referencia SURE heredada
+    // (un albarán cerrado conserva la que tenía al cerrarse)
+    if (!estabaCerrado && ('proveedor' in campos || 'tipo' in campos)) {
+      const { rows: [act] } = await pool.query('SELECT tipo, proveedor FROM albaranes WHERE id=$1', [id])
+      if (act) {
+        const ref = await referenciaSureDe(pool, act.tipo, act.proveedor)
+        await pool.query('UPDATE albaranes SET referencia_sure=$1 WHERE id=$2', [ref, id])
+      }
     }
   }
 
@@ -909,6 +997,8 @@ router.post('/:id/duplicar', requireAuth, async (req, res) => {
     if (m?.mx) maxOrden = m.mx
   }
 
+  // La copia hereda la referencia SURE vigente del proveedor, no la del original
+  const referenciaSure = await referenciaSureDe(pool, orig.tipo, orig.proveedor)
   const actorNombre = req.user.nombre || 'Oficina'
   const fecha = new Date().toLocaleString('es-ES')
   const newIds = []
@@ -924,13 +1014,13 @@ router.post('/:id/duplicar', requireAuth, async (req, res) => {
         `INSERT INTO albaranes (id,fecha,hora,num_camiones,tipo,proveedor,astilladora,
          transportista,instalacion,especie,tipo_biomasa,estella,origen,permiso,observaciones,
          estado,maps_origen,maps_destino,matricula_tractora,matricula_remolque,
-         chofer,certificacion,grupo_id,camion_orden)
-         VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,'programado',$16,$17,$18,$19,$20,$21,$22,$23)`,
+         chofer,certificacion,grupo_id,camion_orden,referencia_sure)
+         VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,'programado',$16,$17,$18,$19,$20,$21,$22,$23,$24)`,
         [newId, orig.fecha, orig.hora, orig.num_camiones, orig.tipo,
          orig.proveedor, orig.astilladora, orig.transportista, orig.instalacion,
          orig.especie, orig.tipo_biomasa, orig.estella, orig.origen, orig.permiso, orig.observaciones,
          orig.maps_origen, orig.maps_destino, orig.matricula_tractora, orig.matricula_remolque,
-         orig.chofer, orig.certificacion, orig.grupo_id, orden]
+         orig.chofer, orig.certificacion, orig.grupo_id, orden, referenciaSure]
       )
       for (const fr of firmasOrig) {
         await client.query(

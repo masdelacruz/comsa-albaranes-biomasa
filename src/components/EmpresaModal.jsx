@@ -30,7 +30,7 @@ export function normalizarTelefono(raw) {
 
 export const TIPOS = ['proveedor', 'astilladora', 'transportista', 'instalacion']
 export const TIPO_LABELS = { proveedor: 'Proveedor', astilladora: 'Astilladora', transportista: 'Transportista', instalacion: 'Instalación' }
-const EMPTY_FORM = { nombre: '', tipo: 'proveedor', contacto: '', email: '', telefono: '', notas: '', activo: true, trabajadores: [], maquinas: [], horario: '' }
+const EMPTY_FORM = { nombre: '', tipo: 'proveedor', contacto: '', email: '', telefono: '', notas: '', activo: true, trabajadores: [], maquinas: [], horario: '', es_sure: false, referencia_sure: '' }
 const slugify = s => s.toLowerCase().replace(/\s+/g, '_').replace(/[^a-z0-9_]/g, '')
 
 // Alta/edición de una empresa. Se usa desde Configuración y desde la ficha
@@ -43,7 +43,7 @@ const slugify = s => s.toLowerCase().replace(/\s+/g, '_').replace(/[^a-z0-9_]/g,
 export default function EmpresaModal({ empresa, tipoInicial = 'proveedor', logos = {}, onLogoChange, onClose, onSaved }) {
   const editando = empresa?.id || null
   const [form, setForm] = useState(() => empresa
-    ? { nombre: empresa.nombre, tipo: empresa.tipo, contacto: empresa.contacto || '', email: empresa.email || '', telefono: empresa.telefono || '', notas: empresa.notas || '', activo: empresa.activo, trabajadores: empresa.trabajadores || [], maquinas: empresa.maquinas || [], horario: empresa.horario || '' }
+    ? { nombre: empresa.nombre, tipo: empresa.tipo, contacto: empresa.contacto || '', email: empresa.email || '', telefono: empresa.telefono || '', notas: empresa.notas || '', activo: empresa.activo, trabajadores: empresa.trabajadores || [], maquinas: empresa.maquinas || [], horario: empresa.horario || '', es_sure: !!empresa.es_sure, referencia_sure: empresa.referencia_sure || '' }
     : { ...EMPTY_FORM, tipo: tipoInicial })
   const [guardando, setGuardando]                 = useState(false)
   const [subiendoLogo, setSubiendoLogo]           = useState({})
@@ -56,6 +56,7 @@ export default function EmpresaModal({ empresa, tipoInicial = 'proveedor', logos
 
   const handleGuardar = async () => {
     if (!form.nombre.trim()) return
+    if (form.tipo === 'proveedor' && form.es_sure && !form.referencia_sure.trim()) return
     setGuardando(true)
     try {
       const datos = {
@@ -157,6 +158,29 @@ export default function EmpresaModal({ empresa, tipoInicial = 'proveedor', logos
               </div>
               <span style={{fontSize:13,color:'var(--gray-700)'}}>Activo — aparece en los desplegables de nuevos albaranes</span>
             </div>
+
+            {form.tipo === 'proveedor' && (
+              <>
+                <div className="modal-field full" style={{ flexDirection: 'row', alignItems: 'center', gap: 10, cursor: 'pointer' }}
+                  onClick={() => set('es_sure', !form.es_sure)}>
+                  <div style={{width:36,height:20,background:form.es_sure?'var(--green-400)':'var(--gray-200)',borderRadius:10,position:'relative',transition:'background 0.2s',flexShrink:0}}>
+                    <div style={{position:'absolute',top:2,left:form.es_sure?16:2,width:16,height:16,background:'#fff',borderRadius:'50%',transition:'left 0.2s',boxShadow:'0 1px 3px rgba(0,0,0,0.2)'}}/>
+                  </div>
+                  <span style={{fontSize:13,color:'var(--gray-700)'}}>Proveedor SURE — biomasa con certificación SURE</span>
+                </div>
+                {form.es_sure && (
+                  <div className="modal-field full">
+                    <label>Referencia SURE *</label>
+                    <input type="text" placeholder="Ej: SURE-EU-ES-001-..." value={form.referencia_sure}
+                      onChange={e => set('referencia_sure', e.target.value)}
+                      onBlur={e => set('referencia_sure', e.target.value.trim().toUpperCase())} />
+                    <div style={{ fontSize: 11, color: 'var(--gray-400)', marginTop: 4 }}>
+                      Se copia a todos sus albaranes de Opción 2 (proveedor directo) que sigan abiertos
+                    </div>
+                  </div>
+                )}
+              </>
+            )}
 
             {editando && (form.tipo === 'astilladora' || form.tipo === 'instalacion') && (() => {
               const logoId  = `empresa_${slugify(form.nombre)}`
@@ -267,7 +291,7 @@ export default function EmpresaModal({ empresa, tipoInicial = 'proveedor', logos
           </div>
           <div className="modal-actions">
             <button className="btn" onClick={cerrarModal}>Cancelar</button>
-            <button className="btn btn-primary" onClick={handleGuardar} disabled={!form.nombre.trim() || guardando}>
+            <button className="btn btn-primary" onClick={handleGuardar} disabled={!form.nombre.trim() || guardando || (form.tipo === 'proveedor' && form.es_sure && !form.referencia_sure.trim())}>
               {guardando ? 'Guardando...' : <><Check size={14} /> {editando ? 'Guardar cambios' : 'Crear'}</>}
             </button>
           </div>

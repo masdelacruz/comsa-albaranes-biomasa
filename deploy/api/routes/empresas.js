@@ -5,6 +5,28 @@ const pool   = require('../db')
 const { requireAuth, requireConfigAccess, requireSuperadmin } = require('./auth')
 const { registrarAuditoria } = require('../lib/auditoria')
 
+// Referencia SURE efectiva de un proveedor: solo cuenta si está marcado
+// como SURE. Se guarda recortada y en mayúsculas (formato de certificado).
+function refSure(esSure, referencia) {
+  if (!esSure) return null
+  const r = typeof referencia === 'string' ? referencia.trim().toUpperCase() : ''
+  return r || null
+}
+
+// Copia la referencia SURE del proveedor a sus albaranes de Opción 2 que
+// siguen abiertos. Los cerrados o anulados conservan la que tenían.
+async function propagarReferenciaSure(nombre, referencia) {
+  if (!nombre) return 0
+  const { rowCount } = await pool.query(
+    `UPDATE albaranes SET referencia_sure=$1
+     WHERE proveedor=$2 AND tipo LIKE 'Opción 2%'
+       AND estado NOT IN ('cerrado','cancelado')
+       AND referencia_sure IS DISTINCT FROM $1`,
+    [referencia, nombre]
+  )
+  return rowCount
+}
+
 function toTitleCase(str) {
   if (!str || typeof str !== 'string') return str
   return str.toLowerCase().replace(/\b\w/g, c => c.toUpperCase())
@@ -25,12 +47,14 @@ router.get('/', requireAuth, async (req, res) => {
 // ── POST /empresas ────────────────────────────────────────────────
 router.post('/', requireAuth, requireConfigAccess, async (req, res) => {
   const { nombre, tipo, contacto, email, telefono, notas, activo, trabajadores, maquinas, horario } = req.body
+  const esSure = tipo === 'proveedor' && !!req.body.es_sure
   const id = uuidv4()
   await pool.query(
-    `INSERT INTO proveedores (id,nombre,tipo,contacto,email,telefono,notas,activo,trabajadores,maquinas,horario)
-     VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11)`,
+    `INSERT INTO proveedores (id,nombre,tipo,contacto,email,telefono,notas,activo,trabajadores,maquinas,horario,es_sure,referencia_sure)
+     VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13)`,
     [id, toTitleCase(nombre), tipo, toTitleCase(contacto)||null, email||null, telefono||null, notas||null, activo??true,
-     JSON.stringify(trabajadores||[]), JSON.stringify(maquinas||[]), horario||null]
+     JSON.stringify(trabajadores||[]), JSON.stringify(maquinas||[]), horario||null,
+     esSure, refSure(esSure, req.body.referencia_sure)]
   )
   const { rows } = await pool.query('SELECT * FROM proveedores WHERE id=$1', [id])
   registrarAuditoria({
@@ -44,7 +68,15 @@ router.post('/', requireAuth, requireConfigAccess, async (req, res) => {
 router.patch('/:id', requireAuth, requireConfigAccess, async (req, res) => {
   if (req.body.nombre) req.body.nombre = toTitleCase(req.body.nombre)
   if (req.body.contacto) req.body.contacto = toTitleCase(req.body.contacto)
-  const fields = ['nombre','tipo','contacto','email','telefono','notas','activo','trabajadores','maquinas','horario']
+  const { rows: prevRows } = await pool.query('SELECT nombre, tipo, es_sure, referencia_sure FROM proveedores WHERE id=$1', [req.params.id])
+  if (!prevRows.length) return res.status(404).json({ error: 'No encontrado' })
+  const prev = prevRows[0]
+  if (req.body.es_sure !== undefined || req.body.referencia_sure !== undefined || req.body.tipo !== undefined) {
+    const esSure = (req.body.tipo ?? prev.tipo) === 'proveedor' && !!(req.body.es_sure ?? prev.es_sure)
+    req.body.es_sure = esSure
+    req.body.referencia_sure = refSure(esSure, req.body.referencia_sure ?? prev.referencia_sure)
+  }
+  const fields = ['nombre','tipo','contacto','email','telefono','notas','activo','trabajadores','maquinas','horario','es_sure','referencia_sure']
   const jsonbFields = new Set(['trabajadores', 'maquinas'])
   const updates = [], vals = []
   let idx = 1
@@ -58,6 +90,9 @@ router.patch('/:id', requireAuth, requireConfigAccess, async (req, res) => {
   vals.push(req.params.id)
   await pool.query(`UPDATE proveedores SET ${updates.join(',')} WHERE id=$${idx}`, vals)
   const { rows } = await pool.query('SELECT * FROM proveedores WHERE id=$1', [req.params.id])
+  if (prev.tipo === 'proveedor' && (prev.referencia_sure || null) !== (rows[0]?.referencia_sure || null)) {
+    await propagarReferenciaSure(rows[0].nombre, rows[0].referencia_sure || null)
+  }
   registrarAuditoria({
     usuario: req.user, accion: 'editar', entidad: 'proveedor', entidadId: req.params.id,
     detalle: `${rows[0]?.nombre} — campos: ${fields.filter(f => req.body[f] !== undefined).join(', ')}`,
