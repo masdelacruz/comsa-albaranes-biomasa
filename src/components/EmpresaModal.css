@@ -79,7 +79,8 @@
 .em-hint { font-size: 11px; color: var(--gray-400); margin-top: 2px; }
 
 /* SURE: casilla + referencia */
-.em-sure { display: flex; align-items: center; gap: 12px; min-height: 36px; }
+.em-sure { display: flex; align-items: center; gap: 10px; min-height: 36px; }
+.em-modal .modal-field .em-check,
 .em-check {
   display: inline-flex; align-items: center; gap: 8px;
   font-size: 13px; font-weight: 600; letter-spacing: 0.4px;

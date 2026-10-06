@@ -1,5 +1,5 @@
 import { useState, useRef } from 'react'
-import { Plus, Trash2, X, Check, Upload, Clock, Trees, Factory, Truck, Building2, User, Users, StickyNote, ShieldCheck, Image } from 'lucide-react'
+import { Plus, Trash2, X, Check, Upload, Clock, Trees, Factory, Truck, Building2, User, Users, StickyNote, Image } from 'lucide-react'
 import { api } from '../lib/api'
 import '../pages/Administracion.css'
 import './EmpresaModal.css'
@@ -139,30 +139,29 @@ export default function EmpresaModal({ empresa, tipoInicial = 'proveedor', logos
                     </select>
                   </div>
                 )}
-                <div className="modal-field full">
+                <div className={`modal-field${form.tipo === 'proveedor' ? '' : ' full'}`}>
                   <label>Nombre *</label>
                   <input type="text" placeholder="Nombre de la empresa" value={form.nombre} onChange={e => set('nombre', e.target.value)} onBlur={e => set('nombre', toTitleCase(e.target.value))} autoFocus />
                 </div>
+                {form.tipo === 'proveedor' && (
+                  <div className="modal-field">
+                    <label>Certificación</label>
+                    <div className="em-sure">
+                      <label className={`em-check${form.es_sure ? ' on' : ''}`} onClick={() => set('es_sure', !form.es_sure)}>
+                        <span className="em-box">{form.es_sure && <Check size={12} strokeWidth={3} />}</span>
+                        SURE
+                      </label>
+                      {form.es_sure && (
+                        <input type="text" placeholder="Referencia" value={form.referencia_sure} autoFocus
+                          className={form.referencia_sure.trim() ? '' : 'falta'}
+                          onChange={e => set('referencia_sure', e.target.value)}
+                          onBlur={e => set('referencia_sure', e.target.value.trim().toUpperCase())} />
+                      )}
+                    </div>
+                  </div>
+                )}
               </div>
             </section>
-
-            {form.tipo === 'proveedor' && (
-              <section className="em-section">
-                <div className="em-section-title"><ShieldCheck size={12} /> Certificación</div>
-                <div className="em-sure">
-                  <label className={`em-check${form.es_sure ? ' on' : ''}`} onClick={() => set('es_sure', !form.es_sure)}>
-                    <span className="em-box">{form.es_sure && <Check size={12} strokeWidth={3} />}</span>
-                    SURE
-                  </label>
-                  {form.es_sure && (
-                    <input type="text" placeholder="Referencia SURE" value={form.referencia_sure} autoFocus
-                      className={form.referencia_sure.trim() ? '' : 'falta'}
-                      onChange={e => set('referencia_sure', e.target.value)}
-                      onBlur={e => set('referencia_sure', e.target.value.trim().toUpperCase())} />
-                  )}
-                </div>
-              </section>
-            )}
 
             <section className="em-section">
               <div className="em-section-title"><User size={12} /> Contacto</div>
