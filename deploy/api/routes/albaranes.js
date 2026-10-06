@@ -320,10 +320,11 @@ router.get('/instalacion/:nombre', requireAuthOrEmpresaCodigo('instalacion'), as
        (a.estado = 'programado') AS planificado
      FROM albaranes a
      WHERE a.instalacion = $1
-       AND a.estado NOT IN ('cerrado','rechazado_campo_instalacion','cancelado')
        AND (
-         a.estado != 'programado'
-         OR (a.estado = 'programado' AND a.fecha >= CURRENT_DATE)
+         (a.estado NOT IN ('cerrado','rechazado_campo_instalacion','cancelado')
+          AND (a.estado != 'programado' OR a.fecha >= CURRENT_DATE))
+         -- cerrados recientes: se consultan en "Completados"
+         OR (a.estado = 'cerrado' AND a.fecha >= CURRENT_DATE - 60)
        )
      ORDER BY a.created_at ASC`,
     [nombre]
@@ -353,6 +354,7 @@ router.get('/instalacion/:nombre', requireAuthOrEmpresaCodigo('instalacion'), as
       matriculaTractora: a.matricula_tractora,
       matriculaRemolque: a.matricula_remolque,
       chofer: a.chofer, estado: a.estado, origen: a.origen,
+      cerrado: a.estado === 'cerrado',
       motivoRechazoCampo: a.motivo_rechazo_campo || null,
       planificado:        a.planificado || false,
       campoToken:         a.campo_token,
@@ -396,6 +398,8 @@ router.get('/astilladora/:nombre', requireAuthOrEmpresaCodigo('astilladora'), as
        AND (
          a.estado NOT IN ('cerrado','programado','rechazado_campo_astilladora','rechazado_campo_instalacion','cancelado')
          OR (a.estado = 'programado' AND a.fecha >= CURRENT_DATE)
+         -- cerrados recientes: se consultan en "Completados"
+         OR (a.estado = 'cerrado' AND a.fecha >= CURRENT_DATE - 60)
        )
      ORDER BY a.created_at ASC`,
     [nombre]
@@ -425,6 +429,7 @@ router.get('/astilladora/:nombre', requireAuthOrEmpresaCodigo('astilladora'), as
       matriculaTractora: a.matricula_tractora,
       matriculaRemolque: a.matricula_remolque,
       chofer: a.chofer, estado: a.estado, origen: a.origen,
+      cerrado: a.estado === 'cerrado',
       astilladoraFirmada: a.planificado ? false : (fAsti?.firmado || false),
       astilladoraFecha:   fAsti?.fecha || null,
       campoToken:         a.campo_token,

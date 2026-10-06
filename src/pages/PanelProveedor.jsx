@@ -1,6 +1,8 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { useParams, useLocation } from 'react-router-dom'
 import { CheckCircle, ChevronRight, ChevronDown, Leaf, RefreshCw, MapPin, FileText, Upload } from 'lucide-react'
+import PanelCompletados from '../components/PanelCompletados'
+import { completadosFuera } from '../utils/panelCompletados'
 import './PanelInstalacion.css'
 
 // Panel público del proveedor (Opción 2 — proveedor directo). Misma
@@ -327,7 +329,6 @@ export default function PanelProveedor() {
   const [showOk,          setShowOk]         = useState(false)
   const [diaSeleccionado, setDiaSeleccionado] = useState('hoy')
   const [abiertoId,       setAbiertoId]      = useState(null)
-  const [verCompletados,  setVerCompletados] = useState(false)
   const [logoUrl,         setLogoUrl]        = useState(null)
   const showOkTimer = useRef(null)
 
@@ -386,26 +387,25 @@ export default function PanelProveedor() {
   })
 
   // Completados que no salen en la vista actual: siempre consultables abajo
-  const visibles    = new Set(albaranesFiltrados.map(a => a.id))
-  const completados = albaranes
-    .filter(a => a.completado && !visibles.has(a.id))
-    .sort((a, b) => (b.fecha || '').localeCompare(a.fecha || ''))
+  const completados = completadosFuera(albaranes, albaranesFiltrados, a => a.completado)
 
   const activos    = albaranesFiltrados.filter(a => !a.planificado)
   const pendientes = activos.filter(a => !a.completado).length
   const total      = activos.length
 
   return (
-    <div className="pi-page">
+    <div className="pi-page pi-page--desktop">
       <div className="pi-header" style={{ background: VERDE_DEFAULT }}>
-        {logoUrl
-          ? <div className="pi-header-logo-img"><img src={logoUrl} alt="Logo" /></div>
-          : <div className="pi-header-logo"><Leaf size={14} color="#fff" /></div>
-        }
-        <div>
-          <div className="pi-header-title">Proveedor</div>
-          <div className="pi-header-sub">{nombreProveedor}</div>
-          <div className="pi-header-date">{fmtHoyHeader()}</div>
+        <div className="pi-header-brand">
+          {logoUrl
+            ? <div className="pi-header-logo-img"><img src={logoUrl} alt="Logo" /></div>
+            : <div className="pi-header-logo"><Leaf size={14} color="#fff" /></div>
+          }
+          <div className="pi-header-info">
+            <div className="pi-header-title">Proveedor</div>
+            <div className="pi-header-sub">{nombreProveedor}</div>
+            <div className="pi-header-date">{fmtHoyHeader()}</div>
+          </div>
         </div>
         <div style={{ marginLeft:'auto', display:'flex', alignItems:'center', gap:8 }}>
           {showOk && <span className="pi-refresh-ok">✓ Actualizado</span>}
@@ -435,90 +435,77 @@ export default function PanelProveedor() {
           {lastUpdate && <div className="pi-last-update">{labelFechaSec(isoLocal(lastUpdate))} · {lastUpdate.toLocaleTimeString('es-ES', { hour:'2-digit', minute:'2-digit' })}</div>}
         </div>
       ) : (
-        <>
-          <div className="pi-resumen">
-            <div className="pi-resumen-item">
-              <span className="pi-resumen-num">{pendientes}</span>
-              <span className="pi-resumen-label">pendiente{pendientes !== 1 ? 's' : ''}</span>
-            </div>
-            <div className="pi-resumen-sep" />
-            <div className="pi-resumen-item">
-              <span className="pi-resumen-num">{total - pendientes}</span>
-              <span className="pi-resumen-label">completado{total - pendientes !== 1 ? 's' : ''}</span>
-            </div>
-            <div className="pi-resumen-sep" />
-            <div className="pi-resumen-item">
-              <span className="pi-resumen-num">{total}</span>
-              <span className="pi-resumen-label">total</span>
-            </div>
-          </div>
-
-          <CalendarioSemana
-            albaranes={albaranes}
-            diaSeleccionado={diaSeleccionado}
-            onDiaClick={setDiaSeleccionado}
-          />
-
-          {diaSeleccionado !== 'hoy' && (
-            <div className="pi-filtro-dia-banner">
-              <span>{labelFechaSec(diaSeleccionado)}</span>
-              <button onClick={() => setDiaSeleccionado('hoy')}>Hoy</button>
-            </div>
-          )}
-          <div className="pi-section">
-            {albaranesFiltrados.length === 0 ? (
-              <div className="pi-empty-dia">
-                <div className="pi-empty-dia-title">{diaSeleccionado === 'hoy' ? 'Sin albaranes hoy' : 'Sin albaranes para este día'}</div>
-                {diaSeleccionado !== 'hoy' && (
-                  <button className="pi-empty-dia-btn" onClick={() => setDiaSeleccionado('hoy')}>Volver a hoy</button>
-                )}
+        <div className="pi-body">
+          <aside className="pi-sidebar">
+            <div className="pi-resumen">
+              <div className="pi-resumen-item">
+                <span className="pi-resumen-num">{pendientes}</span>
+                <span className="pi-resumen-label">pendiente{pendientes !== 1 ? 's' : ''}</span>
               </div>
-            ) : gruposOrdenados.map(([instalacion, albs]) => (
-              <GrupoInstalacion
-                key={instalacion}
-                instalacion={instalacion}
-                albaranes={albs}
-                abiertoId={abiertoId}
-                setAbiertoId={setAbiertoId}
-                nombre={nombreProveedor}
-                codigo={codigo}
-                onCambio={fetchData}
-              />
-            ))}
-          </div>
+              <div className="pi-resumen-sep" />
+              <div className="pi-resumen-item">
+                <span className="pi-resumen-num">{total - pendientes}</span>
+                <span className="pi-resumen-label">completado{total - pendientes !== 1 ? 's' : ''}</span>
+              </div>
+              <div className="pi-resumen-sep" />
+              <div className="pi-resumen-item">
+                <span className="pi-resumen-num">{total}</span>
+                <span className="pi-resumen-label">total</span>
+              </div>
+            </div>
+            <CalendarioSemana
+              albaranes={albaranes}
+              diaSeleccionado={diaSeleccionado}
+              onDiaClick={setDiaSeleccionado}
+            />
+          </aside>
 
-          {completados.length > 0 && (
+          <div className="pi-main">
+            {diaSeleccionado !== 'hoy' && (
+              <div className="pi-filtro-dia-banner">
+                <span>{labelFechaSec(diaSeleccionado)}</span>
+                <button onClick={() => setDiaSeleccionado('hoy')}>Hoy</button>
+              </div>
+            )}
             <div className="pi-section">
-              <div className="pi-flota">
-                <div className="pi-flota-header" onClick={() => setVerCompletados(v => !v)} style={{ cursor: 'pointer' }}>
-                  <div className="pi-flota-icon"><CheckCircle size={15} color="var(--green-600)" /></div>
-                  <div style={{ flex: 1, minWidth: 0 }}>
-                    <div className="pi-flota-title">Completados</div>
-                    <div className="pi-flota-sub">Últimos 60 días · toca para {verCompletados ? 'ocultar' : 'consultar'}</div>
-                  </div>
-                  <div className="pi-flota-badge">{completados.length}</div>
-                  {verCompletados ? <ChevronDown size={16} color="var(--gray-400)" /> : <ChevronRight size={16} color="var(--gray-400)" />}
+              {albaranesFiltrados.length === 0 ? (
+                <div className="pi-empty-dia">
+                  <div className="pi-empty-dia-title">{diaSeleccionado === 'hoy' ? 'Sin albaranes hoy' : 'Sin albaranes para este día'}</div>
+                  {diaSeleccionado !== 'hoy' && (
+                    <button className="pi-empty-dia-btn" onClick={() => setDiaSeleccionado('hoy')}>Volver a hoy</button>
+                  )}
                 </div>
-                {verCompletados && (
-                  <div className="pi-camiones-list">
-                    {completados.map((a, i) => (
-                      <TarjetaCamion key={a.id} a={a} esUltimo={i === completados.length - 1} conInstalacion
-                        abierto={abiertoId === a.id}
-                        onToggle={() => setAbiertoId(abiertoId === a.id ? null : a.id)}
-                        nombre={nombreProveedor} codigo={codigo} onCambio={fetchData} />
-                    ))}
-                  </div>
-                )}
-              </div>
+              ) : gruposOrdenados.map(([instalacion, albs]) => (
+                <GrupoInstalacion
+                  key={instalacion}
+                  instalacion={instalacion}
+                  albaranes={albs}
+                  abiertoId={abiertoId}
+                  setAbiertoId={setAbiertoId}
+                  nombre={nombreProveedor}
+                  codigo={codigo}
+                  onCambio={fetchData}
+                />
+              ))}
             </div>
-          )}
 
-          {lastUpdate && (
-            <div className="pi-last-update-bar">
-              {labelFechaSec(isoLocal(lastUpdate))} · {lastUpdate.toLocaleTimeString('es-ES', { hour:'2-digit', minute:'2-digit' })} · Se actualiza automáticamente
-            </div>
-          )}
-        </>
+            <PanelCompletados
+              albaranes={completados}
+              renderFila={(a, esUltimo) => (
+                <TarjetaCamion key={a.id} a={a} esUltimo={esUltimo} conInstalacion
+                  abierto={abiertoId === a.id}
+                  onToggle={() => setAbiertoId(abiertoId === a.id ? null : a.id)}
+                  nombre={nombreProveedor} codigo={codigo} onCambio={fetchData} />
+              )}
+            />
+
+            {lastUpdate && (
+              <div className="pi-last-update-bar">
+                {labelFechaSec(isoLocal(lastUpdate))} · {lastUpdate.toLocaleTimeString('es-ES', { hour:'2-digit', minute:'2-digit' })} · Se actualiza automáticamente
+              </div>
+            )}
+          </div>
+        </div>
       )}
     </div>
   )

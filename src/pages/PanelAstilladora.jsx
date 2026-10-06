@@ -2,6 +2,8 @@ import { useState, useEffect, useCallback, useRef } from 'react'
 import { useParams, useNavigate, useLocation } from 'react-router-dom'
 import { CheckCircle, ChevronRight, Leaf, RefreshCw, MapPin } from 'lucide-react'
 import NotificacionesBell from '../components/NotificacionesBell'
+import PanelCompletados from '../components/PanelCompletados'
+import { completadosFuera } from '../utils/panelCompletados'
 import './PanelInstalacion.css'
 
 const slugify = s => s.toLowerCase().replace(/\s+/g, '_').replace(/[^a-z0-9_]/g, '')
@@ -116,7 +118,7 @@ function CalendarioSemana({ albaranes, diaSeleccionado, onDiaClick }) {
   )
 }
 
-function InfoCamion({ a }) {
+function InfoCamion({ a, conDestino }) {
   const firmado    = a.astilladoraFirmada
   const especie    = [a.especie, a.estella].filter(Boolean).join(' · ')
   const fechaHora  = [fmtFecha(a.fecha), a.hora ? String(a.hora).slice(0,5) : null].filter(Boolean).join(' · ')
@@ -128,6 +130,7 @@ function InfoCamion({ a }) {
         Albarán {a.id}
         {esAtrasado && <span className="pi-camion-atrasado-tag">Atrasado</span>}
       </div>
+      {conDestino && a.instalacion && <div className="pi-camion-matricula" style={{ fontFamily: 'inherit' }}>{a.instalacion}</div>}
       {a.transportista && <div className="pi-camion-matricula" style={{ fontFamily: 'inherit' }}>{a.transportista}</div>}
       {a.matriculaTractora && (
         <div className="pi-camion-meta">
@@ -144,7 +147,7 @@ function InfoCamion({ a }) {
   )
 }
 
-function TarjetaCamion({ a, esUltimo, esDesde }) {
+function TarjetaCamion({ a, esUltimo, esDesde, conDestino }) {
   const navigate    = useNavigate()
   const firmado     = a.astilladoraFirmada
   const planificado = a.planificado
@@ -164,7 +167,7 @@ function TarjetaCamion({ a, esUltimo, esDesde }) {
       style={{ cursor: planificado ? 'default' : 'pointer', borderBottom: esUltimo ? 'none' : undefined }}
     >
       <div className="pi-camion-left">
-        <InfoCamion a={a} />
+        <InfoCamion a={a} conDestino={conDestino} />
       </div>
       <div className="pi-camion-right">
         {planificado
@@ -373,21 +376,25 @@ export default function PanelAstilladora() {
     return 0
   })
 
+  const completados = completadosFuera(albaranes, albaranesFiltrados, a => a.astilladoraFirmada || a.cerrado)
+
   const activos    = albaranesFiltrados.filter(a => !a.planificado)
   const pendientes = activos.filter(a => !a.astilladoraFirmada).length
   const total      = activos.length
 
   return (
-    <div className="pi-page">
+    <div className="pi-page pi-page--desktop">
       <div className="pi-header" style={{ background: headerBgColor || AMBER_DEFAULT }}>
-        {logoUrl
-          ? <div className="pi-header-logo-img"><img src={logoUrl} alt="Logo" /></div>
-          : <div className="pi-header-logo"><Leaf size={14} color="#fff" /></div>
-        }
-        <div>
-          <div className="pi-header-title">Astilladora</div>
-          <div className="pi-header-sub">{nombreAstilladora}</div>
-          <div className="pi-header-date">{fmtHoyHeader()}</div>
+        <div className="pi-header-brand">
+          {logoUrl
+            ? <div className="pi-header-logo-img"><img src={logoUrl} alt="Logo" /></div>
+            : <div className="pi-header-logo"><Leaf size={14} color="#fff" /></div>
+          }
+          <div className="pi-header-info">
+            <div className="pi-header-title">Astilladora</div>
+            <div className="pi-header-sub">{nombreAstilladora}</div>
+            <div className="pi-header-date">{fmtHoyHeader()}</div>
+          </div>
         </div>
         <div style={{ marginLeft:'auto', display:'flex', alignItems:'center', gap:8 }}>
           {showOk && <span className="pi-refresh-ok">✓ Actualizado</span>}
@@ -428,60 +435,68 @@ export default function PanelAstilladora() {
           {lastUpdate && <div className="pi-last-update">{labelFechaSec(isoLocal(lastUpdate))} · {lastUpdate.toLocaleTimeString('es-ES', { hour:'2-digit', minute:'2-digit' })}</div>}
         </div>
       ) : (
-        <>
-          <div className="pi-resumen">
-            <div className="pi-resumen-item">
-              <span className="pi-resumen-num">{pendientes}</span>
-              <span className="pi-resumen-label">pendiente{pendientes !== 1 ? 's' : ''}</span>
-            </div>
-            <div className="pi-resumen-sep" />
-            <div className="pi-resumen-item">
-              <span className="pi-resumen-num">{total - pendientes}</span>
-              <span className="pi-resumen-label">firmado{total - pendientes !== 1 ? 's' : ''}</span>
-            </div>
-            <div className="pi-resumen-sep" />
-            <div className="pi-resumen-item">
-              <span className="pi-resumen-num">{total}</span>
-              <span className="pi-resumen-label">total</span>
-            </div>
-          </div>
-
-          <CalendarioSemana
-            albaranes={albaranes}
-            diaSeleccionado={diaSeleccionado}
-            onDiaClick={setDiaSeleccionado}
-          />
-
-          {diaSeleccionado !== 'hoy' && (
-            <div className="pi-filtro-dia-banner">
-              <span>{labelFechaSec(diaSeleccionado)}</span>
-              <button onClick={() => setDiaSeleccionado('hoy')}>Hoy</button>
-            </div>
-          )}
-          <div className="pi-section">
-            {albaranesFiltrados.length === 0 ? (
-              <div className="pi-empty-dia">
-                <div className="pi-empty-dia-title">{diaSeleccionado === 'hoy' ? 'Sin albaranes hoy' : 'Sin albaranes para este día'}</div>
-                {diaSeleccionado !== 'hoy' && (
-                  <button className="pi-empty-dia-btn" onClick={() => setDiaSeleccionado('hoy')}>Volver a hoy</button>
-                )}
+        <div className="pi-body">
+          <aside className="pi-sidebar">
+            <div className="pi-resumen">
+              <div className="pi-resumen-item">
+                <span className="pi-resumen-num">{pendientes}</span>
+                <span className="pi-resumen-label">pendiente{pendientes !== 1 ? 's' : ''}</span>
               </div>
-            ) : gruposOrdenados.map(([instalacion, albs]) => (
-              <GrupoInstalacion
-                key={instalacion}
-                instalacion={instalacion}
-                albaranes={albs}
-                desdeId={desdeId}
-              />
-            ))}
-          </div>
-
-          {lastUpdate && (
-            <div className="pi-last-update-bar">
-              {labelFechaSec(isoLocal(lastUpdate))} · {lastUpdate.toLocaleTimeString('es-ES', { hour:'2-digit', minute:'2-digit' })} · Se actualiza automáticamente
+              <div className="pi-resumen-sep" />
+              <div className="pi-resumen-item">
+                <span className="pi-resumen-num">{total - pendientes}</span>
+                <span className="pi-resumen-label">firmado{total - pendientes !== 1 ? 's' : ''}</span>
+              </div>
+              <div className="pi-resumen-sep" />
+              <div className="pi-resumen-item">
+                <span className="pi-resumen-num">{total}</span>
+                <span className="pi-resumen-label">total</span>
+              </div>
             </div>
-          )}
-        </>
+            <CalendarioSemana
+              albaranes={albaranes}
+              diaSeleccionado={diaSeleccionado}
+              onDiaClick={setDiaSeleccionado}
+            />
+          </aside>
+
+          <div className="pi-main">
+            {diaSeleccionado !== 'hoy' && (
+              <div className="pi-filtro-dia-banner">
+                <span>{labelFechaSec(diaSeleccionado)}</span>
+                <button onClick={() => setDiaSeleccionado('hoy')}>Hoy</button>
+              </div>
+            )}
+            <div className="pi-section">
+              {albaranesFiltrados.length === 0 ? (
+                <div className="pi-empty-dia">
+                  <div className="pi-empty-dia-title">{diaSeleccionado === 'hoy' ? 'Sin albaranes hoy' : 'Sin albaranes para este día'}</div>
+                  {diaSeleccionado !== 'hoy' && (
+                    <button className="pi-empty-dia-btn" onClick={() => setDiaSeleccionado('hoy')}>Volver a hoy</button>
+                  )}
+                </div>
+              ) : gruposOrdenados.map(([instalacion, albs]) => (
+                <GrupoInstalacion
+                  key={instalacion}
+                  instalacion={instalacion}
+                  albaranes={albs}
+                  desdeId={desdeId}
+                />
+              ))}
+            </div>
+
+            <PanelCompletados
+              albaranes={completados}
+              renderFila={(a, esUltimo) => <TarjetaCamion key={a.id} a={a} esUltimo={esUltimo} esDesde={false} conDestino />}
+            />
+
+            {lastUpdate && (
+              <div className="pi-last-update-bar">
+                {labelFechaSec(isoLocal(lastUpdate))} · {lastUpdate.toLocaleTimeString('es-ES', { hour:'2-digit', minute:'2-digit' })} · Se actualiza automáticamente
+              </div>
+            )}
+          </div>
+        </div>
       )}
     </div>
   )

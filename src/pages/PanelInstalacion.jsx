@@ -2,6 +2,8 @@ import { useState, useEffect, useCallback, useRef } from 'react'
 import { useParams, useNavigate, useLocation } from 'react-router-dom'
 import { CheckCircle, ChevronRight, Leaf, RefreshCw, Clock } from 'lucide-react'
 import NotificacionesBell from '../components/NotificacionesBell'
+import PanelCompletados from '../components/PanelCompletados'
+import { completadosFuera } from '../utils/panelCompletados'
 import './PanelInstalacion.css'
 
 const slugify = s => s.toLowerCase().replace(/\s+/g, '_').replace(/[^a-z0-9_]/g, '')
@@ -385,6 +387,8 @@ export default function PanelInstalacion() {
     })
   }
 
+  const completados = completadosFuera(albaranes, albaranesFiltrados, a => a.instalacionFirmada || a.cerrado)
+
   const activosFiltrados = albaranesFiltrados.filter(a => !a.planificado)
   const pendientes       = activosFiltrados.filter(a => !a.instalacionFirmada).length
   const enCaminoCount    = activosFiltrados.filter(a => a.astilladoraFirmada && !a.instalacionFirmada).length
@@ -392,7 +396,7 @@ export default function PanelInstalacion() {
   const total            = activosFiltrados.length
 
   return (
-    <div className="pi-page pi-page--recepcion">
+    <div className="pi-page pi-page--desktop">
       <div className="pi-header" style={{ background: headerBgColor || GREEN_DEFAULT }}>
         <div className="pi-header-brand">
           {logoUrl
@@ -501,6 +505,10 @@ export default function PanelInstalacion() {
                 </div>
               ))}
             </div>
+            <PanelCompletados
+              albaranes={completados}
+              renderFila={(a, esUltimo) => <TarjetaCamion key={a.id} a={a} esUltimo={esUltimo} esDesde={false} />}
+            />
             {lastUpdate && (
               <div className="pi-last-update-bar">
                 {labelFechaSec(isoLocal(lastUpdate))} · {lastUpdate.toLocaleTimeString('es-ES', { hour:'2-digit', minute:'2-digit' })} · Se actualiza automáticamente

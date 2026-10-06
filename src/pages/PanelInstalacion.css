@@ -622,12 +622,12 @@
   padding: 8px 4px 2px;
 }
 
-/* ── Desktop layout (solo recepción) ────────────── */
+/* ── Desktop layout (todos los paneles externos) ── */
 @media (min-width: 768px) {
-  .pi-page--recepcion {
+  .pi-page--desktop {
     max-width: 100%;
   }
-  .pi-page--recepcion .pi-header {
+  .pi-page--desktop .pi-header {
     border-radius: 0;
     padding: 28px 48px 32px;
   }
@@ -652,41 +652,44 @@
     flex: 1;
     min-width: 0;
   }
-  .pi-page--recepcion .pi-header-brand {
+  .pi-page--desktop .pi-header-brand {
     align-items: center;
     gap: 20px;
   }
-  .pi-page--recepcion .pi-header-logo-img {
+  .pi-page--desktop .pi-header-logo-img {
     height: 66px;
     width: auto;
     max-width: 220px;
     border-radius: 14px;
   }
-  .pi-page--recepcion .pi-header-logo {
+  .pi-page--desktop .pi-header-logo {
     height: 66px;
     width: 66px;
     border-radius: 14px;
   }
-  .pi-page--recepcion .pi-header-sub {
+  .pi-page--desktop .pi-header-sub {
     font-size: 28px;
   }
-  .pi-page--recepcion .pi-header {
+  .pi-page--desktop .pi-header {
     gap: 20px;
     padding: 32px 56px 44px;
   }
-  .pi-page--recepcion .pi-resumen {
+  .pi-page--desktop .pi-resumen {
     margin: 0;
   }
-  .pi-page--recepcion .pi-semana {
+  .pi-page--desktop .pi-semana {
     margin: 0;
   }
-  .pi-page--recepcion .pi-section {
+  .pi-page--desktop .pi-section {
     padding: 0;
   }
-  .pi-page--recepcion .pi-last-update-bar {
+  .pi-page--desktop .pi-main .pi-section + .pi-section {
+    margin-top: 16px;
+  }
+  .pi-page--desktop .pi-last-update-bar {
     padding-top: 16px;
   }
-  .pi-page--recepcion .pi-filtro-dia-banner {
+  .pi-page--desktop .pi-filtro-dia-banner {
     margin: 0 0 12px;
     border-radius: 0 8px 8px 0;
   }
