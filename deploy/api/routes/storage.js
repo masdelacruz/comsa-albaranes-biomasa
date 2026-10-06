@@ -75,6 +75,10 @@ router.post('/upload/:albaranId/doc', requireAuth, upload.single('file'), async 
     'INSERT INTO actividad (albaran_id,ts,texto,actor) VALUES ($1,$2,$3,$4)',
     [albaranId, fecha, `Documento adjuntado: ${docNombre}`, req.user.nombre || 'Oficina']
   )
+  if (docNombre === 'Albarán proveedor') {
+    const { rows: [p] } = await pool.query('SELECT proveedor FROM albaranes WHERE id=$1', [albaranId])
+    if (p?.proveedor) await require('./albaranes').completarPasoProveedor(albaranId, p.proveedor)
+  }
   res.json({ url: signPath(path) })
 })
 
@@ -163,7 +167,8 @@ router.post('/upload-proveedor/:nombre/:albaranId', requireAuthOrEmpresaCodigo('
     'INSERT INTO actividad (albaran_id,ts,texto,actor) VALUES ($1,$2,$3,$4)',
     [albaranId, fecha, `Albarán del proveedor adjuntado desde su panel`, nombre]
   )
-  res.json({ url: signPath(path), nombreFichero: fichero.originalname })
+  const completado = await require('./albaranes').completarPasoProveedor(albaranId, nombre)
+  res.json({ url: signPath(path), nombreFichero: fichero.originalname, completado })
 })
 
 const ALLOWED_IMG_EXTS = new Set(['png', 'jpg', 'jpeg', 'webp'])

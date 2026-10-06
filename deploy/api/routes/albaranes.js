@@ -5,7 +5,7 @@ const { requireAuth } = require('./auth')
 const { requireAuthOrCampoToken, requireAuthOrEmpresaCodigo } = require('../lib/campoAuth')
 const { signPath } = require('../lib/signedUrl')
 const { registrarAuditoria } = require('../lib/auditoria')
-const { enviarNotificacion, enviarNotificacionAlbaranACampo, enviarNotificacionCamionEnviado } = require('../emailSender')
+const { enviarNotificacion, enviarNotificacionAlbaranACampo, enviarNotificacionAlbaranAProveedor, enviarNotificacionCamionEnviado } = require('../emailSender')
 const { crearNotificacion } = require('../notificacionesCliente')
 
 const ROLES_VALIDOS = new Set(['proveedor', 'astilladora', 'transportista', 'instalacion', 'oficina'])
@@ -116,10 +116,83 @@ async function fetchOne(id) {
   return buildAlbaran(a, fRes.rows, pRes.rows[0], dRes.rows, actRes.rows, obsRes.rows, empresaFirmaMap, empresaDataMap, empresaCodigoMap)
 }
 
+// ── Helper: estado del albarán tras registrar una firma ───────────
+// Todas firmadas → cerrado. Solo falta oficina → humedad_pendiente o
+// pendiente_oficina según haya humedad registrada.
+async function evaluarEstadoTrasFirma(id, fecha) {
+  const { rows: firmas } = await pool.query('SELECT * FROM firmas WHERE albaran_id=$1', [id])
+  const todasFirmadas = firmas.length > 0 && firmas.every(f => f.firmado)
+  const externasPendientes = firmas.filter(f => f.rol !== 'oficina' && !f.firmado)
+  const oficinaPendiente   = firmas.find(f => f.rol === 'oficina' && !f.firmado)
+
+  if (todasFirmadas) {
+    await pool.query("UPDATE albaranes SET estado='cerrado' WHERE id=$1", [id])
+    await pool.query(
+      'INSERT INTO actividad (albaran_id,ts,texto,actor) VALUES ($1,$2,$3,$4)',
+      [id, fecha, 'Albarán cerrado — todas las firmas completadas', 'Sistema']
+    )
+  } else if (externasPendientes.length === 0 && oficinaPendiente) {
+    const pRes = await pool.query('SELECT humedad FROM pesada WHERE albaran_id=$1', [id])
+    const sinHumedad = pRes.rows[0]?.humedad == null
+    const nuevoEstado = sinHumedad ? 'humedad_pendiente' : 'pendiente_oficina'
+
+    await pool.query(
+      "UPDATE albaranes SET estado=$1 WHERE id=$2 AND estado != 'cerrado'",
+      [nuevoEstado, id]
+    )
+    const texto = sinHumedad
+      ? 'Todas las firmas externas completadas — humedad pendiente de análisis'
+      : 'Todas las firmas externas completadas — pendiente firma de oficina'
+    await pool.query(
+      'INSERT INTO actividad (albaran_id,ts,texto,actor) VALUES ($1,$2,$3,$4)',
+      [id, fecha, texto, 'Sistema']
+    )
+  }
+  return { todasFirmadas }
+}
+
+// ── Helper: cierra el paso del proveedor (Opción 2) ───────────────
+// El proveedor no firma con un botón: su paso queda completado en cuanto
+// su albarán está adjunto y el origen informado. Se llama tras cada acción
+// del proveedor en su panel. Devuelve true si acaba de completarse.
+async function completarPasoProveedor(id, nombreProveedor) {
+  const { rows: [st] } = await pool.query(
+    `SELECT a.estado, COALESCE(TRIM(a.origen), '') <> '' AS con_origen,
+            f.firmado, COALESCE(d.adjunto, false) AS con_albaran
+     FROM albaranes a
+     JOIN firmas f ON f.albaran_id = a.id AND f.rol = 'proveedor'
+     LEFT JOIN docs d ON d.albaran_id = a.id AND d.nombre = $2
+     WHERE a.id = $1`,
+    [id, DOC_ALBARAN_PROVEEDOR]
+  )
+  if (!st || st.firmado || !st.con_origen || !st.con_albaran) return false
+  if (['cerrado', 'cancelado'].includes(st.estado)) return false
+
+  const fecha = new Date().toLocaleString('es-ES')
+  await pool.query(
+    "UPDATE firmas SET firmado=true, fecha=$1, actor=$2 WHERE albaran_id=$3 AND rol='proveedor'",
+    [fecha, nombreProveedor, id]
+  )
+  await pool.query(
+    'INSERT INTO actividad (albaran_id,ts,texto,actor) VALUES ($1,$2,$3,$4)',
+    [id, fecha, 'Proveedor completó su parte: albarán adjunto y origen indicado', nombreProveedor]
+  )
+  await evaluarEstadoTrasFirma(id, fecha)
+  const albaran = await fetchOne(id)
+  if (albaran) {
+    enviarNotificacion('firma_completada', { ...albaran, firmante: nombreProveedor, rolLabel: 'Proveedor' }).catch(() => {})
+  }
+  return true
+}
+
 // Notifica (email + notificación persistente en su panel) a la astilladora
 // de que se le ha puesto a disposición un albarán al enviarlo a campo.
 // Fire & forget — no debe bloquear ni hacer fallar la respuesta al cliente.
 function notificarEnvioACampo(albaran) {
+  // Opción 2: el primer paso es del proveedor — se le avisa con el enlace a su panel
+  if (esOpcion2(albaran?.tipo) && albaran.proveedor && albaran.firmas?.proveedor) {
+    enviarNotificacionAlbaranAProveedor(albaran).catch(() => {})
+  }
   if (!albaran?.astilladora) return
   crearNotificacion({
     empresaTipo: 'astilladora',
@@ -429,7 +502,8 @@ router.post('/proveedor/:nombre/:id/origen', requireAuthOrEmpresaCodigo('proveed
     'INSERT INTO actividad (albaran_id,ts,texto,actor) VALUES ($1,$2,$3,$4)',
     [id, fecha, `Origen indicado por el proveedor: ${origen}`, nombre]
   )
-  res.json({ ok: true, origen })
+  const completado = await completarPasoProveedor(id, nombre)
+  res.json({ ok: true, origen, completado })
 })
 
 // ── POST /albaranes/:id/solicitar-revision  (oficina o token de campo) ──
@@ -655,6 +729,7 @@ router.post('/', requireAuth, async (req, res) => {
     )
 
     const firmasBase = []
+    if (esOpcion2(f.tipo) && f.proveedor) firmasBase.push({ rol:'proveedor', actor:f.proveedor })
     if (esOp1 && f.astilladora) firmasBase.push({ rol:'astilladora', actor:f.astilladora })
     if (f.instalacion)          firmasBase.push({ rol:'instalacion',  actor:f.instalacion })
     firmasBase.push({ rol:'oficina', actor: f.actorNombre || 'Oficina' })
@@ -681,6 +756,9 @@ router.post('/', requireAuth, async (req, res) => {
     )
 
     await client.query('COMMIT')
+    if (f.enviarACampo && esOpcion2(f.tipo) && f.proveedor) {
+      fetchOne(id).then(a => a && enviarNotificacionAlbaranAProveedor(a)).catch(() => {})
+    }
     registrarAuditoria({
       usuario: req.user, accion: 'crear', entidad: 'albaran', entidadId: id,
       detalle: `${f.tipo || ''} · proveedor ${f.proveedor || '—'} · ${f.instalacion || f.astilladora || ''}`,
@@ -768,6 +846,12 @@ router.patch('/:id', requireAuth, async (req, res) => {
     'INSERT INTO actividad (albaran_id,ts,texto,actor) VALUES ($1,$2,$3,$4)',
     [id, fecha, descripcion || 'Datos editados manualmente', actorNombre]
   )
+
+  // Si oficina completa el origen por el proveedor, su paso puede quedar cerrado
+  if (campos && 'origen' in campos) {
+    const { rows: [p] } = await pool.query('SELECT proveedor FROM albaranes WHERE id=$1', [id])
+    if (p?.proveedor) await completarPasoProveedor(id, p.proveedor)
+  }
 
   if (estabaCerrado) {
     registrarAuditoria({
@@ -897,36 +981,7 @@ router.post('/:id/firmas/:rol', requireAuthOrCampoToken(), async (req, res) => {
     }
   }
 
-  // Evalúa estado tras firma
-  const { rows: firmas } = await pool.query('SELECT * FROM firmas WHERE albaran_id=$1', [id])
-  const todasFirmadas = firmas.length > 0 && firmas.every(f => f.firmado)
-  const externasPendientes = firmas.filter(f => f.rol !== 'oficina' && !f.firmado)
-  const oficinaPendiente   = firmas.find(f => f.rol === 'oficina' && !f.firmado)
-
-  if (todasFirmadas) {
-    await pool.query("UPDATE albaranes SET estado='cerrado' WHERE id=$1", [id])
-    await pool.query(
-      'INSERT INTO actividad (albaran_id,ts,texto,actor) VALUES ($1,$2,$3,$4)',
-      [id, fecha, 'Albarán cerrado — todas las firmas completadas', 'Sistema']
-    )
-  } else if (externasPendientes.length === 0 && oficinaPendiente) {
-    // Si no hay humedad registrada aún → humedad_pendiente; si hay → pendiente_oficina
-    const pRes = await pool.query('SELECT humedad FROM pesada WHERE albaran_id=$1', [id])
-    const sinHumedad = pRes.rows[0]?.humedad == null
-    const nuevoEstado = sinHumedad ? 'humedad_pendiente' : 'pendiente_oficina'
-
-    await pool.query(
-      "UPDATE albaranes SET estado=$1 WHERE id=$2 AND estado != 'cerrado'",
-      [nuevoEstado, id]
-    )
-    const texto = sinHumedad
-      ? 'Todas las firmas externas completadas — humedad pendiente de análisis'
-      : 'Todas las firmas externas completadas — pendiente firma de oficina'
-    await pool.query(
-      'INSERT INTO actividad (albaran_id,ts,texto,actor) VALUES ($1,$2,$3,$4)',
-      [id, fecha, texto, 'Sistema']
-    )
-  }
+  const { todasFirmadas } = await evaluarEstadoTrasFirma(id, fecha)
 
   const albaran = await fetchOne(id)
   const humedadPendiente = albaran?.estado === 'humedad_pendiente'
@@ -1066,3 +1121,4 @@ router.delete('/:id', requireAuth, async (req, res) => {
 
 module.exports = router
 module.exports.fetchOne = fetchOne
+module.exports.completarPasoProveedor = completarPasoProveedor

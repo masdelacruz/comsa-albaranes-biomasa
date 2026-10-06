@@ -233,6 +233,8 @@ export default function DetalleAlbaran({ albaranes, simularFirma, updateFirma, s
       ? (a.panelInstalacionUrl ? `${a.panelInstalacionUrl}&desde=${a.id}` : null)
       : siguientePaso === 'astilladora'
       ? (a.panelAstilladoraUrl ? `${a.panelAstilladoraUrl}&desde=${a.id}` : null)
+      : siguientePaso === 'proveedor' && a.panelProveedorUrl
+      ? a.panelProveedorUrl
       : `${window.location.origin}/campo/${a.id}/${siguientePaso}?t=${encodeURIComponent(a.campoToken || '')}`
     : null
 
@@ -482,10 +484,19 @@ export default function DetalleAlbaran({ albaranes, simularFirma, updateFirma, s
   const compartirUrl = (url, medio) => {
     const empresa = actorNombre || a.astilladora || a.proveedor || ''
     const esInstalacion = siguientePaso === 'instalacion'
+    const esProveedor   = siguientePaso === 'proveedor'
     const lineaBiomasa = [a.especie, a.tipoBiomasa, a.estella].filter(Boolean).join(' · ') || '—'
-    const intro = `Ya puedes trabajar con el Albarán ${a.id}.`
+    const intro = esProveedor
+      ? `Para el Albarán ${a.id} necesitamos que adjuntes tu albarán${a.origen ? '' : ' e indiques el origen'}.`
+      : `Ya puedes trabajar con el Albarán ${a.id}.`
 
-    const cuerpoWA = esInstalacion
+    const cuerpoWA = esProveedor
+      ? [
+          `*Fecha:* ${a.fecha?.slice(0,10).split('-').reverse().join('/') || '—'}`,
+          `*Instalación destino:* ${a.instalacion || '—'}`,
+          lineaBiomasa,
+        ].join('\n')
+      : esInstalacion
       ? [
           `*Transportista:* ${a.transportista || '—'}`,
           ...(a.chofer ? [`*Conductor:* ${a.chofer}`] : []),
@@ -499,7 +510,13 @@ export default function DetalleAlbaran({ albaranes, simularFirma, updateFirma, s
           `*Instalación destino:* ${a.instalacion || '—'}`,
         ].join('\n')
 
-    const cuerpoEmail = esInstalacion
+    const cuerpoEmail = esProveedor
+      ? [
+          `   Fecha         : ${a.fecha?.slice(0,10).split('-').reverse().join('/') || '—'}`,
+          `   Instalación   : ${a.instalacion || '—'}`,
+          `   Biomasa       : ${lineaBiomasa}`,
+        ].join('\n')
+      : esInstalacion
       ? [
           `   Transportista : ${a.transportista || '—'}`,
           ...(a.chofer ? [`   Conductor     : ${a.chofer}`] : []),
@@ -518,7 +535,7 @@ export default function DetalleAlbaran({ albaranes, simularFirma, updateFirma, s
         `Hola ${empresa},\n\n` +
         `${intro}\n\n` +
         `${cuerpoWA}\n\n` +
-        `Firma aquí:\n${url}`
+        `${esProveedor ? 'Accede a tu panel' : 'Firma aquí'}:\n${url}`
       )
       window.open(`https://wa.me/${actorTelefono}?text=${msg}`, '_blank')
     }

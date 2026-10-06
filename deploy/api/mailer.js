@@ -61,6 +61,7 @@ async function destinatarioEmpresa(tipo, nombre) {
 
 const destinatarioInstalacion  = (nombre) => destinatarioEmpresa('instalacion', nombre)
 const destinatarioAstilladora  = (nombre) => destinatarioEmpresa('astilladora', nombre)
+const destinatarioProveedor    = (nombre) => destinatarioEmpresa('proveedor', nombre)
 
 /**
  * URL del logotipo corporativo configurado en Administración
@@ -76,4 +77,4 @@ async function logoComsaUrl() {
   return signPath(rows[0].url, LOGO_URL_TTL_MS)
 }
 
-module.exports = { transport, destinatarios, destinatarioInstalacion, destinatarioAstilladora, logoComsaUrl }
+module.exports = { transport, destinatarios, destinatarioInstalacion, destinatarioAstilladora, destinatarioProveedor, logoComsaUrl }

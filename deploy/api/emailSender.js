@@ -2,7 +2,7 @@
  * emailSender.js — construcción de templates y envío de notificaciones.
  * Puede llamarse desde rutas autenticadas O desde el propio backend (firmas).
  */
-const { transport, destinatarios, destinatarioInstalacion, destinatarioAstilladora, logoComsaUrl } = require('./mailer')
+const { transport, destinatarios, destinatarioInstalacion, destinatarioAstilladora, destinatarioProveedor, logoComsaUrl } = require('./mailer')
 
 const APP_URL = process.env.APP_URL || 'https://biomasa.cserintranet.com'
 
@@ -255,8 +255,26 @@ function buildEmail(tipo, albaran) {
         </td>
       </tr>
       <tr><td style="padding:0 40px 24px;">${tablaAlbaran}</td></tr>
-      <tr><td style="padding:8px 40px 40px;" align="center">${boton('Ver en el panel', `${APP_URL}/campo/astilladora/${astilladoraSlug}`)}</td></tr>
+      <tr><td style="padding:8px 40px 40px;" align="center">${boton('Ver en el panel', albaran.panelAstilladoraUrl || `${APP_URL}/campo/astilladora/${astilladoraSlug}`)}</td></tr>
     `, 'A campo', albaran.logoUrl)
+
+  } else if (tipo === 'albaran_a_proveedor') {
+    const primerNombre = albaran.contactoProveedor ? albaran.contactoProveedor.split(' ')[0] : null
+    const faltaOrigen  = !String(albaran.origen || '').trim()
+
+    subject = `Albarán ${albaran.id} - adjunta tu albarán${faltaOrigen ? ' e indica el origen' : ''}`
+    html = emailWrapper(`
+      <tr>
+        <td style="padding:32px 40px 8px;">
+          <p style="margin:0 0 10px;font-family:Arial,Helvetica,sans-serif;font-size:24px;font-weight:700;color:${TEXT_TITLE};">Hola${primerNombre ? ' ' + primerNombre : ''},</p>
+          <p style="margin:0 0 24px;font-family:Arial,Helvetica,sans-serif;font-size:14px;color:${TEXT_MUTED};line-height:1.6;">
+            Tienes un suministro programado el <strong style="color:${TEXT_TITLE};">${fechaHora}</strong>. Desde tu panel puedes adjuntar tu albarán${faltaOrigen ? ' e indicar el origen de la biomasa' : ''}.
+          </p>
+        </td>
+      </tr>
+      <tr><td style="padding:0 40px 24px;">${tablaAlbaran}</td></tr>
+      <tr><td style="padding:8px 40px 40px;" align="center">${boton('Abrir mi panel', albaran.panelProveedorUrl)}</td></tr>
+    `, 'Proveedor', albaran.logoUrl)
 
   } else if (tipo === 'camion_enviado') {
     const meses = ['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre']
@@ -330,6 +348,22 @@ async function enviarNotificacionAlbaranACampo(albaran) {
   }
 }
 
+async function enviarNotificacionAlbaranAProveedor(albaran) {
+  if (!albaran?.panelProveedorUrl) return
+  const [{ emails, contacto }, logoUrl] = await Promise.all([
+    destinatarioProveedor(albaran.proveedor),
+    logoComsaUrl(),
+  ])
+  if (!emails.length) return
+  const built = buildEmail('albaran_a_proveedor', { ...albaran, contactoProveedor: contacto, logoUrl })
+  if (!built) return
+  try {
+    await transport.sendMail({ from: process.env.SMTP_FROM, to: emails.join(', '), subject: built.subject, html: built.html })
+  } catch (e) {
+    console.error('Email error (albaran_a_proveedor):', e.message)
+  }
+}
+
 async function enviarNotificacionCamionEnviado(albaran) {
   const [{ emails, contacto }, logoUrl] = await Promise.all([
     destinatarioInstalacion(albaran.instalacion),
@@ -345,4 +379,4 @@ async function enviarNotificacionCamionEnviado(albaran) {
   }
 }
 
-module.exports = { enviarNotificacion, enviarNotificacionAlbaranACampo, enviarNotificacionCamionEnviado, buildEmail }
+module.exports = { enviarNotificacion, enviarNotificacionAlbaranACampo, enviarNotificacionAlbaranAProveedor, enviarNotificacionCamionEnviado, buildEmail }
