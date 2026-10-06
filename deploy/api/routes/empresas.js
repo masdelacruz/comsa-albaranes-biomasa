@@ -27,6 +27,23 @@ async function propagarReferenciaSure(nombre, referencia) {
   return rowCount
 }
 
+// Una misma empresa puede estar dada de alta con varios tipos (p. ej.
+// proveedor y astilladora): cada tipo es una fila, pero sus datos de
+// contacto son los mismos y se mantienen sincronizados por nombre.
+const CAMPOS_COMPARTIDOS = ['contacto', 'email', 'telefono']
+
+async function sincronizarHermanas(id) {
+  const { rows: [e] } = await pool.query(
+    'SELECT nombre, contacto, email, telefono FROM proveedores WHERE id=$1', [id]
+  )
+  if (!e) return
+  await pool.query(
+    `UPDATE proveedores SET contacto=$1, email=$2, telefono=$3
+     WHERE lower(nombre)=lower($4) AND id<>$5`,
+    [e.contacto, e.email, e.telefono, e.nombre, id]
+  )
+}
+
 function toTitleCase(str) {
   if (!str || typeof str !== 'string') return str
   return str.toLowerCase().replace(/\b\w/g, c => c.toUpperCase())
@@ -56,6 +73,20 @@ router.post('/', requireAuth, requireConfigAccess, async (req, res) => {
      JSON.stringify(trabajadores||[]), JSON.stringify(maquinas||[]), horario||null,
      esSure, refSure(esSure, req.body.referencia_sure)]
   )
+  // Si la empresa ya existe con otro tipo, los datos que no se han indicado
+  // se heredan de ella; los indicados pasan a ser los de todas.
+  const { rows: [hermana] } = await pool.query(
+    'SELECT contacto, email, telefono FROM proveedores WHERE lower(nombre)=lower($1) AND id<>$2 LIMIT 1',
+    [toTitleCase(nombre), id]
+  )
+  if (hermana) {
+    const { rows: [nueva] } = await pool.query('SELECT contacto, email, telefono FROM proveedores WHERE id=$1', [id])
+    await pool.query(
+      'UPDATE proveedores SET contacto=$1, email=$2, telefono=$3 WHERE id=$4',
+      CAMPOS_COMPARTIDOS.map(c => nueva[c] || hermana[c] || null).concat(id)
+    )
+    await sincronizarHermanas(id)
+  }
   const { rows } = await pool.query('SELECT * FROM proveedores WHERE id=$1', [id])
   registrarAuditoria({
     usuario: req.user, accion: 'crear', entidad: 'proveedor', entidadId: id,
@@ -89,6 +120,9 @@ router.patch('/:id', requireAuth, requireConfigAccess, async (req, res) => {
   if (!updates.length) return res.status(400).json({ error: 'Sin cambios' })
   vals.push(req.params.id)
   await pool.query(`UPDATE proveedores SET ${updates.join(',')} WHERE id=$${idx}`, vals)
+  if (CAMPOS_COMPARTIDOS.some(c => req.body[c] !== undefined)) {
+    await sincronizarHermanas(req.params.id)
+  }
   const { rows } = await pool.query('SELECT * FROM proveedores WHERE id=$1', [req.params.id])
   if (prev.tipo === 'proveedor' && (prev.referencia_sure || null) !== (rows[0]?.referencia_sure || null)) {
     await propagarReferenciaSure(rows[0].nombre, rows[0].referencia_sure || null)
