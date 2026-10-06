@@ -1,7 +1,10 @@
 import { useState, useRef } from 'react'
-import { Plus, Trash2, X, Check, Upload, Clock } from 'lucide-react'
+import { Plus, Trash2, X, Check, Upload, Clock, Trees, Factory, Truck, Building2, User, Users, StickyNote, ShieldCheck, Image } from 'lucide-react'
 import { api } from '../lib/api'
 import '../pages/Administracion.css'
+import './EmpresaModal.css'
+
+const TIPO_ICONS = { proveedor: Trees, astilladora: Factory, transportista: Truck, instalacion: Building2 }
 
 export function toTitleCase(str) {
   if (!str) return str
@@ -105,81 +108,92 @@ export default function EmpresaModal({ empresa, tipoInicial = 'proveedor', logos
     }
   }
 
+  const TipoIcon = TIPO_ICONS[form.tipo] || Building2
+
   return (
       <div className="modal-overlay" onClick={cerrarModal}>
-        <div className="modal" onClick={e => e.stopPropagation()}>
-          <div className="modal-title">{editando ? 'Editar' : 'Nuevo'} {TIPO_LABELS[form.tipo].toLowerCase()}</div>
-          <div className="modal-grid">
-            <div className="modal-field full">
-              <label>Tipo</label>
-              <select value={form.tipo} onChange={e => set('tipo', e.target.value)} disabled={!!editando}>
-                {TIPOS.map(t => <option key={t} value={t}>{TIPO_LABELS[t]}</option>)}
-              </select>
+        <div className="modal em-modal" onClick={e => e.stopPropagation()}>
+          <div className="em-header">
+            <div className={`em-icon ${form.tipo}`}><TipoIcon size={19} /></div>
+            <div className="em-head-text">
+              <div className="em-eyebrow">{editando ? 'Editar' : 'Nuevo'} {TIPO_LABELS[form.tipo].toLowerCase()}</div>
+              <div className={`em-title${form.nombre.trim() ? '' : ' vacio'}`}>{form.nombre.trim() || 'Sin nombre'}</div>
             </div>
-            <div className="modal-field full">
-              <label>Nombre *</label>
-              <input type="text" placeholder="Nombre de la empresa" value={form.nombre} onChange={e => set('nombre', e.target.value)} onBlur={e => set('nombre', toTitleCase(e.target.value))} autoFocus />
-            </div>
-            <div className="modal-field">
-              <label>Persona de contacto</label>
-              <input type="text" placeholder="Nombre y apellido" value={form.contacto} onChange={e => set('contacto', e.target.value)} onBlur={e => set('contacto', toTitleCase(e.target.value))} />
-            </div>
-            <div className="modal-field">
-              <label>Teléfono</label>
-              <input type="tel" placeholder="+34 600 000 000" value={form.telefono}
-                onChange={e => set('telefono', e.target.value)}
-                onBlur={e => set('telefono', normalizarTelefono(e.target.value))}
-              />
-            </div>
-            <div className="modal-field full">
-              <label>Email</label>
-              <input type="email" placeholder="contacto@empresa.com" value={form.email} onChange={e => set('email', e.target.value)} />
-            </div>
-            {(form.tipo === 'astilladora' || form.tipo === 'instalacion') && (
-              <div className="modal-field full">
-                <label style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
-                  <Clock size={12} /> Horario de la instalación
-                </label>
-                <input type="text" placeholder="Ej: L-V 8:00-14:00 y 15:00-18:00 · Sáb 8:00-13:00"
-                  value={form.horario} onChange={e => set('horario', e.target.value)} />
-                <div style={{ fontSize: 11, color: 'var(--gray-400)', marginTop: 4 }}>
-                  Se muestra al transportista/conductor al confirmar en campo
-                </div>
-              </div>
-            )}
-            <div className="modal-field full">
-              <label>Notas internas</label>
-              <textarea placeholder="Observaciones, condiciones especiales..." value={form.notas} onChange={e => set('notas', e.target.value)} style={{ minHeight: 60 }} />
-            </div>
-            <div className="modal-field full" style={{ flexDirection: 'row', alignItems: 'center', gap: 10, cursor: 'pointer' }}
-              onClick={() => set('activo', !form.activo)}>
-              <div style={{width:36,height:20,background:form.activo?'var(--green-400)':'var(--gray-200)',borderRadius:10,position:'relative',transition:'background 0.2s',flexShrink:0}}>
-                <div style={{position:'absolute',top:2,left:form.activo?16:2,width:16,height:16,background:'#fff',borderRadius:'50%',transition:'left 0.2s',boxShadow:'0 1px 3px rgba(0,0,0,0.2)'}}/>
-              </div>
-              <span style={{fontSize:13,color:'var(--gray-700)'}}>Activo — aparece en los desplegables de nuevos albaranes</span>
-            </div>
+            <button type="button" className={`em-estado ${form.activo ? 'on' : 'off'}`}
+              onClick={() => set('activo', !form.activo)}
+              title={form.activo ? 'Aparece en los desplegables de nuevos albaranes · clic para desactivar' : 'No aparece en los desplegables · clic para activar'}>
+              <span className="em-dot" /> {form.activo ? 'Activo' : 'Inactivo'}
+            </button>
+            <button type="button" className="em-close" onClick={cerrarModal} title="Cerrar"><X size={16} /></button>
+          </div>
 
-            {form.tipo === 'proveedor' && (
-              <>
-                <div className="modal-field full" style={{ flexDirection: 'row', alignItems: 'center', gap: 10, cursor: 'pointer' }}
-                  onClick={() => set('es_sure', !form.es_sure)}>
-                  <div style={{width:36,height:20,background:form.es_sure?'var(--green-400)':'var(--gray-200)',borderRadius:10,position:'relative',transition:'background 0.2s',flexShrink:0}}>
-                    <div style={{position:'absolute',top:2,left:form.es_sure?16:2,width:16,height:16,background:'#fff',borderRadius:'50%',transition:'left 0.2s',boxShadow:'0 1px 3px rgba(0,0,0,0.2)'}}/>
-                  </div>
-                  <span style={{fontSize:13,color:'var(--gray-700)'}}>Proveedor SURE — biomasa con certificación SURE</span>
-                </div>
-                {form.es_sure && (
+          <div className="em-body">
+            <section className="em-section">
+              <div className="em-section-title"><Building2 size={12} /> Datos generales</div>
+              <div className="modal-grid">
+                {!editando && (
                   <div className="modal-field full">
-                    <label>Referencia SURE *</label>
-                    <input type="text" placeholder="Ej: SURE-EU-ES-001-..." value={form.referencia_sure}
-                      onChange={e => set('referencia_sure', e.target.value)}
-                      onBlur={e => set('referencia_sure', e.target.value.trim().toUpperCase())} />
-                    <div style={{ fontSize: 11, color: 'var(--gray-400)', marginTop: 4 }}>
-                      Se copia a todos sus albaranes de Opción 2 (proveedor directo) que sigan abiertos
-                    </div>
+                    <label>Tipo</label>
+                    <select value={form.tipo} onChange={e => set('tipo', e.target.value)}>
+                      {TIPOS.map(t => <option key={t} value={t}>{TIPO_LABELS[t]}</option>)}
+                    </select>
                   </div>
                 )}
-              </>
+                <div className="modal-field full">
+                  <label>Nombre *</label>
+                  <input type="text" placeholder="Nombre de la empresa" value={form.nombre} onChange={e => set('nombre', e.target.value)} onBlur={e => set('nombre', toTitleCase(e.target.value))} autoFocus />
+                </div>
+              </div>
+            </section>
+
+            {form.tipo === 'proveedor' && (
+              <section className="em-section">
+                <div className="em-section-title"><ShieldCheck size={12} /> Certificación</div>
+                <div className="em-sure">
+                  <label className={`em-check${form.es_sure ? ' on' : ''}`} onClick={() => set('es_sure', !form.es_sure)}>
+                    <span className="em-box">{form.es_sure && <Check size={12} strokeWidth={3} />}</span>
+                    SURE
+                  </label>
+                  {form.es_sure && (
+                    <input type="text" placeholder="Referencia SURE" value={form.referencia_sure} autoFocus
+                      className={form.referencia_sure.trim() ? '' : 'falta'}
+                      onChange={e => set('referencia_sure', e.target.value)}
+                      onBlur={e => set('referencia_sure', e.target.value.trim().toUpperCase())} />
+                  )}
+                </div>
+              </section>
+            )}
+
+            <section className="em-section">
+              <div className="em-section-title"><User size={12} /> Contacto</div>
+              <div className="modal-grid">
+                <div className="modal-field">
+                  <label>Persona de contacto</label>
+                  <input type="text" placeholder="Nombre y apellido" value={form.contacto} onChange={e => set('contacto', e.target.value)} onBlur={e => set('contacto', toTitleCase(e.target.value))} />
+                </div>
+                <div className="modal-field">
+                  <label>Teléfono</label>
+                  <input type="tel" placeholder="+34 600 000 000" value={form.telefono}
+                    onChange={e => set('telefono', e.target.value)}
+                    onBlur={e => set('telefono', normalizarTelefono(e.target.value))}
+                  />
+                </div>
+                <div className="modal-field full">
+                  <label>Email</label>
+                  <input type="email" placeholder="contacto@empresa.com" value={form.email} onChange={e => set('email', e.target.value)} />
+                </div>
+              </div>
+            </section>
+
+            {(form.tipo === 'astilladora' || form.tipo === 'instalacion') && (
+              <section className="em-section">
+                <div className="em-section-title"><Clock size={12} /> Horario</div>
+                <div className="modal-field">
+                  <input type="text" placeholder="Ej: L-V 8:00-14:00 y 15:00-18:00 · Sáb 8:00-13:00"
+                    value={form.horario} onChange={e => set('horario', e.target.value)} />
+                  <div className="em-hint">Se muestra al transportista/conductor al confirmar en campo</div>
+                </div>
+              </section>
             )}
 
             {editando && (form.tipo === 'astilladora' || form.tipo === 'instalacion') && (() => {
@@ -187,8 +201,8 @@ export default function EmpresaModal({ empresa, tipoInicial = 'proveedor', logos
               const logoUrl = logos[logoId]
               const subiendo = !!subiendoLogo[logoId]
               return (
-                <div className="modal-field full">
-                  <label>Logo (también se usa como firma/sello)</label>
+                <section className="em-section">
+                  <div className="em-section-title"><Image size={12} /> Logo · firma y sello</div>
                   <div
                     style={{
                       border: dragOverLogoModal ? '2px dashed var(--green-400)' : '1px solid var(--gray-200)',
@@ -237,16 +251,17 @@ export default function EmpresaModal({ empresa, tipoInicial = 'proveedor', logos
                       </button>
                     )
                   )}
-                  <div style={{fontSize:11,color:'var(--gray-400)',marginTop:4}}>PNG, JPG, SVG o WEBP · Cabecera del panel y firma/sello al confirmar desde el campo</div>
-                </div>
+                  <div className="em-hint" style={{marginTop:6}}>PNG, JPG o WEBP · Cabecera del panel y firma/sello al confirmar desde el campo</div>
+                </section>
               )
             })()}
 
             {/* ── Trabajadores y máquinas (solo astilladora) ── */}
             {form.tipo === 'astilladora' && (
-              <>
-                <div className="modal-field full" style={{borderTop:'1px solid var(--gray-100)',paddingTop:14,marginTop:4}}>
-                  <label style={{marginBottom:8,display:'block'}}>Trabajadores</label>
+              <section className="em-section">
+                <div className="em-section-title"><Users size={12} /> Equipo</div>
+                <div className="modal-field" style={{marginBottom:14}}>
+                  <label style={{marginBottom:4,display:'block'}}>Trabajadores</label>
                   {(form.trabajadores || []).map((t, i) => (
                     <div key={i} style={{display:'flex',gap:6,marginBottom:6,alignItems:'center'}}>
                       <input type="text" placeholder="Nombre y apellidos" value={t} style={{flex:1}}
@@ -265,8 +280,8 @@ export default function EmpresaModal({ empresa, tipoInicial = 'proveedor', logos
                   </button>
                 </div>
 
-                <div className="modal-field full">
-                  <label style={{marginBottom:8,display:'block'}}>Máquinas astilladoras</label>
+                <div className="modal-field">
+                  <label style={{marginBottom:4,display:'block'}}>Máquinas astilladoras</label>
                   {(form.maquinas || []).map((m, i) => (
                     <div key={i} style={{display:'flex',gap:6,marginBottom:6,alignItems:'center'}}>
                       <input type="text" placeholder="Nombre / descripción" value={m.nombre||''} style={{flex:2}}
@@ -286,10 +301,18 @@ export default function EmpresaModal({ empresa, tipoInicial = 'proveedor', logos
                     <Plus size={12}/> Añadir máquina
                   </button>
                 </div>
-              </>
+              </section>
             )}
+
+            <section className="em-section">
+              <div className="em-section-title"><StickyNote size={12} /> Notas internas</div>
+              <div className="modal-field">
+                <textarea placeholder="Observaciones, condiciones especiales..." value={form.notas} onChange={e => set('notas', e.target.value)} style={{ minHeight: 64 }} />
+              </div>
+            </section>
           </div>
-          <div className="modal-actions">
+
+          <div className="em-footer">
             <button className="btn" onClick={cerrarModal}>Cancelar</button>
             <button className="btn btn-primary" onClick={handleGuardar} disabled={!form.nombre.trim() || guardando || (form.tipo === 'proveedor' && form.es_sure && !form.referencia_sure.trim())}>
               {guardando ? 'Guardando...' : <><Check size={14} /> {editando ? 'Guardar cambios' : 'Crear'}</>}
