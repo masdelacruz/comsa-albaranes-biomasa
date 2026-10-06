@@ -7,7 +7,19 @@ const { signPath, verifySignedPath, toPath } = require('../lib/signedUrl')
 const { contentMatchesAllowlist } = require('../lib/sniffMime')
 const { registrarAuditoria } = require('../lib/auditoria')
 
-const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 50 * 1024 * 1024 } })
+// El navegador envía el nombre del fichero en UTF-8 pero multer lo decodifica
+// como latin1 ("Guía" llegaba como "GuÃ­a"). Se recodifica aquí, una vez para
+// todas las subidas; si el resultado no es UTF-8 válido se deja como venía.
+function nombreUtf8(nombre) {
+  const fixed = Buffer.from(nombre, 'latin1').toString('utf8')
+  return fixed.includes('�') ? nombre : fixed
+}
+
+const upload = multer({
+  storage: multer.memoryStorage(),
+  limits: { fileSize: 50 * 1024 * 1024 },
+  fileFilter: (_req, file, cb) => { file.originalname = nombreUtf8(file.originalname); cb(null, true) },
+})
 
 function limpiarNombre(str) {
   return str.normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^a-zA-Z0-9._-]/g, '_')

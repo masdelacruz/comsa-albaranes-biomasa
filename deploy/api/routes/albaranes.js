@@ -466,6 +466,7 @@ router.get('/proveedor/:nombre', requireAuthOrEmpresaCodigo('proveedor'), async 
        AND (
          a.estado NOT IN ('cerrado','programado','cancelado')
          OR (a.estado = 'programado' AND a.fecha >= CURRENT_DATE)
+         OR (a.estado = 'cerrado' AND a.fecha >= CURRENT_DATE - 60)
        )
      ORDER BY a.created_at ASC`,
     [nombre, DOC_ALBARAN_PROVEEDOR]
@@ -482,6 +483,7 @@ router.get('/proveedor/:nombre', requireAuthOrEmpresaCodigo('proveedor'), async 
       especie: a.especie, tipoBiomasa: a.tipo_biomasa, estella: a.estella,
       matriculaTractora: a.matricula_tractora, matriculaRemolque: a.matricula_remolque,
       estado: a.estado,
+      cerrado: a.estado === 'cerrado',
       origen,
       albaranProveedor: a.doc_adjunto
         ? { url: signPath(a.doc_url), nombreFichero: a.doc_nombre }

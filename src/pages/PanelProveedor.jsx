@@ -168,6 +168,8 @@ function CompletarAlbaran({ a, nombre, codigo, onCambio }) {
           <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 14, color: 'var(--gray-800)' }}>
             <CheckCircle size={16} color="var(--green-400)" /> {a.origen}
           </div>
+        ) : a.cerrado ? (
+          <div style={{ fontSize: 14, color: 'var(--gray-400)' }}>—</div>
         ) : (
           <div style={{ display: 'flex', gap: 8 }}>
             <input type="text" value={origen} onChange={e => setOrigen(e.target.value)} placeholder="Paraje / término municipal"
@@ -195,12 +197,16 @@ function CompletarAlbaran({ a, nombre, codigo, onCambio }) {
               <FileText size={16} /> PDF o foto
             </span>
           )}
-          <button onClick={() => fileRef.current?.click()} disabled={subiendo}
-            style={a.albaranProveedor ? { ...boton(!subiendo), background: '#fff', color: 'var(--gray-600)', border: '1px solid var(--gray-200)' } : boton(!subiendo)}>
-            <Upload size={14} /> {subiendo ? 'Subiendo…' : a.albaranProveedor ? 'Cambiar' : 'Adjuntar'}
-          </button>
-          <input ref={fileRef} type="file" accept="application/pdf,image/jpeg,image/png,image/webp" style={{ display: 'none' }}
-            onChange={e => subir(e.target.files?.[0])} />
+          {!a.cerrado && (
+            <>
+              <button onClick={() => fileRef.current?.click()} disabled={subiendo}
+                style={a.albaranProveedor ? { ...boton(!subiendo), background: '#fff', color: 'var(--gray-600)', border: '1px solid var(--gray-200)' } : boton(!subiendo)}>
+                <Upload size={14} /> {subiendo ? 'Subiendo…' : a.albaranProveedor ? 'Cambiar' : 'Adjuntar'}
+              </button>
+              <input ref={fileRef} type="file" accept="application/pdf,image/jpeg,image/png,image/webp" style={{ display: 'none' }}
+                onChange={e => subir(e.target.files?.[0])} />
+            </>
+          )}
         </div>
       </div>
 
@@ -209,7 +215,7 @@ function CompletarAlbaran({ a, nombre, codigo, onCambio }) {
   )
 }
 
-function InfoCamion({ a }) {
+function InfoCamion({ a, conInstalacion }) {
   const especie    = [a.especie, a.estella].filter(Boolean).join(' · ')
   const fechaHora  = [fmtFecha(a.fecha), a.hora ? String(a.hora).slice(0,5) : null].filter(Boolean).join(' · ')
   const esAtrasado = !a.planificado && !a.completado && a.fecha && a.fecha < isoLocal(new Date())
@@ -221,17 +227,20 @@ function InfoCamion({ a }) {
         Albarán {a.id}
         {esAtrasado && <span className="pi-camion-atrasado-tag">Atrasado</span>}
       </div>
+      {conInstalacion && a.instalacion && <div className="pi-camion-matricula" style={{ fontFamily: 'inherit' }}>{a.instalacion}</div>}
       {a.transportista && <div className="pi-camion-matricula" style={{ fontFamily: 'inherit' }}>{a.transportista}</div>}
       {especie   && <div className="pi-camion-meta">{especie}</div>}
       {fechaHora && <div className="pi-camion-meta">{fechaHora}</div>}
-      {a.completado
+      {a.cerrado
+        ? <div className="pi-camion-meta verde">✓ Albarán cerrado</div>
+        : a.completado
         ? <div className="pi-camion-meta verde">✓ Completado{a.completadoFecha ? ` · ${fmtFirmaTs(a.completadoFecha)}` : ''}</div>
         : !a.planificado && falta && <div className="pi-camion-meta">Falta {falta}</div>}
     </div>
   )
 }
 
-function TarjetaCamion({ a, esUltimo, abierto, onToggle, nombre, codigo, onCambio }) {
+function TarjetaCamion({ a, esUltimo, abierto, onToggle, nombre, codigo, onCambio, conInstalacion }) {
   const planificado = a.planificado
   const estadoClass = planificado ? 'planificado' : (a.completado ? 'firmado' : 'pendiente')
 
@@ -243,7 +252,7 @@ function TarjetaCamion({ a, esUltimo, abierto, onToggle, nombre, codigo, onCambi
         style={{ cursor: planificado ? 'default' : 'pointer', borderBottom: esUltimo && !abierto ? 'none' : undefined, opacity: abierto ? 1 : undefined }}
       >
         <div className="pi-camion-left">
-          <InfoCamion a={a} />
+          <InfoCamion a={a} conInstalacion={conInstalacion} />
         </div>
         <div className="pi-camion-right">
           {planificado
@@ -318,6 +327,7 @@ export default function PanelProveedor() {
   const [showOk,          setShowOk]         = useState(false)
   const [diaSeleccionado, setDiaSeleccionado] = useState('hoy')
   const [abiertoId,       setAbiertoId]      = useState(null)
+  const [verCompletados,  setVerCompletados] = useState(false)
   const [logoUrl,         setLogoUrl]        = useState(null)
   const showOkTimer = useRef(null)
 
@@ -334,7 +344,7 @@ export default function PanelProveedor() {
       const res = await fetch(`/api/albaranes/proveedor/${encodeURIComponent(nombreProveedor)}?c=${encodeURIComponent(codigo)}`)
       if (res.status === 401 || res.status === 403 || res.status === 404) { setCodigoInvalido(true); return }
       const data = await res.json()
-      setAlbaranes(Array.isArray(data) ? data : [])
+      setAlbaranes((Array.isArray(data) ? data : []).map(a => ({ ...a, completado: a.completado || a.cerrado })))
       setLastUpdate(new Date())
       if (manual) {
         clearTimeout(showOkTimer.current)
@@ -374,6 +384,12 @@ export default function PanelProveedor() {
     if (!aPend && bPend) return 1
     return 0
   })
+
+  // Completados que no salen en la vista actual: siempre consultables abajo
+  const visibles    = new Set(albaranesFiltrados.map(a => a.id))
+  const completados = albaranes
+    .filter(a => a.completado && !visibles.has(a.id))
+    .sort((a, b) => (b.fecha || '').localeCompare(a.fecha || ''))
 
   const activos    = albaranesFiltrados.filter(a => !a.planificado)
   const pendientes = activos.filter(a => !a.completado).length
@@ -470,6 +486,32 @@ export default function PanelProveedor() {
               />
             ))}
           </div>
+
+          {completados.length > 0 && (
+            <div className="pi-section">
+              <div className="pi-flota">
+                <div className="pi-flota-header" onClick={() => setVerCompletados(v => !v)} style={{ cursor: 'pointer' }}>
+                  <div className="pi-flota-icon"><CheckCircle size={15} color="var(--green-600)" /></div>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div className="pi-flota-title">Completados</div>
+                    <div className="pi-flota-sub">Últimos 60 días · toca para {verCompletados ? 'ocultar' : 'consultar'}</div>
+                  </div>
+                  <div className="pi-flota-badge">{completados.length}</div>
+                  {verCompletados ? <ChevronDown size={16} color="var(--gray-400)" /> : <ChevronRight size={16} color="var(--gray-400)" />}
+                </div>
+                {verCompletados && (
+                  <div className="pi-camiones-list">
+                    {completados.map((a, i) => (
+                      <TarjetaCamion key={a.id} a={a} esUltimo={i === completados.length - 1} conInstalacion
+                        abierto={abiertoId === a.id}
+                        onToggle={() => setAbiertoId(abiertoId === a.id ? null : a.id)}
+                        nombre={nombreProveedor} codigo={codigo} onCambio={fetchData} />
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
 
           {lastUpdate && (
             <div className="pi-last-update-bar">
