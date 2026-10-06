@@ -8,7 +8,7 @@ import {
 import { api } from '../lib/api'
 import { Badge } from '../components/Badge'
 import EmpresaModal from '../components/EmpresaModal'
-import { SECCIONES_CLIENTES, slugify, panelUrl } from '../utils/clientes'
+import { SECCIONES_CLIENTES, TIPOS_CLIENTE, slugify, panelUrl } from '../utils/clientes'
 import '../components/shared.css'
 import './Clientes.css'
 import './ClienteDetalle.css'
@@ -70,7 +70,7 @@ export default function ClienteDetalle({ albaranes = [], usuario }) {
   const fetchCliente = async () => {
     try {
       const data = await api.get('/empresas')
-      const c = (data || []).find(p => String(p.id) === String(id) && (p.tipo === 'astilladora' || p.tipo === 'instalacion'))
+      const c = (data || []).find(p => String(p.id) === String(id) && TIPOS_CLIENTE.has(p.tipo))
       setCliente(c || null)
       if (c) {
         try {
@@ -101,9 +101,9 @@ export default function ClienteDetalle({ albaranes = [], usuario }) {
     const humedades = validos.map(a => a.pesada?.humedad).filter(h => h != null && h !== '').map(Number)
     const humedadMedia = humedades.length ? humedades.reduce((s, h) => s + h, 0) / humedades.length : null
 
-    // Con quién trabaja: una astilladora abastece instalaciones; una
-    // instalación recibe de proveedores.
-    const campoRel = cliente.tipo === 'astilladora' ? 'instalacion' : 'proveedor'
+    // Con quién trabaja: astilladoras y proveedores abastecen instalaciones;
+    // una instalación recibe de proveedores.
+    const campoRel = cliente.tipo === 'instalacion' ? 'proveedor' : 'instalacion'
     const rel = {}
     validos.forEach(a => { if (a[campoRel]) rel[a[campoRel]] = (rel[a[campoRel]] || 0) + 1 })
     const relaciones = Object.entries(rel).sort((a, b) => b[1] - a[1]).slice(0, 6)
@@ -183,7 +183,8 @@ export default function ClienteDetalle({ albaranes = [], usuario }) {
     { icon: Droplets,  label: 'Humedad media', valor: stats.humedadMedia != null ? fmtNum(stats.humedadMedia) : '—', unidad: stats.humedadMedia != null ? '%' : '', sub: stats.humedadesMedidas ? `de ${stats.humedadesMedidas} albaranes medidos` : 'sin mediciones todavía', ref: refActividad, tono: 'teal' },
   ]
 
-  const relTitulo = esAstilladora ? 'Instalaciones que abastece' : 'Proveedores que le suministran'
+  const campoRel = cliente.tipo === 'instalacion' ? 'proveedor' : 'instalacion'
+  const relTitulo = campoRel === 'instalacion' ? 'Instalaciones que abastece' : 'Proveedores que le suministran'
 
   return (
     <div className="cd-page" style={{ '--cd-color': color }}>
@@ -429,8 +430,8 @@ export default function ClienteDetalle({ albaranes = [], usuario }) {
             </div>
           ) : (
             <Vacio icon={Network} titulo="Sin datos todavía"
-              texto={esAstilladora
-                ? 'Cuando esta astilladora tenga albaranes, verás aquí las instalaciones a las que abastece.'
+              texto={campoRel === 'instalacion'
+                ? `Cuando ${esAstilladora ? 'esta astilladora' : 'este proveedor'} tenga albaranes, verás aquí las instalaciones a las que abastece.`
                 : 'Cuando esta instalación reciba albaranes, verás aquí sus proveedores.'} />
           )}
         </div>
@@ -448,7 +449,7 @@ export default function ClienteDetalle({ albaranes = [], usuario }) {
                 <div className="cd-alb-dest-id">{destacado.id}</div>
                 <div className="cd-alb-dest-meta">
                   <span><Clock size={12} /> {fmtFecha(destacado.fecha)}</span>
-                  <span><Icon size={12} /> {(esAstilladora ? destacado.instalacion : destacado.proveedor) || '—'}</span>
+                  <span><Icon size={12} /> {destacado[campoRel] || '—'}</span>
                   {netoKg(destacado) ? <span><Weight size={12} /> {fmtNum(netoKg(destacado) / 1000)} t</span> : null}
                 </div>
                 <ArrowUpRight size={16} className="cd-alb-dest-arrow" />
@@ -457,7 +458,7 @@ export default function ClienteDetalle({ albaranes = [], usuario }) {
                 <button key={a.id} className="cd-alb" onClick={() => navigate(`/albaran/${a.id}`)}>
                   <div className="cd-alb-info">
                     <div className="cd-alb-id">{a.id}</div>
-                    <div className="cd-alb-otro">{fmtFecha(a.fecha)} · {(esAstilladora ? a.instalacion : a.proveedor) || '—'}</div>
+                    <div className="cd-alb-otro">{fmtFecha(a.fecha)} · {a[campoRel] || '—'}</div>
                   </div>
                   <Badge estado={a.estado} />
                   <ChevronRight size={14} className="cli-chevron" />

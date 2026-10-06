@@ -506,7 +506,7 @@ export default function Administracion({ usuario }) {
                           <button className="btn btn-ghost" style={{ padding: '4px 8px', fontSize: 11 }} onClick={() => abrirEditar(p)}>
                             <Pencil size={12} /> Editar
                           </button>
-                          {(p.tipo === 'astilladora' || p.tipo === 'instalacion') && (
+                          {tienePanel(p) && (
                             <button
                               className="btn btn-ghost"
                               style={{ padding: '4px 8px', fontSize: 11, color: logos[`empresa_${slugify(p.nombre)}`] ? 'var(--green-600)' : 'var(--gray-400)' }}

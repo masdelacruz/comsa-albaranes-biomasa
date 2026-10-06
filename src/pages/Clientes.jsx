@@ -2,11 +2,11 @@ import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { ExternalLink, Copy, Check, RefreshCw, ChevronRight, Search } from 'lucide-react'
 import { api } from '../lib/api'
-import { SECCIONES_CLIENTES, slugify, panelUrl } from '../utils/clientes'
+import { SECCIONES_CLIENTES, TIPOS_CLIENTE, slugify, panelUrl } from '../utils/clientes'
 import '../components/shared.css'
 import './Clientes.css'
 
-// Listado de astilladoras e instalaciones. Cada fila abre la ficha del
+// Listado de astilladoras, instalaciones y proveedores. Cada fila abre la ficha del
 // cliente; los botones de la derecha gestionan su enlace único y permanente
 // al panel externo — solo cambia si se regenera el código (por ejemplo, tras
 // detectar una anomalía) y el enlace anterior deja de funcionar.
@@ -25,7 +25,7 @@ export default function Clientes({ albaranes = [], usuario }) {
   const fetchClientes = async () => {
     try {
       const data = await api.get('/empresas')
-      setClientes((data || []).filter(p => p.tipo === 'astilladora' || p.tipo === 'instalacion'))
+      setClientes((data || []).filter(p => TIPOS_CLIENTE.has(p.tipo)))
     } catch {}
     setLoading(false)
   }
@@ -64,7 +64,7 @@ export default function Clientes({ albaranes = [], usuario }) {
     <div>
       <div className="page-header">
         <div className="page-title">Clientes</div>
-        <div className="page-sub">Astilladoras e instalaciones · pulsa en un cliente para ver su ficha</div>
+        <div className="page-sub">Astilladoras, instalaciones y proveedores · pulsa en un cliente para ver su ficha</div>
       </div>
 
       <div style={{ padding: '0 28px 28px' }}>

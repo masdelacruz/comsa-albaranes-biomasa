@@ -7,6 +7,7 @@ import './PanelInstalacion.css'
 // estructura que los paneles de astilladora e instalación; lo único que se
 // le pide por albarán es su albarán y el origen (si oficina no lo indicó).
 
+const slugify = s => s.toLowerCase().replace(/s+/g, '_').replace(/[^a-z0-9_]/g, '')
 const fmtFecha = (f) => f ? String(f).slice(0,10).split('-').reverse().join('/') : null
 
 function fmtFirmaTs(ts) {
@@ -317,7 +318,15 @@ export default function PanelProveedor() {
   const [showOk,          setShowOk]         = useState(false)
   const [diaSeleccionado, setDiaSeleccionado] = useState('hoy')
   const [abiertoId,       setAbiertoId]      = useState(null)
+  const [logoUrl,         setLogoUrl]        = useState(null)
   const showOkTimer = useRef(null)
+
+  useEffect(() => {
+    fetch(`/api/storage/logos/public/empresa_${slugify(nombreProveedor)}`)
+      .then(r => r.ok ? r.json() : null)
+      .then(d => { if (d?.url) setLogoUrl(d.url) })
+      .catch(() => {})
+  }, [nombreProveedor])
 
   const fetchData = useCallback(async (manual = false) => {
     if (manual) setRefreshing(true)
@@ -373,7 +382,10 @@ export default function PanelProveedor() {
   return (
     <div className="pi-page">
       <div className="pi-header" style={{ background: VERDE_DEFAULT }}>
-        <div className="pi-header-logo"><Leaf size={14} color="#fff" /></div>
+        {logoUrl
+          ? <div className="pi-header-logo-img"><img src={logoUrl} alt="Logo" /></div>
+          : <div className="pi-header-logo"><Leaf size={14} color="#fff" /></div>
+        }
         <div>
           <div className="pi-header-title">Proveedor</div>
           <div className="pi-header-sub">{nombreProveedor}</div>

@@ -195,13 +195,13 @@ export default function EmpresaModal({ empresa, tipoInicial = 'proveedor', logos
               </section>
             )}
 
-            {editando && (form.tipo === 'astilladora' || form.tipo === 'instalacion') && (() => {
+            {editando && (form.tipo === 'astilladora' || form.tipo === 'instalacion' || form.tipo === 'proveedor') && (() => {
               const logoId  = `empresa_${slugify(form.nombre)}`
               const logoUrl = logos[logoId]
               const subiendo = !!subiendoLogo[logoId]
               return (
                 <section className="em-section">
-                  <div className="em-section-title"><Image size={12} /> Logo · firma y sello</div>
+                  <div className="em-section-title"><Image size={12} /> {form.tipo === 'proveedor' ? 'Logo' : 'Logo · firma y sello'}</div>
                   <div
                     style={{
                       border: dragOverLogoModal ? '2px dashed var(--green-400)' : '1px solid var(--gray-200)',
@@ -250,7 +250,7 @@ export default function EmpresaModal({ empresa, tipoInicial = 'proveedor', logos
                       </button>
                     )
                   )}
-                  <div className="em-hint" style={{marginTop:6}}>PNG, JPG o WEBP · Cabecera del panel y firma/sello al confirmar desde el campo</div>
+                  <div className="em-hint" style={{marginTop:6}}>PNG, JPG o WEBP · {form.tipo === 'proveedor' ? 'Cabecera de su panel y su ficha de cliente' : 'Cabecera del panel y firma/sello al confirmar desde el campo'}</div>
                 </section>
               )
             })()}
