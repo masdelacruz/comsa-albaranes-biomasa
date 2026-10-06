@@ -173,7 +173,7 @@ export default function ClienteDetalle({ albaranes = [], usuario }) {
     { icon: UserRound, label: 'Persona de contacto', valor: cliente.contacto },
     { icon: Phone,     label: 'Teléfono', valor: cliente.telefono, href: telHref },
     { icon: Mail,      label: 'Email', valor: cliente.email, href: cliente.email && `mailto:${cliente.email}` },
-    { icon: Clock,     label: 'Horario', valor: cliente.horario },
+    ...(cliente.tipo === 'proveedor' ? [] : [{ icon: Clock, label: 'Horario', valor: cliente.horario }]),
   ]
 
   const kpis = [
