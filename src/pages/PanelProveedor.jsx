@@ -1,7 +1,9 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { useParams, useLocation } from 'react-router-dom'
 import { CheckCircle, ChevronRight, ChevronDown, Leaf, RefreshCw, MapPin, FileText, Upload } from 'lucide-react'
+import NotificacionesBell from '../components/NotificacionesBell'
 import PanelCompletados from '../components/PanelCompletados'
+import { useLogoEmpresa } from '../hooks/useLogoEmpresa'
 import { completadosFuera } from '../utils/panelCompletados'
 import './PanelInstalacion.css'
 
@@ -9,7 +11,6 @@ import './PanelInstalacion.css'
 // estructura que los paneles de astilladora e instalación; lo único que se
 // le pide por albarán es su albarán y el origen (si oficina no lo indicó).
 
-const slugify = s => s.toLowerCase().replace(/s+/g, '_').replace(/[^a-z0-9_]/g, '')
 const fmtFecha = (f) => f ? String(f).slice(0,10).split('-').reverse().join('/') : null
 
 function fmtFirmaTs(ts) {
@@ -329,15 +330,11 @@ export default function PanelProveedor() {
   const [showOk,          setShowOk]         = useState(false)
   const [diaSeleccionado, setDiaSeleccionado] = useState('hoy')
   const [abiertoId,       setAbiertoId]      = useState(null)
-  const [logoUrl,         setLogoUrl]        = useState(null)
-  const showOkTimer = useRef(null)
-
-  useEffect(() => {
-    fetch(`/api/storage/logos/public/empresa_${slugify(nombreProveedor)}`)
-      .then(r => r.ok ? r.json() : null)
-      .then(d => { if (d?.url) setLogoUrl(d.url) })
-      .catch(() => {})
-  }, [nombreProveedor])
+  const [hayCambios,      setHayCambios]     = useState(false)
+  const showOkTimer     = useRef(null)
+  const hayCambiosTimer = useRef(null)
+  const signaturaRef    = useRef(null)
+  const { logoUrl, headerBgColor } = useLogoEmpresa(nombreProveedor)
 
   const fetchData = useCallback(async (manual = false) => {
     if (manual) setRefreshing(true)
@@ -345,9 +342,18 @@ export default function PanelProveedor() {
       const res = await fetch(`/api/albaranes/proveedor/${encodeURIComponent(nombreProveedor)}?c=${encodeURIComponent(codigo)}`)
       if (res.status === 401 || res.status === 403 || res.status === 404) { setCodigoInvalido(true); return }
       const data = await res.json()
-      setAlbaranes((Array.isArray(data) ? data : []).map(a => ({ ...a, completado: a.completado || a.cerrado })))
+      const arr  = (Array.isArray(data) ? data : []).map(a => ({ ...a, completado: a.completado || a.cerrado }))
+      const sig  = arr.map(a => `${a.id}:${a.completado}:${a.estado}`).join('|')
+      if (!manual && signaturaRef.current !== null && sig !== signaturaRef.current) {
+        clearTimeout(hayCambiosTimer.current)
+        setHayCambios(true)
+        hayCambiosTimer.current = setTimeout(() => setHayCambios(false), 6000)
+      }
+      signaturaRef.current = sig
+      setAlbaranes(arr)
       setLastUpdate(new Date())
       if (manual) {
+        setHayCambios(false)
         clearTimeout(showOkTimer.current)
         setShowOk(true)
         showOkTimer.current = setTimeout(() => setShowOk(false), 2500)
@@ -395,7 +401,7 @@ export default function PanelProveedor() {
 
   return (
     <div className="pi-page pi-page--desktop">
-      <div className="pi-header" style={{ background: VERDE_DEFAULT }}>
+      <div className="pi-header" style={{ background: headerBgColor || VERDE_DEFAULT }}>
         <div className="pi-header-brand">
           {logoUrl
             ? <div className="pi-header-logo-img"><img src={logoUrl} alt="Logo" /></div>
@@ -409,6 +415,17 @@ export default function PanelProveedor() {
         </div>
         <div style={{ marginLeft:'auto', display:'flex', alignItems:'center', gap:8 }}>
           {showOk && <span className="pi-refresh-ok">✓ Actualizado</span>}
+          {hayCambios && !showOk && (
+            <span style={{
+              fontSize:11, fontWeight:600, color:'#92400e',
+              background:'#fef3c7', border:'1px solid #fbbf24',
+              borderRadius:20, padding:'3px 8px', display:'flex', alignItems:'center', gap:4,
+            }}>
+              <span style={{width:6,height:6,borderRadius:'50%',background:'#f59e0b',display:'inline-block'}} />
+              Cambios
+            </span>
+          )}
+          <NotificacionesBell tipo="proveedor" nombre={nombreProveedor} codigo={codigo} />
           <button
             className={`pi-refresh${refreshing ? ' pi-refresh-spin' : ''}`}
             onClick={() => fetchData(true)}

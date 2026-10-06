@@ -188,11 +188,22 @@ async function completarPasoProveedor(id, nombreProveedor) {
 // Notifica (email + notificación persistente en su panel) a la astilladora
 // de que se le ha puesto a disposición un albarán al enviarlo a campo.
 // Fire & forget — no debe bloquear ni hacer fallar la respuesta al cliente.
+// Opción 2: el primer paso es del proveedor — aviso en su panel y email
+// con el enlace. Fire & forget.
+function notificarProveedor(albaran) {
+  if (!esOpcion2(albaran?.tipo) || !albaran.proveedor || !albaran.firmas?.proveedor) return
+  crearNotificacion({
+    empresaTipo: 'proveedor',
+    empresaNombre: albaran.proveedor,
+    albaranId: albaran.id,
+    tipo: 'enviado_a_campo',
+    mensaje: `Adjunta tu albarán${albaran.origen ? '' : ' e indica el origen'} del albarán ${albaran.id}.`,
+  }).catch(() => {})
+  enviarNotificacionAlbaranAProveedor(albaran).catch(() => {})
+}
+
 function notificarEnvioACampo(albaran) {
-  // Opción 2: el primer paso es del proveedor — se le avisa con el enlace a su panel
-  if (esOpcion2(albaran?.tipo) && albaran.proveedor && albaran.firmas?.proveedor) {
-    enviarNotificacionAlbaranAProveedor(albaran).catch(() => {})
-  }
+  notificarProveedor(albaran)
   if (!albaran?.astilladora) return
   crearNotificacion({
     empresaTipo: 'astilladora',
@@ -775,7 +786,7 @@ router.post('/', requireAuth, async (req, res) => {
 
     await client.query('COMMIT')
     if (f.enviarACampo && esOpcion2(f.tipo) && f.proveedor) {
-      fetchOne(id).then(a => a && enviarNotificacionAlbaranAProveedor(a)).catch(() => {})
+      fetchOne(id).then(notificarProveedor).catch(() => {})
     }
     registrarAuditoria({
       usuario: req.user, accion: 'crear', entidad: 'albaran', entidadId: id,

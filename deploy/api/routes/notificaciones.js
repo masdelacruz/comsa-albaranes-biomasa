@@ -1,13 +1,13 @@
 /**
  * routes/notificaciones.js — notificaciones persistentes de los paneles
- * públicos de cliente (astilladora / instalación). Sin auth: el acceso a
+ * públicos de cliente (proveedor / astilladora / instalación). Sin auth: el acceso a
  * esos paneles ya es por nombre de empresa en la URL, sin usuario logueado.
  */
 const router = require('express').Router()
 const pool   = require('../db')
 const { requireAuthOrEmpresaCodigo } = require('../lib/campoAuth')
 
-const TIPOS_VALIDOS = ['astilladora', 'instalacion']
+const TIPOS_VALIDOS = ['proveedor', 'astilladora', 'instalacion']
 
 // ── GET /notificaciones/:tipo/:nombre  (oficina o código de la empresa) ──
 router.get('/:tipo/:nombre', requireAuthOrEmpresaCodigo(), async (req, res) => {

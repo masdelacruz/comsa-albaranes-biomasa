@@ -4,9 +4,9 @@ import { CheckCircle, ChevronRight, Leaf, RefreshCw, MapPin } from 'lucide-react
 import NotificacionesBell from '../components/NotificacionesBell'
 import PanelCompletados from '../components/PanelCompletados'
 import { completadosFuera } from '../utils/panelCompletados'
+import { useLogoEmpresa } from '../hooks/useLogoEmpresa'
 import './PanelInstalacion.css'
 
-const slugify = s => s.toLowerCase().replace(/\s+/g, '_').replace(/[^a-z0-9_]/g, '')
 const fmtFecha = (f) => f ? String(f).slice(0,10).split('-').reverse().join('/') : null
 
 function fmtFirmaTs(ts) {
@@ -141,7 +141,7 @@ function InfoCamion({ a, conDestino }) {
       {especie    && <div className="pi-camion-meta">{especie}</div>}
       {fechaHora  && <div className="pi-camion-meta">{fechaHora}</div>}
       {firmado && a.astilladoraFecha && (
-        <div className="pi-camion-meta verde">✓ Firmado · {fmtFirmaTs(a.astilladoraFecha)}</div>
+        <div className="pi-camion-meta verde">✓ Completado · {fmtFirmaTs(a.astilladoraFecha)}</div>
       )}
     </div>
   )
@@ -205,7 +205,7 @@ function GrupoInstalacion({ instalacion, albaranes, desdeId }) {
         <div className="pi-flota-icon"><MapPin size={15} color="var(--green-600)" /></div>
         <div style={{ flex: 1, minWidth: 0 }}>
           <div className="pi-flota-title" style={{ overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{instalacion}</div>
-          <div className="pi-flota-sub">{total} camión{total !== 1 ? 'es' : ''}{planSorted.length > 0 ? ` · ${planSorted.length} planificado${planSorted.length !== 1 ? 's' : ''}` : ''}</div>
+          <div className="pi-flota-sub">{total} albarán{total !== 1 ? 'es' : ''}{planSorted.length > 0 ? ` · ${planSorted.length} planificado${planSorted.length !== 1 ? 's' : ''}` : ''}</div>
         </div>
         <div className="pi-flota-badge">{firmados}/{total}</div>
       </div>
@@ -246,77 +246,12 @@ export default function PanelAstilladora() {
   const [refreshing,     setRefreshing]    = useState(false)
   const [showOk,         setShowOk]        = useState(false)
   const [hayCambios,     setHayCambios]    = useState(false)
-  const [logoUrl,        setLogoUrl]       = useState(null)
-  const [headerBgColor,  setHeaderBgColor] = useState(null)
   const [diaSeleccionado, setDiaSeleccionado] = useState('hoy')
   const showOkTimer    = useRef(null)
   const hayCambiosTimer = useRef(null)
   const signaturaRef   = useRef(null)
 
-  useEffect(() => {
-    const logoId = `empresa_${slugify(nombreAstilladora)}`
-    fetch(`/api/storage/logos/public/${logoId}`)
-      .then(r => r.ok ? r.json() : null)
-      .then(d => { if (d?.url) setLogoUrl(d.url) })
-      .catch(() => {})
-  }, [nombreAstilladora])
-
-  useEffect(() => {
-    if (!logoUrl) { setHeaderBgColor(null); return }
-    let objUrl = null
-    fetch(logoUrl)
-      .then(r => r.blob())
-      .then(blob => {
-        objUrl = URL.createObjectURL(blob)
-        const img = new Image()
-        img.onload = () => {
-          try {
-            const canvas = document.createElement('canvas')
-            const scale  = Math.min(1, 64 / Math.max(img.width || 1, img.height || 1))
-            canvas.width  = Math.max(1, Math.round((img.width  || 1) * scale))
-            canvas.height = Math.max(1, Math.round((img.height || 1) * scale))
-            const ctx = canvas.getContext('2d')
-            ctx.drawImage(img, 0, 0, canvas.width, canvas.height)
-            const data = ctx.getImageData(0, 0, canvas.width, canvas.height).data
-            let r = 0, g = 0, b = 0, count = 0
-            for (let i = 0; i < data.length; i += 4) {
-              if (data[i + 3] > 128) { r += data[i]; g += data[i+1]; b += data[i+2]; count++ }
-            }
-            if (count > 0) {
-              const nr = r / count / 255, ng = g / count / 255, nb = b / count / 255
-              const max = Math.max(nr, ng, nb), min = Math.min(nr, ng, nb)
-              let h = 0, s = 0
-              const l = (max + min) / 2
-              if (max !== min) {
-                const d = max - min
-                s = l > 0.5 ? d / (2 - max - min) : d / (max + min)
-                if (max === nr) h = ((ng - nb) / d + (ng < nb ? 6 : 0)) / 6
-                else if (max === ng) h = ((nb - nr) / d + 2) / 6
-                else h = ((nr - ng) / d + 4) / 6
-              }
-              const tL = 0.18, tS = Math.max(0.35, Math.min(0.85, s))
-              const hue2rgb = (p, q, t) => {
-                if (t < 0) t += 1; if (t > 1) t -= 1
-                if (t < 1/6) return p + (q - p) * 6 * t
-                if (t < 1/2) return q
-                if (t < 2/3) return p + (q - p) * (2/3 - t) * 6
-                return p
-              }
-              const q2 = tL < 0.5 ? tL * (1 + tS) : tL + tS - tL * tS
-              const p2  = 2 * tL - q2
-              const fr  = Math.round(hue2rgb(p2, q2, h + 1/3) * 255)
-              const fg  = Math.round(hue2rgb(p2, q2, h) * 255)
-              const fb  = Math.round(hue2rgb(p2, q2, h - 1/3) * 255)
-              setHeaderBgColor(`rgb(${fr},${fg},${fb})`)
-            }
-          } catch {}
-          URL.revokeObjectURL(objUrl)
-        }
-        img.onerror = () => URL.revokeObjectURL(objUrl)
-        img.src = objUrl
-      })
-      .catch(() => {})
-  }, [logoUrl])
+  const { logoUrl, headerBgColor } = useLogoEmpresa(nombreAstilladora)
 
   const fetchData = useCallback(async (manual = false) => {
     if (manual) setRefreshing(true)
@@ -431,7 +366,7 @@ export default function PanelAstilladora() {
         <div className="pi-empty">
           <CheckCircle size={40} color="var(--green-400)" />
           <div className="pi-empty-title">Todo al día</div>
-          <div className="pi-empty-sub">No hay camiones pendientes de firma.</div>
+          <div className="pi-empty-sub">No hay albaranes pendientes.</div>
           {lastUpdate && <div className="pi-last-update">{labelFechaSec(isoLocal(lastUpdate))} · {lastUpdate.toLocaleTimeString('es-ES', { hour:'2-digit', minute:'2-digit' })}</div>}
         </div>
       ) : (
@@ -445,7 +380,7 @@ export default function PanelAstilladora() {
               <div className="pi-resumen-sep" />
               <div className="pi-resumen-item">
                 <span className="pi-resumen-num">{total - pendientes}</span>
-                <span className="pi-resumen-label">firmado{total - pendientes !== 1 ? 's' : ''}</span>
+                <span className="pi-resumen-label">completado{total - pendientes !== 1 ? 's' : ''}</span>
               </div>
               <div className="pi-resumen-sep" />
               <div className="pi-resumen-item">
