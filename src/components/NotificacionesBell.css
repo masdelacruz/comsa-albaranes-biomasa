@@ -4,7 +4,7 @@
   position: relative;
   background: rgba(255,255,255,0.12);
   border: none;
-  border-radius: 10px;
+  border-radius: 6px;
   padding: 9px;
   color: rgba(255,255,255,0.85);
   cursor: pointer;
@@ -38,7 +38,7 @@
   width: 320px;
   max-width: calc(100vw - 32px);
   background: #fff;
-  border-radius: var(--radius-lg, 14px);
+  border-radius: var(--radius-lg, 8px);
   box-shadow: 0 12px 32px rgba(0,0,0,0.18);
   overflow: hidden;
   z-index: 60;

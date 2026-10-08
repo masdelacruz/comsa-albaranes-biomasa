@@ -12,7 +12,7 @@
 .dashboard .stat-grid { margin:22px 0; }
 
 /* Alertas */
-.dashboard .alerta-bar { display:flex; align-items:center; gap:8px; background:var(--amber-50); border:1px solid var(--amber-100); border-radius:12px; padding:10px 14px; margin-bottom:20px; font-size:13px; color:var(--amber-700); cursor:pointer; transition:background 0.15s; }
+.dashboard .alerta-bar { display:flex; align-items:center; gap:8px; background:var(--amber-50); border:1px solid var(--amber-100); border-radius:7px; padding:10px 14px; margin-bottom:20px; font-size:13px; color:var(--amber-700); cursor:pointer; transition:background 0.15s; }
 .dashboard .alerta-bar:hover { background:var(--amber-100); }
 .dashboard .alerta-link { margin-left:auto; font-weight:500; white-space:nowrap; }
 
@@ -31,7 +31,7 @@
 
 .dashboard .dash-activity-card,
 .dashboard .dash-atencion-card {
-  background:#fff; border:1px solid #E8E8E5; border-radius:14px;
+  background:#fff; border:1px solid #E8E8E5; border-radius:8px;
   padding:18px 20px; box-shadow:0 1px 2px rgba(20,20,15,0.03);
   display:flex; flex-direction:column;
 }
@@ -46,7 +46,7 @@
 
 .dashboard .dash-activity-select {
   display:flex; align-items:center; gap:6px; flex-shrink:0; white-space:nowrap;
-  padding:6px 10px; border:1px solid var(--gray-200); border-radius:8px;
+  padding:6px 10px; border:1px solid var(--gray-200); border-radius:5px;
   font-size:12px; font-weight:500; color:var(--gray-600); background:var(--gray-50);
 }
 
@@ -57,7 +57,7 @@
 .dashboard .dash-act-bars { position:absolute; inset:0; display:flex; align-items:flex-end; gap:10px; }
 .dashboard .dash-act-col { flex:1; display:flex; flex-direction:column; align-items:center; justify-content:flex-end; height:100%; }
 .dashboard .dash-act-val { font-size:11px; font-weight:700; color:var(--gray-700); margin-bottom:4px; }
-.dashboard .dash-act-bar { width:60%; max-width:34px; border-radius:4px 4px 0 0; background:var(--green-400); min-height:3px; transition:height 0.4s ease; }
+.dashboard .dash-act-bar { width:60%; max-width:34px; border-radius:3px 3px 0 0; background:var(--green-400); min-height:3px; transition:height 0.4s ease; }
 .dashboard .dash-act-bar.vacio { background:var(--gray-100); }
 .dashboard .dash-act-daylabels { display:flex; gap:10px; margin-left:28px; margin-top:10px; }
 .dashboard .dash-act-daylabel { flex:1; text-align:center; font-size:10.5px; color:var(--gray-400); line-height:1.4; }
@@ -66,7 +66,7 @@
 .dashboard .dash-atencion-title-row { display:flex; align-items:center; }
 .dashboard .dash-atencion-count {
   font-size:11px; font-weight:700; color:var(--amber-700); background:var(--amber-100);
-  border-radius:99px; padding:1px 7px; margin-left:7px;
+  border-radius:4px; padding:1px 7px; margin-left:7px;
 }
 /* Filas compactas de una sola línea — como mucho 3 (slice en el JSX),
    así que caben siempre sin scroll interno. flex:1 sin centrar: las
@@ -76,7 +76,7 @@
 .dashboard .dash-atencion-list { display:flex; flex-direction:column; gap:10px; flex:1; }
 .dashboard .dash-atencion-item {
   display:flex; align-items:center; gap:10px;
-  padding:9px 10px; border-radius:8px;
+  padding:9px 10px; border-radius:5px;
   background:var(--amber-50); cursor:pointer; transition:background 0.15s;
 }
 .dashboard .dash-atencion-item:hover { background:#fef6e3; }
@@ -101,7 +101,7 @@
 }
 
 /* ── Bloque principal unificado (título + tabs + filtros + tabla) ──── */
-.dashboard .dash-main { background:#fff; border:1px solid #E8E8E5; border-radius:12px; overflow:hidden; }
+.dashboard .dash-main { background:#fff; border:1px solid #E8E8E5; border-radius:7px; overflow:hidden; }
 
 .dashboard .dash-main-head { display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:10px 20px; padding:16px 20px 10px; }
 .dashboard .dash-main-title { font-size:12px; font-weight:700; text-transform:uppercase; letter-spacing:0.6px; color:var(--gray-500); line-height:1; }
@@ -119,7 +119,7 @@
 .dashboard .dash-tab.active { color:var(--green-600); font-weight:600; border-bottom-color:var(--green-400); }
 .dashboard .dash-tab-count {
   font-size:10.5px; font-weight:600; line-height:1;
-  padding:2px 6px; border-radius:99px;
+  padding:2px 6px; border-radius:4px;
   background:var(--gray-100); color:var(--gray-500);
 }
 .dashboard .dash-tab.active .dash-tab-count { background:var(--green-50); color:var(--green-600); }
@@ -133,7 +133,7 @@
 
 /* Selector "Filas por página" en el pie de la tabla */
 .dashboard .dash-page-size { display:flex; align-items:center; gap:6px; font-size:12px; color:var(--gray-500); margin-right:12px; }
-.dashboard .dash-page-size select { height:28px; width:auto; padding:0 6px; font-size:12px; border:1px solid var(--gray-200); border-radius:6px; }
+.dashboard .dash-page-size select { height:28px; width:auto; padding:0 6px; font-size:12px; border:1px solid var(--gray-200); border-radius:4px; }
 
 /* Alineación numérica: Peso neto / Humedad */
 .dashboard .albaran-table th:nth-child(9),  .dashboard .albaran-table td:nth-child(9),

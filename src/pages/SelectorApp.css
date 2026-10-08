@@ -4,7 +4,7 @@
 
 .sa-heading { text-align:center; margin-bottom:40px; display:flex; flex-direction:column; align-items:center; }
 .sa-heading-icon {
-  width:48px; height:48px; border-radius:14px; background:#fff; border:1px solid #E8E8E5;
+  width:48px; height:48px; border-radius:8px; background:#fff; border:1px solid #E8E8E5;
   display:flex; align-items:center; justify-content:center; margin-bottom:16px; color:var(--gray-500);
   box-shadow:0 1px 2px rgba(20,20,15,0.04);
 }
@@ -21,7 +21,7 @@
 }
 .sa-card:hover { transform:translateY(-3px); box-shadow:0 10px 28px rgba(20,20,15,0.09); }
 
-.sa-card-icon { width:68px; height:68px; border-radius:18px; display:flex; align-items:center; justify-content:center; margin-bottom:18px; overflow:hidden; }
+.sa-card-icon { width:68px; height:68px; border-radius:10px; display:flex; align-items:center; justify-content:center; margin-bottom:18px; overflow:hidden; }
 .sa-card-icon img { width:100%; height:100%; object-fit:cover; }
 .sa-card-biomasa .sa-card-icon { background:var(--green-50); color:var(--green-600); }
 .sa-card-biomasa .sa-card-icon img { object-fit:contain; padding:6px; }

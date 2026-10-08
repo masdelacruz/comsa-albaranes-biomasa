@@ -1,15 +1,27 @@
-@import '@fontsource/dm-sans/300.css';
-@import '@fontsource/dm-sans/400.css';
-@import '@fontsource/dm-sans/400-italic.css';
-@import '@fontsource/dm-sans/500.css';
-@import '@fontsource/dm-sans/600.css';
 @import '@fontsource/dm-mono/400.css';
 @import '@fontsource/dm-mono/500.css';
+
+/* Satoshi (Fontshare, licencia libre) autoalojada: un único archivo
+   variable cubre de 300 a 900, incluido el 600 que no existe en estático. */
+@font-face {
+  font-family: 'Satoshi';
+  src: url('./assets/fonts/Satoshi-Variable.woff2') format('woff2');
+  font-weight: 300 900;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Satoshi';
+  src: url('./assets/fonts/Satoshi-VariableItalic.woff2') format('woff2');
+  font-weight: 300 900;
+  font-style: italic;
+  font-display: swap;
+}
 
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
 :root {
-  --font-main: 'DM Sans', sans-serif;
+  --font-main: 'Satoshi', system-ui, -apple-system, 'Segoe UI', sans-serif;
   --font-mono: 'DM Mono', monospace;
   --green-50:  #f0faf5;
   --green-100: #d4f1e3;
@@ -46,11 +58,11 @@
   --purple-700: #6d28d9;
   --border: 1px solid var(--gray-200);
   --border-light: 1px solid var(--gray-100);
-  --radius-sm: 6px;
-  --radius-md: 10px;
-  --radius-lg: 14px;
-  --radius-xl: 18px;
-  --shadow-sm: 0 1px 3px rgba(0,0,0,0.06);
+  --radius-sm: 4px;
+  --radius-md: 6px;
+  --radius-lg: 8px;
+  --radius-xl: 10px;
+  --shadow-sm: 0 1px 0 rgba(26,25,23,0.04), 0 1px 2px rgba(26,25,23,0.05);
 }
 
 html { font-size: 14px; }
@@ -60,7 +72,13 @@ body {
   color: var(--gray-900);
   line-height: 1.5;
   -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
 }
+h1, h2, h3, h4 { letter-spacing: -0.015em; }
+::selection { background: var(--green-100); color: var(--green-900); }
+:focus-visible { outline: 2px solid var(--green-400); outline-offset: 2px; }
+input:focus-visible, select:focus-visible, textarea:focus-visible { outline: none; }
 button { font-family: var(--font-main); cursor: pointer; border: none; outline: none; }
 input, select, textarea {
   font-family: var(--font-main);
@@ -76,7 +94,7 @@ input, select, textarea {
 }
 input:focus, select:focus, textarea:focus {
   border-color: var(--green-400);
-  box-shadow: 0 0 0 3px rgba(29,158,117,0.1);
+  box-shadow: 0 0 0 3px rgba(29,158,117,0.14);
 }
 textarea { resize: vertical; min-height: 70px; }
 input[type="checkbox"], input[type="radio"] { width:auto; height:auto; padding:0; border:none; background:none; box-shadow:none; transition:none; }

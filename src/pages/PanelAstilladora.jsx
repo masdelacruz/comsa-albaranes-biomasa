@@ -337,7 +337,7 @@ export default function PanelAstilladora() {
             <span style={{
               fontSize:11, fontWeight:600, color:'#92400e',
               background:'#fef3c7', border:'1px solid #fbbf24',
-              borderRadius:20, padding:'3px 8px', display:'flex', alignItems:'center', gap:4,
+              borderRadius:5, padding:'3px 8px', display:'flex', alignItems:'center', gap:4,
             }}>
               <span style={{width:6,height:6,borderRadius:'50%',background:'#f59e0b',display:'inline-block'}} />
               Cambios

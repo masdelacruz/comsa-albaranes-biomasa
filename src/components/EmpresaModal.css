@@ -17,7 +17,7 @@
 }
 .em-icon {
   width: 40px; height: 40px;
-  border-radius: 12px;
+  border-radius: 7px;
   display: flex; align-items: center; justify-content: center;
   flex-shrink: 0;
 }
@@ -40,7 +40,7 @@
 .em-estado {
   display: inline-flex; align-items: center; gap: 7px;
   padding: 5px 11px 5px 9px;
-  border-radius: 99px;
+  border-radius: 6px;
   font-size: 12px; font-weight: 500;
   border: 1px solid var(--gray-200);
   background: #fff; color: var(--gray-600);
@@ -57,7 +57,7 @@
 .em-estado.on .em-dot { background: var(--green-400); box-shadow: 0 0 0 3px rgba(29,158,117,0.18); }
 
 .em-close {
-  width: 30px; height: 30px; border-radius: 8px;
+  width: 30px; height: 30px; border-radius: 5px;
   display: flex; align-items: center; justify-content: center;
   background: none; color: var(--gray-400); flex-shrink: 0;
 }
@@ -75,7 +75,7 @@
 .em-modal .modal-field label { font-size: 11.5px; color: var(--gray-600); }
 .em-modal .modal-field input,
 .em-modal .modal-field select,
-.em-modal .modal-field textarea { padding: 8px 11px; border-radius: 8px; }
+.em-modal .modal-field textarea { padding: 8px 11px; border-radius: 5px; }
 .em-hint { font-size: 11px; color: var(--gray-400); margin-top: 2px; }
 
 /* SURE: casilla + referencia */
@@ -87,14 +87,14 @@
   color: var(--gray-800); cursor: pointer; user-select: none; flex-shrink: 0;
 }
 .em-box {
-  width: 18px; height: 18px; border-radius: 5px;
+  width: 18px; height: 18px; border-radius: 4px;
   border: 1.5px solid var(--gray-300); background: #fff;
   display: flex; align-items: center; justify-content: center;
   color: #fff; transition: background 0.15s, border-color 0.15s;
 }
 .em-check:hover .em-box { border-color: var(--green-400); }
 .em-check.on .em-box { background: var(--green-400); border-color: var(--green-400); }
-.em-sure input { flex: 1; min-width: 0; padding: 8px 11px; border-radius: 8px; font-family: var(--font-mono); font-size: 12.5px; letter-spacing: 0.3px; }
+.em-sure input { flex: 1; min-width: 0; padding: 8px 11px; border-radius: 5px; font-family: var(--font-mono); font-size: 12.5px; letter-spacing: 0.3px; }
 .em-sure input.falta { border-color: var(--red-400); }
 
 .em-footer {
@@ -121,10 +121,10 @@
 .em-contacto {
   display: grid; grid-template-columns: 1.4fr 1fr 28px 28px; gap: 8px; align-items: center;
 }
-.em-modal .em-contacto input { padding: 8px 11px; border-radius: 8px; min-width: 0; }
+.em-modal .em-contacto input { padding: 8px 11px; border-radius: 5px; min-width: 0; }
 .em-contacto-star,
 .em-contacto-quitar {
-  width: 28px; height: 28px; border-radius: 7px;
+  width: 28px; height: 28px; border-radius: 5px;
   display: flex; align-items: center; justify-content: center;
   background: none; color: var(--gray-300);
 }
@@ -134,7 +134,7 @@
 .em-contacto-anadir {
   align-self: flex-start; margin-top: 2px;
   display: inline-flex; align-items: center; gap: 5px;
-  padding: 5px 8px; border-radius: 7px;
+  padding: 5px 8px; border-radius: 5px;
   font-size: 12px; font-weight: 500; color: var(--green-600); background: none;
 }
 .em-contacto-anadir:hover:not(:disabled) { background: var(--green-50); }

@@ -149,7 +149,7 @@ export default function PerfilUsuario({ usuario, viewer, onClose, onGuardado }) 
                   </div>
                   <div
                     onClick={() => set('activo', !form.activo)}
-                    style={{ width: 38, height: 21, background: form.activo ? 'var(--green-400)' : 'var(--gray-200)', borderRadius: 11, position: 'relative', cursor: 'pointer', transition: 'background 0.2s', flexShrink: 0 }}>
+                    style={{ width: 38, height: 21, background: form.activo ? 'var(--green-400)' : 'var(--gray-200)', borderRadius: 7, position: 'relative', cursor: 'pointer', transition: 'background 0.2s', flexShrink: 0 }}>
                     <div style={{ position: 'absolute', top: 3, left: form.activo ? 18 : 3, width: 15, height: 15, background: '#fff', borderRadius: '50%', transition: 'left 0.2s', boxShadow: '0 1px 3px rgba(0,0,0,0.2)' }} />
                   </div>
                 </div>
@@ -176,7 +176,7 @@ export default function PerfilUsuario({ usuario, viewer, onClose, onGuardado }) 
                     </div>
                     <div
                       onClick={() => set(key, !form[key])}
-                      style={{ width: 38, height: 21, background: form[key] ? 'var(--green-400)' : 'var(--gray-200)', borderRadius: 11, position: 'relative', cursor: 'pointer', transition: 'background 0.2s', flexShrink: 0 }}>
+                      style={{ width: 38, height: 21, background: form[key] ? 'var(--green-400)' : 'var(--gray-200)', borderRadius: 7, position: 'relative', cursor: 'pointer', transition: 'background 0.2s', flexShrink: 0 }}>
                       <div style={{ position: 'absolute', top: 3, left: form[key] ? 18 : 3, width: 15, height: 15, background: '#fff', borderRadius: '50%', transition: 'left 0.2s', boxShadow: '0 1px 3px rgba(0,0,0,0.2)' }} />
                     </div>
                   </div>
@@ -203,7 +203,7 @@ export default function PerfilUsuario({ usuario, viewer, onClose, onGuardado }) 
                   </div>
                 </div>
               </div>
-              <div style={{ width: 38, height: 21, background: silenciado ? 'var(--gray-200)' : 'var(--green-400)', borderRadius: 11, position: 'relative', transition: 'background 0.2s', flexShrink: 0 }}>
+              <div style={{ width: 38, height: 21, background: silenciado ? 'var(--gray-200)' : 'var(--green-400)', borderRadius: 7, position: 'relative', transition: 'background 0.2s', flexShrink: 0 }}>
                 <div style={{ position: 'absolute', top: 3, left: silenciado ? 3 : 18, width: 15, height: 15, background: '#fff', borderRadius: '50%', transition: 'left 0.2s', boxShadow: '0 1px 3px rgba(0,0,0,0.2)' }} />
               </div>
             </div>

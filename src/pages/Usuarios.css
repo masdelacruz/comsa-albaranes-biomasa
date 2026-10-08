@@ -13,7 +13,7 @@
 /* Rol: truncar */
 .usuarios-table td:nth-child(3) { max-width:140px; overflow:hidden; text-overflow:ellipsis; }
 
-.nivel-badge { display:inline-block; padding:2px 8px; border-radius:20px; font-size:11px; font-weight:600; white-space:nowrap; }
+.nivel-badge { display:inline-block; padding:2px 8px; border-radius:5px; font-size:11px; font-weight:600; white-space:nowrap; }
 .nivel-superadmin { background:#fef3c7; color:#92400e; }
 .nivel-usuario    { background:var(--gray-100); color:var(--gray-600); }
 .nivel-basico     { background:var(--gray-50); color:var(--gray-400); }

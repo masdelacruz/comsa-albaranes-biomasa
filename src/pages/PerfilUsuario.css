@@ -42,7 +42,7 @@
 .pu-super  {
   display: inline-block; margin-top: 5px;
   font-size: 10px; background: #fef3c7; color: #92400e;
-  padding: 1px 7px; border-radius: 20px; font-weight: 600;
+  padding: 1px 7px; border-radius: 5px; font-weight: 600;
 }
 
 /* ── Body ─────────────────────────────────────────────────────────── */
@@ -99,7 +99,7 @@
 /* Toggle switch */
 .pu-sw {
   width: 38px; height: 21px;
-  background: var(--gray-200); border-radius: 11px;
+  background: var(--gray-200); border-radius: 7px;
   position: relative; flex-shrink: 0; transition: background 0.2s;
 }
 .pu-sw.on { background: var(--green-400); }

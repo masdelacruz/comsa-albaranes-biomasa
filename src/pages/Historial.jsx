@@ -413,30 +413,30 @@ export default function Historial({ albaranes, empresas = [], usuario, refetch, 
 
       {/* Pill flotante de acciones masivas — posición fija, no afecta al layout */}
       {seleccionados.size > 0 && (
-        <div style={{position:'fixed',bottom:28,left:'50%',transform:'translateX(-50%)',display:'flex',alignItems:'center',gap:6,padding:'10px 16px',background:'var(--gray-900)',borderRadius:999,boxShadow:'0 8px 32px rgba(0,0,0,0.28)',zIndex:200,whiteSpace:'nowrap'}}>
+        <div style={{position:'fixed',bottom:28,left:'50%',transform:'translateX(-50%)',display:'flex',alignItems:'center',gap:6,padding:'10px 16px',background:'var(--gray-900)',borderRadius:10,boxShadow:'0 8px 32px rgba(0,0,0,0.28)',zIndex:200,whiteSpace:'nowrap'}}>
           <span style={{fontSize:13,fontWeight:600,color:'rgba(255,255,255,0.75)',marginRight:6}}>{seleccionados.size} seleccionados</span>
           {[...seleccionados].some(id => albaranes.find(x => x.id === id)?.estado === 'programado') && (
             <button onClick={handleEnviarACampo} disabled={enviandoACampo}
-              style={{display:'inline-flex',alignItems:'center',gap:5,padding:'6px 12px',borderRadius:20,border:'1px solid rgba(29,158,117,0.5)',background:'rgba(29,158,117,0.2)',color:'#6ee7c7',fontSize:12,fontWeight:500,cursor:'pointer',opacity:enviandoACampo?0.6:1}}>
+              style={{display:'inline-flex',alignItems:'center',gap:5,padding:'6px 12px',borderRadius:5,border:'1px solid rgba(29,158,117,0.5)',background:'rgba(29,158,117,0.2)',color:'#6ee7c7',fontSize:12,fontWeight:500,cursor:'pointer',opacity:enviandoACampo?0.6:1}}>
               <Send size={13}/> {enviandoACampo ? 'Enviando...' : 'Enviar a campo'}
             </button>
           )}
           <button onClick={() => setModalAdjuntar(true)}
-            style={{display:'inline-flex',alignItems:'center',gap:5,padding:'6px 12px',borderRadius:20,border:'1px solid rgba(255,255,255,0.15)',background:'rgba(255,255,255,0.1)',color:'#fff',fontSize:12,fontWeight:500,cursor:'pointer'}}>
+            style={{display:'inline-flex',alignItems:'center',gap:5,padding:'6px 12px',borderRadius:5,border:'1px solid rgba(255,255,255,0.15)',background:'rgba(255,255,255,0.1)',color:'#fff',fontSize:12,fontWeight:500,cursor:'pointer'}}>
             <Upload size={13}/> Adjuntar doc
           </button>
           <button onClick={handleDescargarPDFs} disabled={descargando}
-            style={{display:'inline-flex',alignItems:'center',gap:5,padding:'6px 12px',borderRadius:20,border:'1px solid rgba(255,255,255,0.15)',background:'rgba(255,255,255,0.1)',color:'#fff',fontSize:12,fontWeight:500,cursor:'pointer',opacity:descargando?0.6:1}}>
+            style={{display:'inline-flex',alignItems:'center',gap:5,padding:'6px 12px',borderRadius:5,border:'1px solid rgba(255,255,255,0.15)',background:'rgba(255,255,255,0.1)',color:'#fff',fontSize:12,fontWeight:500,cursor:'pointer',opacity:descargando?0.6:1}}>
             <Download size={13}/> {descargando ? 'Descargando...' : 'PDFs'}
           </button>
           {esSuperadmin && (
             <button onClick={() => setConfirmEliminar(true)}
-              style={{display:'inline-flex',alignItems:'center',gap:5,padding:'6px 12px',borderRadius:20,border:'1px solid rgba(231,75,74,0.4)',background:'rgba(231,75,74,0.15)',color:'#ff8080',fontSize:12,fontWeight:500,cursor:'pointer'}}>
+              style={{display:'inline-flex',alignItems:'center',gap:5,padding:'6px 12px',borderRadius:5,border:'1px solid rgba(231,75,74,0.4)',background:'rgba(231,75,74,0.15)',color:'#ff8080',fontSize:12,fontWeight:500,cursor:'pointer'}}>
               <Trash2 size={13}/> Eliminar
             </button>
           )}
           <button onClick={cancelarSeleccion}
-            style={{display:'inline-flex',alignItems:'center',gap:4,padding:'6px 10px',borderRadius:20,border:'1px solid rgba(255,255,255,0.15)',background:'transparent',color:'rgba(255,255,255,0.5)',fontSize:12,cursor:'pointer',marginLeft:4}}>
+            style={{display:'inline-flex',alignItems:'center',gap:4,padding:'6px 10px',borderRadius:5,border:'1px solid rgba(255,255,255,0.15)',background:'transparent',color:'rgba(255,255,255,0.5)',fontSize:12,cursor:'pointer',marginLeft:4}}>
             × Cancelar
           </button>
         </div>

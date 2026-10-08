@@ -28,7 +28,7 @@
 .modal-field label { font-size:12px; font-weight:500; color:var(--gray-600); }
 .modal-field.full { grid-column:1/-1; }
 .modal-actions { display:flex; justify-content:flex-end; gap:8px; margin-top:18px; padding-top:16px; border-top:var(--border); }
-.tipo-badge { display:inline-block; padding:2px 8px; border-radius:20px; font-size:11px; font-weight:500; }
+.tipo-badge { display:inline-block; padding:2px 8px; border-radius:5px; font-size:11px; font-weight:500; }
 .tipo-badge.astilladora  { background:#E1F5EE; color:#085041; }
 .tipo-badge.transportista { background:#E6F1FB; color:#0C447C; }
 .tipo-badge.instalacion  { background:#FAEEDA; color:#633806; }

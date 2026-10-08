@@ -160,8 +160,8 @@ function CompletarAlbaran({ a, nombre, codigo, onCambio }) {
   }
 
   const etiqueta = { fontSize: 11, fontWeight: 600, color: 'var(--gray-500)', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 6 }
-  const input    = { flex: 1, minWidth: 0, padding: '9px 11px', fontSize: 14, border: '1px solid var(--gray-200)', borderRadius: 8, background: '#fff' }
-  const boton    = (activo) => ({ padding: '9px 14px', borderRadius: 8, border: 'none', fontSize: 13, fontWeight: 600, background: activo ? 'var(--green-400)' : 'var(--gray-200)', color: activo ? '#fff' : 'var(--gray-400)', cursor: activo ? 'pointer' : 'default', display: 'inline-flex', alignItems: 'center', gap: 6, flexShrink: 0 })
+  const input    = { flex: 1, minWidth: 0, padding: '9px 11px', fontSize: 14, border: '1px solid var(--gray-200)', borderRadius: 5, background: '#fff' }
+  const boton    = (activo) => ({ padding: '9px 14px', borderRadius: 5, border: 'none', fontSize: 13, fontWeight: 600, background: activo ? 'var(--green-400)' : 'var(--gray-200)', color: activo ? '#fff' : 'var(--gray-400)', cursor: activo ? 'pointer' : 'default', display: 'inline-flex', alignItems: 'center', gap: 6, flexShrink: 0 })
 
   return (
     <div style={{ padding: '4px 14px 14px', background: 'var(--gray-50)', borderBottom: '1px solid var(--gray-100)', display: 'flex', flexDirection: 'column', gap: 14 }} onClick={e => e.stopPropagation()}>
@@ -419,7 +419,7 @@ export default function PanelProveedor() {
             <span style={{
               fontSize:11, fontWeight:600, color:'#92400e',
               background:'#fef3c7', border:'1px solid #fbbf24',
-              borderRadius:20, padding:'3px 8px', display:'flex', alignItems:'center', gap:4,
+              borderRadius:5, padding:'3px 8px', display:'flex', alignItems:'center', gap:4,
             }}>
               <span style={{width:6,height:6,borderRadius:'50%',background:'#f59e0b',display:'inline-block'}} />
               Cambios

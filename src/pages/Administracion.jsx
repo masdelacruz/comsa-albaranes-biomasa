@@ -346,7 +346,7 @@ export default function Administracion({ usuario }) {
                     <div
                       style={{
                         border: isDragOver ? '2px dashed var(--green-400)' : '1px dashed var(--gray-200)',
-                        borderRadius: 6, minHeight: 86, display: 'flex', alignItems: 'center',
+                        borderRadius: 4, minHeight: 86, display: 'flex', alignItems: 'center',
                         justifyContent: 'center', cursor: 'pointer',
                         background: isDragOver ? 'rgba(29,158,117,0.06)' : 'var(--gray-50,#fafafa)',
                         overflow: 'hidden', transition: 'border 0.15s, background 0.15s',
@@ -375,11 +375,11 @@ export default function Administracion({ usuario }) {
                         </div>
                       )}
                     </div>
-                    {error && <div style={{ fontSize: 11, color: 'var(--red-600)', background: 'var(--red-50,#fff1f1)', border: '1px solid var(--red-100)', borderRadius: 4, padding: '4px 8px' }}>⚠ {error}</div>}
+                    {error && <div style={{ fontSize: 11, color: 'var(--red-600)', background: 'var(--red-50,#fff1f1)', border: '1px solid var(--red-100)', borderRadius: 3, padding: '4px 8px' }}>⚠ {error}</div>}
                     <input ref={el => { logoFileRefs.current[cfg.id] = el }} type="file" accept="image/*" style={{ display: 'none' }}
                       onChange={e => handleSubirLogo(cfg.id, e.target.files?.[0])} />
                     {confirmDelLogo === cfg.id ? (
-                      <div style={{ display: 'flex', gap: 6, alignItems: 'center', justifyContent: 'center', padding: '6px 4px', background: 'var(--red-50)', border: '1px solid var(--red-100)', borderRadius: 6 }}>
+                      <div style={{ display: 'flex', gap: 6, alignItems: 'center', justifyContent: 'center', padding: '6px 4px', background: 'var(--red-50)', border: '1px solid var(--red-100)', borderRadius: 4 }}>
                         <span style={{ fontSize: 11, color: 'var(--red-700)', fontWeight: 500 }}>¿Eliminar imagen?</span>
                         <button className="btn" style={{ padding: '4px 10px', fontSize: 11, color: 'var(--red-700)', borderColor: 'var(--red-200)' }}
                           onClick={() => handleEliminarLogo(cfg.id)}><Check size={11} /> Sí</button>
@@ -480,7 +480,7 @@ export default function Administracion({ usuario }) {
                         {p.nombre}
                         {p.tipo === 'proveedor' && p.es_sure && (
                           <span title={`Referencia SURE: ${p.referencia_sure || '—'}`}
-                            style={{ marginLeft: 8, fontSize: 10, fontWeight: 600, color: 'var(--green-600)', background: 'rgba(29,158,117,0.1)', border: '1px solid rgba(29,158,117,0.25)', borderRadius: 4, padding: '1px 6px', textDecoration: 'none', display: 'inline-block', verticalAlign: 'middle' }}>
+                            style={{ marginLeft: 8, fontSize: 10, fontWeight: 600, color: 'var(--green-600)', background: 'rgba(29,158,117,0.1)', border: '1px solid rgba(29,158,117,0.25)', borderRadius: 3, padding: '1px 6px', textDecoration: 'none', display: 'inline-block', verticalAlign: 'middle' }}>
                             SURE · {p.referencia_sure || '—'}
                           </span>
                         )}
@@ -489,7 +489,7 @@ export default function Administracion({ usuario }) {
                         {p.contacto || <span style={{ color: 'var(--gray-300)' }}>—</span>}
                         {(p.contactos?.length || 0) > 1 && (
                           <span title={p.contactos.slice(1).map(c => c.nombre).filter(Boolean).join(', ')}
-                            style={{ marginLeft: 6, fontSize: 10.5, fontWeight: 600, color: 'var(--gray-500)', background: 'var(--gray-100)', borderRadius: 99, padding: '1px 6px' }}>
+                            style={{ marginLeft: 6, fontSize: 10.5, fontWeight: 600, color: 'var(--gray-500)', background: 'var(--gray-100)', borderRadius: 4, padding: '1px 6px' }}>
                             +{p.contactos.length - 1}
                           </span>
                         )}
@@ -598,7 +598,7 @@ export default function Administracion({ usuario }) {
                 <div
                   style={{
                     border: dragOverLogoModal ? '2px dashed var(--green-400)' : logoUrl ? '1px solid var(--gray-200)' : '1px dashed var(--gray-200)',
-                    borderRadius:8, padding: logoUrl ? 16 : 24,
+                    borderRadius:5, padding: logoUrl ? 16 : 24,
                     background: dragOverLogoModal ? 'rgba(29,158,117,0.06)' : 'var(--gray-50)',
                     textAlign:'center', marginBottom:14, cursor:'pointer', transition:'border 0.15s, background 0.15s',
                   }}
@@ -633,7 +633,7 @@ export default function Administracion({ usuario }) {
                 </div>
                 {logoUrl && (
                   confirmBorrarLogo ? (
-                    <div style={{display:'flex',gap:6,alignItems:'center',justifyContent:'center',padding:'8px',background:'var(--red-50)',border:'1px solid var(--red-100)',borderRadius:8}}>
+                    <div style={{display:'flex',gap:6,alignItems:'center',justifyContent:'center',padding:'8px',background:'var(--red-50)',border:'1px solid var(--red-100)',borderRadius:5}}>
                       <span style={{fontSize:12,color:'var(--red-700)',fontWeight:500}}>¿Eliminar logo?</span>
                       <button className="btn" style={{padding:'4px 10px',fontSize:11,color:'var(--red-700)',borderColor:'var(--red-200)'}}
                         onClick={async () => { await handleEliminarLogo(logoId); setConfirmBorrarLogo(false) }}><Check size={11}/> Sí</button>

@@ -23,7 +23,7 @@
 .pdf-loading-card { background:#fff; border-radius:var(--radius-xl); padding:32px 46px; display:flex; flex-direction:column; align-items:center; gap:16px; box-shadow:0 20px 60px rgba(0,0,0,0.25); }
 .pdf-loading-text { font-size:13px; font-weight:600; color:var(--gray-700); }
 
-.badge { display:inline-block; padding:3px 8px; border-radius:20px; font-size:11px; font-weight:600; letter-spacing:0.1px; white-space:nowrap; }
+.badge { display:inline-block; padding:3px 8px; border-radius:5px; font-size:11px; font-weight:600; letter-spacing:0.1px; white-space:nowrap; }
 .badge-green  { background:var(--green-100);  color:var(--green-600);  }
 .badge-amber  { background:var(--amber-100);  color:var(--amber-700);  }
 .badge-orange { background:var(--orange-100); color:var(--orange-700); }
@@ -31,7 +31,7 @@
 .badge-blue   { background:var(--blue-100);   color:var(--blue-700);   }
 .badge-purple { background:var(--purple-100); color:var(--purple-700); }
 .badge-gray   { background:var(--gray-100);   color:var(--gray-600);   }
-.firma-steps              { display:inline-flex; align-items:center; padding:3px 5px; border-radius:20px; border:1.5px solid var(--gray-200); }
+.firma-steps              { display:inline-flex; align-items:center; padding:3px 5px; border-radius:5px; border:1.5px solid var(--gray-200); }
 .firma-steps-oficina-next { border-color:var(--green-400); border-width:2px; }
 .firma-steps-cerrado      { border-color:var(--green-400); border-width:2px; background:var(--green-50); }
 .firma-step-wrap { display:flex; align-items:center; }
@@ -92,7 +92,7 @@
 .search-field-icon { position:absolute; left:12px; top:50%; transform:translateY(-50%); color:var(--gray-400); pointer-events:none; }
 .search-field-input { height:40px; width:100%; min-width:0; font-size:12.5px; padding:0 12px 0 34px; border-color:var(--gray-200); }
 
-.date-range { display:flex; align-items:center; height:40px; border:1px solid var(--gray-200); border-radius:8px; background:#fff; flex:1.4 1 230px; }
+.date-range { display:flex; align-items:center; height:40px; border:1px solid var(--gray-200); border-radius:5px; background:#fff; flex:1.4 1 230px; }
 .date-range-field { display:flex; align-items:center; gap:6px; padding:0 10px; flex:1 1 0; }
 .date-range-field span { font-size:11px; color:var(--gray-400); white-space:nowrap; }
 .date-range-field input[type="date"] { border:none; background:transparent; padding:0; width:100%; height:auto; font-size:12px; }
@@ -103,7 +103,7 @@
 .stat-card {
   background:#fff;
   border:1px solid #E8E8E5;
-  border-radius:14px;
+  border-radius:8px;
   padding:20px 20px 18px;
   box-shadow:0 1px 2px rgba(20,20,15,0.03);
   transition:border-color 0.15s, box-shadow 0.15s;

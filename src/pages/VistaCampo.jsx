@@ -43,7 +43,7 @@ function Placa({ texto }) {
   if (!texto) return null
   return (
     <span style={{fontFamily:'var(--font-mono)',background:'var(--gray-100)',border:'1px solid var(--gray-200)',
-      padding:'3px 8px',borderRadius:5,fontSize:12,fontWeight:600,color:'var(--gray-800)',display:'inline-block'}}>
+      padding:'3px 8px',borderRadius:4,fontSize:12,fontWeight:600,color:'var(--gray-800)',display:'inline-block'}}>
       {texto}
     </span>
   )
@@ -54,7 +54,7 @@ function ListaObservaciones({ obs }) {
     <div style={{fontSize:12,color:'var(--gray-400)',fontStyle:'italic',marginBottom:12}}>Sin observaciones</div>
   )
   return obs.map((o, i) => (
-    <div key={i} style={{padding:'8px 10px',background:'var(--gray-50)',borderRadius:8,marginBottom:8}}>
+    <div key={i} style={{padding:'8px 10px',background:'var(--gray-50)',borderRadius:5,marginBottom:8}}>
       <div style={{fontSize:11,color:'var(--gray-400)',marginBottom:2}}>{o.fecha}</div>
       <div style={{fontSize:13,color:'var(--gray-800)',lineHeight:1.4}}>{o.texto}</div>
     </div>
@@ -109,7 +109,7 @@ function VistaFirmadaAstilladora({ a, token }) {
           onChange={e => setTexto(e.target.value)}
           placeholder="Añadir una observación..."
           rows={3}
-          style={{width:'100%',border:'1px solid var(--gray-200)',borderRadius:8,padding:'10px 12px',
+          style={{width:'100%',border:'1px solid var(--gray-200)',borderRadius:5,padding:'10px 12px',
             fontSize:13,color:'var(--gray-800)',resize:'vertical',boxSizing:'border-box',
             marginTop:4,marginBottom:8,outline:'none',fontFamily:'inherit'}}
         />
@@ -330,7 +330,7 @@ function PasoFirma({ rol, a, updateFirma, subirTicketPesada, onCompletado, total
     <div className="campo-card">
       {/* Cabecera del paso */}
       <div style={{display:'flex',alignItems:'center',gap:10,marginBottom:14,paddingBottom:12,borderBottom:'var(--border)'}}>
-        <div style={{width:36,height:36,borderRadius:8,background:config.bg,display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}}>
+        <div style={{width:36,height:36,borderRadius:5,background:config.bg,display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}}>
           {config.icon}
         </div>
         <div>
@@ -470,7 +470,7 @@ function PasoFirma({ rol, a, updateFirma, subirTicketPesada, onCompletado, total
       </div>
 
       {errorFirma && (
-        <div style={{padding:'10px 12px',background:'#fff1f1',border:'1px solid #fca5a5',borderRadius:8,color:'#b91c1c',fontSize:13,marginBottom:12}}>
+        <div style={{padding:'10px 12px',background:'#fff1f1',border:'1px solid #fca5a5',borderRadius:5,color:'#b91c1c',fontSize:13,marginBottom:12}}>
           {errorFirma}
         </div>
       )}
@@ -609,7 +609,7 @@ export default function VistaCampo({ albaranes, updateFirma, subirTicketPesada, 
             marginLeft:'auto', flexShrink:0,
             display:'flex', alignItems:'center', gap:5,
             padding:'5px 10px', background:'#fef3c7',
-            border:'1px solid #fbbf24', borderRadius:20,
+            border:'1px solid #fbbf24', borderRadius:5,
             fontSize:12, fontWeight:600, color:'#92400e', cursor:'pointer',
           }}
         >
@@ -721,7 +721,7 @@ export default function VistaCampo({ albaranes, updateFirma, subirTicketPesada, 
               {nombreOrigen || a.origen || '—'}
             </div>
             {horarioOrigen && (
-              <div style={{display:'inline-flex',alignItems:'center',gap:4,marginTop:5,padding:'3px 7px',background:'var(--amber-50)',border:'1px solid var(--amber-100)',borderRadius:6,maxWidth:'100%'}}>
+              <div style={{display:'inline-flex',alignItems:'center',gap:4,marginTop:5,padding:'3px 7px',background:'var(--amber-50)',border:'1px solid var(--amber-100)',borderRadius:4,maxWidth:'100%'}}>
                 <Clock size={11} color="var(--amber-700)" style={{flexShrink:0}} />
                 <span style={{fontSize:11,fontWeight:700,color:'var(--amber-700)',overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{horarioOrigen}</span>
               </div>
@@ -734,7 +734,7 @@ export default function VistaCampo({ albaranes, updateFirma, subirTicketPesada, 
               {a.instalacion || '—'}
             </div>
             {horarioDestino && (
-              <div style={{display:'inline-flex',alignItems:'center',gap:4,marginTop:5,padding:'3px 7px',background:'var(--amber-50)',border:'1px solid var(--amber-100)',borderRadius:6,maxWidth:'100%'}}>
+              <div style={{display:'inline-flex',alignItems:'center',gap:4,marginTop:5,padding:'3px 7px',background:'var(--amber-50)',border:'1px solid var(--amber-100)',borderRadius:4,maxWidth:'100%'}}>
                 <Clock size={11} color="var(--amber-700)" style={{flexShrink:0}} />
                 <span style={{fontSize:11,fontWeight:700,color:'var(--amber-700)',overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{horarioDestino}</span>
               </div>

@@ -169,12 +169,12 @@ export default function Usuarios({ usuario, embedded = false }) {
                     {/* Acceso a apps */}
                     <td>
                       <div style={{display:'flex',gap:5}}>
-                        <span title="Biomasa" style={{fontSize:10,fontWeight:600,padding:'2px 7px',borderRadius:20,
+                        <span title="Biomasa" style={{fontSize:10,fontWeight:600,padding:'2px 7px',borderRadius:5,
                           background: u.acceso_biomasa !== false ? 'var(--green-50)' : 'var(--gray-100)',
                           color:      u.acceso_biomasa !== false ? 'var(--green-600)' : 'var(--gray-300)'}}>
                           Biomasa
                         </span>
-                        <span title="Trabajo" style={{fontSize:10,fontWeight:600,padding:'2px 7px',borderRadius:20,
+                        <span title="Trabajo" style={{fontSize:10,fontWeight:600,padding:'2px 7px',borderRadius:5,
                           background: u.acceso_trabajo ? 'var(--blue-50)' : 'var(--gray-100)',
                           color:      u.acceso_trabajo ? 'var(--blue-700)' : 'var(--gray-300)'}}>
                           Trabajo
@@ -190,7 +190,7 @@ export default function Usuarios({ usuario, embedded = false }) {
                     </td>
                     {/* Badge informativo notificaciones */}
                     <td>
-                      <span style={{display:'inline-flex',alignItems:'center',gap:5,padding:'3px 8px',borderRadius:20,fontSize:11,fontWeight:600,
+                      <span style={{display:'inline-flex',alignItems:'center',gap:5,padding:'3px 8px',borderRadius:5,fontSize:11,fontWeight:600,
                         background: silenciado ? 'var(--gray-100)' : '#ecfdf5',
                         color:      silenciado ? 'var(--gray-400)' : 'var(--green-600)',
                       }}>

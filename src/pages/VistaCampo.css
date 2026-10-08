@@ -1,7 +1,7 @@
 * { -webkit-tap-highlight-color: transparent; }
 .campo-page { max-width:480px; margin:0 auto; padding:16px 14px 60px; min-height:100vh; background:var(--gray-50); }
 .campo-topbar { display:flex; align-items:center; gap:10px; margin-bottom:16px; padding:12px 14px; background:#fff; border-radius:var(--radius-lg); border:var(--border); }
-.campo-topbar-logo { width:28px; height:28px; background:var(--green-400); border-radius:6px; display:flex; align-items:center; justify-content:center; flex-shrink:0; }
+.campo-topbar-logo { width:28px; height:28px; background:var(--green-400); border-radius:4px; display:flex; align-items:center; justify-content:center; flex-shrink:0; }
 .campo-title { font-size:15px; font-weight:600; letter-spacing:-0.2px; }
 .campo-sub { font-size:11px; color:var(--gray-400); margin-top:1px; }
 .campo-card { background:#fff; border:var(--border); border-radius:var(--radius-lg); padding:14px; margin-bottom:12px; }
@@ -15,7 +15,7 @@
 .rol-btn:active { transform:scale(0.98); }
 .rol-btn.done { opacity:0.6; cursor:default; background:var(--gray-50); }
 .rol-btn-left { display:flex; align-items:center; gap:10px; }
-.rol-btn-icon { width:36px; height:36px; border-radius:8px; display:flex; align-items:center; justify-content:center; font-size:16px; }
+.rol-btn-icon { width:36px; height:36px; border-radius:5px; display:flex; align-items:center; justify-content:center; font-size:16px; }
 .rol-btn-label { font-size:14px; font-weight:600; text-align:left; }
 .rol-btn-sub { font-size:11px; color:var(--gray-400); margin-top:2px; }
 .campo-field { display:flex; flex-direction:column; gap:6px; margin-bottom:12px; }
@@ -43,5 +43,5 @@
 .campo-success-sub { font-size:14px; color:var(--gray-400); line-height:1.6; max-width:280px; }
 .paso-indicator { display:flex; align-items:center; justify-content:center; gap:6px; margin-bottom:16px; }
 .paso-dot { width:6px; height:6px; border-radius:50%; background:var(--gray-200); }
-.paso-dot.active { background:var(--green-400); width:18px; border-radius:3px; }
+.paso-dot.active { background:var(--green-400); width:18px; border-radius:2px; }
 .info-banner { background:var(--blue-50); border:1px solid var(--blue-100); border-radius:var(--radius-md); padding:10px 12px; font-size:12px; color:var(--blue-700); margin-bottom:12px; }
