@@ -1,5 +1,5 @@
 .admin-page { min-height:100vh; }
-.admin-content { padding:0 28px 40px; }
+.admin-content { padding:0 var(--gutter) 40px; }
 .admin-tabs { display:flex; gap:4px; margin-bottom:20px; background:var(--gray-100); padding:4px; border-radius:var(--radius-md); width:fit-content; }
 .admin-tab { padding:7px 16px; border-radius:var(--radius-sm); font-size:13px; font-weight:500; border:none; background:none; cursor:pointer; color:var(--gray-600); transition:all 0.15s; }
 .admin-tab.active { background:#fff; color:var(--gray-900); box-shadow:0 1px 3px rgba(0,0,0,0.08); }
@@ -35,15 +35,15 @@
 .empty-row { text-align:center; padding:32px; color:var(--gray-400); font-size:13px; }
 
 @media (max-width: 1400px) {
-  .admin-content { padding: 0 18px 32px; }
+  .admin-content { padding: 0 var(--gutter) 32px; }
   .proveedor-table th, .proveedor-table td { padding: 9px 10px; }
 }
 @media (max-width: 1280px) {
-  .admin-content { padding: 0 16px 28px; }
+  .admin-content { padding: 0 var(--gutter) 28px; }
   .proveedor-table { font-size: 12px; }
   .proveedor-table th, .proveedor-table td { padding: 8px 8px; }
   .admin-search input { width: 200px; }
 }
 @media (max-width: 1100px) {
-  .admin-content { padding: 0 12px 24px; }
+  .admin-content { padding: 0 var(--gutter) 24px; }
 }

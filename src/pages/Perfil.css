@@ -1,5 +1,5 @@
 .perfil-page { min-height:100vh; }
-.perfil-content { padding:0 28px 40px; display:flex; flex-direction:column; gap:16px; }
+.perfil-content { padding:0 var(--gutter) 40px; display:flex; flex-direction:column; gap:16px; }
 
 /* ── Banner de identidad ──────────────────────────────────────────────── */
 .perfil-banner { display:flex; align-items:center; gap:20px; padding:24px 26px; }
@@ -82,7 +82,7 @@
   .perfil-layout { grid-template-columns:340px 1fr; }
 }
 @media (max-width: 1100px) {
-  .perfil-content { padding:0 16px 28px; }
+  .perfil-content { padding:0 var(--gutter) 28px; }
   .perfil-layout { grid-template-columns:1fr; }
   .perfil-notifs { grid-template-columns:1fr; }
   .perfil-banner { flex-direction:column; align-items:flex-start; text-align:left; }

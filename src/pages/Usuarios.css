@@ -1,5 +1,5 @@
 .usuarios-page { min-height:100vh; }
-.usuarios-content { padding:0 28px 40px; }
+.usuarios-content { padding:0 var(--gutter) 40px; }
 
 .usuarios-table { width:100%; border-collapse:collapse; font-size:13px; min-width:700px; }
 .usuarios-table th { text-align:left; padding:10px 12px; font-size:11px; font-weight:600; text-transform:uppercase; letter-spacing:0.5px; color:var(--gray-400); border-bottom:var(--border); background:var(--gray-50); white-space:nowrap; }
@@ -22,12 +22,12 @@
 .usuarios-tr-click:hover td { background:var(--gray-50); }
 
 @media (max-width: 1400px) {
-  .usuarios-content { padding: 0 18px 32px; }
+  .usuarios-content { padding: 0 var(--gutter) 32px; }
   .usuarios-table th, .usuarios-table td { padding: 9px 10px; }
 }
 
 @media (max-width: 1280px) {
-  .usuarios-content { padding: 0 16px 28px; }
+  .usuarios-content { padding: 0 var(--gutter) 28px; }
   .usuarios-table { font-size: 12px; min-width: 580px; }
   .usuarios-table th, .usuarios-table td { padding: 8px 8px; }
   .usuarios-table td:nth-child(2) { max-width: 140px; }
@@ -37,7 +37,7 @@
 }
 
 @media (max-width: 1100px) {
-  .usuarios-content { padding: 0 12px 24px; }
+  .usuarios-content { padding: 0 var(--gutter) 24px; }
   /* Ocultar también Notificaciones (col 6) */
   .usuarios-table th:nth-child(6),
   .usuarios-table td:nth-child(6) { display: none; }

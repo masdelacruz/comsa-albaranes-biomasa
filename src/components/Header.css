@@ -6,7 +6,7 @@
   align-items: center;
   justify-content: space-between;
   gap: 12px;
-  padding: 12px 24px;
+  padding: 12px var(--gutter);
   background: rgba(255,255,255,0.82);
   backdrop-filter: blur(16px);
   -webkit-backdrop-filter: blur(16px);
@@ -120,7 +120,7 @@
 .ah-logout:hover { background: var(--red-50); color: var(--red-400); }
 
 @media (max-width: 560px) {
-  .app-header { padding: 10px 14px; }
+  .app-header { padding: 10px var(--gutter); }
   .ah-brand-text { display: none; }
   .ah-user-info { display: none; }
   .ah-switch span { display: none; }

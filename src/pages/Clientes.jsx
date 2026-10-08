@@ -67,7 +67,7 @@ export default function Clientes({ albaranes = [], usuario }) {
         <div className="page-sub">Astilladoras, instalaciones y proveedores · pulsa en un cliente para ver su ficha</div>
       </div>
 
-      <div style={{ padding: '0 28px 28px' }}>
+      <div className="page-body">
         <div className="cli-search">
           <Search size={14} className="cli-search-icon" />
           <input type="text" placeholder="Buscar cliente..." value={busqueda} onChange={e => setBusqueda(e.target.value)} />

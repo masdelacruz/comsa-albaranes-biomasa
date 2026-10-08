@@ -3,7 +3,7 @@
    estadística, tabla de datos) vive en components/shared.css. */
 
 .dashboard { min-height:100vh; }
-.dashboard .dash-content { padding:0 28px 28px; }
+.dashboard .dash-content { padding:0 var(--gutter) 28px; }
 
 /* ── Cabecera (usa .page-title global, unificado con el resto de páginas) ── */
 .dashboard .dash-header-row { display:flex; align-items:center; justify-content:space-between; gap:16px; }
@@ -154,17 +154,17 @@
 }
 
 @media (max-width: 1400px) {
-  .dashboard .dash-content { padding:0 18px 24px; }
+  .dashboard .dash-content { padding:0 var(--gutter) 24px; }
   .dashboard .albaran-table td:nth-child(3),
   .dashboard .albaran-table td:nth-child(6) { max-width:110px; }
 }
 
 @media (max-width: 1280px) {
-  .dashboard .dash-content { padding:0 16px 20px; }
+  .dashboard .dash-content { padding:0 var(--gutter) 20px; }
   .dashboard .albaran-table { min-width:560px; }
 }
 
 @media (max-width: 1100px) {
-  .dashboard .dash-content { padding:0 12px 16px; }
+  .dashboard .dash-content { padding:0 var(--gutter) 16px; }
   .dashboard .dash-main-head { flex-direction:column; align-items:flex-start; }
 }
