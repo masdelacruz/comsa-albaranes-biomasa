@@ -10,6 +10,8 @@ const ACCION_LABEL = {
   reabrir:        'Reabierto',
   anular:         'Anulado',
   editar_cerrado: 'Editado (cerrado)',
+  login:          'Inicio de sesión',
+  login_fallido:  'Acceso fallido',
 }
 const ACCION_BADGE = {
   crear:          'badge-green',
@@ -18,6 +20,8 @@ const ACCION_BADGE = {
   reabrir:        'badge-amber',
   anular:         'badge-orange',
   editar_cerrado: 'badge-purple',
+  login:          'badge-gray',
+  login_fallido:  'badge-red',
 }
 const ENTIDAD_LABEL = {
   albaran:       'Albarán',
@@ -26,6 +30,7 @@ const ENTIDAD_LABEL = {
   elemento:      'Elemento',
   logo:          'Logo',
   firma_empresa: 'Firma de empresa',
+  sesion:        'Sesión',
 }
 
 const POR_PAGINA = 50
@@ -66,7 +71,7 @@ export default function Auditoria({ embedded = false }) {
         </div>
       )}
 
-      <div style={embedded ? undefined : { padding: '0 28px' }}>
+      <div style={embedded ? undefined : { padding: '0 var(--gutter)' }}>
         <div className="card" style={{ padding: 0, overflow: 'hidden' }}>
           <div style={{ padding: 14, borderBottom: 'var(--border)' }}>
             <div className="filters-bar">

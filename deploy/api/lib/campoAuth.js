@@ -21,7 +21,7 @@ async function tryAuth(req) {
   const bearer = header.startsWith('Bearer ') ? header.slice(7) : null
   if (!bearer) return false
   try {
-    const claims = jwt.verify(bearer, SECRET)
+    const claims = jwt.verify(bearer, SECRET, { algorithms: ['HS256'] })
     const { rows } = await pool.query(
       `SELECT id, nombre, email, rol, nivel, activo, COALESCE(token_version, 1) AS token_version
        FROM usuarios WHERE id=$1`,

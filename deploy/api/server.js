@@ -5,6 +5,11 @@ const { Client: MinioClient } = require('minio')
 
 const app  = express()
 const PORT = process.env.PORT || 3001
+app.disable('x-powered-by')
+
+// Express 4 no captura errores de rutas async: sin esto, un fallo puntual
+// (p. ej. la BD reiniciándose) tumbaría el proceso entero.
+process.on('unhandledRejection', (e) => console.error('Promesa rechazada sin capturar:', e))
 
 const REQUIRED_SECRETS = ['JWT_SECRET', 'POSTGRES_PASSWORD', 'MINIO_ACCESS_KEY', 'MINIO_SECRET_KEY']
 const missingSecrets = REQUIRED_SECRETS.filter(name => !process.env[name])
@@ -61,7 +66,7 @@ const _allowedOrigins = [
 app.use(cors({
   origin: (origin, cb) => {
     if (!origin || _allowedOrigins.includes(origin)) return cb(null, true)
-    cb(new Error('CORS not allowed'))
+    cb(Object.assign(new Error('CORS not allowed'), { status: 403 }))
   },
 }))
 
@@ -72,11 +77,12 @@ app.use((_req, res, next) => {
   res.setHeader('Referrer-Policy', 'no-referrer')
   res.setHeader('Permissions-Policy', 'geolocation=(), microphone=(), camera=()')
   res.setHeader('Strict-Transport-Security', 'max-age=31536000; includeSubDomains')
+  res.setHeader('Cross-Origin-Opener-Policy', 'same-origin')
   res.setHeader(
     'Content-Security-Policy',
     [
       "default-src 'self'",
-      "script-src 'self' 'unsafe-inline'",
+      "script-src 'self'",
       "style-src 'self' 'unsafe-inline'",
       "font-src 'self'",
       "img-src 'self' data: blob:",
@@ -86,12 +92,17 @@ app.use((_req, res, next) => {
       "object-src 'none'",
       "base-uri 'self'",
       "frame-ancestors 'none'",
+      "form-action 'self'",
     ].join('; ')
   )
   next()
 })
 
 app.use(express.json({ limit: '2mb' }))
+
+// Las respuestas de la API llevan datos personales/de negocio: que ni el
+// navegador ni proxies intermedios las guarden en caché.
+app.use('/api', (_req, res, next) => { res.setHeader('Cache-Control', 'no-store'); next() })
 
 // ── API routes bajo /api ──────────────────────────────────────────
 app.use('/api/auth',      require('./routes/auth'))
@@ -111,6 +122,14 @@ app.get('/api/health', (_req, res) => res.json({ ok: true, ts: new Date().toISOS
 const PUBLIC = path.join(__dirname, 'public')
 app.use(express.static(PUBLIC))
 app.get('*', (_req, res) => res.sendFile(path.join(PUBLIC, 'index.html')))
+
+// ── Errores no controlados: respuesta genérica, sin detalles internos ──
+app.use((err, _req, res, _next) => {
+  const status = err.status || err.statusCode || 500
+  if (status >= 500) console.error('Error no controlado:', err)
+  if (res.headersSent) return
+  res.status(status).json({ error: status < 500 ? 'Petición no válida' : 'Error interno' })
+})
 
 // ── Arranque ──────────────────────────────────────────────────────
 initMinio().catch(e => console.error('MinIO init error:', e))

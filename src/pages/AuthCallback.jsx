@@ -9,6 +9,7 @@ export default function AuthCallback() {
 
     if (token) {
       api.setToken(token, true)
+      api.marcarSso()
       window.location.replace('/')
     } else {
       sessionStorage.setItem('sso_error', error || 'error_desconocido')

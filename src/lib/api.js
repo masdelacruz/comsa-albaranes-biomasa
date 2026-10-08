@@ -70,6 +70,10 @@ export const api = {
   clearToken() {
     localStorage.removeItem('biomasa_token')
     sessionStorage.removeItem('biomasa_token')
+    localStorage.removeItem('biomasa_sso')
   },
+  // Marca que la sesión actual viene del login con Microsoft (para el logout)
+  marcarSso()      { localStorage.setItem('biomasa_sso', '1') },
+  esSso()          { return localStorage.getItem('biomasa_sso') === '1' },
   hasToken()       { return !!getToken() },
 }

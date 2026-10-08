@@ -2,6 +2,15 @@ const router  = require('express').Router()
 const bcrypt  = require('bcrypt')
 const jwt     = require('jsonwebtoken')
 const pool    = require('../db')
+const { registrarAuditoria } = require('../lib/auditoria')
+const sso     = require('./auth-microsoft')
+
+// Con AZURE_AD_ENFORCE=true, las cuentas de los dominios corporativos
+// (AZURE_AD_ALLOWED_DOMAINS) solo pueden entrar con Microsoft, así se les
+// aplican MFA y acceso condicional. Las de otros dominios (cuenta de
+// emergencia, externos) siguen pudiendo usar contraseña.
+const SSO_OBLIGATORIO = sso.enabled && process.env.AZURE_AD_ENFORCE === 'true'
+const exigeSso = email => SSO_OBLIGATORIO && sso.DOMINIOS.some(d => email.endsWith(`@${d}`))
 
 const SECRET  = process.env.JWT_SECRET
 const EXPIRY  = '8h'
@@ -17,10 +26,15 @@ function passwordPolicy(password) {
 }
 
 // ── Rate limit en login: máx 10 intentos / 15 min por IP ─────────
+// req.ip ya es la IP real del cliente (trust proxy = 1, la añade Apache);
+// leer X-Forwarded-For a mano permitiría falsearla y saltarse el límite.
 const _loginAttempts = new Map()
 function loginRateLimit(req, res, next) {
-  const ip  = (req.headers['x-forwarded-for'] || '').split(',')[0].trim() || req.ip || 'unknown'
+  const ip  = req.ip || 'unknown'
   const now = Date.now()
+  if (_loginAttempts.size > 10000) {
+    for (const [k, v] of _loginAttempts) if (!v.some(t => now - t < 15 * 60 * 1000)) _loginAttempts.delete(k)
+  }
   const prev = (_loginAttempts.get(ip) || []).filter(t => now - t < 15 * 60 * 1000)
   if (prev.length >= 10) {
     return res.status(429).json({ error: 'Demasiados intentos. Espera 15 minutos.' })
@@ -36,7 +50,7 @@ async function requireAuth(req, res, next) {
   const token  = header.startsWith('Bearer ') ? header.slice(7) : null
   if (!token) return res.status(401).json({ error: 'No autenticado' })
   try {
-    const claims = jwt.verify(token, SECRET)
+    const claims = jwt.verify(token, SECRET, { algorithms: ['HS256'] })
     const { rows } = await pool.query(
       `SELECT id, nombre, email, rol, nivel, activo, acceso_biomasa, acceso_trabajo,
               COALESCE(token_version, 1) AS token_version
@@ -46,6 +60,10 @@ async function requireAuth(req, res, next) {
     const user = rows[0]
     if (!user || !user.activo) return res.status(403).json({ error: 'cuenta_bloqueada' })
     if (claims.ver !== user.token_version) return res.status(401).json({ error: 'Sesión revocada' })
+    // Si el SSO pasa a ser obligatorio, las sesiones abiertas antes con
+    // contraseña en cuentas corporativas dejan de valer.
+    if (claims.amr !== 'azure_ad' && exigeSso(String(user.email || '').toLowerCase()))
+      return res.status(401).json({ error: 'usar_microsoft' })
     req.user = user
     next()
   } catch {
@@ -69,20 +87,35 @@ function requireSuperadmin(req, res, next) {
 
 // ── POST /auth/login ──────────────────────────────────────────────
 router.post('/login', loginRateLimit, async (req, res) => {
-  const { email, password } = req.body
-  if (!email || !password) return res.status(400).json({ error: 'Faltan campos' })
+  const { email: emailRaw, password } = req.body
+  if (typeof emailRaw !== 'string' || typeof password !== 'string' || !emailRaw || !password)
+    return res.status(400).json({ error: 'Faltan campos' })
+  const email = emailRaw.trim().toLowerCase()
+  const fallo = (motivo, u = null) => registrarAuditoria({
+    usuario: u || { nombre: 'Anónimo' }, accion: 'login_fallido', entidad: 'sesion', entidadId: u?.id,
+    detalle: `Contraseña · ${motivo} · ${email.slice(0, 120)} · IP ${req.ip}`,
+  })
+
+  if (exigeSso(email)) {
+    fallo('intento con contraseña en cuenta que debe usar Microsoft')
+    return res.status(403).json({ error: 'usar_microsoft' })
+  }
 
   const { rows } = await pool.query(
-    'SELECT * FROM usuarios WHERE email = $1', [email.toLowerCase()]
+    'SELECT * FROM usuarios WHERE email = $1', [email]
   )
   const user = rows[0]
-  if (!user) return res.status(401).json({ error: 'Email o contraseña incorrectos' })
-  if (!user.activo) return res.status(403).json({ error: 'cuenta_bloqueada' })
+  if (!user) { fallo('usuario inexistente'); return res.status(401).json({ error: 'Email o contraseña incorrectos' }) }
+  if (!user.activo) { fallo('cuenta desactivada', user); return res.status(403).json({ error: 'cuenta_bloqueada' }) }
 
   const ok = await bcrypt.compare(password, user.password_hash)
-  if (!ok) return res.status(401).json({ error: 'Email o contraseña incorrectos' })
+  if (!ok) { fallo('contraseña incorrecta', user); return res.status(401).json({ error: 'Email o contraseña incorrectos' }) }
 
-  _loginAttempts.delete((req.headers['x-forwarded-for'] || '').split(',')[0].trim() || req.ip || 'unknown')
+  _loginAttempts.delete(req.ip || 'unknown')
+  registrarAuditoria({
+    usuario: user, accion: 'login', entidad: 'sesion', entidadId: user.id,
+    detalle: `Contraseña · ${email} · IP ${req.ip}`,
+  })
 
   const token = jwt.sign(
     { id: user.id, ver: user.token_version || 1 },
@@ -118,3 +151,4 @@ module.exports.requireAuth = requireAuth
 module.exports.requireConfigAccess = requireConfigAccess
 module.exports.requireSuperadmin = requireSuperadmin
 module.exports.passwordPolicy = passwordPolicy
+module.exports.ssoObligatorio = () => SSO_OBLIGATORIO

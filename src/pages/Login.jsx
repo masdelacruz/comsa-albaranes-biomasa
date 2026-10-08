@@ -11,6 +11,12 @@ const ERRORES_SSO = {
   usuario_no_registrado: 'Tu cuenta de Microsoft no está dada de alta. Contacta con administración (biomasa@cserintranet.com).',
   cuenta_bloqueada: 'Tu cuenta está desactivada. Contacta con administración (biomasa@cserintranet.com).',
   dominio_no_permitido: 'Solo se admiten cuentas @comsa.com.',
+  usar_microsoft: 'Tu cuenta corporativa debe iniciar sesión con Microsoft.',
+  acceso_denegado: 'Microsoft no ha autorizado el acceso. Si crees que deberías tenerlo, contacta con IT.',
+  sin_rol: 'Tu cuenta de Microsoft no tiene asignado acceso a esta aplicación. Contacta con IT.',
+  identidad_no_coincide: 'Este email ya está vinculado a otra cuenta de Microsoft. Contacta con administración (biomasa@cserintranet.com).',
+  tenant_no_permitido: 'Solo se admiten cuentas de la organización COMSA.',
+  estado_invalido: 'El inicio de sesión ha caducado o se abrió en otra ventana. Inténtalo de nuevo.',
 }
 const ERROR_SSO_GENERICO = 'No se pudo iniciar sesión con Microsoft. Inténtalo de nuevo.'
 
@@ -22,9 +28,13 @@ export default function Login() {
   const [error, setError]           = useState('')
   const [loading, setLoading]       = useState(false)
   const [msEnabled, setMsEnabled]   = useState(false)
+  const [msObligatorio, setMsObligatorio] = useState(false)
 
   useEffect(() => {
-    api.get('/auth/microsoft/status').then(d => setMsEnabled(!!d?.enabled)).catch(() => {})
+    api.get('/auth/microsoft/status').then(d => {
+      setMsEnabled(!!d?.enabled)
+      setMsObligatorio(!!d?.obligatorio)
+    }).catch(() => {})
 
     const ssoError = sessionStorage.getItem('sso_error')
     if (ssoError) {
@@ -44,12 +54,25 @@ export default function Login() {
       api.setToken(token, recordarme)
       window.location.reload()
     } catch (err) {
-      setError(err.data?.error === 'cuenta_bloqueada'
-        ? 'Tu cuenta está desactivada. Contacta con administración (biomasa@cserintranet.com).'
+      const codigo = err.data?.error
+      setError(codigo === 'cuenta_bloqueada' || codigo === 'usar_microsoft'
+        ? ERRORES_SSO[codigo]
         : 'Email o contraseña incorrectos')
       setLoading(false)
     }
   }
+
+  const botonMicrosoft = (
+    <button type="button" className="login-btn-microsoft" onClick={loginMicrosoft}>
+      <svg width="16" height="16" viewBox="0 0 21 21" aria-hidden="true">
+        <rect x="1" y="1" width="9" height="9" fill="#f25022" />
+        <rect x="11" y="1" width="9" height="9" fill="#7fba00" />
+        <rect x="1" y="11" width="9" height="9" fill="#00a4ef" />
+        <rect x="11" y="11" width="9" height="9" fill="#ffb900" />
+      </svg>
+      Iniciar sesión con Microsoft
+    </button>
+  )
 
   return (
     <div className="login-page">
@@ -74,6 +97,13 @@ export default function Login() {
 
           <h1 className="login-title">Bienvenido</h1>
           <p className="login-sub">Inicia sesión en tu cuenta para continuar</p>
+
+          {msObligatorio && (
+            <>
+              {botonMicrosoft}
+              <div className="login-divider"><span>cuentas externas</span></div>
+            </>
+          )}
 
           <form onSubmit={handleLogin} className="login-form">
             <div className="login-field">
@@ -130,18 +160,10 @@ export default function Login() {
             </button>
           </form>
 
-          {msEnabled && (
+          {msEnabled && !msObligatorio && (
             <>
               <div className="login-divider"><span>o</span></div>
-              <button type="button" className="login-btn-microsoft" onClick={loginMicrosoft}>
-                <svg width="16" height="16" viewBox="0 0 21 21" aria-hidden="true">
-                  <rect x="1" y="1" width="9" height="9" fill="#f25022" />
-                  <rect x="11" y="1" width="9" height="9" fill="#7fba00" />
-                  <rect x="1" y="11" width="9" height="9" fill="#00a4ef" />
-                  <rect x="11" y="11" width="9" height="9" fill="#ffb900" />
-                </svg>
-                Iniciar sesión con Microsoft
-              </button>
+              {botonMicrosoft}
             </>
           )}
 

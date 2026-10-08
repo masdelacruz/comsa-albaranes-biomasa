@@ -26,6 +26,8 @@ export default function Usuarios({ usuario, embedded = false }) {
   const [usuarios, setUsuarios]           = useState([])
   const [loading, setLoading]             = useState(true)
   const [modal, setModal]                 = useState(false)
+  // Con el login de Microsoft activo, la contraseña provisional es opcional
+  const [ssoActivo, setSsoActivo]         = useState(false)
   const [form, setForm]                   = useState(EMPTY_FORM)
   const [guardando, setGuardando]         = useState(false)
   const [error, setError]                 = useState('')
@@ -50,6 +52,10 @@ export default function Usuarios({ usuario, embedded = false }) {
   }
 
   useEffect(() => { fetchUsuarios() }, [])
+  useEffect(() => {
+    api.get('/auth/microsoft/status').then(d => setSsoActivo(!!d?.enabled)).catch(() => {})
+  }, [])
+  const passwordValida = form.password.length >= 12 || (ssoActivo && form.password.length === 0)
 
   const set = (k, v) => setForm(f => ({ ...f, [k]: v }))
 
@@ -285,7 +291,7 @@ export default function Usuarios({ usuario, embedded = false }) {
                 </div>
               </div>
               <div style={{display:'flex',flexDirection:'column',gap:5}}>
-                <label style={{fontSize:12,fontWeight:500,color:'var(--gray-600)'}}>Contraseña provisional *</label>
+                <label style={{fontSize:12,fontWeight:500,color:'var(--gray-600)'}}>{ssoActivo ? 'Contraseña provisional (opcional — sin ella solo entra con Microsoft)' : 'Contraseña provisional *'}</label>
                 <div style={{position:'relative',display:'flex',alignItems:'center'}}>
                   <input type={showPassword?'text':'password'} minLength={12} autoComplete="new-password" placeholder="Mínimo 12 caracteres" value={form.password} onChange={e => set('password', e.target.value)} style={{paddingRight:36,width:'100%'}} />
                   <button type="button" onClick={() => setShowPassword(v=>!v)} style={{position:'absolute',right:8,background:'none',border:'none',cursor:'pointer',padding:4,color:'var(--gray-400)',display:'flex',alignItems:'center'}} tabIndex={-1}>
@@ -297,7 +303,7 @@ export default function Usuarios({ usuario, embedded = false }) {
             </div>
             <div style={{display:'flex',gap:8,justifyContent:'flex-end',marginTop:20,paddingTop:16,borderTop:'var(--border)'}}>
               <button className="btn" onClick={cerrarModal}>Cancelar</button>
-              <button className="btn btn-primary" onClick={handleGuardar} disabled={!form.nombre.trim()||!form.email.trim()||form.password.length<12||guardando}>
+              <button className="btn btn-primary" onClick={handleGuardar} disabled={!form.nombre.trim()||!form.email.trim()||!passwordValida||guardando}>
                 {guardando ? 'Creando...' : <><Check size={14}/> Crear usuario</>}
               </button>
             </div>

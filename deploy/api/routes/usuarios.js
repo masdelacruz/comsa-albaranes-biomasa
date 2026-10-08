@@ -1,9 +1,10 @@
 const router = require('express').Router()
 const bcrypt = require('bcrypt')
-const { v4: uuidv4 } = require('uuid')
+const { randomUUID: uuidv4, randomBytes } = require('crypto')
 const pool   = require('../db')
 const { requireAuth, passwordPolicy } = require('./auth')
 const { registrarAuditoria } = require('../lib/auditoria')
+const sso = require('./auth-microsoft')
 
 const SALT_ROUNDS = 12
 const NIVELES = new Set(['basico', 'usuario', 'superadmin'])
@@ -45,9 +46,14 @@ router.post('/', requireAuth, requireSuperadmin, async (req, res) => {
   const { nombre, email, rol, nivel, password, acceso_biomasa, acceso_trabajo } = req.body
   if (!nombre?.trim() || !email?.trim()) return res.status(400).json({ error: 'Nombre y email son obligatorios' })
   if (!NIVELES.has(nivel || 'usuario')) return res.status(400).json({ error: 'Nivel inválido' })
-  const policyError = passwordPolicy(password)
-  if (policyError) return res.status(400).json({ error: policyError })
-  const hash = await bcrypt.hash(password, SALT_ROUNDS)
+  // Con el login de Microsoft activo la contraseña es opcional: la cuenta
+  // queda con una contraseña aleatoria que nadie conoce y solo entra por SSO.
+  const soloMicrosoft = sso.enabled && !password
+  if (!soloMicrosoft) {
+    const policyError = passwordPolicy(password)
+    if (policyError) return res.status(400).json({ error: policyError })
+  }
+  const hash = await bcrypt.hash(soloMicrosoft ? randomBytes(32).toString('base64') : password, SALT_ROUNDS)
   const id   = uuidv4()
 
   await pool.query(

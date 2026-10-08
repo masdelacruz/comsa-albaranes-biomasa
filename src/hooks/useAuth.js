@@ -21,6 +21,7 @@ export function useAuth() {
       setBloqueado(false)
     } catch (err) {
       if (err.status === 403) setBloqueado(true)
+      if (err.data?.error === 'usar_microsoft') sessionStorage.setItem('sso_error', 'usar_microsoft')
       api.clearToken()
       setSession(null)
       setUsuario(null)
@@ -33,7 +34,11 @@ export function useAuth() {
   useEffect(() => { verificarToken() }, [verificarToken])
 
   const logout = useCallback(() => {
+    const eraSso = api.esSso()
     api.clearToken()
+    // El servidor decide si además se cierra la sesión de Microsoft
+    // (AZURE_AD_SINGLE_LOGOUT); si no, vuelve directamente al login.
+    if (eraSso) { window.location.href = '/api/auth/microsoft/logout'; return }
     setSession(null)
     setUsuario(null)
     setBloqueado(false)
