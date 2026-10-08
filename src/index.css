@@ -2,13 +2,16 @@
 @import '@fontsource/dm-mono/500.css';
 
 /* Satoshi (Fontshare, licencia libre) autoalojada: un único archivo
-   variable cubre de 300 a 900, incluido el 600 que no existe en estático. */
+   variable cubre de 300 a 900, incluido el 600 que no existe en estático.
+   Satoshi dibuja más pequeña que DM Sans al mismo tamaño (ojo más bajo):
+   size-adjust la agranda en todas partes sin tocar cada font-size. */
 @font-face {
   font-family: 'Satoshi';
   src: url('./assets/fonts/Satoshi-Variable.woff2') format('woff2');
   font-weight: 300 900;
   font-style: normal;
   font-display: swap;
+  size-adjust: 108%;
 }
 @font-face {
   font-family: 'Satoshi';
@@ -16,6 +19,7 @@
   font-weight: 300 900;
   font-style: italic;
   font-display: swap;
+  size-adjust: 108%;
 }
 
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
