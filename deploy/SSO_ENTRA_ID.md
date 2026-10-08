@@ -117,7 +117,7 @@ Desactivado por defecto porque suele molestar a los usuarios.
 | A.8.15 Registro | Logins correctos y fallidos, cambios de usuarios y acciones administrativas en el log de auditoría |
 | A.8.24 Criptografía | Solo TLS 1.2/1.3, HSTS 1 año, JWT firmados con secreto de 32+ bytes y algoritmo fijado |
 | A.8.9 Configuración segura | CSP estricta sin scripts inline, X-Frame-Options DENY / frame-ancestors none, COOP, nosniff, Referrer-Policy no-referrer, Cache-Control no-store en la API, sin cabecera X-Powered-By |
-| A.8.8 Vulnerabilidades técnicas | `npm audit` sin vulnerabilidades conocidas en frontend ni API (oct-2026) |
+| A.8.8 Vulnerabilidades técnicas | Runtime Node.js 24 LTS. `npm audit`: frontend sin vulnerabilidades; API sin vulnerabilidades directas. Quedan 2 moderadas en dependencias internas de `minio` (`decode-uri-component`, `stream-json`) sin versión compatible. Riesgo aceptado: solo procesan respuestas del MinIO interno, nunca datos del usuario (oct-2026) |
 
 **Limitaciones conocidas, documentadas:**
 - El token de sesión de la app se guarda en el almacenamiento del navegador (no en una cookie HttpOnly). Lo mitiga una CSP estricta sin scripts inline. Si IT exige cookie HttpOnly, es un cambio acotado en `src/lib/api.js` y en el middleware `requireAuth`.

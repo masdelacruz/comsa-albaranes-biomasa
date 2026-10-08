@@ -1,5 +1,5 @@
 # ── Stage 1: Build Vite frontend ─────────────────────────────────
-FROM node:20-alpine AS frontend
+FROM node:24-alpine AS frontend
 WORKDIR /app
 COPY package*.json ./
 RUN npm install
@@ -7,7 +7,7 @@ COPY . .
 RUN npm run build
 
 # ── Stage 2: API Express + ficheros estáticos ─────────────────────
-FROM node:20-alpine
+FROM node:24-alpine
 ENV TZ=Europe/Madrid
 WORKDIR /app
 COPY deploy/api/package*.json ./
