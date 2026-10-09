@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react'
 import { useSearchParams } from 'react-router-dom'
-import { Plus, Search, Pencil, Trash2, X, Check, Upload, Image, ExternalLink, Copy, RefreshCw } from 'lucide-react'
+import { Plus, Search, Pencil, Trash2, X, Check, Upload, Image, ExternalLink, Copy, RefreshCw, User, Mail, Phone } from 'lucide-react'
 import { api } from '../lib/api'
 import EmpresaModal, { normalizarTelefono, TIPOS, TIPO_LABELS } from '../components/EmpresaModal'
 import Usuarios from './Usuarios'
@@ -244,15 +244,15 @@ export default function Administracion({ usuario }) {
           >
             Elementos
           </button>
-          <button
-            className={`admin-tab ${tab === 'logos' ? 'active' : ''}`}
-            onClick={() => setTab('logos')}
-          >
-            Logos
-          </button>
           {esSuperadmin && (
             <>
               <span style={{ width: 1, alignSelf: 'stretch', background: 'var(--gray-200)', margin: '4px 2px' }} />
+              <button
+                className={`admin-tab ${tab === 'logos' ? 'active' : ''}`}
+                onClick={() => setTab('logos')}
+              >
+                Logos
+              </button>
               <button
                 className={`admin-tab ${tab === 'usuarios' ? 'active' : ''}`}
                 onClick={() => setTab('usuarios')}
@@ -327,7 +327,7 @@ export default function Administracion({ usuario }) {
         )}
 
         {/* ── Logos panel ── */}
-        {tab === 'logos' ? (
+        {tab === 'logos' && esSuperadmin ? (
           <div style={{ marginTop: 16 }}>
             <div style={{ fontSize: 13, color: 'var(--gray-500)', marginBottom: 24 }}>
               Logos que aparecen en la cabecera de los albaranes PDF. Formatos admitidos: PNG, JPG, SVG, WEBP.
@@ -433,7 +433,7 @@ export default function Administracion({ usuario }) {
               <Auditoria embedded />
             </div>
           )
-        ) : tab !== 'elementos' ? (
+        ) : TIPOS.includes(tab) ? (
           /* ── Providers panel ── */
           <>
             <div className="admin-toolbar">
@@ -456,131 +456,109 @@ export default function Administracion({ usuario }) {
               </button>
             </div>
 
-            <div className="card" style={{ padding: 0, overflow: 'hidden' }}>
-              <div className="proveedor-table-wrap">
-              <table className="proveedor-table">
-                <thead>
-                  <tr>
-                    <th>Nombre</th>
-                    <th>Contacto</th>
-                    <th>Email</th>
-                    <th>Teléfono</th>
-                    <th>Estado</th>
-                    <th>Acciones</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {loading ? (
-                    <tr><td colSpan={6} className="empty-row">Cargando...</td></tr>
-                  ) : filtrados.length === 0 ? (
-                    <tr><td colSpan={6} className="empty-row">No hay {TIPO_LABELS[tab].toLowerCase()}s registrados</td></tr>
-                  ) : filtrados.map(p => (
-                    <tr key={p.id} onClick={() => abrirEditar(p)}>
-                      <td className="nombre-col" style={{ fontWeight: 500, color:'var(--blue-700)', textDecoration:'underline', textDecorationColor:'var(--gray-200)' }}>
-                        {p.nombre}
-                        {p.tipo === 'proveedor' && p.es_sure && (
-                          <span title={`Referencia SURE: ${p.referencia_sure || '—'}`}
-                            style={{ marginLeft: 8, fontSize: 10, fontWeight: 600, color: 'var(--green-600)', background: 'rgba(29,158,117,0.1)', border: '1px solid rgba(29,158,117,0.25)', borderRadius: 3, padding: '1px 6px', textDecoration: 'none', display: 'inline-block', verticalAlign: 'middle' }}>
-                            SURE · {p.referencia_sure || '—'}
-                          </span>
-                        )}
-                      </td>
-                      <td className="contacto-col" style={{ color: 'var(--gray-600)' }}>
-                        {p.contacto || <span style={{ color: 'var(--gray-300)' }}>—</span>}
-                        {(p.contactos?.length || 0) > 1 && (
-                          <span title={p.contactos.slice(1).map(c => c.nombre).filter(Boolean).join(', ')}
-                            style={{ marginLeft: 6, fontSize: 10.5, fontWeight: 600, color: 'var(--gray-500)', background: 'var(--gray-100)', borderRadius: 4, padding: '1px 6px' }}>
-                            +{p.contactos.length - 1}
-                          </span>
-                        )}
-                      </td>
-                      <td style={{ color: 'var(--blue-700)' }}>
-                        {p.email
-                          ? <a href={`mailto:${p.email}`} onClick={e => e.stopPropagation()} style={{ color: 'var(--blue-700)' }}>{p.email}</a>
-                          : <span style={{ color: 'var(--gray-300)' }}>—</span>}
-                      </td>
-                      <td style={{ color: 'var(--gray-600)' }}>{normalizarTelefono(p.telefono) || <span style={{ color: 'var(--gray-300)' }}>—</span>}</td>
-                      <td>
+            {loading ? (
+              <div className="empty-row">Cargando...</div>
+            ) : filtrados.length === 0 ? (
+              <div className="empty-row">No hay {TIPO_LABELS[tab].toLowerCase()}s registrados</div>
+            ) : (
+              <div className="cli-grid">
+                {[...filtrados].sort((a, b) => (b.activo ? 1 : 0) - (a.activo ? 1 : 0) || a.nombre.localeCompare(b.nombre)).map(p => {
+                  const logoUrl = logos[`empresa_${slugify(p.nombre)}`]
+                  const iniciales = p.nombre.split(/\s+/).filter(Boolean).slice(0, 2).map(w => w[0]).join('').toUpperCase()
+                  return (
+                    <div key={p.id} className={`cli-card${p.activo ? '' : ' inactivo'}`} onClick={() => abrirEditar(p)}>
+                      <div className="cli-head">
+                        <div className="cli-avatar">
+                          {logoUrl ? <img src={logoUrl} alt="" /> : iniciales}
+                        </div>
+                        <div className="cli-titulo">
+                          <div className="cli-nombre" title={p.nombre}>{p.nombre}</div>
+                          {p.tipo === 'proveedor' && p.es_sure && (
+                            <span className="cli-sure" title={`Referencia SURE: ${p.referencia_sure || '—'}`}>SURE · {p.referencia_sure || '—'}</span>
+                          )}
+                        </div>
                         <button
+                          className={`cli-estado ${p.activo ? 'si' : 'no'}`}
                           onClick={e => { e.stopPropagation(); handleToggleActivo(p) }}
-                          style={{ background: 'none', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', fontSize: 12, color: p.activo ? 'var(--green-600)' : 'var(--gray-400)', padding: 0 }}
+                          title={p.activo ? 'Activo · click para desactivar' : 'Inactivo · click para activar'}
                         >
                           <span className={`activo-dot ${p.activo ? 'si' : 'no'}`} />
                           {p.activo ? 'Activo' : 'Inactivo'}
                         </button>
-                      </td>
-                      <td className="acciones-col">
-                        <div style={{ display: 'flex', gap: 6 }} onClick={e => e.stopPropagation()}>
-                          <button className="btn btn-ghost" style={{ padding: '4px 8px', fontSize: 11 }} onClick={() => abrirEditar(p)}>
-                            <Pencil size={12} /> Editar
-                          </button>
-                          {tienePanel(p) && (
-                            <button
-                              className="btn btn-ghost"
-                              style={{ padding: '4px 8px', fontSize: 11, color: logos[`empresa_${slugify(p.nombre)}`] ? 'var(--green-600)' : 'var(--gray-400)' }}
-                              title={logos[`empresa_${slugify(p.nombre)}`] ? 'Logo registrado (también su firma) · click para cambiar' : 'Sin logo · click para añadir'}
-                              onClick={() => { setConfirmBorrarLogo(false); setLogoModalEmpresa(p) }}
-                            >
-                              <Image size={12} /> Logo
-                            </button>
-                          )}
-                          {tienePanel(p) && (
-                            <>
-                              <a
-                                className="btn btn-ghost"
-                                style={{ padding: '4px 8px', fontSize: 11, color: 'var(--gray-500)', textDecoration: 'none' }}
-                                href={panelUrl(p)}
-                                target="_blank"
-                                rel="noreferrer"
-                                onClick={e => e.stopPropagation()}
-                                title="Abrir panel externo"
-                              >
-                                <ExternalLink size={12} /> Panel
-                              </a>
-                              <button
-                                className="btn btn-ghost"
-                                style={{ padding: '4px 8px', fontSize: 11, color: copiadoPanel === p.id ? 'var(--green-600)' : 'var(--gray-500)' }}
-                                onClick={() => handleCopiarPanel(p)}
-                                title="Copiar enlace del panel (con código de acceso)"
-                              >
-                                {copiadoPanel === p.id ? <Check size={12} /> : <Copy size={12} />}
-                              </button>
-                              {esSuperadmin && (
-                                <button
-                                  className="btn btn-ghost"
-                                  style={{ padding: '4px 8px', fontSize: 11, color: 'var(--gray-500)' }}
-                                  disabled={regenerandoCodigo === p.id}
-                                  onClick={() => handleRegenerarCodigo(p)}
-                                  title="Regenerar código de acceso (el enlace anterior deja de funcionar)"
-                                >
-                                  <RefreshCw size={12} />
-                                </button>
-                              )}
-                            </>
-                          )}
-                          {confirmDelete === p.id ? (
-                            <div style={{ display: 'flex', gap: 4, alignItems: 'center' }}>
-                              <span style={{ fontSize: 11, color: 'var(--red-700)' }}>¿Eliminar?</span>
-                              <button className="btn" style={{ padding: '4px 8px', fontSize: 11, color: 'var(--red-700)', borderColor: 'var(--red-100)' }} onClick={() => handleEliminar(p.id)}>
-                                <Check size={11} /> Sí
-                              </button>
-                              <button className="btn btn-ghost" style={{ padding: '4px 8px', fontSize: 11 }} onClick={() => setConfirmDelete(null)}>
-                                <X size={11} />
-                              </button>
-                            </div>
-                          ) : (
-                            <button className="btn btn-ghost" style={{ padding: '4px 8px', fontSize: 11, color: 'var(--red-400)' }} onClick={() => setConfirmDelete(p.id)}>
-                              <Trash2 size={12} />
-                            </button>
-                          )}
+                      </div>
+
+                      <div className="cli-datos">
+                        <div className="cli-dato" title={p.contactos?.length > 1 ? p.contactos.map(c => c.nombre).filter(Boolean).join(', ') : undefined}>
+                          <User size={12} />
+                          {p.contacto ? <span>{p.contacto}</span> : <span className="vacio">Sin contacto</span>}
+                          {(p.contactos?.length || 0) > 1 && <span className="cli-mas">+{p.contactos.length - 1}</span>}
                         </div>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+                        <div className="cli-dato">
+                          <Mail size={12} />
+                          {p.email
+                            ? <a href={`mailto:${p.email}`} onClick={e => e.stopPropagation()} title={p.email}>{p.email}</a>
+                            : <span className="vacio">—</span>}
+                        </div>
+                        <div className="cli-dato">
+                          <Phone size={12} />
+                          {normalizarTelefono(p.telefono) || <span className="vacio">—</span>}
+                        </div>
+                      </div>
+
+                      <div className="cli-acciones" onClick={e => e.stopPropagation()}>
+                        {confirmDelete === p.id ? (
+                          <>
+                            <span style={{ fontSize: 11, color: 'var(--red-700)', marginRight: 'auto' }}>¿Eliminar?</span>
+                            <button className="btn" style={{ padding: '3px 8px', fontSize: 11, color: 'var(--red-700)', borderColor: 'var(--red-100)' }} onClick={() => handleEliminar(p.id)}>
+                              <Check size={11} /> Sí
+                            </button>
+                            <button className="cli-btn" onClick={() => setConfirmDelete(null)}><X size={13} /></button>
+                          </>
+                        ) : (
+                          <>
+                            <button className="cli-btn" onClick={() => abrirEditar(p)} title="Editar"><Pencil size={13} /></button>
+                            {tienePanel(p) && (
+                              <>
+                                <button
+                                  className="cli-btn"
+                                  style={{ color: logoUrl ? 'var(--green-600)' : undefined }}
+                                  title={logoUrl ? 'Logo registrado (también su firma) · click para cambiar' : 'Sin logo · click para añadir'}
+                                  onClick={() => { setConfirmBorrarLogo(false); setLogoModalEmpresa(p) }}
+                                >
+                                  <Image size={13} />
+                                </button>
+                                <a className="cli-btn" href={panelUrl(p)} target="_blank" rel="noreferrer" title="Abrir panel externo">
+                                  <ExternalLink size={13} />
+                                </a>
+                                <button
+                                  className="cli-btn"
+                                  style={{ color: copiadoPanel === p.id ? 'var(--green-600)' : undefined }}
+                                  onClick={() => handleCopiarPanel(p)}
+                                  title="Copiar enlace del panel (con código de acceso)"
+                                >
+                                  {copiadoPanel === p.id ? <Check size={13} /> : <Copy size={13} />}
+                                </button>
+                                {esSuperadmin && (
+                                  <button
+                                    className="cli-btn"
+                                    disabled={regenerandoCodigo === p.id}
+                                    onClick={() => handleRegenerarCodigo(p)}
+                                    title="Regenerar código de acceso (el enlace anterior deja de funcionar)"
+                                  >
+                                    <RefreshCw size={13} />
+                                  </button>
+                                )}
+                              </>
+                            )}
+                            <button className="cli-btn peligro" onClick={() => setConfirmDelete(p.id)} title="Eliminar"><Trash2 size={13} /></button>
+                          </>
+                        )}
+                      </div>
+                    </div>
+                  )
+                })}
               </div>
-            </div>
+            )}
           </>
         ) : null}
       </div>
