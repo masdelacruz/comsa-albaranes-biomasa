@@ -1,12 +1,12 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { ExternalLink, Copy, Check, RefreshCw, ChevronRight, Search } from 'lucide-react'
+import { ExternalLink, Copy, Check, RefreshCw, Search } from 'lucide-react'
 import { api } from '../lib/api'
 import { SECCIONES_CLIENTES, TIPOS_CLIENTE, slugify, panelUrl } from '../utils/clientes'
 import '../components/shared.css'
 import './Clientes.css'
 
-// Listado de astilladoras, instalaciones y proveedores. Cada fila abre la ficha del
+// Cuadrícula de astilladoras, instalaciones y proveedores. Cada tarjeta abre la ficha del
 // cliente; los botones de la derecha gestionan su enlace único y permanente
 // al panel externo — solo cambia si se regenera el código (por ejemplo, tras
 // detectar una anomalía) y el enlace anterior deja de funcionar.
@@ -86,26 +86,26 @@ export default function Clientes({ albaranes = [], usuario }) {
                   <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--gray-700)' }}>{titulo}</div>
                   <div style={{ fontSize: 12, color: 'var(--gray-400)' }}>({lista.length})</div>
                 </div>
-                <div className="card" style={{ padding: 0, overflow: 'hidden' }}>
+                <div className="cli-grid">
                   {lista.length === 0 ? (
-                    <div style={{ padding: 20, textAlign: 'center', color: 'var(--gray-400)', fontSize: 13 }}>
+                    <div className="cli-vacio">
                       Sin {titulo.toLowerCase()} registradas
                     </div>
                   ) : lista.map(p => {
                     const logoUrl = logos[`empresa_${slugify(p.nombre)}`]
                     const n = numAlbaranes(p)
                     return (
-                    <div key={p.id} className={`cli-row ${p.activo ? '' : 'inactivo'}`} onClick={() => navigate(`/clientes/${p.id}`)}>
+                    <div key={p.id} className={`cli-tile ${p.activo ? '' : 'inactivo'}`} onClick={() => navigate(`/clientes/${p.id}`)}>
                       <div className="cli-logo" style={{
                         background: logoUrl ? '#fff' : `${color}1a`,
                         border: logoUrl ? 'var(--border)' : 'none',
                       }}>
                         {logoUrl
                           ? <img src={logoUrl} alt="" />
-                          : <Icon size={22} color={color} />}
+                          : <Icon size={20} color={color} />}
                       </div>
                       <div style={{ flex: 1, minWidth: 0 }}>
-                        <div className="cli-nombre">{p.nombre}</div>
+                        <div className="cli-nombre" title={p.nombre}>{p.nombre}</div>
                         <div className="cli-meta">
                           {!p.activo && <span className="cli-tag-inactivo">Inactivo</span>}
                           <span>{n} {n === 1 ? 'albarán' : 'albaranes'}</span>
@@ -113,24 +113,23 @@ export default function Clientes({ albaranes = [], usuario }) {
                         </div>
                       </div>
                       <div className="cli-acciones" onClick={e => e.stopPropagation()}>
-                        <a className="btn btn-ghost" style={{ padding: '5px 9px', fontSize: 11 }}
+                        <a className="btn btn-ghost" style={{ padding: '5px 7px', fontSize: 11, color: 'var(--gray-500)' }}
                           href={panelUrl(p)} target="_blank" rel="noreferrer" title="Abrir panel">
                           <ExternalLink size={12} />
                         </a>
                         <button className="btn btn-ghost"
-                          style={{ padding: '5px 9px', fontSize: 11, color: copiadoId === p.id ? 'var(--green-600)' : 'var(--gray-500)' }}
+                          style={{ padding: '5px 7px', fontSize: 11, color: copiadoId === p.id ? 'var(--green-600)' : 'var(--gray-500)' }}
                           onClick={() => handleCopiar(p)} title="Copiar enlace">
                           {copiadoId === p.id ? <Check size={12} /> : <Copy size={12} />}
                         </button>
                         {puedeRegenerar && (
-                          <button className="btn btn-ghost" style={{ padding: '5px 9px', fontSize: 11, color: 'var(--gray-500)' }}
+                          <button className="btn btn-ghost" style={{ padding: '5px 7px', fontSize: 11, color: 'var(--gray-500)' }}
                             disabled={regenerandoId === p.id}
                             onClick={() => handleRegenerar(p)} title="Regenerar código (revoca el enlace actual)">
                             <RefreshCw size={12} />
                           </button>
                         )}
                       </div>
-                      <ChevronRight size={16} className="cli-chevron" />
                     </div>
                   )})}
                 </div>
