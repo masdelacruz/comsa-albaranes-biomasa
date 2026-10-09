@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { AlertTriangle, Plus, Trash2, Search, Filter, Package, CalendarClock, PenLine, CheckCircle2, Calendar, ChevronRight } from 'lucide-react'
+import { AlertTriangle, Plus, Trash2, Search, Filter, ClipboardList, CalendarClock, PenLine, CheckCircle2, Calendar, ChevronRight } from 'lucide-react'
 import { Badge, FirmaSteps } from '../components/Badge'
 import { labelSemanaActual, isoWeek, isoWeekYear, lunesDeSemana } from '../utils/semana'
 import '../components/shared.css'
@@ -105,7 +105,7 @@ export default function Dashboard({ albaranes, empresas = [], usuario, borrarAlb
   }
 
   const kpis = [
-    { key: 'semana',   label: 'Albaranes esta semana', value: albaranesSemana.length, icon: Package,       tone: 'green' },
+    { key: 'semana',   label: 'Albaranes esta semana', value: albaranesSemana.length, icon: ClipboardList, tone: 'green' },
     { key: 'prog',     label: 'Programados',           value: programados,            icon: CalendarClock, tone: 'blue', onClick: programados > 0 ? () => setFiltroEstado('programado') : undefined },
     { key: 'firma',    label: 'Pendientes de firma',   value: albaranesPendientesFirma.length, icon: PenLine, tone: 'amber' },
     { key: 'cerrados', label: 'Finalizados',           value: cerrados,               icon: CheckCircle2,  tone: 'green' },
