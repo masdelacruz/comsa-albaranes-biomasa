@@ -102,31 +102,28 @@ export default function Clientes({ albaranes = [], usuario }) {
                       }}>
                         {logoUrl
                           ? <img src={logoUrl} alt="" />
-                          : <Icon size={20} color={color} />}
+                          : <Icon size={28} color={color} />}
                       </div>
-                      <div style={{ flex: 1, minWidth: 0 }}>
-                        <div className="cli-nombre" title={p.nombre}>{p.nombre}</div>
-                        <div className="cli-meta">
-                          {!p.activo && <span className="cli-tag-inactivo">Inactivo</span>}
-                          <span>{n} {n === 1 ? 'albarán' : 'albaranes'}</span>
-                          {p.contacto && <span>· {p.contacto}{(p.contactos?.length || 0) > 1 ? ` +${p.contactos.length - 1}` : ''}</span>}
-                        </div>
+                      <div className="cli-nombre" title={p.nombre}>{p.nombre}</div>
+                      <div className="cli-meta">
+                        {!p.activo && <span className="cli-tag-inactivo">Inactivo</span>}
+                        <span>{n} {n === 1 ? 'albarán' : 'albaranes'}</span>
                       </div>
                       <div className="cli-acciones" onClick={e => e.stopPropagation()}>
-                        <a className="btn btn-ghost" style={{ padding: '5px 7px', fontSize: 11, color: 'var(--gray-500)' }}
+                        <a className="btn btn-ghost" style={{ padding: '6px 8px', fontSize: 11, color: 'var(--gray-500)' }}
                           href={panelUrl(p)} target="_blank" rel="noreferrer" title="Abrir panel">
-                          <ExternalLink size={12} />
+                          <ExternalLink size={13} />
                         </a>
                         <button className="btn btn-ghost"
-                          style={{ padding: '5px 7px', fontSize: 11, color: copiadoId === p.id ? 'var(--green-600)' : 'var(--gray-500)' }}
+                          style={{ padding: '6px 8px', fontSize: 11, color: copiadoId === p.id ? 'var(--green-600)' : 'var(--gray-500)' }}
                           onClick={() => handleCopiar(p)} title="Copiar enlace">
-                          {copiadoId === p.id ? <Check size={12} /> : <Copy size={12} />}
+                          {copiadoId === p.id ? <Check size={13} /> : <Copy size={13} />}
                         </button>
                         {puedeRegenerar && (
-                          <button className="btn btn-ghost" style={{ padding: '5px 7px', fontSize: 11, color: 'var(--gray-500)' }}
+                          <button className="btn btn-ghost" style={{ padding: '6px 8px', fontSize: 11, color: 'var(--gray-500)' }}
                             disabled={regenerandoId === p.id}
                             onClick={() => handleRegenerar(p)} title="Regenerar código (revoca el enlace actual)">
-                            <RefreshCw size={12} />
+                            <RefreshCw size={13} />
                           </button>
                         )}
                       </div>
