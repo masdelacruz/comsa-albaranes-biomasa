@@ -342,7 +342,7 @@ export default function Administracion({ usuario }) {
                 return (
                   <div key={cfg.id} className="card" style={{ padding: 14, display: 'flex', flexDirection: 'column', gap: 8 }}>
                     <div style={{ fontWeight: 600, fontSize: 13, color: 'var(--gray-800)' }}>{cfg.nombre}</div>
-                    <div style={{ fontSize: 11, color: 'var(--gray-400)' }}>{cfg.descripcion}</div>
+                    <div title={cfg.descripcion} style={{ fontSize: 11, color: 'var(--gray-400)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{cfg.descripcion}</div>
                     <div
                       style={{
                         border: isDragOver ? '2px dashed var(--green-400)' : '1px dashed var(--gray-200)',
@@ -408,7 +408,7 @@ export default function Administracion({ usuario }) {
                     <span style={{ width: 8, height: 8, borderRadius: '50%', background: color, display: 'inline-block', flexShrink: 0 }} />
                     {titulo}
                   </div>
-                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: 12 }}>
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(250px, 1fr))', gap: 12 }}>
                     {items.map(renderCard)}
                   </div>
                 </div>
