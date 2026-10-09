@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import { Plus, Trash2, X, Check, Upload, Clock, Star, Trees, Factory, Truck, Building2, User, Users, StickyNote, Image } from 'lucide-react'
 import { api } from '../lib/api'
 import '../pages/Administracion.css'
@@ -12,6 +12,7 @@ const contactosDe = (empresa) => {
 }
 
 const TIPO_ICONS = { proveedor: Trees, astilladora: Factory, transportista: Truck, instalacion: Building2 }
+const ordenarPorTipo = filas => [...filas].sort((a, b) => TIPOS.indexOf(a.tipo) - TIPOS.indexOf(b.tipo))
 
 export function toTitleCase(str) {
   if (!str) return str
@@ -41,21 +42,39 @@ export function normalizarTelefono(raw) {
 export const TIPOS = ['proveedor', 'astilladora', 'transportista', 'instalacion']
 export const TIPO_LABELS = { proveedor: 'Proveedor', astilladora: 'Astilladora', transportista: 'Transportista', instalacion: 'Instalación' }
 const CONTACTO_VACIO = { nombre: '', telefono: '' }
-const EMPTY_FORM = { nombre: '', tipo: 'proveedor', contactos: [CONTACTO_VACIO], email: '', notas: '', activo: true, trabajadores: [], maquinas: [], horario: '', es_sure: false, referencia_sure: '' }
+const EMPTY_FORM = { nombre: '', tipos: ['proveedor'], contactos: [CONTACTO_VACIO], email: '', notas: '', activo: true, trabajadores: [], maquinas: [], horario: '', es_sure: false, referencia_sure: '' }
 const slugify = s => s.toLowerCase().replace(/\s+/g, '_').replace(/[^a-z0-9_]/g, '')
 
 // Alta/edición de una empresa. Se usa desde Configuración y desde la ficha
 // de cliente, para editar sin salir de donde se está.
-//  - empresa:      la empresa a editar, o null para crear una nueva
+// Una empresa puede tener varios tipos (una fila por tipo con el mismo nombre):
+// el modal edita la empresa entera — nombre, contacto, notas y estado se
+// guardan en todas sus filas — y permite sumarle tipos nuevos de una vez.
+//  - empresa:      la fila a editar, o null para crear una nueva
+//  - hermanas:     todas las filas de la empresa (incluida empresa); por defecto [empresa]
 //  - tipoInicial:  tipo por defecto al crear
 //  - logos:        mapa id → url de /storage/logos
 //  - onLogoChange: (id, url|null) al subir o borrar el logo
 //  - onSaved:      tras guardar correctamente (el modal ya se cierra solo)
-export default function EmpresaModal({ empresa, tipoInicial = 'proveedor', logos = {}, onLogoChange, onClose, onSaved }) {
+export default function EmpresaModal({ empresa, hermanas, tipoInicial = 'proveedor', logos = {}, onLogoChange, onClose, onSaved }) {
   const editando = empresa?.id || null
-  const [form, setForm] = useState(() => empresa
-    ? { nombre: empresa.nombre, tipo: empresa.tipo, contactos: contactosDe(empresa), email: empresa.email || '', notas: empresa.notas || '', activo: empresa.activo, trabajadores: empresa.trabajadores || [], maquinas: empresa.maquinas || [], horario: empresa.horario || '', es_sure: !!empresa.es_sure, referencia_sure: empresa.referencia_sure || '' }
-    : { ...EMPTY_FORM, tipo: tipoInicial })
+  const filas = editando ? ordenarPorTipo(hermanas?.length ? hermanas : [empresa]) : []
+  const fila = t => filas.find(f => f.tipo === t)
+  const tiposExistentes = filas.map(f => f.tipo)
+  const [form, setForm] = useState(() => {
+    if (!empresa) return { ...EMPTY_FORM, tipos: [tipoInicial] }
+    const prov = fila('proveedor'), ast = fila('astilladora'), conHorario = ast || fila('instalacion')
+    return {
+      nombre: empresa.nombre, tipos: tiposExistentes, contactos: contactosDe(empresa), email: empresa.email || '',
+      notas: empresa.notas || '', activo: empresa.activo,
+      trabajadores: ast?.trabajadores || [], maquinas: ast?.maquinas || [], horario: conHorario?.horario || '',
+      es_sure: !!prov?.es_sure, referencia_sure: prov?.referencia_sure || '',
+    }
+  })
+  const [error, setError] = useState(null)
+  // Al crear, para avisar si el nombre ya existe con otros tipos (se sumará a esa empresa)
+  const [todas, setTodas] = useState([])
+  useEffect(() => { if (!editando) api.get('/empresas').then(d => setTodas(d || [])).catch(() => {}) }, [editando])
   const [guardando, setGuardando]                 = useState(false)
   const [subiendoLogo, setSubiendoLogo]           = useState({})
   const [dragOverLogoModal, setDragOverLogoModal] = useState(false)
@@ -63,6 +82,17 @@ export default function EmpresaModal({ empresa, tipoInicial = 'proveedor', logos
   const logoFileRefs = useRef({})
 
   const set = (k, v) => setForm(f => ({ ...f, [k]: v }))
+  const tiene = t => form.tipos.includes(t)
+  const toggleTipo = t => {
+    if (tiposExistentes.includes(t)) return
+    setForm(f => ({ ...f, tipos: f.tipos.includes(t) ? f.tipos.filter(x => x !== t) : TIPOS.filter(x => x === t || f.tipos.includes(x)) }))
+  }
+  const yaExiste = !editando && form.nombre.trim()
+    ? todas.filter(e => e.nombre.toLowerCase() === toTitleCase(form.nombre.trim()).toLowerCase())
+    : []
+  const tiposRepetidos = yaExiste.filter(e => form.tipos.includes(e.tipo)).map(e => e.tipo)
+  const faltaSure = tiene('proveedor') && form.es_sure && !form.referencia_sure.trim()
+  const puedeGuardar = form.nombre.trim() && form.tipos.length && !tiposRepetidos.length && !faltaSure && !guardando
 
   // Personas de contacto: la primera es la principal (WhatsApp, llamadas, emails)
   const setContacto = (i, k, v) => setForm(f => ({ ...f, contactos: f.contactos.map((c, j) => j === i ? { ...c, [k]: v } : c) }))
@@ -75,28 +105,41 @@ export default function EmpresaModal({ empresa, tipoInicial = 'proveedor', logos
   const cerrarModal = onClose
 
   const handleGuardar = async () => {
-    if (!form.nombre.trim()) return
-    if (form.tipo === 'proveedor' && form.es_sure && !form.referencia_sure.trim()) return
+    if (!puedeGuardar) return
     setGuardando(true)
+    setError(null)
     try {
-      const datos = {
-        ...form,
-        nombre:      toTitleCase(form.nombre.trim()),
-        contactos:   form.contactos
+      // Datos de la empresa (iguales en todos sus tipos) y los propios de cada tipo
+      const comunes = {
+        nombre:    toTitleCase(form.nombre.trim()),
+        contactos: form.contactos
           .map(c => ({ nombre: toTitleCase(c.nombre.trim()), telefono: normalizarTelefono(c.telefono) }))
           .filter(c => c.nombre || c.telefono),
-        trabajadores: (form.trabajadores || []).map(t => toTitleCase(t.trim())).filter(Boolean),
-        maquinas:    (form.maquinas || []).filter(m => m.matricula?.trim()).map(m => ({ nombre: m.nombre?.trim() || '', matricula: m.matricula.trim().toUpperCase() })),
+        email: form.email, notas: form.notas, activo: form.activo,
       }
-      if (editando) {
-        await api.patch(`/empresas/${editando}`, datos)
-      } else {
-        await api.post('/empresas', datos)
+      const propios = {
+        proveedor:     { es_sure: form.es_sure, referencia_sure: form.referencia_sure },
+        astilladora:   {
+          horario: form.horario,
+          trabajadores: (form.trabajadores || []).map(t => toTitleCase(t.trim())).filter(Boolean),
+          maquinas: (form.maquinas || []).filter(m => m.matricula?.trim()).map(m => ({ nombre: m.nombre?.trim() || '', matricula: m.matricula.trim().toUpperCase() })),
+        },
+        instalacion:   { horario: form.horario },
+        transportista: {},
+      }
+      // La fila abierta primero: si cambia el nombre, el servidor renombra las demás
+      for (const f of [...filas].sort((a, b) => (b.id === editando) - (a.id === editando))) {
+        await api.patch(`/empresas/${f.id}`, { ...comunes, ...propios[f.tipo] })
+      }
+      const nuevos = form.tipos.filter(t => !tiposExistentes.includes(t))
+      if (nuevos.length) {
+        await api.post('/empresas', { ...comunes, ...Object.assign({}, ...nuevos.map(t => propios[t])), tipos: nuevos })
       }
       await onSaved?.()
       onClose()
     } catch (e) {
       console.error('Error guardando empresa:', e)
+      setError(e.message || 'No se ha podido guardar')
     } finally {
       setGuardando(false)
     }
@@ -126,15 +169,16 @@ export default function EmpresaModal({ empresa, tipoInicial = 'proveedor', logos
     }
   }
 
-  const TipoIcon = TIPO_ICONS[form.tipo] || Building2
+  const tipoPrincipal = form.tipos[0] || tipoInicial
+  const TipoIcon = TIPO_ICONS[tipoPrincipal] || Building2
 
   return (
       <div className="modal-overlay" onClick={cerrarModal}>
         <div className="modal em-modal" onClick={e => e.stopPropagation()}>
           <div className="em-header">
-            <div className={`em-icon ${form.tipo}`}><TipoIcon size={19} /></div>
+            <div className={`em-icon ${tipoPrincipal}`}><TipoIcon size={19} /></div>
             <div className="em-head-text">
-              <div className="em-eyebrow">{editando ? 'Editar' : 'Nuevo'} {TIPO_LABELS[form.tipo].toLowerCase()}</div>
+              <div className="em-eyebrow">{editando ? 'Editar' : 'Nuevo'} · {form.tipos.length ? form.tipos.map(t => TIPO_LABELS[t]).join(' + ') : 'sin tipo'}</div>
               <div className={`em-title${form.nombre.trim() ? '' : ' vacio'}`}>{form.nombre.trim() || 'Sin nombre'}</div>
             </div>
             <button type="button" className={`em-estado ${form.activo ? 'on' : 'off'}`}
@@ -149,19 +193,37 @@ export default function EmpresaModal({ empresa, tipoInicial = 'proveedor', logos
             <section className="em-section">
               <div className="em-section-title"><Building2 size={12} /> Datos generales</div>
               <div className="modal-grid">
-                {!editando && (
-                  <div className="modal-field full">
-                    <label>Tipo</label>
-                    <select value={form.tipo} onChange={e => set('tipo', e.target.value)}>
-                      {TIPOS.map(t => <option key={t} value={t}>{TIPO_LABELS[t]}</option>)}
-                    </select>
+                <div className="modal-field full">
+                  <label>Tipos</label>
+                  <div className="em-tipos">
+                    {TIPOS.map(t => {
+                      const I = TIPO_ICONS[t]
+                      const fijo = tiposExistentes.includes(t)
+                      return (
+                        <button key={t} type="button" className={`em-tipo ${t}${tiene(t) ? ' on' : ''}${fijo ? ' fijo' : ''}`}
+                          onClick={() => toggleTipo(t)}
+                          title={fijo ? 'Para quitar este tipo, elimínalo desde su pestaña en Configuración' : undefined}>
+                          <I size={13} /> {TIPO_LABELS[t]} {tiene(t) && <Check size={12} strokeWidth={3} />}
+                        </button>
+                      )
+                    })}
                   </div>
-                )}
-                <div className={`modal-field${form.tipo === 'proveedor' ? '' : ' full'}`}>
+                  <div className="em-hint">
+                    {editando
+                      ? 'Marca otro tipo para dar de alta también la misma empresa como tal: comparte nombre, contactos y notas.'
+                      : 'Marca todos los tipos de la empresa: se da de alta una sola vez y queda alineada en todos.'}
+                  </div>
+                </div>
+                <div className={`modal-field${tiene('proveedor') ? '' : ' full'}`}>
                   <label>Nombre *</label>
                   <input type="text" placeholder="Nombre de la empresa" value={form.nombre} onChange={e => set('nombre', e.target.value)} onBlur={e => set('nombre', toTitleCase(e.target.value))} autoFocus />
+                  {tiposRepetidos.length > 0 ? (
+                    <div className="em-hint error">Ya existe como {tiposRepetidos.map(t => TIPO_LABELS[t]).join(' y ')}: edítala desde ahí para añadirle tipos.</div>
+                  ) : yaExiste.length > 0 && (
+                    <div className="em-hint aviso">Ya existe como {yaExiste.map(e => TIPO_LABELS[e.tipo]).join(' y ')}: se añadirá a esa misma empresa.</div>
+                  )}
                 </div>
-                {form.tipo === 'proveedor' && (
+                {tiene('proveedor') && (
                   <div className="modal-field">
                     <label>Certificación</label>
                     <div className="em-sure">
@@ -218,7 +280,7 @@ export default function EmpresaModal({ empresa, tipoInicial = 'proveedor', logos
               </div>
             </section>
 
-            {(form.tipo === 'astilladora' || form.tipo === 'instalacion') && (
+            {(tiene('astilladora') || tiene('instalacion')) && (
               <section className="em-section">
                 <div className="em-section-title"><Clock size={12} /> Horario</div>
                 <div className="modal-field">
@@ -229,13 +291,13 @@ export default function EmpresaModal({ empresa, tipoInicial = 'proveedor', logos
               </section>
             )}
 
-            {editando && (form.tipo === 'astilladora' || form.tipo === 'instalacion' || form.tipo === 'proveedor') && (() => {
+            {editando && (tiene('astilladora') || tiene('instalacion') || tiene('proveedor')) && (() => {
               const logoId  = `empresa_${slugify(form.nombre)}`
               const logoUrl = logos[logoId]
               const subiendo = !!subiendoLogo[logoId]
               return (
                 <section className="em-section">
-                  <div className="em-section-title"><Image size={12} /> {form.tipo === 'proveedor' ? 'Logo' : 'Logo · firma y sello'}</div>
+                  <div className="em-section-title"><Image size={12} /> {tiene('astilladora') || tiene('instalacion') ? 'Logo · firma y sello' : 'Logo'}</div>
                   <div
                     style={{
                       border: dragOverLogoModal ? '2px dashed var(--green-400)' : '1px solid var(--gray-200)',
@@ -284,13 +346,13 @@ export default function EmpresaModal({ empresa, tipoInicial = 'proveedor', logos
                       </button>
                     )
                   )}
-                  <div className="em-hint" style={{marginTop:6}}>PNG, JPG o WEBP · {form.tipo === 'proveedor' ? 'Cabecera de su panel y su ficha de cliente' : 'Cabecera del panel y firma/sello al confirmar desde el campo'}</div>
+                  <div className="em-hint" style={{marginTop:6}}>PNG, JPG o WEBP · {tiene('astilladora') || tiene('instalacion') ? 'Cabecera del panel y firma/sello al confirmar desde el campo' : 'Cabecera de su panel y su ficha de cliente'}</div>
                 </section>
               )
             })()}
 
             {/* ── Trabajadores y máquinas (solo astilladora) ── */}
-            {form.tipo === 'astilladora' && (
+            {tiene('astilladora') && (
               <section className="em-section">
                 <div className="em-section-title"><Users size={12} /> Equipo</div>
                 <div className="modal-field" style={{marginBottom:14}}>
@@ -346,8 +408,9 @@ export default function EmpresaModal({ empresa, tipoInicial = 'proveedor', logos
           </div>
 
           <div className="em-footer">
+            {error && <div className="em-error">{error}</div>}
             <button className="btn" onClick={cerrarModal}>Cancelar</button>
-            <button className="btn btn-primary" onClick={handleGuardar} disabled={!form.nombre.trim() || guardando || (form.tipo === 'proveedor' && form.es_sure && !form.referencia_sure.trim())}>
+            <button className="btn btn-primary" onClick={handleGuardar} disabled={!puedeGuardar}>
               {guardando ? 'Guardando...' : <><Check size={14} /> {editando ? 'Guardar cambios' : 'Crear'}</>}
             </button>
           </div>

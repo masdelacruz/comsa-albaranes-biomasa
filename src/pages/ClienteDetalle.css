@@ -271,3 +271,7 @@
   .cd-chart-bars { gap:5px; }
 }
 .cd-panel-acciones.dos { grid-template-columns:repeat(2, minmax(0,1fr)); }
+
+/* Empresas con varios tipos: un bloque de enlace por panel */
+.cd-panel-rol + .cd-panel-rol { margin-top:14px; padding-top:14px; border-top:var(--border-light); }
+.cd-panel-rol-titulo { font-size:11.5px; font-weight:600; color:var(--gray-500); text-transform:uppercase; letter-spacing:.4px; margin-bottom:6px; }

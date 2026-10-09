@@ -104,6 +104,25 @@
   background: var(--gray-50);
 }
 
+/* Selector de tipos: una empresa puede ser de varios a la vez */
+.em-tipos { display: flex; flex-wrap: wrap; gap: 6px; }
+.em-modal .modal-field .em-tipo,
+.em-tipo {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 6px 11px; border-radius: 999px; border: 1px solid var(--gray-200);
+  background: #fff; color: var(--gray-500); font-size: 12.5px; font-weight: 500; cursor: pointer;
+  transition: background 0.12s, border-color 0.12s, color 0.12s;
+}
+.em-tipo:hover { border-color: var(--gray-300); color: var(--gray-700); }
+.em-tipo.on.proveedor     { background: #F0ECFA; border-color: #D9CFF2; color: #5B3FA8; }
+.em-tipo.on.astilladora   { background: #F3E8DA; border-color: #E4CDB0; color: #6B4423; }
+.em-tipo.on.transportista { background: #E6F1FB; border-color: #C4DCF3; color: #0C447C; }
+.em-tipo.on.instalacion   { background: #FAEEDA; border-color: #F0D6AA; color: #633806; }
+.em-tipo.fijo { cursor: default; }
+.em-hint.error { color: var(--red-700); }
+.em-hint.aviso { color: var(--amber-700); }
+.em-error { margin-right: auto; align-self: center; font-size: 12px; color: var(--red-700); }
+
 @media (max-width: 520px) {
   .em-header { padding: 16px; }
   .em-body { padding: 4px 16px 8px; }

@@ -49,6 +49,8 @@ function CardHead({ icon: I, titulo, extra, children }) {
 // Ficha de un cliente (astilladora o instalación): datos de contacto, enlace
 // del panel externo y su actividad a partir de los albaranes. La edición se
 // hace en Configuración, que sigue siendo el único sitio donde se modifican.
+const TIPO_SINGULAR = Object.fromEntries(SECCIONES_CLIENTES.map(s => [s.tipo, s.singular]))
+
 export default function ClienteDetalle({ albaranes = [], usuario }) {
   const { id } = useParams()
   const puedeGestionar = usuario?.nivel !== 'basico'
@@ -56,6 +58,8 @@ export default function ClienteDetalle({ albaranes = [], usuario }) {
   const puedeRegenerar = usuario?.nivel === 'superadmin'
   const navigate = useNavigate()
   const [cliente,     setCliente]     = useState(null)
+  // Todas las filas de la empresa (una por tipo) y, de ellas, las que tienen panel
+  const [hermanas,    setHermanas]    = useState([])
   const [logos,       setLogos]       = useState({})
   const [editando,    setEditando]    = useState(false)
   const [loading,     setLoading]     = useState(true)
@@ -73,6 +77,7 @@ export default function ClienteDetalle({ albaranes = [], usuario }) {
       const data = await api.get('/empresas')
       const c = (data || []).find(p => String(p.id) === String(id) && TIPOS_CLIENTE.has(p.tipo))
       setCliente(c || null)
+      setHermanas(c ? (data || []).filter(p => p.nombre.toLowerCase() === c.nombre.toLowerCase()) : [])
       if (c) {
         try {
           const map = await api.get('/storage/logos')
@@ -92,10 +97,15 @@ export default function ClienteDetalle({ albaranes = [], usuario }) {
     return () => document.removeEventListener('mousedown', cerrar)
   }, [menuAbierto])
 
+  const roles = useMemo(() => SECCIONES_CLIENTES
+    .map(sec => ({ ...sec, fila: hermanas.find(h => h.tipo === sec.tipo) }))
+    .filter(r => r.fila), [hermanas])
+
   const stats = useMemo(() => {
     if (!cliente) return null
+    const tipos = roles.length ? roles.map(r => r.tipo) : [cliente.tipo]
     const propios = albaranes
-      .filter(a => a[cliente.tipo] === cliente.nombre)
+      .filter(a => tipos.some(t => a[t] === cliente.nombre))
       .sort((a, b) => (b.fecha || '').localeCompare(a.fecha || ''))
     const validos = propios.filter(a => a.estado !== 'cancelado')
     const pesoKg  = validos.reduce((s, a) => s + (netoKg(a) || 0), 0)
@@ -116,7 +126,7 @@ export default function ClienteDetalle({ albaranes = [], usuario }) {
       pesoKg, humedadMedia, humedadesMedidas: humedades.length, relaciones,
       ultimo: validos[0]?.fecha || null,
     }
-  }, [albaranes, cliente])
+  }, [albaranes, cliente, roles])
 
   // Serie mensual del periodo elegido (incluido el mes actual)
   const meses = useMemo(() => {
@@ -136,12 +146,13 @@ export default function ClienteDetalle({ albaranes = [], usuario }) {
     setTimeout(() => setCopiado(c => (c === clave ? null : c)), 2000)
   }
 
-  const handleRegenerar = async () => {
+  const handleRegenerar = async (fila = cliente) => {
     setMenuAbierto(false)
-    if (!window.confirm(`El enlace del panel actual de "${cliente.nombre}" dejará de funcionar. ¿Generar uno nuevo?`)) return
-    setRegenerando(true)
+    const de = roles.length > 1 ? ` (${TIPO_SINGULAR[fila.tipo].toLowerCase()})` : ''
+    if (!window.confirm(`El enlace del panel actual de "${cliente.nombre}"${de} dejará de funcionar. ¿Generar uno nuevo?`)) return
+    setRegenerando(fila.id)
     try {
-      await api.post(`/empresas/${cliente.id}/regenerar-codigo-acceso`, {})
+      await api.post(`/empresas/${fila.id}/regenerar-codigo-acceso`, {})
       await fetchCliente()
     } catch {}
     setRegenerando(false)
@@ -157,12 +168,15 @@ export default function ClienteDetalle({ albaranes = [], usuario }) {
     </div>
   )
 
-  const { icon: Icon, color, singular, titulo: tituloSeccion } = SECCIONES_CLIENTES.find(s => s.tipo === cliente.tipo)
-  const esAstilladora = cliente.tipo === 'astilladora'
+  const { icon: Icon, color, singular } = SECCIONES_CLIENTES.find(s => s.tipo === cliente.tipo)
+  const varios = roles.length > 1
+  const filaAstilladora = roles.find(r => r.tipo === 'astilladora')?.fila
+  const filaHorario = filaAstilladora || roles.find(r => r.tipo === 'instalacion')?.fila
+  const esAstilladora = !!filaAstilladora
   const logoUrl = logos[`empresa_${slugify(cliente.nombre)}`]
   const url = panelUrl(cliente)
-  const trabajadores = cliente.trabajadores || []
-  const maquinas = cliente.maquinas || []
+  const trabajadores = filaAstilladora?.trabajadores || []
+  const maquinas = filaAstilladora?.maquinas || []
   const maxMes = Math.max(1, ...meses.map(m => m.n))
   const totalPeriodo = meses.reduce((s, m) => s + m.n, 0)
   const kgPeriodo = meses.reduce((s, m) => s + m.kg, 0)
@@ -177,7 +191,7 @@ export default function ClienteDetalle({ albaranes = [], usuario }) {
     { icon: UserRound, label: contactos.length > 1 ? 'Contacto principal' : 'Persona de contacto', valor: principal?.nombre, extra: contactos.length > 1 ? `+${contactos.length - 1}` : null },
     { icon: Phone,     label: 'Teléfono', valor: principal?.telefono, href: telPrincipal },
     { icon: Mail,      label: 'Email', valor: cliente.email, href: cliente.email && `mailto:${cliente.email}` },
-    ...(cliente.tipo === 'proveedor' ? [] : [{ icon: Clock, label: 'Horario', valor: cliente.horario }]),
+    ...(filaHorario ? [{ icon: Clock, label: 'Horario', valor: filaHorario.horario }] : []),
   ]
   // Tarjeta Contacto: las personas van en su propia lista; aquí el resto
   const datosEmpresa = datosHero.slice(2)
@@ -196,8 +210,6 @@ export default function ClienteDetalle({ albaranes = [], usuario }) {
     <div className="cd-page" style={{ '--cd-color': color }}>
       <div className="cd-breadcrumb">
         <button onClick={() => navigate('/clientes')}>Clientes</button>
-        <ChevronRight size={13} />
-        <span>{tituloSeccion}</span>
         <ChevronRight size={13} />
         <span className="actual">{cliente.nombre}</span>
       </div>
@@ -218,7 +230,9 @@ export default function ClienteDetalle({ albaranes = [], usuario }) {
           </div>
           <div className="cd-hero-info">
             <div className="cd-hero-tags">
-              <span className="cd-pill" style={{ color, background: `${color}14`, borderColor: `${color}33` }}><Icon size={12} /> {singular}</span>
+              {(roles.length ? roles : [{ tipo: cliente.tipo, icon: Icon, color, singular }]).map(r => (
+                <span key={r.tipo} className="cd-pill" style={{ color: r.color, background: `${r.color}14`, borderColor: `${r.color}33` }}><r.icon size={12} /> {r.singular}</span>
+              ))}
               <span className={`cd-pill cd-pill-estado ${cliente.activo ? 'si' : 'no'}`}><span className="cd-dot" />{cliente.activo ? 'Activo' : 'Inactivo'}</span>
             </div>
             <h1 className="cd-nombre">{cliente.nombre}</h1>
@@ -230,13 +244,13 @@ export default function ClienteDetalle({ albaranes = [], usuario }) {
           </div>
 
           <div className="cd-hero-acciones">
-            <a className="cd-btn" href={url} target="_blank" rel="noreferrer"><ExternalLink size={14} /> Abrir panel</a>
+            <a className="cd-btn" href={url} target="_blank" rel="noreferrer"><ExternalLink size={14} /> Abrir panel{varios ? ` · ${singular.toLowerCase()}` : ''}</a>
             <button className={`cd-btn ${copiado === 'url' ? 'ok' : ''}`} onClick={() => copiar(url, 'url')}>
               {copiado === 'url' ? <Check size={14} /> : <Copy size={14} />} {copiado === 'url' ? 'Copiado' : 'Copiar enlace'}
             </button>
             {puedeRegenerar && (
-              <button className="cd-btn cd-btn-icon" onClick={handleRegenerar} disabled={regenerando} title="Regenerar enlace (el actual deja de funcionar)">
-                <RefreshCw size={14} className={regenerando ? 'cd-girando' : ''} />
+              <button className="cd-btn cd-btn-icon" onClick={() => handleRegenerar()} disabled={!!regenerando} title="Regenerar enlace (el actual deja de funcionar)">
+                <RefreshCw size={14} className={regenerando === cliente.id ? 'cd-girando' : ''} />
               </button>
             )}
             {(puedeGestionar || principal?.telefono || cliente.email) && (
@@ -254,7 +268,7 @@ export default function ClienteDetalle({ albaranes = [], usuario }) {
                     <>
                       {(principal?.telefono || cliente.email) && <div className="cd-menu-sep" />}
                       <button onClick={() => navigate(`/configuracion?tab=${cliente.tipo}`)}><Settings size={14} /> Ver en Configuración</button>
-                      {puedeRegenerar && <button className="peligro" onClick={handleRegenerar}><RefreshCw size={14} /> Regenerar enlace</button>}
+                      {puedeRegenerar && <button className="peligro" onClick={() => handleRegenerar()}><RefreshCw size={14} /> Regenerar enlace</button>}
                     </>
                   )}
                 </div>
@@ -385,19 +399,32 @@ export default function ClienteDetalle({ albaranes = [], usuario }) {
         {/* Panel del cliente */}
         <div className="cd-card cd-a-panel">
           <CardHead icon={Link2} titulo="Panel del cliente" />
-          <div className="cd-panel-desc">Acceso directo y permanente a su vista de albaranes, sin usuario ni contraseña.</div>
-          <div className="cd-url">
-            <Link2 size={14} className="cd-url-icon" />
-            <span title={url}>{url.replace(/^https?:\/\//, '')}</span>
-            <button onClick={() => copiar(url, 'url')} title="Copiar">{copiado === 'url' ? <Check size={14} /> : <Copy size={14} />}</button>
+          <div className="cd-panel-desc">
+            {varios
+              ? 'Tiene un panel por cada tipo, cada uno con su enlace directo y permanente, sin usuario ni contraseña.'
+              : 'Acceso directo y permanente a su vista de albaranes, sin usuario ni contraseña.'}
           </div>
-          <div className={`cd-panel-acciones ${puedeRegenerar ? "" : "dos"}`}>
-            <a className="cd-btn" href={url} target="_blank" rel="noreferrer"><ExternalLink size={14} /> Abrir</a>
-            <button className={`cd-btn ${copiado === 'url' ? 'ok' : ''}`} onClick={() => copiar(url, 'url')}>
-              {copiado === 'url' ? <Check size={14} /> : <Copy size={14} />} {copiado === 'url' ? 'Copiado' : 'Copiar'}
-            </button>
-            {puedeRegenerar && <button className="cd-btn" onClick={handleRegenerar} disabled={regenerando}><RefreshCw size={14} className={regenerando ? 'cd-girando' : ''} /> Regenerar</button>}
-          </div>
+          {(roles.length ? roles.map(r => r.fila) : [cliente]).map(f => {
+            const u = panelUrl(f)
+            const clave = `url-${f.id}`
+            return (
+              <div key={f.id} className="cd-panel-rol">
+                {varios && <div className="cd-panel-rol-titulo">Panel de {TIPO_SINGULAR[f.tipo].toLowerCase()}</div>}
+                <div className="cd-url">
+                  <Link2 size={14} className="cd-url-icon" />
+                  <span title={u}>{u.replace(/^https?:\/\//, '')}</span>
+                  <button onClick={() => copiar(u, clave)} title="Copiar">{copiado === clave ? <Check size={14} /> : <Copy size={14} />}</button>
+                </div>
+                <div className={`cd-panel-acciones ${puedeRegenerar ? "" : "dos"}`}>
+                  <a className="cd-btn" href={u} target="_blank" rel="noreferrer"><ExternalLink size={14} /> Abrir</a>
+                  <button className={`cd-btn ${copiado === clave ? 'ok' : ''}`} onClick={() => copiar(u, clave)}>
+                    {copiado === clave ? <Check size={14} /> : <Copy size={14} />} {copiado === clave ? 'Copiado' : 'Copiar'}
+                  </button>
+                  {puedeRegenerar && <button className="cd-btn" onClick={() => handleRegenerar(f)} disabled={!!regenerando}><RefreshCw size={14} className={regenerando === f.id ? 'cd-girando' : ''} /> Regenerar</button>}
+                </div>
+              </div>
+            )
+          })}
           <div className="cd-nota-info">
             <Info size={14} />
             <div>Puedes compartir este enlace con el cliente.{puedeRegenerar && " Si lo regeneras, el anterior dejará de funcionar al momento."}</div>
@@ -497,6 +524,7 @@ export default function ClienteDetalle({ albaranes = [], usuario }) {
       {editando && puedeGestionar && (
         <EmpresaModal
           empresa={cliente}
+          hermanas={hermanas}
           logos={logos}
           onLogoChange={(lid, u) => setLogos(l => { const n = { ...l }; if (u) n[lid] = u; else delete n[lid]; return n })}
           onClose={() => setEditando(false)}

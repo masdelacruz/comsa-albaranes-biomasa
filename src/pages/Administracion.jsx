@@ -478,6 +478,12 @@ export default function Administracion({ usuario }) {
                     <tr key={p.id} onClick={() => abrirEditar(p)}>
                       <td className="nombre-col" style={{ fontWeight: 500, color:'var(--blue-700)', textDecoration:'underline', textDecorationColor:'var(--gray-200)' }}>
                         {p.nombre}
+                        {proveedores.filter(x => x.id !== p.id && x.nombre.toLowerCase() === p.nombre.toLowerCase()).map(x => (
+                          <span key={x.id} className={`tipo-badge ${x.tipo}`} title={`También dado de alta como ${TIPO_LABELS[x.tipo].toLowerCase()}`}
+                            style={{ marginLeft: 6, fontSize: 10, padding: '1px 6px', textDecoration: 'none', verticalAlign: 'middle' }}>
+                            + {TIPO_LABELS[x.tipo]}
+                          </span>
+                        ))}
                         {p.tipo === 'proveedor' && p.es_sure && (
                           <span title={`Referencia SURE: ${p.referencia_sure || '—'}`}
                             style={{ marginLeft: 8, fontSize: 10, fontWeight: 600, color: 'var(--green-600)', background: 'rgba(29,158,117,0.1)', border: '1px solid rgba(29,158,117,0.25)', borderRadius: 3, padding: '1px 6px', textDecoration: 'none', display: 'inline-block', verticalAlign: 'middle' }}>
@@ -659,6 +665,7 @@ export default function Administracion({ usuario }) {
       {modal && (
         <EmpresaModal
           empresa={modal.empresa}
+          hermanas={modal.empresa ? proveedores.filter(x => x.nombre.toLowerCase() === modal.empresa.nombre.toLowerCase()) : undefined}
           tipoInicial={tab}
           logos={logos}
           onLogoChange={(id, url) => setLogos(l => { const n = { ...l }; if (url) n[id] = url; else delete n[id]; return n })}

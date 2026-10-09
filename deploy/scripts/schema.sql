@@ -117,6 +117,7 @@ CREATE TABLE IF NOT EXISTS proveedores (
   referencia_sure TEXT,          -- solo proveedores SURE
   created_at   TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
+CREATE UNIQUE INDEX IF NOT EXISTS proveedores_nombre_tipo_unico ON proveedores (lower(nombre), tipo);
 
 -- ── Logos PDF ─────────────────────────────────────────────────────
 CREATE TABLE IF NOT EXISTS logos (
