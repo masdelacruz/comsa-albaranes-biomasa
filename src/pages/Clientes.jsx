@@ -58,7 +58,20 @@ export default function Clientes({ albaranes = [], usuario }) {
     setRegenerandoId(null)
   }
 
-  const numAlbaranes = (p) => albaranes.filter(a => a[p.tipo] === p.nombre && a.estado !== 'cancelado').length
+  // Una empresa dada de alta con varios tipos (p. ej. proveedor e instalación)
+  // sale una sola vez: manda el registro del primer tipo de SECCIONES_CLIENTES,
+  // cuenta como activa si lo es en alguno y suma los albaranes de todos sus roles.
+  const unicos = Object.values(clientes.reduce((acc, p) => {
+    const k = p.nombre.trim().toLowerCase()
+    ;(acc[k] ||= []).push(p)
+    return acc
+  }, {})).map(grupo => {
+    const orden = t => SECCIONES_CLIENTES.findIndex(sec => sec.tipo === t)
+    const [principal] = [...grupo].sort((a, b) => orden(a.tipo) - orden(b.tipo))
+    return { ...principal, activo: grupo.some(g => g.activo), tipos: grupo.map(g => g.tipo) }
+  })
+
+  const numAlbaranes = (p) => albaranes.filter(a => a.estado !== 'cancelado' && p.tipos.some(t => a[t] === p.nombre)).length
 
   const q = busqueda.trim().toLowerCase()
   const filtrar = (lista) => q ? lista.filter(p => p.nombre.toLowerCase().includes(q)) : lista
@@ -80,7 +93,7 @@ export default function Clientes({ albaranes = [], usuario }) {
           <div style={{ padding: 32, textAlign: 'center', color: 'var(--gray-400)' }}>Cargando...</div>
         ) : (
           (() => {
-            const lista = filtrar(clientes).sort((a, b) => a.nombre.localeCompare(b.nombre, 'es', { sensitivity: 'base' }))
+            const lista = filtrar(unicos).sort((a, b) => a.nombre.localeCompare(b.nombre, 'es', { sensitivity: 'base' }))
             return (
                 <div className="cli-grid">
                   {lista.length === 0 ? (
