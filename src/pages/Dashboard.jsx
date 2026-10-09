@@ -42,7 +42,6 @@ export default function Dashboard({ albaranes, empresas = [], usuario, borrarAlb
   const albaranesPendientesFirma = albaranes.filter(a => a.estado === 'pendiente_campo' || a.estado === 'pendiente_oficina')
   const cerrados       = albaranes.filter(a => a.estado === 'cerrado').length
   const conIncidencia  = albaranes.filter(a => a.estado === 'humedad_pendiente').length
-  const alertas        = albaranes.filter(a => a.estado === 'humedad_pendiente')
 
   // Actividad de la semana: nº de albaranes por día, lunes a domingo
   const lunes = lunesDeSemana(hoy)
@@ -93,7 +92,7 @@ export default function Dashboard({ albaranes, empresas = [], usuario, borrarAlb
   const paginados    = filtrados.slice((pagina - 1) * porPagina, pagina * porPagina)
 
   const hayFiltros = busqueda || filtroInstalacion || filtroAstilladora || filtroProveedor || filtroTransportista || filtroEstado || filtroFechaDesde || filtroFechaHasta
-  const TAB_ADJETIVO = { activos: 'activos', cerrados: 'cerrados', rechazados: 'rechazados' }
+  const TAB_ADJETIVO = { activos: 'activos', cerrados: 'finalizados', rechazados: 'rechazados' }
   const mensajeVacio = hayFiltros
     ? 'No hay albaranes con los filtros seleccionados'
     : TAB_ADJETIVO[soloActivos]
@@ -109,13 +108,13 @@ export default function Dashboard({ albaranes, empresas = [], usuario, borrarAlb
     { key: 'semana',   label: 'Albaranes esta semana', value: albaranesSemana.length, icon: Package,       tone: 'green' },
     { key: 'prog',     label: 'Programados',           value: programados,            icon: CalendarClock, tone: 'blue', onClick: programados > 0 ? () => setFiltroEstado('programado') : undefined },
     { key: 'firma',    label: 'Pendientes de firma',   value: albaranesPendientesFirma.length, icon: PenLine, tone: 'amber' },
-    { key: 'cerrados', label: 'Cerrados',              value: cerrados,               icon: CheckCircle2,  tone: 'green' },
+    { key: 'cerrados', label: 'Finalizados',           value: cerrados,               icon: CheckCircle2,  tone: 'green' },
     { key: 'inc',      label: 'Con incidencia',        value: conIncidencia,          icon: AlertTriangle, tone: 'red' },
   ]
 
   const TABS = [
     { label: 'Activos',    count: totalActivos,    val: 'activos'    },
-    { label: 'Cerrados',   count: cerrados,         val: 'cerrados'   },
+    { label: 'Finalizados', count: cerrados,         val: 'cerrados'   },
     { label: 'Rechazados', count: totalRechazados,  val: 'rechazados' },
     { label: 'Todos',      count: albaranes.length, val: 'todos'      },
   ]
@@ -144,22 +143,13 @@ export default function Dashboard({ albaranes, empresas = [], usuario, borrarAlb
               <div key={k.key} className={`stat-card stat-${k.tone}${k.onClick ? ' stat-clickable' : ''}`} onClick={k.onClick}>
                 <div className="stat-top">
                   <span className="stat-label">{k.label}</span>
-                  <span className="stat-icon"><Icon size={15} /></span>
+                  <span className="stat-icon"><Icon size={34} strokeWidth={1.5} /></span>
                 </div>
                 <div className="stat-val">{k.value}</div>
               </div>
             )
           })}
         </div>
-
-        {/* Alertas humedad */}
-        {alertas.map(a => (
-          <div key={a.id} className="alerta-bar" onClick={() => navigate(`/albaran/${a.id}`)}>
-            <AlertTriangle size={14} />
-            <span><strong>{a.id}</strong> · {a.instalacion} · Humedad pendiente de análisis</span>
-            <span className="alerta-link">Ver →</span>
-          </div>
-        ))}
 
         {/* Actividad de la semana + Requieren atención */}
         <div className="dash-insights">
@@ -237,7 +227,7 @@ export default function Dashboard({ albaranes, empresas = [], usuario, borrarAlb
         <div className="dash-main">
           <div className="dash-main-head">
             <div className="dash-main-title">
-              {{ activos:'Albaranes activos', cerrados:'Albaranes cerrados', rechazados:'Rechazados y anulados', todos:'Todos los albaranes' }[soloActivos]}
+              {{ activos:'Albaranes activos', cerrados:'Albaranes finalizados', rechazados:'Rechazados y anulados', todos:'Todos los albaranes' }[soloActivos]}
             </div>
             <div className="dash-tabs">
               {TABS.map(({ label, count, val }) => (
