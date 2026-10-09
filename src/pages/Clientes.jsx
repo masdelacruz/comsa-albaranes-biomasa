@@ -6,10 +6,13 @@ import { SECCIONES_CLIENTES, TIPOS_CLIENTE, slugify, panelUrl } from '../utils/c
 import '../components/shared.css'
 import './Clientes.css'
 
-// Cuadrícula de astilladoras, instalaciones y proveedores. Cada tarjeta abre la ficha del
+// Cuadrícula alfabética de todos los clientes con panel (astilladoras, instalaciones
+// y proveedores; la vista por tipo está en Configuración). Cada tarjeta abre la ficha del
 // cliente; los botones de la derecha gestionan su enlace único y permanente
 // al panel externo — solo cambia si se regenera el código (por ejemplo, tras
 // detectar una anomalía) y el enlace anterior deja de funcionar.
+const SECCION_POR_TIPO = Object.fromEntries(SECCIONES_CLIENTES.map(s => [s.tipo, s]))
+
 export default function Clientes({ albaranes = [], usuario }) {
   const navigate = useNavigate()
   // Regenerar el enlace del panel (revoca el actual) es solo del superadmin;
@@ -76,24 +79,18 @@ export default function Clientes({ albaranes = [], usuario }) {
         {loading ? (
           <div style={{ padding: 32, textAlign: 'center', color: 'var(--gray-400)' }}>Cargando...</div>
         ) : (
-          SECCIONES_CLIENTES.map(({ tipo, titulo, icon: Icon, color }) => {
-            const lista = filtrar(clientes.filter(p => p.tipo === tipo))
-              .sort((a, b) => (b.activo - a.activo) || a.nombre.localeCompare(b.nombre))
+          (() => {
+            const lista = filtrar(clientes).sort((a, b) => a.nombre.localeCompare(b.nombre, 'es', { sensitivity: 'base' }))
             return (
-              <div key={tipo} style={{ marginBottom: 28 }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10 }}>
-                  <Icon size={16} color={color} />
-                  <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--gray-700)' }}>{titulo}</div>
-                  <div style={{ fontSize: 12, color: 'var(--gray-400)' }}>({lista.length})</div>
-                </div>
                 <div className="cli-grid">
                   {lista.length === 0 ? (
                     <div className="cli-vacio">
-                      Sin {titulo.toLowerCase()} registradas
+                      {q ? 'Ningún cliente coincide con la búsqueda' : 'Sin clientes registrados'}
                     </div>
                   ) : lista.map(p => {
                     const logoUrl = logos[`empresa_${slugify(p.nombre)}`]
                     const n = numAlbaranes(p)
+                    const { icon: Icon, color } = SECCION_POR_TIPO[p.tipo]
                     return (
                     <div key={p.id} className={`cli-tile ${p.activo ? '' : 'inactivo'}`} onClick={() => navigate(`/clientes/${p.id}`)}>
                       <div className="cli-logo" style={{
@@ -130,9 +127,8 @@ export default function Clientes({ albaranes = [], usuario }) {
                     </div>
                   )})}
                 </div>
-              </div>
             )
-          })
+          })()
         )}
       </div>
     </div>
