@@ -15,11 +15,11 @@ const TIPOS_DOC = ['Autodeclaración','Acuerdo de cesión','Contrato prestación
 export default function Historial({ albaranes, empresas = [], usuario, refetch, borrarAlbaran, enviarACampoAlbaran }) {
   const navigate = useNavigate()
   const [busqueda, setBusqueda] = useState('')
-  const [filtroInstalacion,  setFiltroInstalacion]  = useState('')
-  const [filtroAstilladora,  setFiltroAstilladora]  = useState('')
-  const [filtroProveedor,    setFiltroProveedor]    = useState('')
-  const [filtroTransportista,setFiltroTransportista]= useState('')
-  const [filtroEstado,       setFiltroEstado]       = useState('')
+  const [filtroInstalacion,  setFiltroInstalacion]  = useState([])
+  const [filtroAstilladora,  setFiltroAstilladora]  = useState([])
+  const [filtroProveedor,    setFiltroProveedor]    = useState([])
+  const [filtroTransportista,setFiltroTransportista]= useState([])
+  const [filtroEstado,       setFiltroEstado]       = useState([])
   const [filtroFechaDesde,   setFiltroFechaDesde]   = useState('')
   const [filtroFechaHasta,   setFiltroFechaHasta]   = useState('')
 
@@ -122,11 +122,11 @@ export default function Historial({ albaranes, empresas = [], usuario, refetch, 
         .join(' ').toLowerCase()
       if (!hay.includes(q)) return false
     }
-    if (filtroInstalacion   && a.instalacion   !== filtroInstalacion)   return false
-    if (filtroAstilladora   && a.astilladora   !== filtroAstilladora)   return false
-    if (filtroProveedor     && a.proveedor     !== filtroProveedor)     return false
-    if (filtroTransportista && a.transportista !== filtroTransportista) return false
-    if (filtroEstado        && a.estado        !== filtroEstado)        return false
+    if (filtroInstalacion.length   && !filtroInstalacion.includes(a.instalacion))   return false
+    if (filtroAstilladora.length   && !filtroAstilladora.includes(a.astilladora))   return false
+    if (filtroProveedor.length     && !filtroProveedor.includes(a.proveedor))     return false
+    if (filtroTransportista.length && !filtroTransportista.includes(a.transportista)) return false
+    if (filtroEstado.length        && !filtroEstado.includes(a.estado))        return false
     if (filtroFechaDesde    && a.fecha         <  filtroFechaDesde)     return false
     if (filtroFechaHasta    && a.fecha         >  filtroFechaHasta)     return false
     return true
@@ -224,12 +224,12 @@ export default function Historial({ albaranes, empresas = [], usuario, refetch, 
   }
 
   const limpiarFiltros = () => {
-    setBusqueda(''); setFiltroInstalacion(''); setFiltroAstilladora('')
-    setFiltroProveedor(''); setFiltroTransportista('')
-    setFiltroEstado(''); setFiltroFechaDesde(''); setFiltroFechaHasta('')
+    setBusqueda(''); setFiltroInstalacion([]); setFiltroAstilladora([])
+    setFiltroProveedor([]); setFiltroTransportista([])
+    setFiltroEstado([]); setFiltroFechaDesde(''); setFiltroFechaHasta('')
   }
 
-  const hayFiltros = busqueda || filtroInstalacion || filtroAstilladora || filtroProveedor || filtroTransportista || filtroEstado || filtroFechaDesde || filtroFechaHasta
+  const hayFiltros = !!(busqueda || filtroInstalacion.length || filtroAstilladora.length || filtroProveedor.length || filtroTransportista.length || filtroEstado.length || filtroFechaDesde || filtroFechaHasta)
   const mensajeVacio = hayFiltros ? 'No hay albaranes con los filtros seleccionados' : 'No hay albaranes actualmente'
 
   return (
@@ -283,25 +283,18 @@ export default function Historial({ albaranes, empresas = [], usuario, refetch, 
               <Search size={14} className="search-field-icon" />
               <input type="text" className="search-field-input" placeholder="Buscar por ID, empresa, especie, origen..." value={busqueda} onChange={e => setBusqueda(e.target.value)} />
             </div>
-            <FilterSelect label="Proveedor" value={filtroProveedor} onChange={setFiltroProveedor}>
-              {proveedores.map(p => <option key={p}>{p}</option>)}
-            </FilterSelect>
-            <FilterSelect label="Astilladora" value={filtroAstilladora} onChange={setFiltroAstilladora}>
-              {astilladoras.map(a => <option key={a}>{a}</option>)}
-            </FilterSelect>
-            <FilterSelect label="Transportista" value={filtroTransportista} onChange={setFiltroTransportista}>
-              {transportistas.map(t => <option key={t}>{t}</option>)}
-            </FilterSelect>
-            <FilterSelect label="Instalación" value={filtroInstalacion} onChange={setFiltroInstalacion}>
-              {instalaciones.map(i => <option key={i}>{i}</option>)}
-            </FilterSelect>
-            <FilterSelect label="Estado" value={filtroEstado} onChange={setFiltroEstado}>
-              <option value="programado">Programado</option>
-              <option value="pendiente_campo">Pendiente campo</option>
-              <option value="pendiente_oficina">Pendiente oficina</option>
-              <option value="humedad_pendiente">Humedad pendiente</option>
-              <option value="cerrado">Cerrado</option>
-            </FilterSelect>
+            <FilterSelect label="Proveedor"     value={filtroProveedor}     onChange={setFiltroProveedor}     options={proveedores} />
+            <FilterSelect label="Astilladora"   value={filtroAstilladora}   onChange={setFiltroAstilladora}   options={astilladoras} />
+            <FilterSelect label="Transportista" value={filtroTransportista} onChange={setFiltroTransportista} options={transportistas} />
+            <FilterSelect label="Instalación"   value={filtroInstalacion}   onChange={setFiltroInstalacion}   options={instalaciones} />
+            <FilterSelect label="Estado"        value={filtroEstado}        onChange={setFiltroEstado}
+              options={[
+                { value: 'programado',        label: 'Programado' },
+                { value: 'pendiente_campo',   label: 'Pendiente campo' },
+                { value: 'pendiente_oficina', label: 'Pendiente oficina' },
+                { value: 'humedad_pendiente', label: 'Humedad pendiente' },
+                { value: 'cerrado',           label: 'Cerrado' },
+              ]} />
             <div className={`date-range${filtroFechaDesde || filtroFechaHasta ? ' is-active' : ''}`}>
               <div className="date-range-field">
                 <span>Desde</span>
