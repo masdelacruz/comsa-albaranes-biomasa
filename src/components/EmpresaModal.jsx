@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react'
-import { Plus, Trash2, X, Check, Upload, Clock, Star, Trees, Factory, Truck, Building2, User, Users, StickyNote, Image } from 'lucide-react'
+import { Plus, Trash2, X, Check, Upload, Clock, Star, Building2, User, Users, StickyNote, Image } from 'lucide-react'
 import { api } from '../lib/api'
 import '../pages/Administracion.css'
 import { contactosEmpresa } from '../utils/clientes'
@@ -11,7 +11,6 @@ const contactosDe = (empresa) => {
   return lista.length ? lista : [CONTACTO_VACIO]
 }
 
-const TIPO_ICONS = { proveedor: Trees, astilladora: Factory, transportista: Truck, instalacion: Building2 }
 const ordenarPorTipo = filas => [...filas].sort((a, b) => TIPOS.indexOf(a.tipo) - TIPOS.indexOf(b.tipo))
 
 export function toTitleCase(str) {
@@ -169,17 +168,18 @@ export default function EmpresaModal({ empresa, hermanas, tipoInicial = 'proveed
     }
   }
 
-  const tipoPrincipal = form.tipos[0] || tipoInicial
-  const TipoIcon = TIPO_ICONS[tipoPrincipal] || Building2
 
   return (
       <div className="modal-overlay" onClick={cerrarModal}>
         <div className="modal em-modal" onClick={e => e.stopPropagation()}>
           <div className="em-header">
-            <div className={`em-icon ${tipoPrincipal}`}><TipoIcon size={19} /></div>
+            <div className="em-icon"><Building2 size={18} /></div>
             <div className="em-head-text">
-              <div className="em-eyebrow">{editando ? 'Editar' : 'Nuevo'} · {form.tipos.length ? form.tipos.map(t => TIPO_LABELS[t]).join(' + ') : 'sin tipo'}</div>
+              <div className="em-eyebrow">{editando ? 'Editar empresa' : 'Nueva empresa'}</div>
               <div className={`em-title${form.nombre.trim() ? '' : ' vacio'}`}>{form.nombre.trim() || 'Sin nombre'}</div>
+              <div className={`em-head-tipos${form.tipos.length ? '' : ' vacio'}`}>
+                {form.tipos.length ? form.tipos.map(t => TIPO_LABELS[t]).join(' · ') : 'Sin tipo asignado'}
+              </div>
             </div>
             <button type="button" className={`em-estado ${form.activo ? 'on' : 'off'}`}
               onClick={() => set('activo', !form.activo)}
@@ -197,13 +197,13 @@ export default function EmpresaModal({ empresa, hermanas, tipoInicial = 'proveed
                   <label>Tipos</label>
                   <div className="em-tipos">
                     {TIPOS.map(t => {
-                      const I = TIPO_ICONS[t]
                       const fijo = tiposExistentes.includes(t)
                       return (
                         <button key={t} type="button" className={`em-tipo ${t}${tiene(t) ? ' on' : ''}${fijo ? ' fijo' : ''}`}
                           onClick={() => toggleTipo(t)}
                           title={fijo ? 'Para quitar este tipo, elimínalo desde su pestaña en Configuración' : undefined}>
-                          <I size={13} /> {TIPO_LABELS[t]} {tiene(t) && <Check size={12} strokeWidth={3} />}
+                          <span className="em-box">{tiene(t) && <Check size={11} strokeWidth={3} />}</span>
+                          {TIPO_LABELS[t]}
                         </button>
                       )
                     })}

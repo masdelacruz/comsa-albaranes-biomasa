@@ -103,16 +103,16 @@ export default function Clientes({ albaranes = [], usuario }) {
                   ) : lista.map(p => {
                     const logoUrl = logos[`empresa_${slugify(p.nombre)}`]
                     const n = numAlbaranes(p)
-                    const { icon: Icon, color } = SECCION_POR_TIPO[p.tipo]
+                    const { icon: Icon } = SECCION_POR_TIPO[p.tipo]
                     return (
                     <div key={p.id} className={`cli-tile ${p.activo ? '' : 'inactivo'}`} onClick={() => navigate(`/clientes/${p.id}`)}>
                       <div className="cli-logo" style={{
-                        background: logoUrl ? '#fff' : `${color}1a`,
-                        border: logoUrl ? 'var(--border)' : 'none',
+                        background: '#fff',
+                        border: 'var(--border)',
                       }}>
                         {logoUrl
                           ? <img src={logoUrl} alt="" />
-                          : <Icon size={28} color={color} />}
+                          : <Icon size={26} color="var(--gray-400)" strokeWidth={1.6} />}
                       </div>
                       <div className="cli-nombre" title={p.nombre}>{p.nombre}</div>
                       <div className="cli-meta">

@@ -225,8 +225,8 @@ export default function ClienteDetalle({ albaranes = [], usuario }) {
         </svg>
 
         <div className="cd-hero-main">
-          <div className="cd-hero-logo" style={{ background: logoUrl ? '#fff' : `${color}14` }}>
-            {logoUrl ? <img src={logoUrl} alt="" /> : <Icon size={42} color={color} strokeWidth={1.6} />}
+          <div className="cd-hero-logo" style={{ background: '#fff' }}>
+            {logoUrl ? <img src={logoUrl} alt="" /> : <Icon size={40} color="var(--gray-400)" strokeWidth={1.4} />}
           </div>
           <div className="cd-hero-info">
             <div className="cd-hero-tags">
