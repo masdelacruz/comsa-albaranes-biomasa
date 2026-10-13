@@ -101,6 +101,7 @@
 .dashboard .dash-main { background:#fff; border:1px solid #E8E8E5; border-radius:7px; overflow:hidden; }
 
 .dashboard .dash-main-head { display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:10px 20px; padding:16px 20px 10px; }
+.dashboard .dash-main-title-row { display:flex; align-items:center; gap:14px; }
 .dashboard .dash-main-title { font-size:12px; font-weight:700; text-transform:uppercase; letter-spacing:0.6px; color:var(--gray-500); line-height:1; }
 
 .dashboard .dash-tabs { display:flex; align-items:center; gap:16px; }

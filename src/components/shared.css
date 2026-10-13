@@ -120,6 +120,10 @@
 .filter-select-foot button:disabled { opacity:0.4; cursor:default; }
 .filter-select-foot button.is-primary { color:var(--green-600); font-weight:600; }
 .filter-select-foot button.is-primary:hover { background:var(--green-50); color:var(--green-900); }
+/* "× Limpiar filtros": vive fuera de la barra de filtros (en una fila que
+   ya existe) para que al aparecer no añada una línea y desplace el listado. */
+.list-clear-filtros { background:transparent; padding:4px 8px; border-radius:5px; font-size:12px; font-weight:500; color:var(--gray-600); line-height:1.2; }
+.list-clear-filtros:hover { background:var(--green-50); color:var(--green-900); }
 .filters-bar .date-range.is-active { border-color:var(--green-400); background:var(--green-50); }
 .filters-bar .date-range.is-active input[type="date"] { color:var(--gray-900); }
 .date-range-field input[type="date"][value=""] { color:var(--gray-400); }

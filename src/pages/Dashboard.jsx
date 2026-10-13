@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { AlertTriangle, Plus, Trash2, Search, Filter, ClipboardList, CalendarClock, PenLine, CheckCircle2, Calendar, ChevronRight } from 'lucide-react'
 import { Badge, FirmaSteps } from '../components/Badge'
 import FilterSelect from '../components/FilterSelect'
+import { useAlturaEstable } from '../hooks/useAlturaEstable'
 import { labelSemanaActual, isoWeek, isoWeekYear, lunesDeSemana } from '../utils/semana'
 import '../components/shared.css'
 import './Dashboard.css'
@@ -93,6 +94,7 @@ export default function Dashboard({ albaranes, empresas = [], usuario, borrarAlb
   const paginados    = filtrados.slice((pagina - 1) * porPagina, pagina * porPagina)
 
   const hayFiltros = !!(busqueda || filtroInstalacion.length || filtroAstilladora.length || filtroProveedor.length || filtroTransportista.length || filtroEstado.length || filtroFechaDesde || filtroFechaHasta)
+  const { bloqueRef, estiloBloque, alturaVacio } = useAlturaEstable(hayFiltros)
   const TAB_ADJETIVO = { activos: 'activos', cerrados: 'finalizados', rechazados: 'rechazados' }
   const mensajeVacio = hayFiltros
     ? 'No hay albaranes con los filtros seleccionados'
@@ -227,8 +229,14 @@ export default function Dashboard({ albaranes, empresas = [], usuario, borrarAlb
         {/* Bloque principal: título + tabs + filtros + tabla, unificados */}
         <div className="dash-main">
           <div className="dash-main-head">
-            <div className="dash-main-title">
-              {{ activos:'Albaranes activos', cerrados:'Albaranes finalizados', rechazados:'Rechazados y anulados', todos:'Todos los albaranes' }[soloActivos]}
+            <div className="dash-main-title-row">
+              <div className="dash-main-title">
+                {{ activos:'Albaranes activos', cerrados:'Albaranes finalizados', rechazados:'Rechazados y anulados', todos:'Todos los albaranes' }[soloActivos]}
+              </div>
+              {/* Fuera de la barra de filtros para que al aparecer no la haga crecer */}
+              {hayFiltros && (
+                <button className="list-clear-filtros" onClick={limpiarFiltros}>× Limpiar filtros</button>
+              )}
             </div>
             <div className="dash-tabs">
               {TABS.map(({ label, count, val }) => (
@@ -275,12 +283,10 @@ export default function Dashboard({ albaranes, empresas = [], usuario, borrarAlb
                 <input type="date" value={filtroFechaHasta} onChange={e => setFiltroFechaHasta(e.target.value)} />
               </div>
             </div>
-            {hayFiltros && (
-              <button className="btn btn-ghost" onClick={limpiarFiltros} style={{fontSize:11}}>× Limpiar todo</button>
-            )}
           </div>
 
-          {/* Tabla */}
+          {/* Tabla + paginación: con filtros conserva el alto del listado completo */}
+          <div ref={bloqueRef} style={estiloBloque}>
           <div className="table-wrap">
             <table className="data-table albaran-table">
               <thead>
@@ -302,7 +308,7 @@ export default function Dashboard({ albaranes, empresas = [], usuario, borrarAlb
               </thead>
               <tbody>
                 {filtrados.length === 0 ? (
-                  <tr><td colSpan={11 + (esSuperadmin ? 1 : 0)} className="empty-state">{mensajeVacio}</td></tr>
+                  <tr><td colSpan={11 + (esSuperadmin ? 1 : 0)} className="empty-state" style={{height:alturaVacio}}>{mensajeVacio}</td></tr>
                 ) : paginados.map(a => (
                   <tr key={a.id} onClick={() => navigate(`/albaran/${a.id}`)}>
                     <td className="row-id">{a.id}</td>
@@ -375,6 +381,7 @@ export default function Dashboard({ albaranes, empresas = [], usuario, borrarAlb
               </div>
             </div>
           )}
+          </div>
         </div>
       </div>
     </div>

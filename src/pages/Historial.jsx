@@ -5,6 +5,7 @@ import ExcelJS from 'exceljs'
 import { Badge, FirmaSteps } from '../components/Badge'
 import PdfLoadingOverlay from '../components/PdfLoadingOverlay'
 import FilterSelect from '../components/FilterSelect'
+import { useAlturaEstable } from '../hooks/useAlturaEstable'
 import { generarPDF } from '../utils/generarPDF'
 import { api } from '../lib/api'
 import '../components/shared.css'
@@ -230,6 +231,7 @@ export default function Historial({ albaranes, empresas = [], usuario, refetch, 
   }
 
   const hayFiltros = !!(busqueda || filtroInstalacion.length || filtroAstilladora.length || filtroProveedor.length || filtroTransportista.length || filtroEstado.length || filtroFechaDesde || filtroFechaHasta)
+  const { bloqueRef, estiloBloque, alturaVacio } = useAlturaEstable(hayFiltros)
   const mensajeVacio = hayFiltros ? 'No hay albaranes con los filtros seleccionados' : 'No hay albaranes actualmente'
 
   return (
@@ -272,6 +274,10 @@ export default function Historial({ albaranes, empresas = [], usuario, refetch, 
               )}
             </>
           )}
+          {/* Fuera de la barra de filtros para que al aparecer no la haga crecer */}
+          {hayFiltros && (
+            <button className="list-clear-filtros" style={{marginLeft:'auto'}} onClick={limpiarFiltros}>× Limpiar filtros</button>
+          )}
         </div>
 
         {/* Acciones masivas — pill flotante al fondo, no desplaza el layout */}
@@ -306,11 +312,10 @@ export default function Historial({ albaranes, empresas = [], usuario, refetch, 
                 <input type="date" value={filtroFechaHasta} onChange={e => setFiltroFechaHasta(e.target.value)} />
               </div>
             </div>
-            {hayFiltros && (
-              <button className="btn btn-ghost" onClick={limpiarFiltros} style={{fontSize:12}}>× Limpiar todo</button>
-            )}
           </div>
 
+          {/* Tabla + paginación: con filtros conserva el alto del listado completo */}
+          <div ref={bloqueRef} style={estiloBloque}>
           <div style={{overflowX:'auto'}}>
           <table className="data-table historial-table">
             <thead>
@@ -333,7 +338,7 @@ export default function Historial({ albaranes, empresas = [], usuario, refetch, 
             </thead>
             <tbody>
               {filtrados.length === 0 ? (
-                <tr><td colSpan={(seleccionando ? 1 : 0) + 11 + (esSuperadmin ? 1 : 0)} className="empty-state">{mensajeVacio}</td></tr>
+                <tr><td colSpan={(seleccionando ? 1 : 0) + 11 + (esSuperadmin ? 1 : 0)} className="empty-state" style={{height:alturaVacio}}>{mensajeVacio}</td></tr>
               ) : paginados.map(a => (
                 <tr key={a.id} onClick={() => seleccionando ? toggleSeleccion(a.id) : navigate(`/albaran/${a.id}`)}
                   style={{cursor:'pointer', background: seleccionados.has(a.id) ? 'var(--green-50)' : undefined}}>
@@ -398,6 +403,7 @@ export default function Historial({ albaranes, empresas = [], usuario, refetch, 
               </div>
             </div>
           )}
+          </div>
         </div>
       </div>
 
