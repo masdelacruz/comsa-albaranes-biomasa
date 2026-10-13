@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo, useRef } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import {
-  Pencil, UserRound, Phone, Mail, Clock, StickyNote, ExternalLink, Copy, Check, RefreshCw,
+  Pencil, UserRound, Phone, Mail, Clock, ExternalLink, Copy, Check, RefreshCw,
   Link2, UsersRound, Truck, FileText, ChevronRight, Ellipsis, ArrowUpRight, Hourglass,
   Weight, Droplets, Info, Network, Inbox, Settings, ChartColumn, Send, PhoneCall,
 } from 'lucide-react'
@@ -353,7 +353,7 @@ export default function ClienteDetalle({ albaranes = [], usuario }) {
             ))}
           </div>
           <div className="cd-notas">
-            <div className="cd-notas-head"><StickyNote size={13} /> Notas internas</div>
+            <div className="cd-notas-head">Notas internas</div>
             {cliente.notas
               ? <div className="cd-notas-txt">{cliente.notas}</div>
               : <div className="cd-notas-txt vacio">Sin notas para este cliente</div>}
