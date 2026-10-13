@@ -1,11 +1,11 @@
-import { useState, useMemo, useEffect } from 'react'
+import { useState, useRef, useMemo, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Download, Search, FileSpreadsheet, CheckSquare, Upload, Trash2, Square, X, Send } from 'lucide-react'
 import ExcelJS from 'exceljs'
 import { Badge, FirmaSteps } from '../components/Badge'
 import PdfLoadingOverlay from '../components/PdfLoadingOverlay'
 import FilterSelect from '../components/FilterSelect'
-import { useAlturaEstable } from '../hooks/useAlturaEstable'
+import { useScrollEstable } from '../hooks/useScrollEstable'
 import { generarPDF } from '../utils/generarPDF'
 import { api } from '../lib/api'
 import '../components/shared.css'
@@ -15,6 +15,7 @@ const TIPOS_DOC = ['Autodeclaración','Acuerdo de cesión','Contrato prestación
 
 export default function Historial({ albaranes, empresas = [], usuario, refetch, borrarAlbaran, enviarACampoAlbaran }) {
   const navigate = useNavigate()
+  const raizRef  = useRef(null)
   const [busqueda, setBusqueda] = useState('')
   const [filtroInstalacion,  setFiltroInstalacion]  = useState([])
   const [filtroAstilladora,  setFiltroAstilladora]  = useState([])
@@ -231,11 +232,12 @@ export default function Historial({ albaranes, empresas = [], usuario, refetch, 
   }
 
   const hayFiltros = !!(busqueda || filtroInstalacion.length || filtroAstilladora.length || filtroProveedor.length || filtroTransportista.length || filtroEstado.length || filtroFechaDesde || filtroFechaHasta)
-  const { bloqueRef, estiloBloque, alturaVacio } = useAlturaEstable(hayFiltros)
+  // Al filtrar, la página conserva el scroll en vez de saltar hacia arriba
+  useScrollEstable(raizRef, `${filtrados.length}|${pagina}`)
   const mensajeVacio = hayFiltros ? 'No hay albaranes con los filtros seleccionados' : 'No hay albaranes actualmente'
 
   return (
-    <div className="historial-page">
+    <div className="historial-page" ref={raizRef}>
       <PdfLoadingOverlay show={descargando} texto="Generando PDFs..." />
       <div className="page-header">
         <div style={{display:'flex',alignItems:'center',justifyContent:'space-between'}}>
@@ -314,8 +316,6 @@ export default function Historial({ albaranes, empresas = [], usuario, refetch, 
             </div>
           </div>
 
-          {/* Tabla + paginación: con filtros conserva el alto del listado completo */}
-          <div ref={bloqueRef} style={estiloBloque}>
           <div style={{overflowX:'auto'}}>
           <table className="data-table historial-table">
             <thead>
@@ -338,7 +338,7 @@ export default function Historial({ albaranes, empresas = [], usuario, refetch, 
             </thead>
             <tbody>
               {filtrados.length === 0 ? (
-                <tr><td colSpan={(seleccionando ? 1 : 0) + 11 + (esSuperadmin ? 1 : 0)} className="empty-state" style={{height:alturaVacio}}>{mensajeVacio}</td></tr>
+                <tr><td colSpan={(seleccionando ? 1 : 0) + 11 + (esSuperadmin ? 1 : 0)} className="empty-state">{mensajeVacio}</td></tr>
               ) : paginados.map(a => (
                 <tr key={a.id} onClick={() => seleccionando ? toggleSeleccion(a.id) : navigate(`/albaran/${a.id}`)}
                   style={{cursor:'pointer', background: seleccionados.has(a.id) ? 'var(--green-50)' : undefined}}>
@@ -403,7 +403,6 @@ export default function Historial({ albaranes, empresas = [], usuario, refetch, 
               </div>
             </div>
           )}
-          </div>
         </div>
       </div>
 

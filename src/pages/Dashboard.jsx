@@ -1,9 +1,9 @@
-import { useState, useEffect, useMemo } from 'react'
+import { useState, useRef, useEffect, useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { AlertTriangle, Plus, Trash2, Search, Filter, ClipboardList, CalendarClock, PenLine, CheckCircle2, Calendar, ChevronRight } from 'lucide-react'
 import { Badge, FirmaSteps } from '../components/Badge'
 import FilterSelect from '../components/FilterSelect'
-import { useAlturaEstable } from '../hooks/useAlturaEstable'
+import { useScrollEstable } from '../hooks/useScrollEstable'
 import { labelSemanaActual, isoWeek, isoWeekYear, lunesDeSemana } from '../utils/semana'
 import '../components/shared.css'
 import './Dashboard.css'
@@ -12,6 +12,7 @@ const DIAS_CORTOS = ['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom']
 
 export default function Dashboard({ albaranes, empresas = [], usuario, borrarAlbaran }) {
   const navigate = useNavigate()
+  const raizRef  = useRef(null)
   const esSuperadmin = usuario?.nivel === 'superadmin'
 
   const [busqueda,           setBusqueda]           = useState('')
@@ -94,7 +95,8 @@ export default function Dashboard({ albaranes, empresas = [], usuario, borrarAlb
   const paginados    = filtrados.slice((pagina - 1) * porPagina, pagina * porPagina)
 
   const hayFiltros = !!(busqueda || filtroInstalacion.length || filtroAstilladora.length || filtroProveedor.length || filtroTransportista.length || filtroEstado.length || filtroFechaDesde || filtroFechaHasta)
-  const { bloqueRef, estiloBloque, alturaVacio } = useAlturaEstable(hayFiltros)
+  // Al filtrar, la página conserva el scroll en vez de saltar hacia arriba
+  useScrollEstable(raizRef, `${filtrados.length}|${pagina}`)
   const TAB_ADJETIVO = { activos: 'activos', cerrados: 'finalizados', rechazados: 'rechazados' }
   const mensajeVacio = hayFiltros
     ? 'No hay albaranes con los filtros seleccionados'
@@ -124,7 +126,7 @@ export default function Dashboard({ albaranes, empresas = [], usuario, borrarAlb
 
   return (
     <>
-    <div className="dashboard">
+    <div className="dashboard" ref={raizRef}>
       <div className="page-header">
         <div className="dash-header-row">
           <div>
@@ -285,8 +287,6 @@ export default function Dashboard({ albaranes, empresas = [], usuario, borrarAlb
             </div>
           </div>
 
-          {/* Tabla + paginación: con filtros conserva el alto del listado completo */}
-          <div ref={bloqueRef} style={estiloBloque}>
           <div className="table-wrap">
             <table className="data-table albaran-table">
               <thead>
@@ -308,7 +308,7 @@ export default function Dashboard({ albaranes, empresas = [], usuario, borrarAlb
               </thead>
               <tbody>
                 {filtrados.length === 0 ? (
-                  <tr><td colSpan={11 + (esSuperadmin ? 1 : 0)} className="empty-state" style={{height:alturaVacio}}>{mensajeVacio}</td></tr>
+                  <tr><td colSpan={11 + (esSuperadmin ? 1 : 0)} className="empty-state">{mensajeVacio}</td></tr>
                 ) : paginados.map(a => (
                   <tr key={a.id} onClick={() => navigate(`/albaran/${a.id}`)}>
                     <td className="row-id">{a.id}</td>
@@ -381,7 +381,6 @@ export default function Dashboard({ albaranes, empresas = [], usuario, borrarAlb
               </div>
             </div>
           )}
-          </div>
         </div>
       </div>
     </div>
