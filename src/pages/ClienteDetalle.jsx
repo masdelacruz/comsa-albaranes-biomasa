@@ -230,9 +230,11 @@ export default function ClienteDetalle({ albaranes = [], usuario }) {
           </div>
           <div className="cd-hero-info">
             <div className="cd-hero-tags">
-              {(roles.length ? roles : [{ tipo: cliente.tipo, icon: Icon, color, singular }]).map(r => (
-                <span key={r.tipo} className="cd-pill" style={{ color: r.color, background: `${r.color}14`, borderColor: `${r.color}33` }}><r.icon size={12} /> {r.singular}</span>
-              ))}
+              {/* Tipo de cliente: etiqueta tipográfica neutra; el color queda solo para el estado */}
+              <span className="cd-tipo">
+                {(roles.length ? roles : [{ tipo: cliente.tipo, singular }]).map(r => r.singular).join(' · ')}
+              </span>
+              <span className="cd-tipo-sep" aria-hidden="true" />
               <span className={`cd-pill cd-pill-estado ${cliente.activo ? 'si' : 'no'}`}><span className="cd-dot" />{cliente.activo ? 'Activo' : 'Inactivo'}</span>
             </div>
             <h1 className="cd-nombre">{cliente.nombre}</h1>

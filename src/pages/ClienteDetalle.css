@@ -49,6 +49,8 @@
 .cd-hero-logo img { width:100%; height:100%; object-fit:contain; }
 .cd-hero-info { flex:1; min-width:0; }
 .cd-hero-tags { display:flex; align-items:center; gap:8px; flex-wrap:wrap; }
+.cd-tipo { font-size:11px; font-weight:600; letter-spacing:1.4px; text-transform:uppercase; color:var(--gray-600); line-height:24px; }
+.cd-tipo-sep { width:1px; height:14px; background:var(--gray-200); margin:0 4px; }
 .cd-pill { display:inline-flex; align-items:center; gap:6px; height:24px; padding:0 10px; border-radius:5px; font-size:11.5px; font-weight:600; border:1px solid transparent; letter-spacing:.1px; }
 .cd-pill-estado.si { color:var(--green-600); background:var(--green-50); border-color:var(--green-100); }
 .cd-pill-estado.no { color:var(--gray-600); background:var(--gray-100); border-color:var(--gray-200); }
