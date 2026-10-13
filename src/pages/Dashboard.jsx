@@ -133,7 +133,7 @@ export default function Dashboard({ albaranes, empresas = [], usuario, borrarAlb
             <div className="page-title">Dashboard</div>
             <div className="page-sub">{labelSemanaActual()}</div>
           </div>
-          <button className="btn btn-primary dash-cta" onClick={() => navigate('/nuevo')}>
+          <button className="btn btn-primary" onClick={() => navigate('/nuevo')}>
             <Plus size={16} /> Nuevo albarán
           </button>
         </div>

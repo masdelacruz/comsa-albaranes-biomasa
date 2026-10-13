@@ -7,7 +7,6 @@
 
 /* ── Cabecera (usa .page-title global, unificado con el resto de páginas) ── */
 .dashboard .dash-header-row { display:flex; align-items:center; justify-content:space-between; gap:16px; }
-.dashboard .dash-cta { height:41px; padding:0 18px; font-size:13.5px; }
 
 .dashboard .stat-grid { margin:22px 0; }
 
