@@ -4,6 +4,7 @@ import { Download, Search, FileSpreadsheet, CheckSquare, Upload, Trash2, Square,
 import ExcelJS from 'exceljs'
 import { Badge, FirmaSteps } from '../components/Badge'
 import PdfLoadingOverlay from '../components/PdfLoadingOverlay'
+import FilterSelect from '../components/FilterSelect'
 import { generarPDF } from '../utils/generarPDF'
 import { api } from '../lib/api'
 import '../components/shared.css'
@@ -247,52 +248,7 @@ export default function Historial({ albaranes, empresas = [], usuario, refetch, 
       </div>
 
       <div className="historial-content">
-        <div className="filters-bar historial-filtros">
-          <div className="search-field">
-            <Search size={14} className="search-field-icon" />
-            <input type="text" className="search-field-input" placeholder="Buscar por ID, empresa, especie, origen..." value={busqueda} onChange={e => setBusqueda(e.target.value)} />
-          </div>
-          <select value={filtroProveedor} onChange={e => setFiltroProveedor(e.target.value)}>
-            <option value="">Todos los proveedores</option>
-            {proveedores.map(p => <option key={p}>{p}</option>)}
-          </select>
-          <select value={filtroAstilladora} onChange={e => setFiltroAstilladora(e.target.value)}>
-            <option value="">Todas las astilladoras</option>
-            {astilladoras.map(a => <option key={a}>{a}</option>)}
-          </select>
-          <select value={filtroTransportista} onChange={e => setFiltroTransportista(e.target.value)}>
-            <option value="">Todos los transportistas</option>
-            {transportistas.map(t => <option key={t}>{t}</option>)}
-          </select>
-          <select value={filtroInstalacion} onChange={e => setFiltroInstalacion(e.target.value)}>
-            <option value="">Todas las instalaciones</option>
-            {instalaciones.map(i => <option key={i}>{i}</option>)}
-          </select>
-          <select value={filtroEstado} onChange={e => setFiltroEstado(e.target.value)}>
-            <option value="">Todos los estados</option>
-            <option value="programado">Programado</option>
-            <option value="pendiente_campo">Pendiente campo</option>
-            <option value="pendiente_oficina">Pendiente oficina</option>
-            <option value="humedad_pendiente">Humedad pendiente</option>
-            <option value="cerrado">Cerrado</option>
-          </select>
-          <div className="date-range">
-            <div className="date-range-field">
-              <span>Desde</span>
-              <input type="date" value={filtroFechaDesde} onChange={e => setFiltroFechaDesde(e.target.value)} />
-            </div>
-            <div className="date-range-sep" />
-            <div className="date-range-field">
-              <span>Hasta</span>
-              <input type="date" value={filtroFechaHasta} onChange={e => setFiltroFechaHasta(e.target.value)} />
-            </div>
-          </div>
-          {hayFiltros && (
-            <button className="btn btn-ghost" onClick={limpiarFiltros} style={{fontSize:12}}>Limpiar filtros ×</button>
-          )}
-        </div>
-
-        {/* Barra de selección — siempre visible debajo de los filtros */}
+        {/* Barra de selección — encima de la tarjeta del listado */}
         <div style={{display:'flex',alignItems:'center',gap:8,marginBottom:8}}>
           {!seleccionando ? (
             <button className="btn" style={{fontSize:12}} onClick={() => setSeleccionando(true)}>
@@ -321,6 +277,47 @@ export default function Historial({ albaranes, empresas = [], usuario, refetch, 
         {/* Acciones masivas — pill flotante al fondo, no desplaza el layout */}
 
         <div className="card" style={{padding:0, overflow:'clip'}}>
+          {/* Filtros — cabecera de la misma tarjeta que la tabla */}
+          <div className="filters-bar historial-filtros">
+            <div className="search-field">
+              <Search size={14} className="search-field-icon" />
+              <input type="text" className="search-field-input" placeholder="Buscar por ID, empresa, especie, origen..." value={busqueda} onChange={e => setBusqueda(e.target.value)} />
+            </div>
+            <FilterSelect label="Proveedor" value={filtroProveedor} onChange={setFiltroProveedor}>
+              {proveedores.map(p => <option key={p}>{p}</option>)}
+            </FilterSelect>
+            <FilterSelect label="Astilladora" value={filtroAstilladora} onChange={setFiltroAstilladora}>
+              {astilladoras.map(a => <option key={a}>{a}</option>)}
+            </FilterSelect>
+            <FilterSelect label="Transportista" value={filtroTransportista} onChange={setFiltroTransportista}>
+              {transportistas.map(t => <option key={t}>{t}</option>)}
+            </FilterSelect>
+            <FilterSelect label="Instalación" value={filtroInstalacion} onChange={setFiltroInstalacion}>
+              {instalaciones.map(i => <option key={i}>{i}</option>)}
+            </FilterSelect>
+            <FilterSelect label="Estado" value={filtroEstado} onChange={setFiltroEstado}>
+              <option value="programado">Programado</option>
+              <option value="pendiente_campo">Pendiente campo</option>
+              <option value="pendiente_oficina">Pendiente oficina</option>
+              <option value="humedad_pendiente">Humedad pendiente</option>
+              <option value="cerrado">Cerrado</option>
+            </FilterSelect>
+            <div className={`date-range${filtroFechaDesde || filtroFechaHasta ? ' is-active' : ''}`}>
+              <div className="date-range-field">
+                <span>Desde</span>
+                <input type="date" value={filtroFechaDesde} onChange={e => setFiltroFechaDesde(e.target.value)} />
+              </div>
+              <div className="date-range-sep" />
+              <div className="date-range-field">
+                <span>Hasta</span>
+                <input type="date" value={filtroFechaHasta} onChange={e => setFiltroFechaHasta(e.target.value)} />
+              </div>
+            </div>
+            {hayFiltros && (
+              <button className="btn btn-ghost" onClick={limpiarFiltros} style={{fontSize:12}}>× Limpiar todo</button>
+            )}
+          </div>
+
           <div style={{overflowX:'auto'}}>
           <table className="data-table historial-table">
             <thead>

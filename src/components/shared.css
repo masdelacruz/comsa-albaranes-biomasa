@@ -88,6 +88,19 @@
 .filters-bar { display:flex; gap:8px; align-items:center; flex-wrap:wrap; }
 .filters-bar select { height:40px; flex:1 1 130px; min-width:110px; font-size:12.5px; padding:0 12px; border-color:var(--gray-200); }
 
+/* FilterSelect: el nombre del campo en gris hace de placeholder; activo
+   se tiñe de verde y muestra una × para quitar solo ese filtro. */
+.filter-select { position:relative; display:flex; flex:1 1 130px; min-width:110px; }
+.filters-bar .filter-select select { flex:1 1 auto; min-width:0; color:var(--gray-400); }
+.filter-select select option { color:var(--gray-900); }
+.filter-select select option[value=""] { color:var(--gray-400); }
+.filters-bar .filter-select.is-active select { color:var(--gray-900); font-weight:500; border-color:var(--green-400); background:var(--green-50); padding-right:46px; text-overflow:ellipsis; }
+.filter-select-clear { position:absolute; right:26px; top:50%; transform:translateY(-50%); width:18px; height:18px; display:inline-flex; align-items:center; justify-content:center; border-radius:50%; background:transparent; color:var(--gray-500); padding:0; }
+.filter-select-clear:hover { background:var(--green-100); color:var(--green-900); }
+.filters-bar .date-range.is-active { border-color:var(--green-400); background:var(--green-50); }
+.filters-bar .date-range.is-active input[type="date"] { color:var(--gray-900); }
+.date-range-field input[type="date"][value=""] { color:var(--gray-400); }
+
 .search-field { position:relative; display:flex; align-items:center; flex:1.6 1 220px; min-width:180px; }
 .search-field-icon { position:absolute; left:12px; top:50%; transform:translateY(-50%); color:var(--gray-400); pointer-events:none; }
 .search-field-input { height:40px; width:100%; min-width:0; font-size:12.5px; padding:0 12px 0 34px; border-color:var(--gray-200); }

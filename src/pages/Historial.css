@@ -4,7 +4,8 @@
 
 .historial-page { min-height:100vh; }
 .historial-content { padding:0 var(--gutter) 40px; }
-.historial-filtros { margin-bottom:16px; }
+/* Filtros dentro de la tarjeta del listado, mismo tratamiento que en Dashboard */
+.historial-filtros { padding:14px 20px; background:var(--gray-50); border-bottom:1px solid #F0F0EC; }
 .export-btns { display:flex; gap:8px; margin-left:auto; }
 .historial-table { min-width:640px; }
 

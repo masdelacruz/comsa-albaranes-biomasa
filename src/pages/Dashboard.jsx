@@ -2,6 +2,7 @@ import { useState, useEffect, useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { AlertTriangle, Plus, Trash2, Search, Filter, ClipboardList, CalendarClock, PenLine, CheckCircle2, Calendar, ChevronRight } from 'lucide-react'
 import { Badge, FirmaSteps } from '../components/Badge'
+import FilterSelect from '../components/FilterSelect'
 import { labelSemanaActual, isoWeek, isoWeekYear, lunesDeSemana } from '../utils/semana'
 import '../components/shared.css'
 import './Dashboard.css'
@@ -248,24 +249,19 @@ export default function Dashboard({ albaranes, empresas = [], usuario, borrarAlb
               <input type="text" className="search-field-input" placeholder="Buscar ID, empresa, especie..." value={busqueda} onChange={e => setBusqueda(e.target.value)} />
             </div>
             <Filter size={13} color="var(--gray-400)" />
-            <select value={filtroProveedor} onChange={e => setFiltroProveedor(e.target.value)}>
-              <option value="">Todos los proveedores</option>
+            <FilterSelect label="Proveedor" value={filtroProveedor} onChange={setFiltroProveedor}>
               {proveedores.map(p => <option key={p}>{p}</option>)}
-            </select>
-            <select value={filtroAstilladora} onChange={e => setFiltroAstilladora(e.target.value)}>
-              <option value="">Todas las astilladoras</option>
+            </FilterSelect>
+            <FilterSelect label="Astilladora" value={filtroAstilladora} onChange={setFiltroAstilladora}>
               {astilladoras.map(a => <option key={a}>{a}</option>)}
-            </select>
-            <select value={filtroTransportista} onChange={e => setFiltroTransportista(e.target.value)}>
-              <option value="">Todos los transportistas</option>
+            </FilterSelect>
+            <FilterSelect label="Transportista" value={filtroTransportista} onChange={setFiltroTransportista}>
               {transportistas.map(t => <option key={t}>{t}</option>)}
-            </select>
-            <select value={filtroInstalacion} onChange={e => setFiltroInstalacion(e.target.value)}>
-              <option value="">Todas las instalaciones</option>
+            </FilterSelect>
+            <FilterSelect label="Instalación" value={filtroInstalacion} onChange={setFiltroInstalacion}>
               {instalaciones.map(i => <option key={i}>{i}</option>)}
-            </select>
-            <select value={filtroEstado} onChange={e => setFiltroEstado(e.target.value)}>
-              <option value="">Todos los estados</option>
+            </FilterSelect>
+            <FilterSelect label="Estado" value={filtroEstado} onChange={setFiltroEstado}>
               <option value="programado">Programado</option>
               <option value="pendiente_campo">Pendiente campo</option>
               <option value="pendiente_oficina">Pendiente oficina</option>
@@ -274,8 +270,8 @@ export default function Dashboard({ albaranes, empresas = [], usuario, borrarAlb
               <option value="rechazado_campo_instalacion">No gestionado · Instalación</option>
               <option value="cancelado">Anulado</option>
               {soloActivos === 'todos' && <option value="cerrado">Cerrado</option>}
-            </select>
-            <div className="date-range">
+            </FilterSelect>
+            <div className={`date-range${filtroFechaDesde || filtroFechaHasta ? ' is-active' : ''}`}>
               <div className="date-range-field">
                 <span>Desde</span>
                 <input type="date" value={filtroFechaDesde} onChange={e => setFiltroFechaDesde(e.target.value)} />
@@ -287,7 +283,7 @@ export default function Dashboard({ albaranes, empresas = [], usuario, borrarAlb
               </div>
             </div>
             {hayFiltros && (
-              <button className="btn btn-ghost" onClick={limpiarFiltros} style={{fontSize:11}}>× Limpiar</button>
+              <button className="btn btn-ghost" onClick={limpiarFiltros} style={{fontSize:11}}>× Limpiar todo</button>
             )}
           </div>
 
