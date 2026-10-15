@@ -3,7 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom'
 import {
   Pencil, UserRound, Phone, Mail, Clock, ExternalLink, Copy, Check, RefreshCw,
   Link2, UsersRound, Truck, FileText, ChevronRight, Ellipsis, ArrowUpRight, Hourglass,
-  Weight, Droplets, Info, Network, Inbox, Settings, ChartColumn, Send, PhoneCall,
+  Weight, Droplets, Info, Network, Inbox, Settings, ChartColumn, Send, PhoneCall, ChevronLeft,
 } from 'lucide-react'
 import { api } from '../lib/api'
 import { Badge } from '../components/Badge'
@@ -15,9 +15,11 @@ import './ClienteDetalle.css'
 
 const MESES = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic']
 const EN_CURSO = new Set(['programado', 'pendiente_campo', 'pendiente_oficina', 'humedad_pendiente'])
-// 1 = último mes, mostrado día a día (30 días); el resto, mes a mes
+const MESES_LARGO = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre']
+// 1 = un mes natural, mostrado día a día; el resto, mes a mes
 const PERIODOS = [1, 6, 12]
-const DIAS_MES = 30
+
+const isoDia = d => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
 
 const netoKg = a => (a.pesada?.entrada && a.pesada?.salida ? Number(a.pesada.entrada) - Number(a.pesada.salida) : null)
 const fmtFecha = f => f ? f.slice(0, 10).split('-').reverse().join('/') : '—'
@@ -69,6 +71,8 @@ export default function ClienteDetalle({ albaranes = [], usuario }) {
   const [regenerando, setRegenerando] = useState(false)
   const [menuAbierto, setMenuAbierto] = useState(false)
   const [periodo,     setPeriodo]     = useState(6)
+  // Cuántos periodos completos se retrocede desde el actual (0 = el actual)
+  const [desplaz,     setDesplaz]     = useState(0)
   const menuRef   = useRef(null)
   const refActividad = useRef(null)
   const refAlbaranes = useRef(null)
@@ -130,31 +134,50 @@ export default function ClienteDetalle({ albaranes = [], usuario }) {
     }
   }, [albaranes, cliente, roles])
 
-  // Serie del periodo elegido: diaria para el último mes (incluido hoy) y
-  // mensual para el resto (incluido el mes actual)
+  // Serie del periodo elegido, desplazada `desplaz` periodos hacia atrás:
+  // un mes natural día a día, o N meses mes a mes (acabando en el actual)
   const meses = useMemo(() => {
     if (!stats) return []
     const hoy = new Date()
+    const hoyKey = isoDia(hoy)
+    const conDatos = (key, extra) => {
+      const delTramo = stats.validos.filter(a => a.fecha?.startsWith(key))
+      return { key, ...extra, n: delTramo.length, kg: delTramo.reduce((s, a) => s + (netoKg(a) || 0), 0) }
+    }
     if (periodo === 1) {
-      return Array.from({ length: DIAS_MES }, (_, i) => {
-        const d = new Date(hoy.getFullYear(), hoy.getMonth(), hoy.getDate() - (DIAS_MES - 1) + i)
-        const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
-        const delDia = stats.validos.filter(a => a.fecha?.startsWith(key))
-        // Etiqueta cada 5 días contando desde hoy hacia atrás, para que hoy siempre la lleve
-        const etiqueta = (DIAS_MES - 1 - i) % 5 === 0
-        return {
-          key, dia: true, label: etiqueta ? String(d.getDate()) : '', titulo: `${d.getDate()} ${MESES[d.getMonth()]}`,
-          anio: d.getFullYear(), n: delDia.length, kg: delDia.reduce((s, a) => s + (netoKg(a) || 0), 0),
-        }
+      const inicio = new Date(hoy.getFullYear(), hoy.getMonth() - desplaz, 1)
+      const nDias = new Date(inicio.getFullYear(), inicio.getMonth() + 1, 0).getDate()
+      return Array.from({ length: nDias }, (_, i) => {
+        const d = new Date(inicio.getFullYear(), inicio.getMonth(), i + 1)
+        const dia = d.getDate()
+        return conDatos(isoDia(d), {
+          dia: true, label: dia === 1 || dia % 5 === 0 ? String(dia) : '', titulo: `${dia} ${MESES[d.getMonth()]}`,
+          anio: d.getFullYear(), actual: isoDia(d) === hoyKey,
+        })
       })
     }
     return Array.from({ length: periodo }, (_, i) => {
-      const d = new Date(hoy.getFullYear(), hoy.getMonth() - (periodo - 1) + i, 1)
+      const d = new Date(hoy.getFullYear(), hoy.getMonth() - desplaz * periodo - (periodo - 1) + i, 1)
       const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`
-      const delMes = stats.validos.filter(a => a.fecha?.startsWith(key))
-      return { key, label: MESES[d.getMonth()], anio: d.getFullYear(), n: delMes.length, kg: delMes.reduce((s, a) => s + (netoKg(a) || 0), 0) }
+      return conDatos(key, {
+        label: MESES[d.getMonth()], anio: d.getFullYear(),
+        actual: d.getFullYear() === hoy.getFullYear() && d.getMonth() === hoy.getMonth(),
+      })
     })
-  }, [stats, periodo])
+  }, [stats, periodo, desplaz])
+
+  const rotuloPeriodo = (() => {
+    if (!meses.length) return ''
+    if (periodo === 1) {
+      const d = new Date(meses[0].key)
+      return `${MESES_LARGO[d.getUTCMonth()]} ${d.getUTCFullYear()}`
+    }
+    if (desplaz === 0) return `Últimos ${periodo} meses`
+    const a = meses[0], b = meses.at(-1)
+    return `${a.label} ${a.anio} – ${b.label} ${b.anio}`
+  })()
+
+  const cambiarPeriodo = p => { setPeriodo(p); setDesplaz(0) }
 
   const copiar = (texto, clave) => {
     navigator.clipboard.writeText(texto)
@@ -383,7 +406,7 @@ export default function ClienteDetalle({ albaranes = [], usuario }) {
           <CardHead icon={ChartColumn} titulo="Actividad">
             <div className="cd-segmented">
               {PERIODOS.map(p => (
-                <button key={p} className={periodo === p ? 'on' : ''} onClick={() => setPeriodo(p)}>{p} {p === 1 ? 'mes' : 'meses'}</button>
+                <button key={p} className={periodo === p ? 'on' : ''} onClick={() => cambiarPeriodo(p)}>{p} {p === 1 ? 'mes' : 'meses'}</button>
               ))}
             </div>
           </CardHead>
@@ -391,7 +414,11 @@ export default function ClienteDetalle({ albaranes = [], usuario }) {
             <div><span className="cd-act-num">{totalPeriodo}</span><span className="cd-act-lbl">{totalPeriodo === 1 ? 'albarán' : 'albaranes'}</span></div>
             <div className="cd-act-sep" />
             <div><span className="cd-act-num">{kgPeriodo > 0 ? fmtNum(kgPeriodo / 1000) : '—'}</span><span className="cd-act-lbl">{kgPeriodo > 0 ? 't de biomasa' : 'sin pesadas'}</span></div>
-            <div className="cd-act-periodo">{periodo === 1 ? `Últimos ${DIAS_MES} días` : `Últimos ${periodo} meses`}</div>
+            <div className="cd-act-nav">
+              <button onClick={() => setDesplaz(d => d + 1)} title="Periodo anterior"><ChevronLeft size={15} /></button>
+              <span className="cd-act-periodo">{rotuloPeriodo}</span>
+              <button onClick={() => setDesplaz(d => d - 1)} disabled={desplaz === 0} title="Periodo siguiente"><ChevronRight size={15} /></button>
+            </div>
           </div>
           <div className={`cd-chart ${totalPeriodo === 0 ? 'vacio' : ''}`}>
             <div className="cd-chart-grid"><span /><span /><span /><span /></div>
@@ -400,7 +427,7 @@ export default function ClienteDetalle({ albaranes = [], usuario }) {
                 <div key={m.key} className="cd-chart-col" title={`${m.titulo || m.label} ${m.anio}: ${m.n} ${m.n === 1 ? 'albarán' : 'albaranes'}${m.kg ? ` · ${fmtNum(m.kg / 1000)} t` : ''}`}>
                   <div className="cd-chart-track">
                     {m.n > 0 && <div className="cd-chart-n">{m.n}</div>}
-                    <div className={`cd-chart-bar ${i === meses.length - 1 ? 'actual' : ''}`} style={{ height: m.n ? `${Math.max(6, (m.n / maxMes) * 100)}%` : 0 }} />
+                    <div className={`cd-chart-bar ${m.actual ? 'actual' : ''}`} style={{ height: m.n ? `${Math.max(6, (m.n / maxMes) * 100)}%` : 0 }} />
                   </div>
                   <div className="cd-chart-label">{m.label}{!m.dia && (i === 0 || m.label === 'Ene') && <span>{String(m.anio).slice(2)}</span>}</div>
                 </div>

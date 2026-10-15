@@ -161,7 +161,11 @@
 .cd-act-num { font-size:24px; font-weight:700; color:var(--gray-900); letter-spacing:-.6px; margin-right:6px; font-variant-numeric:tabular-nums; }
 .cd-act-lbl { font-size:12.5px; color:var(--gray-400); }
 .cd-act-sep { width:1px; height:18px; background:var(--cd-line); align-self:center; }
-.cd-act-periodo { margin-left:auto; font-size:12px; color:var(--gray-400); }
+.cd-act-nav { margin-left:auto; display:flex; align-items:center; gap:4px; align-self:center; }
+.cd-act-nav button { width:26px; height:26px; display:flex; align-items:center; justify-content:center; border-radius:5px; background:none; color:var(--gray-500); transition:background .15s, color .15s; }
+.cd-act-nav button:hover:not(:disabled) { background:var(--cd-soft); color:var(--gray-900); }
+.cd-act-nav button:disabled { color:var(--gray-300); cursor:default; }
+.cd-act-periodo { min-width:120px; text-align:center; font-size:12px; color:var(--gray-500); font-variant-numeric:tabular-nums; }
 
 .cd-chart { position:relative; flex:1; min-height:220px; display:flex; flex-direction:column; }
 .cd-chart-grid { position:absolute; inset:0 0 26px 0; display:flex; flex-direction:column; justify-content:space-between; pointer-events:none; }
