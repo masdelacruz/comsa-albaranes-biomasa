@@ -20,6 +20,14 @@
   align-items: center;
   gap: 12px;
 }
+/* Con apartados: tres columnas con los laterales del mismo ancho, así los
+   apartados quedan centrados en la página y no entre el logo y el perfil. */
+.ah-inner.con-nav {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+}
+.ah-inner.con-nav .ah-brand { justify-self: start; }
+.ah-inner.con-nav .ah-right { justify-self: end; }
 
 .ah-brand {
   display: flex;
@@ -64,7 +72,7 @@
   display: flex;
   align-self: stretch;
   gap: 2px;
-  margin-left: 28px;
+  justify-self: center;
   min-width: 0;
 }
 
@@ -209,14 +217,15 @@
 /* Sin sitio para todo: primero se recogen los títulos (queda el icono,
    con el nombre como tooltip), luego el texto del logo y del perfil. */
 @media (max-width: 1280px) {
-  .ah-nav { margin-left: 16px; }
+
   .ah-nav-label { display: none; }
   .ah-nav-item { padding: 0 10px; }
   .ah-nav-item.activo::after { left: 8px; right: 8px; }
   .ah-nav-badge { position: absolute; top: 10px; right: 2px; min-width: 15px; height: 15px; font-size: 9px; padding: 0 4px; border: 1.5px solid #fff; }
 }
 @media (max-width: 720px) {
-  .ah-inner { height: 52px; gap: 6px; }
+  /* En móvil no hay sitio para centrar: el menú ocupa el hueco entre logo y perfil */
+  .ah-inner, .ah-inner.con-nav { display: flex; height: 52px; gap: 6px; }
   .ah-brand-text, .ah-user-info, .ah-switch span { display: none; }
   /* Si no caben los iconos, el menú se desplaza en horizontal en vez de
      empujar el perfil fuera de la pantalla */

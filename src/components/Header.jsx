@@ -27,7 +27,7 @@ export default function Header({ usuario, logout, nav = [] }) {
 
   return (
     <header className="app-header">
-      <div className="ah-inner">
+      <div className={`ah-inner${nav.length ? ' con-nav' : ''}`}>
         <button className="ah-brand" onClick={irInicio}>
           <span className="ah-brand-icon"><img src={logoIcon} alt="COMSA Biomasa" className="ah-brand-icon-img" /></span>
           <span className="ah-brand-text">COMSA Service</span>
