@@ -1,7 +1,6 @@
 import { useEffect } from 'react'
 import { Outlet, useNavigate, useLocation } from 'react-router-dom'
 import { LayoutDashboard, FileClock, BarChart2, Settings, Handshake } from 'lucide-react'
-import Dock from './Dock'
 import Header from './Header'
 import './Layout.css'
 
@@ -16,8 +15,8 @@ export default function Layout({ usuario, albaranes = [], logout }) {
   }, [location.pathname])
 
   // Si ya estamos en la ruta destino, el pathname no cambia al pulsar el
-  // icono del dock, así que el efecto de arriba no salta solo: forzamos
-  // el scroll suave aquí también.
+  // apartado, así que el efecto de arriba no salta solo: forzamos el
+  // scroll suave aquí también.
   const irA = ruta => () => {
     if (location.pathname === ruta) {
       window.scrollTo({ top: 0, behavior: 'smooth' })
@@ -26,30 +25,25 @@ export default function Layout({ usuario, albaranes = [], logout }) {
     }
   }
 
-  const iniciales = usuario?.nombre
-    ? usuario.nombre.split(' ').map(n => n[0]).slice(0, 2).join('').toUpperCase()
-    : '?'
-
   const puedeConfiguracion = usuario?.nivel !== 'basico'
 
   const pendientesOficina = albaranes.filter(a => a.estado === 'pendiente_oficina').length
 
-  const dockItems = [
-    { key: 'dashboard',      label: 'Dashboard',      icon: <LayoutDashboard size={18} />, active: location.pathname === '/dashboard',      badge: pendientesOficina, onClick: irA('/dashboard') },
-    { key: 'historial',      label: 'Historial',      icon: <FileClock size={18} />,       active: location.pathname === '/historial',      onClick: irA('/historial') },
-    { key: 'estadisticas',   label: 'Estadísticas',   icon: <BarChart2 size={18} />,       active: location.pathname === '/estadisticas',   onClick: irA('/estadisticas') },
-    { key: 'clientes',       label: 'Clientes',       icon: <Handshake size={18} />,       active: location.pathname.startsWith('/clientes'), onClick: irA('/clientes') },
+  // El perfil no va aquí: ya está a la derecha de la cabecera
+  const apartados = [
+    { key: 'dashboard',    label: 'Dashboard',    icon: <LayoutDashboard size={16} />, active: location.pathname === '/dashboard',      badge: pendientesOficina, onClick: irA('/dashboard') },
+    { key: 'historial',    label: 'Historial',    icon: <FileClock size={16} />,       active: location.pathname === '/historial',      onClick: irA('/historial') },
+    { key: 'estadisticas', label: 'Estadísticas', icon: <BarChart2 size={16} />,       active: location.pathname === '/estadisticas',   onClick: irA('/estadisticas') },
+    { key: 'clientes',     label: 'Clientes',     icon: <Handshake size={16} />,       active: location.pathname.startsWith('/clientes'), onClick: irA('/clientes') },
     ...(puedeConfiguracion ? [
-      { key: 'configuracion', label: 'Configuración', icon: <Settings size={18} />, active: location.pathname.startsWith('/configuracion'), onClick: irA('/configuracion') },
+      { key: 'configuracion', label: 'Configuración', icon: <Settings size={16} />, active: location.pathname.startsWith('/configuracion'), onClick: irA('/configuracion') },
     ] : []),
-    { key: 'perfil', label: usuario?.nombre || 'Perfil', isAvatar: true, initials: iniciales, active: location.pathname === '/perfil', dividerBefore: true, onClick: irA('/perfil') },
   ]
 
   return (
     <div className="layout">
-      <Header usuario={usuario} logout={logout} />
+      <Header usuario={usuario} logout={logout} nav={apartados} />
       <main className="main-area"><Outlet /></main>
-      <Dock items={dockItems} />
     </div>
   )
 }

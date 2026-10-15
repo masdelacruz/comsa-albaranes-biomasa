@@ -2,13 +2,11 @@
 .layout { min-height: 100vh; }
 
 /* ── Área principal ───────────────────────────────────────────────── */
-/* padding-bottom con espacio de sobra para que el dock flotante no tape
-   el final del contenido de ninguna página. */
 .main-area {
   min-height: 100vh;
   overflow-x: clip;
   /* transparente a propósito: deja ver el fondo del body (degradado de
      hojas muy sutil) en los huecos — antes lo tapaba por completo. */
   background: transparent;
-  padding-bottom: 84px;
+  padding-bottom: 24px;
 }

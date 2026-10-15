@@ -2,15 +2,23 @@
   position: sticky;
   top: 0;
   z-index: 150;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  padding: 12px var(--gutter);
   background: rgba(255,255,255,0.82);
   backdrop-filter: blur(16px);
   -webkit-backdrop-filter: blur(16px);
   border-bottom: 1px solid #EAEAE6;
+}
+
+/* Misma franja que el contenido de las páginas (ver "Ancho de página" en
+   shared.css): ancho máximo centrado y margen lateral --gutter. */
+.ah-inner {
+  width: 100%;
+  max-width: calc(var(--page-max) + 2 * var(--gutter));
+  margin: 0 auto;
+  padding: 0 var(--gutter);
+  height: 56px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
 }
 
 .ah-brand {
@@ -22,7 +30,10 @@
   cursor: pointer;
   font-family: inherit;
   padding: 4px;
+  /* compensa el padding para que el logo toque el borde del contenido */
+  margin-left: -4px;
   border-radius: 5px;
+  flex-shrink: 0;
   transition: background 0.15s;
 }
 .ah-brand:hover { background: var(--gray-100); }
@@ -45,12 +56,86 @@
   font-weight: 700;
   letter-spacing: 0.2px;
   color: var(--gray-800);
+  white-space: nowrap;
 }
 
+/* ── Apartados ─────────────────────────────────────────────────────── */
+.ah-nav {
+  display: flex;
+  align-self: stretch;
+  gap: 2px;
+  margin-left: 28px;
+  min-width: 0;
+}
+
+.ah-nav-item {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 0 12px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--gray-500);
+  white-space: nowrap;
+  transition: color 0.15s;
+  isolation: isolate;
+}
+/* Fondo al pasar el ratón, sin ocupar toda la altura de la cabecera */
+.ah-nav-item::before {
+  content: '';
+  position: absolute;
+  inset: 11px 2px;
+  border-radius: 6px;
+  background: var(--gray-100);
+  opacity: 0;
+  transition: opacity 0.15s;
+  z-index: -1;
+}
+.ah-nav-item:hover { color: var(--gray-900); }
+.ah-nav-item:hover::before { opacity: 1; }
+.ah-nav-item svg { flex-shrink: 0; }
+
+.ah-nav-item.activo { color: var(--gray-900); font-weight: 600; }
+.ah-nav-item.activo svg { color: var(--green-600); }
+/* Barra del apartado actual, pegada al borde inferior de la cabecera */
+.ah-nav-item.activo::after {
+  content: '';
+  position: absolute;
+  left: 12px;
+  right: 12px;
+  bottom: -1px;
+  height: 2px;
+  border-radius: 2px 2px 0 0;
+  background: var(--green-400);
+}
+
+.ah-nav-badge {
+  min-width: 17px;
+  height: 17px;
+  padding: 0 5px;
+  border-radius: 9px;
+  background: var(--blue-400);
+  color: #fff;
+  font-size: 10px;
+  font-weight: 700;
+  line-height: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* ── Derecha: cambiar app, perfil y salir ──────────────────────────── */
 .ah-right {
   display: flex;
   align-items: center;
   gap: 8px;
+  margin-left: auto;
+  flex-shrink: 0;
 }
 
 .ah-switch {
@@ -81,7 +166,7 @@
   font-family: inherit;
   transition: background 0.15s;
 }
-.ah-user:hover { background: var(--gray-100); }
+.ah-user:hover, .ah-user.activo { background: var(--gray-100); }
 
 .ah-avatar {
   width: 28px;
@@ -103,7 +188,7 @@
   align-items: flex-start;
   line-height: 1.25;
 }
-.ah-user-nombre { font-size: 12.5px; font-weight: 600; color: var(--gray-800); }
+.ah-user-nombre { font-size: 12.5px; font-weight: 600; color: var(--gray-800); white-space: nowrap; }
 .ah-user-rol { font-size: 10px; font-weight: 600; color: var(--green-600); }
 
 .ah-logout {
@@ -112,6 +197,8 @@
   cursor: pointer;
   color: var(--gray-400);
   padding: 7px;
+  /* compensa el padding para que el icono toque el borde del contenido */
+  margin-right: -7px;
   border-radius: 5px;
   display: flex;
   align-items: center;
@@ -119,9 +206,20 @@
 }
 .ah-logout:hover { background: var(--red-50); color: var(--red-400); }
 
-@media (max-width: 560px) {
-  .app-header { padding: 10px var(--gutter); }
-  .ah-brand-text { display: none; }
-  .ah-user-info { display: none; }
-  .ah-switch span { display: none; }
+/* Sin sitio para todo: primero se recogen los títulos (queda el icono,
+   con el nombre como tooltip), luego el texto del logo y del perfil. */
+@media (max-width: 1180px) {
+  .ah-nav { margin-left: 16px; }
+  .ah-nav-label { display: none; }
+  .ah-nav-item { padding: 0 10px; }
+  .ah-nav-item.activo::after { left: 8px; right: 8px; }
+  .ah-nav-badge { position: absolute; top: 10px; right: 2px; min-width: 15px; height: 15px; font-size: 9px; padding: 0 4px; border: 1.5px solid #fff; }
+}
+@media (max-width: 720px) {
+  .ah-inner { height: 52px; gap: 6px; }
+  .ah-brand-text, .ah-user-info, .ah-switch span { display: none; }
+  .ah-nav { margin-left: 4px; gap: 0; }
+  .ah-nav-item { padding: 0 9px; }
+  .ah-nav-item::before { inset: 9px 1px; }
+  .ah-user { padding: 4px; }
 }
