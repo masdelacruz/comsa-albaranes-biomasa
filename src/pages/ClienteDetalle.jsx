@@ -15,7 +15,9 @@ import './ClienteDetalle.css'
 
 const MESES = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic']
 const EN_CURSO = new Set(['programado', 'pendiente_campo', 'pendiente_oficina', 'humedad_pendiente'])
-const PERIODOS = [6, 12]
+// 1 = último mes, mostrado día a día (30 días); el resto, mes a mes
+const PERIODOS = [1, 6, 12]
+const DIAS_MES = 30
 
 const netoKg = a => (a.pesada?.entrada && a.pesada?.salida ? Number(a.pesada.entrada) - Number(a.pesada.salida) : null)
 const fmtFecha = f => f ? f.slice(0, 10).split('-').reverse().join('/') : '—'
@@ -128,10 +130,24 @@ export default function ClienteDetalle({ albaranes = [], usuario }) {
     }
   }, [albaranes, cliente, roles])
 
-  // Serie mensual del periodo elegido (incluido el mes actual)
+  // Serie del periodo elegido: diaria para el último mes (incluido hoy) y
+  // mensual para el resto (incluido el mes actual)
   const meses = useMemo(() => {
     if (!stats) return []
     const hoy = new Date()
+    if (periodo === 1) {
+      return Array.from({ length: DIAS_MES }, (_, i) => {
+        const d = new Date(hoy.getFullYear(), hoy.getMonth(), hoy.getDate() - (DIAS_MES - 1) + i)
+        const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
+        const delDia = stats.validos.filter(a => a.fecha?.startsWith(key))
+        // Etiqueta cada 5 días contando desde hoy hacia atrás, para que hoy siempre la lleve
+        const etiqueta = (DIAS_MES - 1 - i) % 5 === 0
+        return {
+          key, dia: true, label: etiqueta ? String(d.getDate()) : '', titulo: `${d.getDate()} ${MESES[d.getMonth()]}`,
+          anio: d.getFullYear(), n: delDia.length, kg: delDia.reduce((s, a) => s + (netoKg(a) || 0), 0),
+        }
+      })
+    }
     return Array.from({ length: periodo }, (_, i) => {
       const d = new Date(hoy.getFullYear(), hoy.getMonth() - (periodo - 1) + i, 1)
       const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`
@@ -365,7 +381,7 @@ export default function ClienteDetalle({ albaranes = [], usuario }) {
           <CardHead icon={ChartColumn} titulo="Actividad">
             <div className="cd-segmented">
               {PERIODOS.map(p => (
-                <button key={p} className={periodo === p ? 'on' : ''} onClick={() => setPeriodo(p)}>{p} meses</button>
+                <button key={p} className={periodo === p ? 'on' : ''} onClick={() => setPeriodo(p)}>{p} {p === 1 ? 'mes' : 'meses'}</button>
               ))}
             </div>
           </CardHead>
@@ -373,18 +389,18 @@ export default function ClienteDetalle({ albaranes = [], usuario }) {
             <div><span className="cd-act-num">{totalPeriodo}</span><span className="cd-act-lbl">{totalPeriodo === 1 ? 'albarán' : 'albaranes'}</span></div>
             <div className="cd-act-sep" />
             <div><span className="cd-act-num">{kgPeriodo > 0 ? fmtNum(kgPeriodo / 1000) : '—'}</span><span className="cd-act-lbl">{kgPeriodo > 0 ? 't de biomasa' : 'sin pesadas'}</span></div>
-            <div className="cd-act-periodo">Últimos {periodo} meses</div>
+            <div className="cd-act-periodo">{periodo === 1 ? `Últimos ${DIAS_MES} días` : `Últimos ${periodo} meses`}</div>
           </div>
           <div className={`cd-chart ${totalPeriodo === 0 ? 'vacio' : ''}`}>
             <div className="cd-chart-grid"><span /><span /><span /><span /></div>
-            <div className="cd-chart-bars">
+            <div className={`cd-chart-bars${periodo === 1 ? ' diario' : ''}`}>
               {meses.map((m, i) => (
-                <div key={m.key} className="cd-chart-col" title={`${m.label} ${m.anio}: ${m.n} ${m.n === 1 ? 'albarán' : 'albaranes'}${m.kg ? ` · ${fmtNum(m.kg / 1000)} t` : ''}`}>
+                <div key={m.key} className="cd-chart-col" title={`${m.titulo || m.label} ${m.anio}: ${m.n} ${m.n === 1 ? 'albarán' : 'albaranes'}${m.kg ? ` · ${fmtNum(m.kg / 1000)} t` : ''}`}>
                   <div className="cd-chart-track">
                     {m.n > 0 && <div className="cd-chart-n">{m.n}</div>}
                     <div className={`cd-chart-bar ${i === meses.length - 1 ? 'actual' : ''}`} style={{ height: m.n ? `${Math.max(6, (m.n / maxMes) * 100)}%` : 0 }} />
                   </div>
-                  <div className="cd-chart-label">{m.label}{(i === 0 || m.label === 'Ene') && <span>{String(m.anio).slice(2)}</span>}</div>
+                  <div className="cd-chart-label">{m.label}{!m.dia && (i === 0 || m.label === 'Ene') && <span>{String(m.anio).slice(2)}</span>}</div>
                 </div>
               ))}
             </div>
@@ -392,7 +408,7 @@ export default function ClienteDetalle({ albaranes = [], usuario }) {
               <div className="cd-chart-empty">
                 <ChartColumn size={18} />
                 <div>Sin actividad en este periodo</div>
-                <span>Los albaranes aparecerán aquí mes a mes</span>
+                <span>Los albaranes aparecerán aquí {periodo === 1 ? 'día a día' : 'mes a mes'}</span>
               </div>
             )}
           </div>

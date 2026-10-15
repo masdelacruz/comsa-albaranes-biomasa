@@ -169,6 +169,10 @@
 .cd-chart-grid span:last-child { border-top:1px solid var(--gray-200); }
 .cd-chart-bars { position:relative; flex:1; display:flex; gap:10px; }
 .cd-chart-col { flex:1; display:flex; flex-direction:column; min-width:0; }
+.cd-chart-bars.diario { gap:3px; }
+.cd-chart-bars.diario .cd-chart-bar { border-radius:3px 3px 1px 1px; }
+.cd-chart-bars.diario .cd-chart-n { font-size:10px; }
+.cd-chart-bars.diario .cd-chart-label { overflow:visible; white-space:nowrap; }
 .cd-chart-track { flex:1; position:relative; display:flex; flex-direction:column; justify-content:flex-end; align-items:center; }
 .cd-chart-bar { width:100%; max-width:46px; border-radius:5px 5px 2px 2px; background:linear-gradient(180deg, rgba(29,158,117,0.55), rgba(29,158,117,0.35)); transition:height .45s cubic-bezier(.2,.8,.2,1), background .2s; }
 .cd-chart-bar.actual { background:linear-gradient(180deg, var(--green-400), #178a66); }
@@ -269,6 +273,8 @@
   .cd-grid { gap:12px; }
   .cd-grid > .cd-card { grid-column:span 12; }
   .cd-chart-bars { gap:5px; }
+  .cd-chart-bars.diario { gap:1px; }
+  .cd-chart-bars.diario .cd-chart-n { display:none; }
 }
 .cd-panel-acciones.dos { grid-template-columns:repeat(2, minmax(0,1fr)); }
 
