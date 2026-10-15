@@ -241,7 +241,6 @@ function buildEmail(tipo, albaran) {
     `, 'Humedad pendiente', albaran.logoUrl)
 
   } else if (tipo === 'albaran_a_campo') {
-    const astilladoraSlug = String(albaran.astilladora || '').trim().replace(/\s+/g, '-')
     const primerNombreAst = albaran.contactoAstilladora ? albaran.contactoAstilladora.split(' ')[0] : null
 
     subject = `Nuevo albarán a campo - ${resumenAsunto}`
@@ -255,7 +254,7 @@ function buildEmail(tipo, albaran) {
         </td>
       </tr>
       <tr><td style="padding:0 40px 24px;">${tablaAlbaran}</td></tr>
-      <tr><td style="padding:8px 40px 40px;" align="center">${boton('Ver en el panel', albaran.panelAstilladoraUrl || `${APP_URL}/campo/astilladora/${astilladoraSlug}`)}</td></tr>
+      <tr><td style="padding:8px 40px 40px;" align="center">${boton('Ver en el panel', albaran.panelAstilladoraUrl || `${APP_URL}/`)}</td></tr>
     `, 'A campo', albaran.logoUrl)
 
   } else if (tipo === 'albaran_a_proveedor') {
@@ -290,7 +289,6 @@ function buildEmail(tipo, albaran) {
     const origenTexto = albaran.astilladora || albaran.proveedor || albaran.origen || 'origen'
     const primerNombre = albaran.contactoInstalacion ? albaran.contactoInstalacion.split(' ')[0] : null
 
-    const instalacionSlug = String(albaran.instalacion || '').trim().replace(/\s+/g, '-')
 
     subject = `Camión en camino - ${albaran.instalacion || resumenAsunto}`
     html = emailWrapper(`
@@ -311,7 +309,7 @@ function buildEmail(tipo, albaran) {
           </table>
         </td>
       </tr>
-      <tr><td style="padding:16px 40px 40px;" align="center">${boton('Ver envío', `${APP_URL}/campo/instalacion/${instalacionSlug}`)}</td></tr>
+      <tr><td style="padding:16px 40px 40px;" align="center">${boton('Ver envío', albaran.panelInstalacionUrl || `${APP_URL}/`)}</td></tr>
     `, 'Transporte', albaran.logoUrl)
 
   } else {

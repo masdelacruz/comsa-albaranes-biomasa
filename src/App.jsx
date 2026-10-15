@@ -39,6 +39,11 @@ const Bloqueado = () => (
   </div>
 )
 
+// Huella del albarán para detectar cambios reales: las URLs de ficheros van
+// firmadas con una caducidad nueva en cada respuesta, así que se ignoran
+// exp y sig (si no, siempre parecería que hay una actualización).
+const huella = data => JSON.stringify(data).replace(/\?exp=\d+&sig=[0-9a-f]+/g, '')
+
 function VistaCampoPublica() {
   const { id } = useParams()
   const [searchParams] = useSearchParams()
@@ -59,7 +64,7 @@ function VistaCampoPublica() {
       const data = await res.json()
       if (data?.id) {
         setAlbaran(data)
-        currentRef.current = JSON.stringify(data)
+        currentRef.current = huella(data)
         setHayActualizacion(false)
         pendingRef.current = null
       }
@@ -78,7 +83,7 @@ function VistaCampoPublica() {
         if (!res.ok) return
         const data = await res.json()
         if (!data?.id) return
-        if (currentRef.current && JSON.stringify(data) !== currentRef.current) {
+        if (currentRef.current && huella(data) !== currentRef.current) {
           pendingRef.current = data
           setHayActualizacion(true)
         }
@@ -91,7 +96,7 @@ function VistaCampoPublica() {
   const aplicarActualizacion = () => {
     if (pendingRef.current) {
       setAlbaran(pendingRef.current)
-      currentRef.current = JSON.stringify(pendingRef.current)
+      currentRef.current = huella(pendingRef.current)
       pendingRef.current = null
       setHayActualizacion(false)
     }

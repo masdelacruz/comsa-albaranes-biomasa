@@ -4,6 +4,7 @@ const pool   = require('../db')
 const { requireAuth } = require('./auth')
 const { requireAuthOrCampoToken, requireAuthOrEmpresaCodigo } = require('../lib/campoAuth')
 const { signPath } = require('../lib/signedUrl')
+const { rutaDeNombre, nombreDeRuta } = require('../lib/nombreRuta')
 const { registrarAuditoria } = require('../lib/auditoria')
 const { enviarNotificacion, enviarNotificacionAlbaranACampo, enviarNotificacionAlbaranAProveedor, enviarNotificacionCamionEnviado } = require('../emailSender')
 const { crearNotificacion } = require('../notificacionesCliente')
@@ -40,7 +41,7 @@ function esVisibleEnPanel(fechaISO) {
 // por empresa, reutilizado en todos sus albaranes.
 function panelUrlDe(tipo, nombre, codigo) {
   if (!nombre || !codigo) return null
-  return `${process.env.APP_URL}/campo/${tipo}/${nombre.replace(/\s+/g, '-')}?c=${codigo}`
+  return `${process.env.APP_URL}/campo/${tipo}/${rutaDeNombre(nombre)}?c=${codigo}`
 }
 
 const slugify = s => s.toLowerCase().replace(/\s+/g, '_').replace(/[^a-z0-9_]/g, '')
@@ -321,7 +322,7 @@ router.get('/', requireAuth, async (_req, res) => {
 
 // ── GET /albaranes/instalacion/:nombre  (oficina o código de la empresa) ──
 router.get('/instalacion/:nombre', requireAuthOrEmpresaCodigo('instalacion'), async (req, res) => {
-  const nombre = decodeURIComponent(req.params.nombre).replace(/-/g, ' ')
+  const nombre = nombreDeRuta(req.params.nombre)
   const { rows } = await pool.query(
     `SELECT
        a.id, a.fecha, a.hora, a.grupo_id, a.camion_orden, a.num_camiones,
@@ -397,7 +398,7 @@ router.get('/instalacion/:nombre', requireAuthOrEmpresaCodigo('instalacion'), as
 // Tipos con panel de astilladora/proveedor que tiene la empresa: el panel
 // público los muestra todos juntos en una sola vista.
 router.get('/panel-roles/:nombre', requireAuthOrEmpresaCodigo(), async (req, res) => {
-  const nombre = decodeURIComponent(req.params.nombre).replace(/-/g, ' ')
+  const nombre = nombreDeRuta(req.params.nombre)
   const { rows } = await pool.query(
     `SELECT DISTINCT tipo FROM proveedores WHERE nombre=$1 AND tipo IN ('astilladora','proveedor')`,
     [nombre]
@@ -407,7 +408,7 @@ router.get('/panel-roles/:nombre', requireAuthOrEmpresaCodigo(), async (req, res
 
 // ── GET /albaranes/astilladora/:nombre  (oficina o código de la empresa) ──
 router.get('/astilladora/:nombre', requireAuthOrEmpresaCodigo('astilladora'), async (req, res) => {
-  const nombre = decodeURIComponent(req.params.nombre).replace(/-/g, ' ')
+  const nombre = nombreDeRuta(req.params.nombre)
   const { rows } = await pool.query(
     `SELECT
        a.id, a.fecha, a.hora, a.grupo_id, a.camion_orden, a.num_camiones,
@@ -479,7 +480,7 @@ router.get('/astilladora/:nombre', requireAuthOrEmpresaCodigo('astilladora'), as
 // astilladora/instalación, sus albaranes en curso para que adjunte su propio
 // albarán y complete el origen si oficina lo dejó vacío.
 router.get('/proveedor/:nombre', requireAuthOrEmpresaCodigo('proveedor'), async (req, res) => {
-  const nombre = decodeURIComponent(req.params.nombre).replace(/-/g, ' ')
+  const nombre = nombreDeRuta(req.params.nombre)
   const { rows } = await pool.query(
     `SELECT a.id, a.fecha, a.hora, a.grupo_id, a.camion_orden, a.num_camiones,
             a.instalacion, a.transportista, a.especie, a.tipo_biomasa, a.estella,
@@ -526,7 +527,7 @@ router.get('/proveedor/:nombre', requireAuthOrEmpresaCodigo('proveedor'), async 
 // El proveedor solo puede rellenar el origen si está vacío — no corrige lo
 // que ya puso oficina.
 router.post('/proveedor/:nombre/:id/origen', requireAuthOrEmpresaCodigo('proveedor'), async (req, res) => {
-  const nombre = decodeURIComponent(req.params.nombre).replace(/-/g, ' ')
+  const nombre = nombreDeRuta(req.params.nombre)
   const { id } = req.params
   const origen = typeof req.body.origen === 'string' ? req.body.origen.trim().slice(0, 300) : ''
   if (!origen) return res.status(400).json({ error: 'Indica el origen' })

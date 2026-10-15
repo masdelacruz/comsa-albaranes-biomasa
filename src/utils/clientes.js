@@ -10,8 +10,16 @@ export const TIPOS_CLIENTE = new Set(SECCIONES_CLIENTES.map(s => s.tipo))
 
 export const slugify = s => s.toLowerCase().replace(/\s+/g, '_').replace(/[^a-z0-9_]/g, '')
 
+// Nombre de empresa ↔ segmento de URL de los paneles: los espacios van como
+// '-' (enlaces legibles y compatibles con los ya compartidos) y un guion real
+// como '~'. Debe coincidir con deploy/api/lib/nombreRuta.js.
+export const rutaNombre = nombre =>
+  encodeURIComponent(String(nombre).trim().replace(/-/g, '~').replace(/\s+/g, '-'))
+export const nombreDeRuta = segmento =>
+  decodeURIComponent(segmento).replace(/-/g, ' ').replace(/~/g, '-')
+
 export const panelUrl = (p) => {
-  const base = `/campo/${p.tipo}/${p.nombre.replace(/\s+/g, '-')}`
+  const base = `/campo/${p.tipo}/${rutaNombre(p.nombre)}`
   return `${window.location.origin}${base}?c=${encodeURIComponent(p.acceso_codigo || '')}`
 }
 

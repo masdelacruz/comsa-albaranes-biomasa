@@ -5,6 +5,7 @@ import NotificacionesBell from '../components/NotificacionesBell'
 import PanelCompletados from '../components/PanelCompletados'
 import { completadosFuera } from '../utils/panelCompletados'
 import { useLogoEmpresa } from '../hooks/useLogoEmpresa'
+import { rutaNombre, nombreDeRuta } from '../utils/clientes'
 import './PanelInstalacion.css'
 
 const fmtFecha = (f) => f ? String(f).slice(0,10).split('-').reverse().join('/') : null
@@ -233,7 +234,7 @@ export default function PanelInstalacion() {
   const { nombre }  = useParams()
   const location    = useLocation()
   const navigate    = useNavigate()
-  const nombreInstalacion = decodeURIComponent(nombre).replace(/-/g, ' ')
+  const nombreInstalacion = nombreDeRuta(nombre)
 
   const [desdeId] = useState(() => new URLSearchParams(location.search).get('desde'))
   const [codigo]  = useState(() => new URLSearchParams(location.search).get('c') || '')
@@ -258,7 +259,7 @@ export default function PanelInstalacion() {
   const fetchData = useCallback(async (manual = false) => {
     if (manual) setRefreshing(true)
     try {
-      const res  = await fetch(`/api/albaranes/instalacion/${encodeURIComponent(nombreInstalacion)}?c=${encodeURIComponent(codigo)}`)
+      const res  = await fetch(`/api/albaranes/instalacion/${rutaNombre(nombreInstalacion)}?c=${encodeURIComponent(codigo)}`)
       if (res.status === 401 || res.status === 403) { setCodigoInvalido(true); setLoading(false); if (manual) setRefreshing(false); return }
       const data = await res.json()
       const arr  = Array.isArray(data) ? data : []

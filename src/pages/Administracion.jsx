@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { Plus, Search, Pencil, Trash2, X, Check, Upload, Image, ExternalLink, Copy, RefreshCw } from 'lucide-react'
 import { api } from '../lib/api'
+import { rutaNombre } from '../utils/clientes'
 import EmpresaModal, { normalizarTelefono, TIPOS, TIPO_LABELS } from '../components/EmpresaModal'
 import Usuarios from './Usuarios'
 import Auditoria from './Auditoria'
@@ -159,7 +160,7 @@ export default function Administracion({ usuario }) {
 
   const tienePanel = (p) => p.tipo === 'astilladora' || p.tipo === 'instalacion' || p.tipo === 'proveedor'
   const panelUrl = (p) => {
-    const base = `/campo/${p.tipo}/${p.nombre.replace(/\s+/g, '-')}`
+    const base = `/campo/${p.tipo}/${rutaNombre(p.nombre)}`
     return `${window.location.origin}${base}?c=${encodeURIComponent(p.acceso_codigo || '')}`
   }
 

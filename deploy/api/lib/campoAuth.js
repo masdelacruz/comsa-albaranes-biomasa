@@ -1,6 +1,7 @@
 const jwt    = require('jsonwebtoken')
 const crypto = require('crypto')
 const pool   = require('../db')
+const { nombreDeRuta } = require('./nombreRuta')
 
 const SECRET = process.env.JWT_SECRET
 
@@ -74,7 +75,7 @@ function requireAuthOrEmpresaCodigo(tipoFijo) {
     if (await tryAuth(req)) return next()
 
     const tipo   = tipoFijo || req.params.tipo
-    const nombre = decodeURIComponent(req.params.nombre).replace(/-/g, ' ')
+    const nombre = nombreDeRuta(req.params.nombre)
     const codigo = req.query.c
     if (!codigo) return res.status(401).json({ error: 'Falta el código de acceso' })
 

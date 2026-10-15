@@ -5,6 +5,7 @@ const { requireAuth, requireConfigAccess } = require('./auth')
 const { requireAuthOrCampoToken, requireAuthOrEmpresaCodigo } = require('../lib/campoAuth')
 const { signPath, verifySignedPath, toPath } = require('../lib/signedUrl')
 const { contentMatchesAllowlist } = require('../lib/sniffMime')
+const { nombreDeRuta } = require('../lib/nombreRuta')
 const { registrarAuditoria } = require('../lib/auditoria')
 
 // El navegador envía el nombre del fichero en UTF-8 pero multer lo decodifica
@@ -138,7 +139,7 @@ router.post('/upload/:albaranId/ticket', requireAuthOrCampoToken(), upload.singl
 router.post('/upload-proveedor/:nombre/:albaranId', requireAuthOrEmpresaCodigo('proveedor'), upload.single('file'), async (req, res) => {
   const minio  = req.app.get('minio')
   const bucket = req.app.get('minio_bucket')
-  const nombre = decodeURIComponent(req.params.nombre).replace(/-/g, ' ')
+  const nombre = nombreDeRuta(req.params.nombre)
   const { albaranId } = req.params
   const fichero = req.file
   if (!fichero) return res.status(400).json({ error: 'Falta el fichero' })

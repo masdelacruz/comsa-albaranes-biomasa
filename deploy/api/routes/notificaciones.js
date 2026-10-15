@@ -6,6 +6,7 @@
 const router = require('express').Router()
 const pool   = require('../db')
 const { requireAuthOrEmpresaCodigo } = require('../lib/campoAuth')
+const { nombreDeRuta } = require('../lib/nombreRuta')
 
 const TIPOS_VALIDOS = ['proveedor', 'astilladora', 'instalacion']
 
@@ -13,7 +14,7 @@ const TIPOS_VALIDOS = ['proveedor', 'astilladora', 'instalacion']
 router.get('/:tipo/:nombre', requireAuthOrEmpresaCodigo(), async (req, res) => {
   const { tipo } = req.params
   if (!TIPOS_VALIDOS.includes(tipo)) return res.status(400).json({ error: 'tipo inválido' })
-  const nombre = decodeURIComponent(req.params.nombre).replace(/-/g, ' ')
+  const nombre = nombreDeRuta(req.params.nombre)
 
   const { rows } = await pool.query(
     `SELECT id, albaran_id, tipo, mensaje, leida, created_at
@@ -37,7 +38,7 @@ router.get('/:tipo/:nombre', requireAuthOrEmpresaCodigo(), async (req, res) => {
 router.post('/:tipo/:nombre/marcar-leidas', requireAuthOrEmpresaCodigo(), async (req, res) => {
   const { tipo } = req.params
   if (!TIPOS_VALIDOS.includes(tipo)) return res.status(400).json({ error: 'tipo inválido' })
-  const nombre = decodeURIComponent(req.params.nombre).replace(/-/g, ' ')
+  const nombre = nombreDeRuta(req.params.nombre)
 
   await pool.query(
     `UPDATE notificaciones_cliente SET leida = true

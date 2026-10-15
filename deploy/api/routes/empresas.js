@@ -35,6 +35,35 @@ const CAMPOS_COMPARTIDOS = ['contactos', 'contacto', 'email', 'telefono']
 const TIPOS_VALIDOS = ['proveedor', 'astilladora', 'transportista', 'instalacion']
 const TIPO_LABEL = { proveedor: 'proveedor', astilladora: 'astilladora', transportista: 'transportista', instalacion: 'instalación' }
 
+const slugify = s => s.toLowerCase().replace(/\s+/g, '_').replace(/[^a-z0-9_]/g, '')
+
+// Los albaranes, las notificaciones de panel y el logo guardan la empresa por
+// su nombre: al renombrarla se arrastra todo, o su historial, su panel y sus
+// estadísticas dejarían de encontrarla. Todo o nada, en una transacción.
+async function propagarRenombre(anterior, nuevo) {
+  const client = await pool.connect()
+  try {
+    await client.query('BEGIN')
+    for (const col of ['proveedor', 'astilladora', 'transportista', 'instalacion']) {
+      await client.query(`UPDATE albaranes SET ${col}=$1 WHERE lower(${col})=lower($2)`, [nuevo, anterior])
+    }
+    await client.query('UPDATE notificaciones_cliente SET empresa_nombre=$1 WHERE lower(empresa_nombre)=lower($2)', [nuevo, anterior])
+    const [idViejo, idNuevo] = [`empresa_${slugify(anterior)}`, `empresa_${slugify(nuevo)}`]
+    if (idViejo !== idNuevo) {
+      await client.query(
+        'UPDATE logos SET id=$1, nombre=$2 WHERE id=$3 AND NOT EXISTS (SELECT 1 FROM logos WHERE id=$1)',
+        [idNuevo, nuevo, idViejo]
+      )
+    }
+    await client.query('COMMIT')
+  } catch (e) {
+    await client.query('ROLLBACK')
+    throw e
+  } finally {
+    client.release()
+  }
+}
+
 async function sincronizarHermanas(id) {
   const { rows: [e] } = await pool.query(
     'SELECT nombre, contactos, contacto, email, telefono FROM proveedores WHERE id=$1', [id]
@@ -192,6 +221,7 @@ router.patch('/:id', requireAuth, requireConfigAccess, async (req, res) => {
   await pool.query(`UPDATE proveedores SET ${updates.join(',')} WHERE id=$${idx}`, vals)
   if (renombrar) {
     await pool.query('UPDATE proveedores SET nombre=$1 WHERE lower(nombre)=lower($2) AND id<>$3', [req.body.nombre, prev.nombre, req.params.id])
+    await propagarRenombre(prev.nombre, req.body.nombre)
   }
   if (CAMPOS_COMPARTIDOS.some(c => req.body[c] !== undefined)) {
     await sincronizarHermanas(req.params.id)

@@ -10,4 +10,8 @@ const pool = new Pool({
   idleTimeoutMillis: 30000,
 })
 
+// Un cliente inactivo del pool puede fallar (p. ej. si la BD se reinicia);
+// sin este manejador el evento 'error' sin escuchar tumba el proceso.
+pool.on('error', (e) => console.error('Error en conexión inactiva de PostgreSQL:', e.message))
+
 module.exports = pool

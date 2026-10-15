@@ -11,6 +11,24 @@ app.disable('x-powered-by')
 // (p. ej. la BD reiniciándose) tumbaría el proceso entero.
 process.on('unhandledRejection', (e) => console.error('Promesa rechazada sin capturar:', e))
 
+// …y además la petición se quedaba colgada sin respuesta hasta el timeout del
+// navegador. Se envuelven los manejadores de todas las rutas para que un
+// rechazo llegue al manejador de errores de abajo y responda con un 500.
+// Tiene que ir antes de cargar los ficheros de rutas.
+for (const metodo of ['get', 'post', 'put', 'patch', 'delete', 'all']) {
+  const original = express.Route.prototype[metodo]
+  express.Route.prototype[metodo] = function (...handlers) {
+    const envueltos = handlers.flat(Infinity).map(h => (typeof h !== 'function' || h.length >= 4) ? h
+      : function (req, res, next) {
+          try {
+            const r = h.call(this, req, res, next)
+            if (r && typeof r.catch === 'function') r.catch(next)
+          } catch (e) { next(e) }
+        })
+    return original.apply(this, envueltos)
+  }
+}
+
 const REQUIRED_SECRETS = ['JWT_SECRET', 'POSTGRES_PASSWORD', 'MINIO_ACCESS_KEY', 'MINIO_SECRET_KEY']
 const missingSecrets = REQUIRED_SECRETS.filter(name => !process.env[name])
 if (process.env.NODE_ENV === 'production' && missingSecrets.length) {

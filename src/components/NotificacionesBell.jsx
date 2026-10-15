@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { Bell } from 'lucide-react'
+import { rutaNombre } from '../utils/clientes'
 import './NotificacionesBell.css'
 
 // Campanita de notificaciones para los paneles públicos de cliente
@@ -17,7 +18,7 @@ export default function NotificacionesBell({ tipo, nombre, codigo }) {
   const fetchNotifs = useCallback(async () => {
     try {
       const listas = await Promise.all(tiposKey.split(',').map(async t => {
-        const res  = await fetch(`/api/notificaciones/${t}/${encodeURIComponent(nombre)}${qs}`)
+        const res  = await fetch(`/api/notificaciones/${t}/${rutaNombre(nombre)}${qs}`)
         const data = await res.json()
         return Array.isArray(data) ? data : []
       }))
@@ -51,7 +52,7 @@ export default function NotificacionesBell({ tipo, nombre, codigo }) {
       setNotifs(prev => prev.map(n => ({ ...n, leida: true })))
       try {
         await Promise.all(tiposKey.split(',').map(t =>
-          fetch(`/api/notificaciones/${t}/${encodeURIComponent(nombre)}/marcar-leidas${qs}`, { method: 'POST' })))
+          fetch(`/api/notificaciones/${t}/${rutaNombre(nombre)}/marcar-leidas${qs}`, { method: 'POST' })))
       } catch {}
     }
   }

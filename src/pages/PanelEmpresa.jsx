@@ -5,6 +5,7 @@ import NotificacionesBell from '../components/NotificacionesBell'
 import PanelCompletados from '../components/PanelCompletados'
 import { completadosFuera } from '../utils/panelCompletados'
 import { useLogoEmpresa } from '../hooks/useLogoEmpresa'
+import { rutaNombre, nombreDeRuta } from '../utils/clientes'
 import './PanelInstalacion.css'
 
 // Panel público de astilladoras y proveedores. Una empresa dada de alta con
@@ -146,7 +147,7 @@ function CompletarAlbaran({ a, nombre, codigo, onCambio }) {
   const fileRef = useRef(null)
 
   const qs   = `?c=${encodeURIComponent(codigo)}`
-  const base = encodeURIComponent(nombre)
+  const base = rutaNombre(nombre)
 
   const guardarOrigen = async () => {
     if (!origen.trim()) return
@@ -358,7 +359,7 @@ export default function PanelEmpresa({ tipo }) {
   const { nombre }  = useParams()
   const location    = useLocation()
   const navigate    = useNavigate()
-  const nombreEmpresa = decodeURIComponent(nombre).replace(/-/g, ' ')
+  const nombreEmpresa = nombreDeRuta(nombre)
 
   const [desdeId] = useState(() => new URLSearchParams(location.search).get('desde'))
   const [codigo]  = useState(() => new URLSearchParams(location.search).get('c') || '')
@@ -389,14 +390,14 @@ export default function PanelEmpresa({ tipo }) {
     try {
       // Qué papeles tiene la empresa: se consulta una vez y se reutiliza
       if (!rolesRef.current) {
-        const res = await fetch(`/api/albaranes/panel-roles/${encodeURIComponent(nombreEmpresa)}${qs}`)
+        const res = await fetch(`/api/albaranes/panel-roles/${rutaNombre(nombreEmpresa)}${qs}`)
         if (res.status === 401 || res.status === 403 || res.status === 404) { setCodigoInvalido(true); return }
         const data = await res.json()
         rolesRef.current = Array.isArray(data) && data.length ? data : [tipo]
         setRoles(rolesRef.current)
       }
       const listas = await Promise.all(rolesRef.current.map(async rol => {
-        const res = await fetch(`/api/albaranes/${rol}/${encodeURIComponent(nombreEmpresa)}${qs}`)
+        const res = await fetch(`/api/albaranes/${rol}/${rutaNombre(nombreEmpresa)}${qs}`)
         if (res.status === 401 || res.status === 403) throw Object.assign(new Error('codigo'), { codigo: true })
         if (!res.ok) return []
         const data = await res.json()
