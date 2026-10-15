@@ -188,7 +188,7 @@
   align-items: flex-start;
   line-height: 1.25;
 }
-.ah-user-nombre { font-size: 12.5px; font-weight: 600; color: var(--gray-800); white-space: nowrap; }
+.ah-user-nombre { font-size: 12.5px; font-weight: 600; color: var(--gray-800); white-space: nowrap; max-width: 160px; overflow: hidden; text-overflow: ellipsis; }
 .ah-user-rol { font-size: 10px; font-weight: 600; color: var(--green-600); }
 
 .ah-logout {
@@ -208,7 +208,7 @@
 
 /* Sin sitio para todo: primero se recogen los títulos (queda el icono,
    con el nombre como tooltip), luego el texto del logo y del perfil. */
-@media (max-width: 1180px) {
+@media (max-width: 1280px) {
   .ah-nav { margin-left: 16px; }
   .ah-nav-label { display: none; }
   .ah-nav-item { padding: 0 10px; }
@@ -218,7 +218,11 @@
 @media (max-width: 720px) {
   .ah-inner { height: 52px; gap: 6px; }
   .ah-brand-text, .ah-user-info, .ah-switch span { display: none; }
-  .ah-nav { margin-left: 4px; gap: 0; }
+  /* Si no caben los iconos, el menú se desplaza en horizontal en vez de
+     empujar el perfil fuera de la pantalla */
+  .ah-nav { margin-left: 4px; gap: 0; overflow-x: auto; scrollbar-width: none; }
+  .ah-nav::-webkit-scrollbar { display: none; }
+  .ah-nav-item.activo::after { bottom: 0; }
   .ah-nav-item { padding: 0 9px; }
   .ah-nav-item::before { inset: 9px 1px; }
   .ah-user { padding: 4px; }
