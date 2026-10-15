@@ -285,6 +285,21 @@
   font-weight: 600;
   color: var(--gray-900);
 }
+/* Papel de la empresa en el albarán (panel de empresa con varios tipos) */
+.pi-camion-rol-tag {
+  display: inline-block;
+  margin-left: 6px;
+  font-size: 9px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+  color: var(--gray-600);
+  background: var(--gray-100);
+  border: 1px solid var(--gray-200);
+  border-radius: 3px;
+  padding: 1px 5px;
+  vertical-align: middle;
+}
 .pi-camion-atrasado-tag {
   display: inline-block;
   margin-left: 6px;

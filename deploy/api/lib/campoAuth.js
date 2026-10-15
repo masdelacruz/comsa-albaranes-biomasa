@@ -58,11 +58,17 @@ function requireAuthOrCampoToken() {
   }
 }
 
-// Autoriza el panel público de una empresa (instalación/astilladora): o bien
-// sesión de oficina válida, o bien el código de acceso propio de esa empresa
+const TIPOS_PANEL = ['proveedor', 'astilladora', 'instalacion']
+
+// Autoriza el panel público de una empresa (instalación/astilladora/proveedor):
+// o bien sesión de oficina válida, o bien el código de acceso de esa empresa
 // (query ?c=). El nombre viaja en la URL desde siempre (no es secreto); lo
 // que ahora hace falta además es el código para poder leer su cola de
 // entregas — adivinar el nombre ya no basta.
+// Una empresa dada de alta con varios tipos (p. ej. astilladora y proveedor)
+// tiene un único panel: vale el código de cualquiera de sus fichas, así los
+// enlaces ya compartidos de cada tipo siguen funcionando. Sin tipo (ni fijo
+// ni en la ruta) basta con que exista alguna ficha de panel con ese nombre.
 function requireAuthOrEmpresaCodigo(tipoFijo) {
   return async function (req, res, next) {
     if (await tryAuth(req)) return next()
@@ -73,15 +79,17 @@ function requireAuthOrEmpresaCodigo(tipoFijo) {
     if (!codigo) return res.status(401).json({ error: 'Falta el código de acceso' })
 
     const { rows } = await pool.query(
-      'SELECT acceso_codigo FROM proveedores WHERE tipo=$1 AND nombre=$2',
-      [tipo, nombre]
+      'SELECT tipo, acceso_codigo FROM proveedores WHERE nombre=$1 AND tipo = ANY($2)',
+      [nombre, TIPOS_PANEL]
     )
-    if (!rows.length) return res.status(404).json({ error: 'No encontrado' })
-    if (!constantTimeEqual(rows[0].acceso_codigo, String(codigo))) {
-      return res.status(403).json({ error: 'Código de acceso incorrecto' })
+    if (!rows.length || (tipo && !rows.some(r => r.tipo === tipo))) {
+      return res.status(404).json({ error: 'No encontrado' })
     }
+    // Se comparan todos los códigos (sin cortocircuito) para no filtrar por tiempo cuál coincide
+    const valido = rows.map(r => constantTimeEqual(r.acceso_codigo, String(codigo))).some(Boolean)
+    if (!valido) return res.status(403).json({ error: 'Código de acceso incorrecto' })
     next()
   }
 }
 
-module.exports = { requireAuthOrCampoToken, requireAuthOrEmpresaCodigo }
+module.exports = { requireAuthOrCampoToken, requireAuthOrEmpresaCodigo, TIPOS_PANEL }

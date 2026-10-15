@@ -4,6 +4,7 @@ const { randomUUID: uuidv4 } = require('crypto')
 const pool   = require('../db')
 const { requireAuth, requireConfigAccess, requireSuperadmin } = require('./auth')
 const { registrarAuditoria } = require('../lib/auditoria')
+const { TIPOS_PANEL } = require('../lib/campoAuth')
 
 // Referencia SURE efectiva de un proveedor: solo cuenta si está marcado
 // como SURE. Se guarda recortada y en mayúsculas (formato de certificado).
@@ -208,12 +209,18 @@ router.patch('/:id', requireAuth, requireConfigAccess, async (req, res) => {
 
 // ── POST /empresas/:id/regenerar-codigo-acceso ──────────────────────
 // Invalida el enlace de panel público actual de la empresa (con su código
-// viejo) y genera uno nuevo. Solo superadmin.
+// viejo) y genera uno nuevo. Solo superadmin. Si la empresa tiene varios
+// tipos con panel (p. ej. astilladora y proveedor), comparten panel y el
+// nuevo código se aplica a todas sus fichas: los enlaces antiguos de
+// cualquiera de ellas dejan de funcionar.
 router.post('/:id/regenerar-codigo-acceso', requireAuth, requireSuperadmin, async (req, res) => {
   const nuevoCodigo = crypto.randomBytes(16).toString('hex')
   const { rows } = await pool.query(
-    'UPDATE proveedores SET acceso_codigo=$1 WHERE id=$2 RETURNING nombre',
-    [nuevoCodigo, req.params.id]
+    `UPDATE proveedores SET acceso_codigo=$1
+     WHERE id=$2
+        OR (tipo = ANY($3) AND nombre = (SELECT nombre FROM proveedores WHERE id=$2 AND tipo = ANY($3)))
+     RETURNING nombre`,
+    [nuevoCodigo, req.params.id, TIPOS_PANEL]
   )
   if (!rows.length) return res.status(404).json({ error: 'No encontrado' })
   registrarAuditoria({

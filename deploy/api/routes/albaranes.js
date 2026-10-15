@@ -393,6 +393,18 @@ router.get('/instalacion/:nombre', requireAuthOrEmpresaCodigo('instalacion'), as
   res.json(result)
 })
 
+// ── GET /albaranes/panel-roles/:nombre  (oficina o código de la empresa) ──
+// Tipos con panel de astilladora/proveedor que tiene la empresa: el panel
+// público los muestra todos juntos en una sola vista.
+router.get('/panel-roles/:nombre', requireAuthOrEmpresaCodigo(), async (req, res) => {
+  const nombre = decodeURIComponent(req.params.nombre).replace(/-/g, ' ')
+  const { rows } = await pool.query(
+    `SELECT DISTINCT tipo FROM proveedores WHERE nombre=$1 AND tipo IN ('astilladora','proveedor')`,
+    [nombre]
+  )
+  res.json(['astilladora', 'proveedor'].filter(t => rows.some(r => r.tipo === t)))
+})
+
 // ── GET /albaranes/astilladora/:nombre  (oficina o código de la empresa) ──
 router.get('/astilladora/:nombre', requireAuthOrEmpresaCodigo('astilladora'), async (req, res) => {
   const nombre = decodeURIComponent(req.params.nombre).replace(/-/g, ' ')

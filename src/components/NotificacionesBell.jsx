@@ -4,19 +4,26 @@ import './NotificacionesBell.css'
 
 // Campanita de notificaciones para los paneles públicos de cliente
 // (astilladora / instalación). Sin usuario logueado detrás — se identifica
-// por tipo + nombre de empresa, igual que el resto del panel.
+// por tipo + nombre de empresa, igual que el resto del panel. `tipo` puede ser
+// una lista: una empresa con varios tipos tiene un solo panel y una sola
+// campana con las notificaciones de todos ellos.
 export default function NotificacionesBell({ tipo, nombre, codigo }) {
   const [notifs, setNotifs] = useState([])
   const [open,   setOpen]   = useState(false)
   const wrapRef = useRef(null)
+  const tiposKey = [].concat(tipo).join(',')
+  const qs = `?c=${encodeURIComponent(codigo || '')}`
 
   const fetchNotifs = useCallback(async () => {
     try {
-      const res  = await fetch(`/api/notificaciones/${tipo}/${encodeURIComponent(nombre)}?c=${encodeURIComponent(codigo || '')}`)
-      const data = await res.json()
-      setNotifs(Array.isArray(data) ? data : [])
+      const listas = await Promise.all(tiposKey.split(',').map(async t => {
+        const res  = await fetch(`/api/notificaciones/${t}/${encodeURIComponent(nombre)}${qs}`)
+        const data = await res.json()
+        return Array.isArray(data) ? data : []
+      }))
+      setNotifs(listas.flat().sort((a, b) => new Date(b.fecha) - new Date(a.fecha)))
     } catch {}
-  }, [tipo, nombre, codigo])
+  }, [tiposKey, nombre, qs])
 
   useEffect(() => {
     fetchNotifs()
@@ -43,7 +50,8 @@ export default function NotificacionesBell({ tipo, nombre, codigo }) {
     if (next && noLeidas > 0) {
       setNotifs(prev => prev.map(n => ({ ...n, leida: true })))
       try {
-        await fetch(`/api/notificaciones/${tipo}/${encodeURIComponent(nombre)}/marcar-leidas?c=${encodeURIComponent(codigo || '')}`, { method: 'POST' })
+        await Promise.all(tiposKey.split(',').map(t =>
+          fetch(`/api/notificaciones/${t}/${encodeURIComponent(nombre)}/marcar-leidas${qs}`, { method: 'POST' })))
       } catch {}
     }
   }

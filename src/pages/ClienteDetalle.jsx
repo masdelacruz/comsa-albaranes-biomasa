@@ -162,10 +162,11 @@ export default function ClienteDetalle({ albaranes = [], usuario }) {
     setTimeout(() => setCopiado(c => (c === clave ? null : c)), 2000)
   }
 
-  const handleRegenerar = async (fila = cliente) => {
+  const handleRegenerar = async () => {
+    // Un solo panel por cliente: regenerar cambia el código de todas sus fichas
+    const fila = roles[0]?.fila || cliente
     setMenuAbierto(false)
-    const de = roles.length > 1 ? ` (${TIPO_SINGULAR[fila.tipo].toLowerCase()})` : ''
-    if (!window.confirm(`El enlace del panel actual de "${cliente.nombre}"${de} dejará de funcionar. ¿Generar uno nuevo?`)) return
+    if (!window.confirm(`El enlace del panel actual de "${cliente.nombre}" dejará de funcionar. ¿Generar uno nuevo?`)) return
     setRegenerando(fila.id)
     try {
       await api.post(`/empresas/${fila.id}/regenerar-codigo-acceso`, {})
@@ -190,7 +191,8 @@ export default function ClienteDetalle({ albaranes = [], usuario }) {
   const filaHorario = filaAstilladora || roles.find(r => r.tipo === 'instalacion')?.fila
   const esAstilladora = !!filaAstilladora
   const logoUrl = logos[`empresa_${slugify(cliente.nombre)}`]
-  const url = panelUrl(cliente)
+  // Mismo enlace que en el listado de clientes: el de su primer tipo
+  const url = panelUrl(roles[0]?.fila || cliente)
   const trabajadores = filaAstilladora?.trabajadores || []
   const maquinas = filaAstilladora?.maquinas || []
   const maxMes = Math.max(1, ...meses.map(m => m.n))
@@ -262,7 +264,7 @@ export default function ClienteDetalle({ albaranes = [], usuario }) {
           </div>
 
           <div className="cd-hero-acciones">
-            <a className="cd-btn" href={url} target="_blank" rel="noreferrer"><ExternalLink size={14} /> Abrir panel{varios ? ` · ${singular.toLowerCase()}` : ''}</a>
+            <a className="cd-btn" href={url} target="_blank" rel="noreferrer"><ExternalLink size={14} /> Abrir panel</a>
             <button className={`cd-btn ${copiado === 'url' ? 'ok' : ''}`} onClick={() => copiar(url, 'url')}>
               {copiado === 'url' ? <Check size={14} /> : <Copy size={14} />} {copiado === 'url' ? 'Copiado' : 'Copiar enlace'}
             </button>
@@ -419,30 +421,23 @@ export default function ClienteDetalle({ albaranes = [], usuario }) {
           <CardHead icon={Link2} titulo="Panel del cliente" />
           <div className="cd-panel-desc">
             {varios
-              ? 'Tiene un panel por cada tipo, cada uno con su enlace directo y permanente, sin usuario ni contraseña.'
+              ? `Un solo panel con sus albaranes como ${roles.map(r => TIPO_SINGULAR[r.tipo].toLowerCase()).join(' y ')}: acceso directo y permanente, sin usuario ni contraseña.`
               : 'Acceso directo y permanente a su vista de albaranes, sin usuario ni contraseña.'}
           </div>
-          {(roles.length ? roles.map(r => r.fila) : [cliente]).map(f => {
-            const u = panelUrl(f)
-            const clave = `url-${f.id}`
-            return (
-              <div key={f.id} className="cd-panel-rol">
-                {varios && <div className="cd-panel-rol-titulo">Panel de {TIPO_SINGULAR[f.tipo].toLowerCase()}</div>}
-                <div className="cd-url">
-                  <Link2 size={14} className="cd-url-icon" />
-                  <span title={u}>{u.replace(/^https?:\/\//, '')}</span>
-                  <button onClick={() => copiar(u, clave)} title="Copiar">{copiado === clave ? <Check size={14} /> : <Copy size={14} />}</button>
-                </div>
-                <div className={`cd-panel-acciones ${puedeRegenerar ? "" : "dos"}`}>
-                  <a className="cd-btn" href={u} target="_blank" rel="noreferrer"><ExternalLink size={14} /> Abrir</a>
-                  <button className={`cd-btn ${copiado === clave ? 'ok' : ''}`} onClick={() => copiar(u, clave)}>
-                    {copiado === clave ? <Check size={14} /> : <Copy size={14} />} {copiado === clave ? 'Copiado' : 'Copiar'}
-                  </button>
-                  {puedeRegenerar && <button className="cd-btn" onClick={() => handleRegenerar(f)} disabled={!!regenerando}><RefreshCw size={14} className={regenerando === f.id ? 'cd-girando' : ''} /> Regenerar</button>}
-                </div>
-              </div>
-            )
-          })}
+          <div className="cd-panel-rol">
+            <div className="cd-url">
+              <Link2 size={14} className="cd-url-icon" />
+              <span title={url}>{url.replace(/^https?:\/\//, '')}</span>
+              <button onClick={() => copiar(url, 'url-panel')} title="Copiar">{copiado === 'url-panel' ? <Check size={14} /> : <Copy size={14} />}</button>
+            </div>
+            <div className={`cd-panel-acciones ${puedeRegenerar ? "" : "dos"}`}>
+              <a className="cd-btn" href={url} target="_blank" rel="noreferrer"><ExternalLink size={14} /> Abrir</a>
+              <button className={`cd-btn ${copiado === 'url-panel' ? 'ok' : ''}`} onClick={() => copiar(url, 'url-panel')}>
+                {copiado === 'url-panel' ? <Check size={14} /> : <Copy size={14} />} {copiado === 'url-panel' ? 'Copiado' : 'Copiar'}
+              </button>
+              {puedeRegenerar && <button className="cd-btn" onClick={() => handleRegenerar()} disabled={!!regenerando}><RefreshCw size={14} className={regenerando ? 'cd-girando' : ''} /> Regenerar</button>}
+            </div>
+          </div>
           <div className="cd-nota-info">
             <Info size={14} />
             <div>Puedes compartir este enlace con el cliente.{puedeRegenerar && " Si lo regeneras, el anterior dejará de funcionar al momento."}</div>

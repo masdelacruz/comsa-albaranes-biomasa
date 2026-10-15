@@ -6,8 +6,7 @@ import NuevoAlbaran from './pages/NuevoAlbaran'
 import DetalleAlbaran from './pages/DetalleAlbaran'
 import VistaCampo from './pages/VistaCampo'
 import PanelInstalacion from './pages/PanelInstalacion'
-import PanelAstilladora from './pages/PanelAstilladora'
-import PanelProveedor from './pages/PanelProveedor'
+import PanelEmpresa from './pages/PanelEmpresa'
 import Historial from './pages/Historial'
 import Estadisticas from './pages/Estadisticas'
 import Administracion from './pages/Administracion'
@@ -203,8 +202,8 @@ export default function App() {
       <Routes>
         <Route path="/auth/callback" element={<AuthCallback />} />
         <Route path="/campo/instalacion/:nombre" element={<PanelInstalacion />} />
-        <Route path="/campo/astilladora/:nombre" element={<PanelAstilladora />} />
-        <Route path="/campo/proveedor/:nombre" element={<PanelProveedor />} />
+        <Route path="/campo/astilladora/:nombre" element={<PanelEmpresa key="astilladora" tipo="astilladora" />} />
+        <Route path="/campo/proveedor/:nombre" element={<PanelEmpresa key="proveedor" tipo="proveedor" />} />
         <Route path="/campo/:id" element={<VistaCampoPublica />} />
         <Route path="/campo/:id/:roles" element={<VistaCampoPublica />} />
         <Route path="/*" element={<AppInner />} />
