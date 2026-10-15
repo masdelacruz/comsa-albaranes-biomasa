@@ -1,5 +1,6 @@
+import { useState, useEffect, useRef } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
-import { LayoutGrid, LogOut } from 'lucide-react'
+import { LayoutGrid, LogOut, ChevronDown, UserRound } from 'lucide-react'
 import logoIcon from '../assets/logo_biomasa_icon.png'
 import './Header.css'
 
@@ -10,6 +11,20 @@ import './Header.css'
 export default function Header({ usuario, logout, nav = [] }) {
   const navigate = useNavigate()
   const location = useLocation()
+  const [menuAbierto, setMenuAbierto] = useState(false)
+  const menuRef = useRef(null)
+
+  // El menú del perfil se cierra al pulsar fuera, con Escape o al navegar
+  useEffect(() => {
+    if (!menuAbierto) return
+    const fuera = e => { if (!menuRef.current?.contains(e.target)) setMenuAbierto(false) }
+    const tecla = e => { if (e.key === 'Escape') setMenuAbierto(false) }
+    document.addEventListener('mousedown', fuera)
+    document.addEventListener('keydown', tecla)
+    return () => { document.removeEventListener('mousedown', fuera); document.removeEventListener('keydown', tecla) }
+  }, [menuAbierto])
+
+  const elegir = accion => () => { setMenuAbierto(false); accion() }
 
   const iniciales = usuario?.nombre
     ? usuario.nombre.split(' ').map(n => n[0]).slice(0, 2).join('').toUpperCase()
@@ -52,24 +67,46 @@ export default function Header({ usuario, logout, nav = [] }) {
           </nav>
         )}
 
-        <div className="ah-right">
-          {multiApp && location.pathname !== '/apps' && (
-            <button className="ah-switch" onClick={() => navigate('/apps')} title="Cambiar de aplicación">
-              <LayoutGrid size={13} /> <span>Cambiar app</span>
-            </button>
-          )}
+        <div className="ah-right" ref={menuRef}>
           <button
-            className={`ah-user${location.pathname === '/perfil' ? ' activo' : ''}`}
-            onClick={() => tieneBiomasa && navigate('/perfil')}
-            title={tieneBiomasa ? 'Ver perfil' : undefined}
+            className={`ah-user${menuAbierto || location.pathname === '/perfil' ? ' activo' : ''}`}
+            onClick={() => setMenuAbierto(o => !o)}
+            aria-haspopup="menu"
+            aria-expanded={menuAbierto}
           >
             <span className="ah-avatar">{iniciales}</span>
             <span className="ah-user-info">
               <span className="ah-user-nombre">{usuario?.nombre}</span>
               {esSuperadmin && <span className="ah-user-rol">Superadmin</span>}
             </span>
+            <ChevronDown size={14} className={`ah-user-chevron${menuAbierto ? ' abierto' : ''}`} />
           </button>
-          <button className="ah-logout" onClick={logout} title="Cerrar sesión"><LogOut size={14} /></button>
+
+          {menuAbierto && (
+            <div className="ah-menu" role="menu">
+              <div className="ah-menu-cabecera">
+                <span className="ah-avatar">{iniciales}</span>
+                <span className="ah-menu-quien">
+                  <span className="ah-menu-nombre">{usuario?.nombre}</span>
+                  {usuario?.email && <span className="ah-menu-email">{usuario.email}</span>}
+                </span>
+              </div>
+              {tieneBiomasa && (
+                <button role="menuitem" className="ah-menu-item" onClick={elegir(() => navigate('/perfil'))}>
+                  <UserRound size={15} /> Mi perfil
+                </button>
+              )}
+              {multiApp && location.pathname !== '/apps' && (
+                <button role="menuitem" className="ah-menu-item" onClick={elegir(() => navigate('/apps'))}>
+                  <LayoutGrid size={15} /> Cambiar de aplicación
+                </button>
+              )}
+              <div className="ah-menu-sep" />
+              <button role="menuitem" className="ah-menu-item salir" onClick={elegir(logout)}>
+                <LogOut size={15} /> Cerrar sesión
+              </button>
+            </div>
+          )}
         </div>
       </div>
     </header>
