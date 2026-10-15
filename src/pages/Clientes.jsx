@@ -27,11 +27,6 @@ const ORDENES = {
 const ORDEN_DEFECTO = 'Alfabético (A–Z)'
 const ORDEN_KEY = 'clientes.orden'
 
-const letraDe = nombre => {
-  const l = nombre.trim().charAt(0).normalize('NFD').replace(/[̀-ͯ]/g, '').toUpperCase()
-  return /[A-Z]/.test(l) ? l : '#'
-}
-
 const fmtFecha = f => new Date(f).toLocaleDateString('es-ES', { day: 'numeric', month: 'short', year: 'numeric' })
 
 export default function Clientes({ albaranes = [], usuario }) {
@@ -108,23 +103,8 @@ export default function Clientes({ albaranes = [], usuario }) {
   const q = busqueda.trim().toLowerCase()
   const visibles = unicos.filter(p =>
     (!q || p.nombre.toLowerCase().includes(q)) && (!filtroTipo || p.tipos.includes(filtroTipo)))
-  const activos   = visibles.filter(p => p.activo).sort(ORDENES[orden])
-  const inactivos = visibles.filter(p => !p.activo).sort(ORDENES[orden])
+  const lista = visibles.sort(ORDENES[orden])
   const conteoTipo = t => unicos.filter(p => p.tipos.includes(t)).length
-
-  // Bloques con cabecera: por letra en orden alfabético, y los inactivos
-  // siempre al final en su propio bloque.
-  const bloques = []
-  if (orden.startsWith('Alfabético')) {
-    for (const p of activos) {
-      const l = letraDe(p.nombre)
-      if (bloques.at(-1)?.titulo !== l) bloques.push({ titulo: l, items: [] })
-      bloques.at(-1).items.push(p)
-    }
-  } else if (activos.length) {
-    bloques.push({ titulo: null, items: activos })
-  }
-  if (inactivos.length) bloques.push({ titulo: `Inactivos · ${inactivos.length}`, items: inactivos, inactivos: true })
 
   const tarjeta = (p) => {
     const logoUrl = logos[`empresa_${slugify(p.nombre)}`]
@@ -138,6 +118,7 @@ export default function Clientes({ albaranes = [], usuario }) {
         </div>
         <div className="cli-nombre" title={p.nombre}>{p.nombre}</div>
         <div className="cli-meta">
+          {!p.activo && <span className="cli-tag-inactivo">Inactivo</span>}
           {orden === 'Actividad reciente'
             ? <span>{p.ultimo ? `Último: ${fmtFecha(p.ultimo)}` : 'Sin albaranes'}</span>
             : <span>{p.n} {p.n === 1 ? 'albarán' : 'albaranes'}</span>}
@@ -199,18 +180,15 @@ export default function Clientes({ albaranes = [], usuario }) {
 
         {loading ? (
           <div style={{ padding: 32, textAlign: 'center', color: 'var(--gray-400)' }}>Cargando...</div>
-        ) : bloques.length === 0 ? (
+        ) : (
           <div className="cli-grid">
-            <div className="cli-vacio">
-              {q || filtroTipo ? 'Ningún cliente coincide con el filtro' : 'Sin clientes registrados'}
-            </div>
+            {lista.length === 0 ? (
+              <div className="cli-vacio">
+                {q || filtroTipo ? 'Ningún cliente coincide con el filtro' : 'Sin clientes registrados'}
+              </div>
+            ) : lista.map(tarjeta)}
           </div>
-        ) : bloques.map(b => (
-          <div key={b.titulo || 'todos'} className="cli-bloque">
-            {b.titulo && <div className={`cli-bloque-titulo${b.inactivos ? ' inactivos' : ''}`}>{b.titulo}</div>}
-            <div className="cli-grid">{b.items.map(tarjeta)}</div>
-          </div>
-        ))}
+        )}
       </div>
     </div>
   )
