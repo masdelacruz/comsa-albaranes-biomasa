@@ -16,6 +16,8 @@
   border-bottom-left-radius:0;
   border-bottom-right-radius:0;
   box-shadow:0 0 0 3px rgba(29,158,117,0.1);
+  /* El halo continúa en el desplegable: se recorta por abajo para no solaparse */
+  clip-path:inset(-3px -3px 0 -3px);
 }
 .sf-trigger.sf-empty .sf-label { color:var(--gray-400); }
 
@@ -36,7 +38,9 @@
   position:absolute; top:calc(100% - 1px); left:0; right:0; z-index:300;
   background:var(--gray-50); border:1px solid var(--green-400); border-top:none;
   border-radius:0 0 var(--radius-sm) var(--radius-sm);
-  box-shadow:0 10px 20px rgba(0,0,0,0.08);
+  box-shadow:0 0 0 3px rgba(29,158,117,0.1), 0 10px 20px rgba(0,0,0,0.08);
+  /* Recorta el halo por arriba para que enlace con el del trigger sin cortes */
+  clip-path:inset(0 -3px -40px -3px);
   overflow-y:auto; max-height:360px;
   list-style:none; margin:0; padding:4px 0;
 }
