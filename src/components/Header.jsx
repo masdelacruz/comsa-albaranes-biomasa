@@ -4,7 +4,7 @@ import { LayoutGrid, LogOut, ChevronDown, UserRound } from 'lucide-react'
 import logoIcon from '../assets/logo_biomasa_icon.png'
 import './Header.css'
 
-const VELOCIDAD_ESCRITURA = 70 // ms por letra
+const VELOCIDAD_ESCRITURA = 50 // ms por letra
 const sinAnimaciones = () => window.matchMedia?.('(prefers-reduced-motion: reduce)').matches
 
 // Título del apartado actual: se escribe letra a letra con un cursor que
