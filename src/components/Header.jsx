@@ -59,8 +59,10 @@ export default function Header({ usuario, logout, nav = [] }) {
                 title={item.label}
                 aria-current={item.active ? 'page' : undefined}
               >
-                {item.icon}
-                <span className="ah-nav-label">{item.label}</span>
+                <span className="ah-nav-mark">
+                  {item.icon}
+                  <span className="ah-nav-label">{item.label}</span>
+                </span>
                 {!!item.badge && <span className="ah-nav-badge">{item.badge}</span>}
               </button>
             ))}
