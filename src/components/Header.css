@@ -128,11 +128,11 @@
 .ah-nav-item.activo::after {
   content: '';
   position: absolute;
-  left: 12px;
-  right: 12px;
+  left: 5px;
+  right: 5px;
   bottom: -1px;
   height: 2px;
-  border-radius: 2px 2px 0 0;
+  border-radius: 2px;
   background: var(--green-400);
 }
 
@@ -207,7 +207,7 @@
 .ah-menu {
   position: absolute;
   top: calc(100% + 10px);
-  right: 0;
+  right: -8px; /* alineado con el borde del botón del perfil (ver margin-right de .ah-user) */
   width: 240px;
   padding: 6px;
   background: #fff;
@@ -260,7 +260,7 @@
 
   .ah-nav-label { display: none; }
   .ah-nav-item { padding: 0 10px; }
-  .ah-nav-item.activo::after { left: 8px; right: 8px; }
+  .ah-nav-item.activo::after { left: 4px; right: 4px; }
   .ah-nav-badge { position: absolute; top: 10px; right: 2px; min-width: 15px; height: 15px; font-size: 9px; padding: 0 4px; border: 1.5px solid #fff; }
 }
 @media (max-width: 720px) {
@@ -275,4 +275,5 @@
   .ah-nav-item { padding: 0 9px; }
   .ah-nav-item::before { inset: 9px 1px; }
   .ah-user { padding: 4px 6px 4px 4px; margin-right: -6px; gap: 4px; }
+  .ah-menu { right: -6px; }
 }
