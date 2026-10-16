@@ -4,6 +4,29 @@ import { LayoutGrid, LogOut, ChevronDown, UserRound } from 'lucide-react'
 import logoIcon from '../assets/logo_biomasa_icon.png'
 import './Header.css'
 
+const VELOCIDAD_ESCRITURA = 70 // ms por letra
+const sinAnimaciones = () => window.matchMedia?.('(prefers-reduced-motion: reduce)').matches
+
+// Título del apartado actual: se escribe letra a letra con un cursor que
+// desaparece al terminar. Con "reducir movimiento" sale entero y sin cursor.
+function TituloEscrito({ texto }) {
+  const [letras, setLetras] = useState(() => (sinAnimaciones() ? texto.length : 0))
+  const escribiendo = letras < texto.length
+
+  useEffect(() => {
+    if (!escribiendo) return
+    const t = setTimeout(() => setLetras(n => n + 1), VELOCIDAD_ESCRITURA)
+    return () => clearTimeout(t)
+  }, [letras, escribiendo])
+
+  return (
+    <span className="ah-nav-escrito" aria-hidden="true">
+      {texto.slice(0, letras)}
+      {escribiendo && <span className="ah-nav-cursor">|</span>}
+    </span>
+  )
+}
+
 // Cabecera común. El contenido va en una franja con el mismo ancho máximo y
 // márgenes que las páginas, para que el logo y el perfil queden alineados
 // con el borde izquierdo y derecho del contenido. `nav` (opcional) son los
@@ -57,11 +80,13 @@ export default function Header({ usuario, logout, nav = [] }) {
                 className={`ah-nav-item${item.active ? ' activo' : ''}`}
                 onClick={item.onClick}
                 title={item.label}
+                aria-label={item.label}
                 aria-current={item.active ? 'page' : undefined}
               >
-                <span className="ah-nav-mark">
-                  {item.icon}
-                  <span className="ah-nav-label">{item.label}</span>
+                {item.icon}
+                <span className="ah-nav-label">
+                  <span className="ah-nav-label-hueco" aria-hidden="true">{item.label}</span>
+                  {item.active ? <TituloEscrito texto={item.label} /> : <span>{item.label}</span>}
                 </span>
                 {!!item.badge && <span className="ah-nav-badge">{item.badge}</span>}
               </button>

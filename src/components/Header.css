@@ -110,34 +110,20 @@
 
 .ah-nav-item.activo { color: var(--gray-900); font-weight: 600; }
 .ah-nav-item.activo svg { color: var(--green-600); }
-/* Trazo de rotulador que se pinta detrás del icono y el título del apartado
-   actual, de izquierda a derecha. Es una animación (no una transición) para
-   que se vea también cuando la cabecera se monta de nuevo al cambiar de página. */
-.ah-nav-mark {
-  position: relative;
-  display: inline-flex;
-  align-items: center;
-  gap: 7px;
-  isolation: isolate;
-}
-.ah-nav-item.activo .ah-nav-mark::before {
-  content: '';
+/* Máquina de escribir: el título visible y uno invisible comparten celda; el
+   invisible (completo y en negrita) reserva el ancho final, así que al
+   escribir no se mueve nada de la cabecera. */
+.ah-nav-label { display: inline-grid; }
+.ah-nav-label > span { grid-area: 1 / 1; }
+.ah-nav-label-hueco { visibility: hidden; }
+.ah-nav-escrito { position: relative; }
+.ah-nav-cursor {
   position: absolute;
-  inset: -2px -5px;
-  border-radius: 4px;
-  background: var(--green-100);
-  background: color-mix(in oklch, var(--green-400) 30%, transparent);
-  transform-origin: left center;
-  animation: ah-marcar 0.7s cubic-bezier(0.22, 1, 0.36, 1) both;
-  z-index: -1;
+  font-weight: 300;
+  color: var(--green-600);
+  animation: ah-cursor 0.8s steps(1) infinite;
 }
-@keyframes ah-marcar {
-  from { transform: scaleX(0); }
-  to { transform: scaleX(1); }
-}
-@media (prefers-reduced-motion: reduce) {
-  .ah-nav-item.activo .ah-nav-mark::before { animation: none; }
-}
+@keyframes ah-cursor { 50% { opacity: 0; } }
 /* Barra del apartado actual, pegada al borde inferior de la cabecera */
 .ah-nav-item.activo::after {
   content: '';
