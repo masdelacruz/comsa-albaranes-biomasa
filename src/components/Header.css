@@ -110,20 +110,19 @@
 
 .ah-nav-item.activo { color: var(--gray-900); font-weight: 600; }
 .ah-nav-item.activo svg { color: var(--green-600); }
-/* Máquina de escribir: el título visible y uno invisible comparten celda; el
-   invisible (completo y en negrita) reserva el ancho final, así que al
-   escribir no se mueve nada de la cabecera. */
-.ah-nav-label { display: inline-grid; }
-.ah-nav-label > span { grid-area: 1 / 1; }
-.ah-nav-label-hueco { visibility: hidden; }
-.ah-nav-escrito { position: relative; }
-.ah-nav-cursor {
-  position: absolute;
-  font-weight: 300;
-  color: var(--green-600);
-  animation: ah-cursor 0.8s steps(1) infinite;
+/* Al pasar a ser el apartado actual, el título entra rodando desde abajo.
+   Es una animación (no una transición) para que se vea también cuando la
+   cabecera se monta de nuevo al cambiar de página. */
+.ah-nav-label { display: inline-grid; overflow: hidden; }
+.ah-nav-item.activo .ah-nav-label > span {
+  animation: ah-rodar 0.32s cubic-bezier(0.22, 1, 0.36, 1) both;
 }
-@keyframes ah-cursor { 50% { opacity: 0; } }
+@keyframes ah-rodar {
+  from { transform: translateY(100%); opacity: 0; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .ah-nav-item.activo .ah-nav-label > span { animation: none; }
+}
 /* Barra del apartado actual, pegada al borde inferior de la cabecera */
 .ah-nav-item.activo::after {
   content: '';
