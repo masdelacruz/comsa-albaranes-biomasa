@@ -172,3 +172,10 @@
 @media (max-width: 1280px) {
   .ver-fila .ver-field.triple { grid-column:1 / -1; }
 }
+
+/* Tipo de operación en una sola línea ocupando 3 columnas; Certificación cae en la 4ª */
+.ver-fila .ver-field.triple { grid-column:span 3; }
+.ver-fila .ver-field.triple .ver-val { white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+@media (max-width: 1280px) {
+  .ver-fila .ver-field.triple { grid-column:1 / -1; }
+}
