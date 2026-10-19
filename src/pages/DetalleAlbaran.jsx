@@ -44,6 +44,18 @@ const TIPOS_OP = ['Opción 1 — Compra en monte / plataforma', 'Opción 2 — P
 
 // Botón (simple o con desplegable "solo albarán" / "+ ticket pesada" si aplica
 // certificación SURE) para generar el PDF, en modo descarga o vista previa.
+// Campo en modo lectura: etiqueta arriba y valor debajo, igual que el formulario de edición
+function Campo({ label, valor, full, children }) {
+  const vacio = children == null && (valor == null || valor === '' || valor === '—')
+  return (
+    <div className={`ver-field${full ? ' full' : ''}`}>
+      <span className="ver-label">{label}</span>
+      <span className={`ver-val${vacio ? ' vacio' : ''}`}>{children ?? (vacio ? 'Sin indicar' : valor)}</span>
+    </div>
+  )
+}
+const Grupo = ({ children }) => <div className="grid-grupo">{children}</div>
+
 function MenuPDF({ a, modo, generando, onGenerar }) {
   const [open, setOpen] = useState(false)
   const Icon  = modo === 'preview' ? Eye : FileDown
@@ -806,9 +818,9 @@ export default function DetalleAlbaran({ albaranes, simularFirma, updateFirma, s
           <div className="detalle-left">
 
             {/* ── DATOS DEL ALBARÁN ── */}
-            <div className="card" style={{marginBottom:14}}>
+            <div className={`card${editandoDatos ? ' seccion-editando' : ''}`} style={{marginBottom:14}}>
               <div className="section-label" style={{display:'flex',alignItems:'center',justifyContent:'space-between'}}>
-                Datos del albarán
+                <span>Datos del albarán{editandoDatos && <span className="pill-editando">Editando</span>}</span>
                 {puedeEditar && !editandoDatos && (
                   <button className="btn-edit-section" onClick={iniciarEditDatos} title="Editar datos">
                     <Pencil size={12} />
@@ -828,6 +840,7 @@ export default function DetalleAlbaran({ albaranes, simularFirma, updateFirma, s
 
               {editandoDatos ? (
                 <div className="edit-grid">
+                  <Grupo>Operación</Grupo>
                   <div className="edit-field">
                     <label className="edit-label">Tipo operación</label>
                     <select className="edit-input" value={formDatos.tipo} onChange={e => setD('tipo', e.target.value)}>
@@ -854,6 +867,7 @@ export default function DetalleAlbaran({ albaranes, simularFirma, updateFirma, s
                       ))}
                     </div>
                   </div>
+                  <Grupo>Intervinientes</Grupo>
                   <div className="edit-field">
                     <label className="edit-label">Proveedor</label>
                     <SelectField variant="edit" value={formDatos.proveedor} onChange={v => setD('proveedor', v)} options={proveedores} placeholder="Sin proveedor" clearable />
@@ -874,6 +888,7 @@ export default function DetalleAlbaran({ albaranes, simularFirma, updateFirma, s
                     <label className="edit-label">Instalación</label>
                     <SelectField variant="edit" value={formDatos.instalacion} onChange={v => setD('instalacion', v)} options={instalaciones} placeholder="Sin instalación" clearable />
                   </div>
+                  <Grupo>Material</Grupo>
                   <div className="edit-field">
                     <label className="edit-label">Especie</label>
                     <SelectField variant="edit" value={formDatos.especie || ''} onChange={v => setD('especie', v)} options={especiesTipo} placeholder="Sin especie" clearable />
@@ -886,9 +901,14 @@ export default function DetalleAlbaran({ albaranes, simularFirma, updateFirma, s
                     <label className="edit-label">Estella</label>
                     <SelectField variant="edit" value={formDatos.estella || ''} onChange={v => setD('estella', v)} options={estellas} placeholder="Sin estella" clearable />
                   </div>
+                  <Grupo>Origen y destino</Grupo>
                   <div className="edit-field">
                     <label className="edit-label">Origen</label>
                     <input className="edit-input" value={formDatos.origen} onChange={e => setD('origen', e.target.value)} placeholder="Paraje / término municipal" />
+                  </div>
+                  <div className="edit-field">
+                    <label className="edit-label">Permiso / Ref.</label>
+                    <input className="edit-input" value={formDatos.permiso} onChange={e => setD('permiso', e.target.value)} placeholder="Nº permiso o SURE" />
                   </div>
                   <div className="edit-field">
                     <label className="edit-label">Maps origen</label>
@@ -898,10 +918,7 @@ export default function DetalleAlbaran({ albaranes, simularFirma, updateFirma, s
                     <label className="edit-label">Maps destino</label>
                     <input className="edit-input" type="url" value={formDatos.mapsDestino} onChange={e => setD('mapsDestino', e.target.value)} placeholder="https://maps.google.com/..." />
                   </div>
-                  <div className="edit-field">
-                    <label className="edit-label">Permiso / Ref.</label>
-                    <input className="edit-input" value={formDatos.permiso} onChange={e => setD('permiso', e.target.value)} placeholder="Nº permiso o SURE" />
-                  </div>
+                  {formDatos.tipo?.includes('1') && <Grupo>Transporte</Grupo>}
                   {formDatos.tipo?.includes('1') && (
                   <div className="edit-field">
                     <label className="edit-label">Matrícula astilladora</label>
@@ -932,68 +949,56 @@ export default function DetalleAlbaran({ albaranes, simularFirma, updateFirma, s
                   </div>
                 </div>
               ) : (
-                <>
-                  {[
-                    ['Tipo operación',      a.tipo],
-                    ['Fecha / Hora',        `${a.fecha?.slice(0,10).split('-').reverse().join('/')}${a.hora ? ` — ${a.hora} h` : ''}`],
-                    ['Certificación',       a.certificacion || '—'],
-                    ['Proveedor',           a.proveedor || '—'],
-                    ...(a.tipo?.includes('1') ? [
-                      ['Astilladora',        a.astilladora || '—'],
-                      ['Transportista',      a.transportista || '—'],
-                    ] : []),
-                    ['Instalación', a.instalacion],
-                    ['Especie',              a.especie     || '—'],
-                    ['Tipo biomasa',         a.tipoBiomasa || '—'],
-                    ['Estella',              a.estella     || '—'],
-                    ['Origen',              a.origen || '—'],
-                    ['Permiso / Ref.',      a.permiso || '—'],
-                    ...(a.tipo?.includes('2') ? [
-                      ['Referencia SURE',    a.referenciaSure || '—'],
-                    ] : []),
-                    ...(a.tipo?.includes('1') ? [
-                      ['Matrícula astilladora', a.matriculaAstilladora || '—'],
-                      ['Chófer',             a.chofer || '—'],
-                      ['Matrícula tractora', a.matriculaTractora || '—'],
-                      ['Matrícula remolque', a.matriculaRemolque || '—'],
-                    ] : []),
-                    ['Observaciones',       a.observaciones || '—'],
-                  ].map(([k, v]) => (
-                    <div key={k} className="detalle-row">
-                      <span className="detalle-key">{k}</span>
-                      <span className="detalle-val">{v}</span>
-                    </div>
-                  ))}
-                  {a.mapsOrigen && (
-                    <div className="detalle-row">
-                      <span className="detalle-key">Maps origen</span>
-                      <span className="detalle-val">
-                        <a href={a.mapsOrigen} target="_blank" rel="noreferrer"
-                          style={{display:'inline-flex',alignItems:'center',gap:4,color:'var(--blue-700)',fontWeight:500,fontSize:12}}>
-                          <MapPin size={11} /> Ver en Maps
-                        </a>
+                <div className="edit-grid ver-grid">
+                  <Grupo>Operación</Grupo>
+                  <Campo label="Tipo operación" valor={a.tipo} />
+                  <Campo label="Certificación">
+                    {a.certificacion
+                      ? <span className="ver-chips">{a.certificacion.split(',').filter(Boolean).map(c => <span key={c} className="ver-chip">{c}</span>)}</span>
+                      : null}
+                  </Campo>
+
+                  <Grupo>Intervinientes</Grupo>
+                  <Campo label="Proveedor" valor={a.proveedor} />
+                  {a.tipo?.includes('1') && <Campo label="Astilladora" valor={a.astilladora} />}
+                  {a.tipo?.includes('1') && <Campo label="Transportista" valor={a.transportista} />}
+                  <Campo label="Instalación" valor={a.instalacion} />
+
+                  <Grupo>Material</Grupo>
+                  <Campo label="Especie" valor={a.especie} />
+                  <Campo label="Tipo biomasa" valor={a.tipoBiomasa} />
+                  <Campo label="Estella" valor={a.estella} />
+
+                  <Grupo>Origen y destino</Grupo>
+                  <Campo label="Origen" valor={a.origen} />
+                  <Campo label="Permiso / Ref." valor={a.permiso} />
+                  {a.tipo?.includes('2') && <Campo label="Referencia SURE" valor={a.referenciaSure} />}
+                  <Campo label="Ubicación en Maps">
+                    {a.mapsOrigen || a.mapsDestino ? (
+                      <span className="ver-chips">
+                        {a.mapsOrigen && <a className="ver-link" href={a.mapsOrigen} target="_blank" rel="noreferrer"><MapPin size={11} /> Origen</a>}
+                        {a.mapsDestino && <a className="ver-link" href={a.mapsDestino} target="_blank" rel="noreferrer"><MapPin size={11} /> Destino</a>}
                       </span>
-                    </div>
-                  )}
-                  {a.mapsDestino && (
-                    <div className="detalle-row">
-                      <span className="detalle-key">Maps destino</span>
-                      <span className="detalle-val">
-                        <a href={a.mapsDestino} target="_blank" rel="noreferrer"
-                          style={{display:'inline-flex',alignItems:'center',gap:4,color:'var(--blue-700)',fontWeight:500,fontSize:12}}>
-                          <MapPin size={11} /> Ver en Maps
-                        </a>
-                      </span>
-                    </div>
-                  )}
-                </>
+                    ) : null}
+                  </Campo>
+
+                  {a.tipo?.includes('1') && <>
+                    <Grupo>Transporte</Grupo>
+                    <Campo label="Matrícula astilladora" valor={a.matriculaAstilladora} />
+                    <Campo label="Chófer" valor={a.chofer} />
+                    <Campo label="Matrícula tractora" valor={a.matriculaTractora} />
+                    <Campo label="Matrícula remolque" valor={a.matriculaRemolque} />
+                  </>}
+
+                  <Campo label="Observaciones" valor={a.observaciones} full />
+                </div>
               )}
             </div>
 
             {/* ── DATOS DE RECEPCIÓN Y PESADA ── */}
-            <div className="card" style={{marginBottom:14}}>
+            <div className={`card${editandoPesada ? ' seccion-editando' : ''}`} style={{marginBottom:14}}>
               <div className="section-label" style={{display:'flex',alignItems:'center',justifyContent:'space-between'}}>
-                Datos de recepción y pesada
+                <span>Datos de recepción y pesada{editandoPesada && <span className="pill-editando">Editando</span>}</span>
                 {puedeEditar && !editandoPesada && (
                   <button className="btn-edit-section" onClick={iniciarEditPesada} title="Editar pesada">
                     <Pencil size={12} />
@@ -1030,6 +1035,14 @@ export default function DetalleAlbaran({ albaranes, simularFirma, updateFirma, s
                     </div>
                   ))}
                   <div className="edit-field">
+                    <label className="edit-label">Peso neto (calculado)</label>
+                    <div className="edit-input edit-calc">
+                      {formPesada.entrada && formPesada.salida
+                        ? (Number(formPesada.entrada) - Number(formPesada.salida)).toLocaleString('es-ES') + ' kg'
+                        : '—'}
+                    </div>
+                  </div>
+                  <div className="edit-field">
                     <label className="edit-label">Nº de pesada</label>
                     <input
                       className="edit-input"
@@ -1042,18 +1055,30 @@ export default function DetalleAlbaran({ albaranes, simularFirma, updateFirma, s
                 </div>
               ) : (
                 <>
-                  {[
-                    ['Peso bruto',  a.pesada?.entrada ? a.pesada.entrada.toLocaleString('es-ES') + ' kg' : '—'],
-                    ['Tara',        a.pesada?.salida  ? a.pesada.salida.toLocaleString('es-ES')  + ' kg' : '—'],
-                    ['Peso neto',   pesoNeto],
-                    ['Humedad (%)', a.pesada?.humedad != null ? `${a.pesada.humedad}%` : 'Pendiente análisis'],
-                    ['Nº de pesada', a.pesada?.numeroPesada || '—'],
-                  ].map(([k, v]) => (
-                    <div key={k} className="detalle-row">
-                      <span className="detalle-key">{k}</span>
-                      <span className={`detalle-val ${v === 'Pendiente análisis' ? 'warn' : ''}`}>{v}</span>
+                  <div className="pesada-stats">
+                    <div className="pesada-stat">
+                      <span className="ver-label">Peso bruto</span>
+                      <span className="pesada-num">{a.pesada?.entrada ? <>{a.pesada.entrada.toLocaleString('es-ES')}<small> kg</small></> : '—'}</span>
                     </div>
-                  ))}
+                    <span className="pesada-op">−</span>
+                    <div className="pesada-stat">
+                      <span className="ver-label">Tara</span>
+                      <span className="pesada-num">{a.pesada?.salida ? <>{a.pesada.salida.toLocaleString('es-ES')}<small> kg</small></> : '—'}</span>
+                    </div>
+                    <span className="pesada-op">=</span>
+                    <div className="pesada-stat neto">
+                      <span className="ver-label">Peso neto</span>
+                      <span className="pesada-num">{pesoNeto === '—' ? '—' : <>{pesoNeto.replace(' kg', '')}<small> kg</small></>}</span>
+                    </div>
+                  </div>
+                  <div className="edit-grid ver-grid">
+                    <Campo label="Humedad">
+                      {a.pesada?.humedad != null
+                        ? `${a.pesada.humedad}%`
+                        : <span className="ver-pend">Pendiente de análisis</span>}
+                    </Campo>
+                    <Campo label="Nº de pesada" valor={a.pesada?.numeroPesada} />
+                  </div>
                 </>
               )}
 
