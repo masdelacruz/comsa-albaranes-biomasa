@@ -169,8 +169,9 @@ export default function Historial({ albaranes, empresas = [], usuario, refetch, 
     if (filtroPesoMin || filtroPesoMax) {
       const neto = pesoNeto(a)
       if (neto == null) return false
-      if (filtroPesoMin && neto < Number(filtroPesoMin)) return false
-      if (filtroPesoMax && neto > Number(filtroPesoMax)) return false
+      // Los filtros se escriben en toneladas, como la columna Peso neto
+      if (filtroPesoMin && neto < Number(filtroPesoMin) * 1000) return false
+      if (filtroPesoMax && neto > Number(filtroPesoMax) * 1000) return false
     }
     if (filtroDocs.length) {
       const docs = Object.entries(a.docs || {})
@@ -388,12 +389,12 @@ export default function Historial({ albaranes, empresas = [], usuario, refetch, 
               <div className={`date-range peso-range${filtroPesoMin || filtroPesoMax ? ' is-active' : ''}`}>
                 <div className="date-range-field">
                   <span>Neto desde</span>
-                  <input type="number" min="0" inputMode="numeric" placeholder="kg" value={filtroPesoMin} onChange={e => setFiltroPesoMin(e.target.value)} />
+                  <input type="number" min="0" step="0.1" inputMode="decimal" placeholder="t" value={filtroPesoMin} onChange={e => setFiltroPesoMin(e.target.value)} />
                 </div>
                 <div className="date-range-sep" />
                 <div className="date-range-field">
                   <span>hasta</span>
-                  <input type="number" min="0" inputMode="numeric" placeholder="kg" value={filtroPesoMax} onChange={e => setFiltroPesoMax(e.target.value)} />
+                  <input type="number" min="0" step="0.1" inputMode="decimal" placeholder="t" value={filtroPesoMax} onChange={e => setFiltroPesoMax(e.target.value)} />
                 </div>
               </div>
             </div>
