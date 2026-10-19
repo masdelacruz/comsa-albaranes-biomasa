@@ -324,6 +324,13 @@ export default function Historial({ albaranes, empresas = [], usuario, refetch, 
         <div className="card" style={{padding:0, overflow:'clip'}}>
           {/* Filtros — cabecera de la misma tarjeta que la tabla */}
           <div className="filters-bar historial-filtros">
+            {/* Primero, sobre la columna de casillas: activa/desactiva el modo selección.
+                Misma etiqueta en ambos estados para que la barra no se reordene. */}
+            <button type="button" className={`btn mas-filtros-btn seleccionar-btn${seleccionando ? ' activo' : ''}`}
+              onClick={() => seleccionando ? cancelarSeleccion() : setSeleccionando(true)} aria-pressed={seleccionando}
+              title={seleccionando ? 'Salir del modo selección' : 'Seleccionar varios albaranes'}>
+              {seleccionando ? <X size={13} /> : <ListChecks size={13} />} Seleccionar
+            </button>
             <div className="search-field">
               <Search size={14} className="search-field-icon" />
               <input type="text" className="search-field-input" placeholder="Buscar por ID, empresa, especie, origen..." value={busqueda} onChange={e => setBusqueda(e.target.value)} />
@@ -354,11 +361,6 @@ export default function Historial({ albaranes, empresas = [], usuario, refetch, 
             <button type="button" className={`btn mas-filtros-btn${masFiltros || numAvanzados ? ' activo' : ''}`}
               onClick={() => setMasFiltros(v => !v)} aria-expanded={masFiltros}>
               <SlidersHorizontal size={13} /> Más filtros{numAvanzados > 0 && ` · ${numAvanzados}`}
-            </button>
-            <button type="button" className={`btn mas-filtros-btn${seleccionando ? ' activo' : ''}`}
-              onClick={() => seleccionando ? cancelarSeleccion() : setSeleccionando(true)} aria-pressed={seleccionando}
-              title={seleccionando ? 'Salir del modo selección' : 'Seleccionar varios albaranes'}>
-              <ListChecks size={13} /> {seleccionando ? 'Salir de selección' : 'Seleccionar'}
             </button>
           </div>
 

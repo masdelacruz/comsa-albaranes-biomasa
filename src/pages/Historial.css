@@ -76,3 +76,4 @@
 .historial-table td.col-check input { pointer-events:none; }
 .historial-table:has(.col-check) tbody tr { user-select:none; }
 .historial-table tbody tr.fila-marcada td { background:var(--green-50); }
+.mas-filtros-btn.activo.seleccionar-btn { background:var(--green-50); }
