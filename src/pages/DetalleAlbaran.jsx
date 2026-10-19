@@ -1198,16 +1198,16 @@ export default function DetalleAlbaran({ albaranes, simularFirma, updateFirma, s
                             </span>
                             <div className="doc-acciones">
                               {doc.adjunto && doc.url && (
-                                <a href={doc.url} target="_blank" rel="noreferrer" className="doc-link">Ver</a>
+                                <a href={doc.url} target="_blank" rel="noreferrer" className="btn doc-btn"><Eye size={11} /> Ver</a>
                               )}
                               <button
                                 type="button"
-                                className="doc-link"
+                                className="btn doc-btn"
                                 onClick={() => fileRefs.current[nombre]?.click()}
                                 disabled={subiendo[nombre]}
                                 title={doc.adjunto ? 'Sustituir el archivo' : 'Adjuntar archivo (o arrástralo a la fila)'}
                               >
-                                {subiendo[nombre] ? 'Subiendo…' : doc.adjunto ? 'Cambiar' : <><Upload size={11} /> Adjuntar</>}
+                                {subiendo[nombre] ? 'Subiendo…' : doc.adjunto ? <><RefreshCw size={11} /> Cambiar</> : <><Upload size={11} /> Adjuntar</>}
                               </button>
                               <input
                                 type="file" accept=".pdf,.jpg,.jpeg,.png" style={{display:'none'}}

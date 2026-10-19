@@ -215,3 +215,6 @@
 .doc-row:not(.ok) .doc-link:hover { color:var(--green-600); }
 .doc-acciones { gap:10px; opacity:0.85; }
 .doc-progreso { font-size:11.5px; font-weight:400; color:var(--gray-400); }
+/* Botones de documentos iguales que el del ticket de pesada */
+.doc-row { padding:4px 0; }
+.doc-acciones { gap:6px; opacity:1; }
