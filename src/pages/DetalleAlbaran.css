@@ -134,3 +134,19 @@
 .pesada-num { font-size:16px; }
 .ver-grid { gap:8px 14px; padding-top:0; }
 .ver-grid .ver-val.vacio { font-style:normal; }
+
+/* Sin recuadros de color: los matices van solo en el texto */
+.pesada-stats { gap:18px; margin:4px 0 10px; }
+.pesada-stat, .pesada-stat.neto { flex:0 1 auto; padding:0; background:none; border:none; border-radius:0; }
+.pesada-stat.neto .ver-label { color:var(--gray-400); }
+.pesada-stat.neto .pesada-num { color:var(--green-600); }
+.pesada-op { padding-top:14px; }
+.ver-pend { padding:0; background:none; border:none; font-weight:500; }
+.ver-chip { padding:0; background:none; border:none; color:var(--gray-900); font-weight:500; font-size:13px; }
+.ver-chip + .ver-chip::before { content:'·'; margin-right:6px; color:var(--gray-300); }
+.ver-link { padding:0; background:none; font-size:13px; }
+.ver-link:hover { background:none; text-decoration:underline; }
+.ver-fila .ver-field.full .ver-val:not(.vacio),
+.ver-field.full .ver-val:not(.vacio) { padding:0; background:none; border:none; }
+.pill-editando { padding:0; background:none; border:none; font-size:11px; text-transform:none; letter-spacing:0; }
+.pill-editando::before { content:'· '; color:var(--gray-300); }
