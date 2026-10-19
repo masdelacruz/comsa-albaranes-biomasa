@@ -4,17 +4,17 @@ import { api } from '../lib/api'
 import logoFull from '../assets/logo_biomasa_full.png'
 import './Login.css'
 
-const EMAIL_ADMIN = 'biomasa@cserintranet.com'
+const EMAIL_ADMIN = 'albaranes.bio@comsa.com'
 const MAILTO_OLVIDO = `mailto:${EMAIL_ADMIN}?subject=${encodeURIComponent('Recuperación de contraseña — Comsa Albaranes')}&body=${encodeURIComponent('Hola,\n\nHe olvidado mi contraseña de acceso a la plataforma de albaranes.\nMi email de usuario es: ')}`
 
 const ERRORES_SSO = {
-  usuario_no_registrado: 'Tu cuenta de Microsoft no está dada de alta. Contacta con administración (biomasa@cserintranet.com).',
-  cuenta_bloqueada: 'Tu cuenta está desactivada. Contacta con administración (biomasa@cserintranet.com).',
+  usuario_no_registrado: 'Tu cuenta de Microsoft no está dada de alta. Contacta con administración (albaranes.bio@comsa.com).',
+  cuenta_bloqueada: 'Tu cuenta está desactivada. Contacta con administración (albaranes.bio@comsa.com).',
   dominio_no_permitido: 'Solo se admiten cuentas @comsa.com.',
   usar_microsoft: 'Tu cuenta corporativa debe iniciar sesión con Microsoft.',
   acceso_denegado: 'Microsoft no ha autorizado el acceso. Si crees que deberías tenerlo, contacta con IT.',
   sin_rol: 'Tu cuenta de Microsoft no tiene asignado acceso a esta aplicación. Contacta con IT.',
-  identidad_no_coincide: 'Este email ya está vinculado a otra cuenta de Microsoft. Contacta con administración (biomasa@cserintranet.com).',
+  identidad_no_coincide: 'Este email ya está vinculado a otra cuenta de Microsoft. Contacta con administración (albaranes.bio@comsa.com).',
   tenant_no_permitido: 'Solo se admiten cuentas de la organización COMSA.',
   estado_invalido: 'El inicio de sesión ha caducado o se abrió en otra ventana. Inténtalo de nuevo.',
 }
