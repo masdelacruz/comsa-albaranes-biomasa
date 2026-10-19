@@ -1,6 +1,6 @@
 import { useState, useRef, useMemo, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Download, Search, FileSpreadsheet, CheckSquare, Upload, Trash2, Square, X, Send, SlidersHorizontal } from 'lucide-react'
+import { Download, Search, FileSpreadsheet, Upload, Trash2, X, Send, SlidersHorizontal } from 'lucide-react'
 import ExcelJS from 'exceljs'
 import { Badge, FirmaSteps } from '../components/Badge'
 import PdfLoadingOverlay from '../components/PdfLoadingOverlay'
@@ -42,8 +42,8 @@ export default function Historial({ albaranes, empresas = [], usuario, refetch, 
   const [filtroPesoMax,      setFiltroPesoMax]      = useEstadoSesion('historial:filtroPesoMax', '')
 
   // ── Selección masiva ──────────────────────────────────────────────
-  const [seleccionando,   setSeleccionando]   = useState(false)
   const [seleccionados,   setSeleccionados]   = useState(new Set())
+  const seleccionando = seleccionados.size > 0  // la columna de casillas siempre está; la barra aparece al marcar
   const [modalAdjuntar,   setModalAdjuntar]   = useState(false)
   const [docTipo,         setDocTipo]         = useState('')
   const [docFichero,      setDocFichero]      = useState(null)
@@ -60,8 +60,8 @@ export default function Historial({ albaranes, empresas = [], usuario, refetch, 
 
   const toggleSeleccion   = (id) => setSeleccionados(prev => { const n = new Set(prev); n.has(id) ? n.delete(id) : n.add(id); return n })
   const seleccionarTodos  = () => setSeleccionados(new Set(filtrados.map(a => a.id)))
-  const deseleccionarTodos= () => setSeleccionados(new Set())
-  const cancelarSeleccion = () => { setSeleccionando(false); setSeleccionados(new Set()) }
+  const cancelarSeleccion = () => setSeleccionados(new Set())
+  const toggleTodos       = () => todosMarcados ? cancelarSeleccion() : seleccionarTodos()
 
   const subirDocumento = async (albaranId, docNombre, fichero) => {
     const fd = new FormData()
@@ -195,6 +195,7 @@ export default function Historial({ albaranes, empresas = [], usuario, refetch, 
 
   const totalPaginas = Math.ceil(filtrados.length / POR_PAGINA)
   const paginados    = filtrados.slice((pagina - 1) * POR_PAGINA, pagina * POR_PAGINA)
+  const todosMarcados = filtrados.length > 0 && filtrados.every(a => seleccionados.has(a.id))
 
   const exportarExcel = async () => {
     const wb = new ExcelJS.Workbook()
@@ -307,7 +308,11 @@ export default function Historial({ albaranes, empresas = [], usuario, refetch, 
         <div style={{display:'flex',alignItems:'center',justifyContent:'space-between'}}>
           <div>
             <div className="page-title">Historial de albaranes</div>
-            <div className="page-sub">{filtrados.length} registros encontrados</div>
+            <div className="page-sub historial-sub">
+              {filtrados.length} registros encontrados
+              {/* Fuera de la barra de filtros para que al aparecer no la haga crecer */}
+              {hayFiltros && <button className="list-clear-filtros" onClick={limpiarFiltros}>× Limpiar filtros</button>}
+            </div>
           </div>
           <button className="btn btn-primary" onClick={exportarExcel}>
             <FileSpreadsheet size={15} /> Exportar Excel
@@ -316,38 +321,6 @@ export default function Historial({ albaranes, empresas = [], usuario, refetch, 
       </div>
 
       <div className="historial-content">
-        {/* Barra de selección — encima de la tarjeta del listado */}
-        <div style={{display:'flex',alignItems:'center',gap:8,marginBottom:8}}>
-          {!seleccionando ? (
-            <button className="btn" style={{fontSize:12}} onClick={() => setSeleccionando(true)}>
-              <CheckSquare size={13} /> Seleccionar
-            </button>
-          ) : (
-            <>
-              <button className="btn btn-primary" style={{fontSize:12}} onClick={seleccionarTodos}>
-                <CheckSquare size={13} /> Todos ({filtrados.length})
-              </button>
-              <button className="btn" style={{fontSize:12}} onClick={deseleccionarTodos}>
-                <Square size={13} /> Ninguno
-              </button>
-              <button className="btn btn-ghost" style={{fontSize:12,color:'var(--gray-500)'}} onClick={cancelarSeleccion}>
-                × Cancelar
-              </button>
-              {seleccionados.size > 0 && (
-                <span style={{fontSize:12,color:'var(--green-600)',fontWeight:600,marginLeft:4}}>
-                  {seleccionados.size} seleccionados
-                </span>
-              )}
-            </>
-          )}
-          {/* Fuera de la barra de filtros para que al aparecer no la haga crecer */}
-          {hayFiltros && (
-            <button className="list-clear-filtros" style={{marginLeft:'auto'}} onClick={limpiarFiltros}>× Limpiar filtros</button>
-          )}
-        </div>
-
-        {/* Acciones masivas — pill flotante al fondo, no desplaza el layout */}
-
         <div className="card" style={{padding:0, overflow:'clip'}}>
           {/* Filtros — cabecera de la misma tarjeta que la tabla */}
           <div className="filters-bar historial-filtros">
@@ -413,7 +386,12 @@ export default function Historial({ albaranes, empresas = [], usuario, refetch, 
           <table className="data-table historial-table">
             <thead>
               <tr>
-                {seleccionando && <th style={{width:36}}></th>}
+                <th className="col-check">
+                  <input type="checkbox" checked={todosMarcados} onChange={toggleTodos}
+                    ref={el => { if (el) el.indeterminate = seleccionando && !todosMarcados }}
+                    title={todosMarcados ? 'Quitar selección' : `Seleccionar los ${filtrados.length} albaranes filtrados`}
+                    aria-label="Seleccionar todos" disabled={filtrados.length === 0} />
+                </th>
                 <th>Nº albarán</th>
                 <th>Fecha</th>
                 <th>Proveedor</th>
@@ -431,15 +409,13 @@ export default function Historial({ albaranes, empresas = [], usuario, refetch, 
             </thead>
             <tbody>
               {filtrados.length === 0 ? (
-                <tr><td colSpan={(seleccionando ? 1 : 0) + 11 + (esSuperadmin ? 1 : 0)} className="empty-state">{mensajeVacio}</td></tr>
+                <tr><td colSpan={13 + (esSuperadmin ? 1 : 0)} className="empty-state">{mensajeVacio}</td></tr>
               ) : paginados.map(a => (
                 <tr key={a.id} onClick={() => seleccionando ? toggleSeleccion(a.id) : navigate(`/albaran/${a.id}`)}
-                  style={{cursor:'pointer', background: seleccionados.has(a.id) ? 'var(--green-50)' : undefined}}>
-                  {seleccionando && (
-                    <td style={{textAlign:'center',width:36}} onClick={e => { e.stopPropagation(); toggleSeleccion(a.id) }}>
-                      <input type="checkbox" checked={seleccionados.has(a.id)} onChange={() => {}} style={{cursor:'pointer',pointerEvents:'none'}} />
-                    </td>
-                  )}
+                  className={seleccionados.has(a.id) ? 'fila-marcada' : undefined} style={{cursor:'pointer'}}>
+                  <td className="col-check" onClick={e => { e.stopPropagation(); toggleSeleccion(a.id) }}>
+                    <input type="checkbox" checked={seleccionados.has(a.id)} onChange={() => {}} aria-label={`Seleccionar albarán ${a.id}`} />
+                  </td>
                   <td className="row-id">{a.id}</td>
                   <td>{a.fecha?.slice(0,10).split('-').reverse().join('/')}</td>
                   <td>{a.proveedor}</td>
@@ -503,6 +479,12 @@ export default function Historial({ albaranes, empresas = [], usuario, refetch, 
       {seleccionados.size > 0 && (
         <div style={{position:'fixed',bottom:28,left:'50%',transform:'translateX(-50%)',display:'flex',alignItems:'center',gap:6,padding:'10px 16px',background:'var(--gray-900)',borderRadius:10,boxShadow:'0 8px 32px rgba(0,0,0,0.28)',zIndex:200,whiteSpace:'nowrap'}}>
           <span style={{fontSize:13,fontWeight:600,color:'rgba(255,255,255,0.75)',marginRight:6}}>{seleccionados.size} seleccionados</span>
+          {!todosMarcados && (
+            <button onClick={seleccionarTodos}
+              style={{display:'inline-flex',alignItems:'center',gap:5,padding:'6px 12px',borderRadius:5,border:'1px solid rgba(255,255,255,0.15)',background:'transparent',color:'#fff',fontSize:12,fontWeight:500,cursor:'pointer'}}>
+              Todos ({filtrados.length})
+            </button>
+          )}
           {[...seleccionados].some(id => albaranes.find(x => x.id === id)?.estado === 'programado') && (
             <button onClick={handleEnviarACampo} disabled={enviandoACampo}
               style={{display:'inline-flex',alignItems:'center',gap:5,padding:'6px 12px',borderRadius:5,border:'1px solid rgba(29,158,117,0.5)',background:'rgba(29,158,117,0.2)',color:'#6ee7c7',fontSize:12,fontWeight:500,cursor:'pointer',opacity:enviandoACampo?0.6:1}}>

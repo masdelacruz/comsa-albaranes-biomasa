@@ -73,3 +73,17 @@
 @media (max-width: 900px) {
   .historial-filtros-mas { grid-template-columns:repeat(2, minmax(0, 1fr)); }
 }
+
+/* ── Selección integrada en la tabla: columna de casillas fija ── */
+.historial-sub { display:flex; align-items:center; gap:8px; }
+.historial-table th.col-check,
+.historial-table td.col-check { width:40px; padding-left:16px; padding-right:0; text-align:left; }
+.historial-table .col-check input[type="checkbox"] {
+  width:15px; height:15px; margin:0; vertical-align:middle; cursor:pointer;
+  accent-color:var(--green-600);
+}
+/* En reposo las casillas apenas se ven; aparecen al pasar por la fila o al haber selección */
+.historial-table td.col-check input:not(:checked) { opacity:.35; transition:opacity .12s; }
+.historial-table tr:hover td.col-check input,
+.historial-table td.col-check input:focus-visible { opacity:1; }
+.historial-table tbody tr.fila-marcada td { background:var(--green-50); }
