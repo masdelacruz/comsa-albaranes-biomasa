@@ -50,11 +50,18 @@ function Campo({ label, valor, full, children }) {
   return (
     <div className={`ver-field${full ? ' full' : ''}`}>
       <span className="ver-label">{label}</span>
-      <span className={`ver-val${vacio ? ' vacio' : ''}`}>{children ?? (vacio ? 'Sin indicar' : valor)}</span>
+      <span className={`ver-val${vacio ? ' vacio' : ''}`}>{children ?? (vacio ? '—' : valor)}</span>
     </div>
   )
 }
 const Grupo = ({ children }) => <div className="grid-grupo">{children}</div>
+// Fila compacta de lectura: nombre del grupo a la izquierda y sus campos en rejilla
+const Fila = ({ titulo, children }) => (
+  <div className="ver-fila">
+    <span className="ver-fila-titulo">{titulo}</span>
+    <div className="ver-fila-campos">{children}</div>
+  </div>
+)
 
 function MenuPDF({ a, modo, generando, onGenerar }) {
   const [open, setOpen] = useState(false)
@@ -949,53 +956,53 @@ export default function DetalleAlbaran({ albaranes, simularFirma, updateFirma, s
                   </div>
                 </div>
               ) : (
-                <div className="edit-grid ver-grid">
-                  <Grupo>Operación</Grupo>
-                  <Campo label="Tipo operación" valor={a.tipo} />
-                  <Campo label="Certificación">
-                    {(() => {
-                      // Puede llegar como texto "SURE,PEFC" o como array
-                      const certs = (Array.isArray(a.certificacion) ? a.certificacion : String(a.certificacion || '').split(','))
-                        .map(c => String(c).trim()).filter(Boolean)
-                      return certs.length
-                        ? <span className="ver-chips">{certs.map(c => <span key={c} className="ver-chip">{c}</span>)}</span>
-                        : null
-                    })()}
-                  </Campo>
-
-                  <Grupo>Intervinientes</Grupo>
-                  <Campo label="Proveedor" valor={a.proveedor} />
-                  {a.tipo?.includes('1') && <Campo label="Astilladora" valor={a.astilladora} />}
-                  {a.tipo?.includes('1') && <Campo label="Transportista" valor={a.transportista} />}
-                  <Campo label="Instalación" valor={a.instalacion} />
-
-                  <Grupo>Material</Grupo>
-                  <Campo label="Especie" valor={a.especie} />
-                  <Campo label="Tipo biomasa" valor={a.tipoBiomasa} />
-                  <Campo label="Estella" valor={a.estella} />
-
-                  <Grupo>Origen y destino</Grupo>
-                  <Campo label="Origen" valor={a.origen} />
-                  <Campo label="Permiso / Ref." valor={a.permiso} />
-                  {a.tipo?.includes('2') && <Campo label="Referencia SURE" valor={a.referenciaSure} />}
-                  <Campo label="Ubicación en Maps">
-                    {a.mapsOrigen || a.mapsDestino ? (
-                      <span className="ver-chips">
-                        {a.mapsOrigen && <a className="ver-link" href={a.mapsOrigen} target="_blank" rel="noreferrer"><MapPin size={11} /> Origen</a>}
-                        {a.mapsDestino && <a className="ver-link" href={a.mapsDestino} target="_blank" rel="noreferrer"><MapPin size={11} /> Destino</a>}
-                      </span>
-                    ) : null}
-                  </Campo>
-
-                  {a.tipo?.includes('1') && <>
-                    <Grupo>Transporte</Grupo>
+                <div className="ver-grupos">
+                  <Fila titulo="Operación">
+                    <Campo label="Tipo operación" valor={a.tipo} />
+                    <Campo label="Certificación">
+                      {(() => {
+                        // Puede llegar como texto "SURE,PEFC" o como array
+                        const certs = (Array.isArray(a.certificacion) ? a.certificacion : String(a.certificacion || '').split(','))
+                          .map(c => String(c).trim()).filter(Boolean)
+                        return certs.length
+                          ? <span className="ver-chips">{certs.map(c => <span key={c} className="ver-chip">{c}</span>)}</span>
+                          : null
+                      })()}
+                    </Campo>
+                  </Fila>
+                  <Fila titulo="Intervinientes">
+                    <Campo label="Proveedor" valor={a.proveedor} />
+                    {a.tipo?.includes('1') && <Campo label="Astilladora" valor={a.astilladora} />}
+                    {a.tipo?.includes('1') && <Campo label="Transportista" valor={a.transportista} />}
+                    <Campo label="Instalación" valor={a.instalacion} />
+                  </Fila>
+                  <Fila titulo="Material">
+                    <Campo label="Especie" valor={a.especie} />
+                    <Campo label="Tipo biomasa" valor={a.tipoBiomasa} />
+                    <Campo label="Estella" valor={a.estella} />
+                  </Fila>
+                  <Fila titulo="Origen y destino">
+                    <Campo label="Origen" valor={a.origen} />
+                    <Campo label="Permiso / Ref." valor={a.permiso} />
+                    {a.tipo?.includes('2') && <Campo label="Referencia SURE" valor={a.referenciaSure} />}
+                    <Campo label="Maps">
+                      {a.mapsOrigen || a.mapsDestino ? (
+                        <span className="ver-chips">
+                          {a.mapsOrigen && <a className="ver-link" href={a.mapsOrigen} target="_blank" rel="noreferrer"><MapPin size={11} /> Origen</a>}
+                          {a.mapsDestino && <a className="ver-link" href={a.mapsDestino} target="_blank" rel="noreferrer"><MapPin size={11} /> Destino</a>}
+                        </span>
+                      ) : null}
+                    </Campo>
+                  </Fila>
+                  {a.tipo?.includes('1') && <Fila titulo="Transporte">
                     <Campo label="Matrícula astilladora" valor={a.matriculaAstilladora} />
                     <Campo label="Chófer" valor={a.chofer} />
                     <Campo label="Matrícula tractora" valor={a.matriculaTractora} />
                     <Campo label="Matrícula remolque" valor={a.matriculaRemolque} />
-                  </>}
-
-                  <Campo label="Observaciones" valor={a.observaciones} full />
+                  </Fila>}
+                  <Fila titulo="Notas">
+                    <Campo label="Observaciones" valor={a.observaciones} full />
+                  </Fila>
                 </div>
               )}
             </div>

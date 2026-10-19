@@ -114,3 +114,23 @@
   .pesada-stat { flex-basis:calc(50% - 4px); }
   .pesada-stat.neto { flex-basis:100%; }
 }
+
+/* Lectura compacta: una fila por grupo */
+.ver-grupos { display:flex; flex-direction:column; margin-top:4px; }
+.ver-fila { display:grid; grid-template-columns:104px 1fr; gap:12px; padding:9px 0; border-bottom:var(--border-light); }
+.ver-fila:last-child { border-bottom:none; padding-bottom:0; }
+.ver-fila-titulo { font-size:10.5px; font-weight:600; text-transform:uppercase; letter-spacing:0.5px; color:var(--gray-400); padding-top:2px; }
+.ver-fila-campos { display:grid; grid-template-columns:repeat(auto-fill, minmax(150px, 1fr)); gap:8px 14px; min-width:0; }
+.ver-fila .ver-field { gap:1px; }
+.ver-fila .ver-label { font-size:10.5px; }
+.ver-fila .ver-val { font-size:13px; line-height:1.35; }
+.ver-fila .ver-val.vacio { font-style:normal; }
+.ver-fila .ver-field.full .ver-val:not(.vacio) { padding:5px 8px; }
+@media (max-width: 560px) {
+  .ver-fila { grid-template-columns:1fr; gap:6px; }
+}
+.pesada-stats { margin:6px 0 10px; gap:6px; }
+.pesada-stat { padding:7px 10px; gap:2px; }
+.pesada-num { font-size:16px; }
+.ver-grid { gap:8px 14px; padding-top:0; }
+.ver-grid .ver-val.vacio { font-style:normal; }
