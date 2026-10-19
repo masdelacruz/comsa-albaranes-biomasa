@@ -1,17 +1,32 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Mail, Briefcase, Shield, BellOff, LogOut, LayoutGrid, Leaf, HardHat, Package, PenLine, CheckCircle2, Droplet, CheckCircle } from 'lucide-react'
+import { Mail, LogOut, LayoutGrid, Leaf, HardHat, Package, PenLine, CheckCircle2, Droplet, Check, Minus } from 'lucide-react'
 import { api } from '../lib/api'
 import '../components/shared.css'
 import './Perfil.css'
 
+// En el orden en que ocurren durante la vida de un albarán
 const NOTIFS = [
-  { key: 'nuevo',   icon: Package,      tone: 'blue',  label: 'Nuevo albarán',     desc: 'Al registrar un nuevo albarán en el sistema' },
-  { key: 'firma',   icon: PenLine,      tone: 'amber', label: 'Firma registrada',  desc: 'Cuando se completa una firma de campo o instalación' },
-  { key: 'cerrado', icon: CheckCircle2, tone: 'green', label: 'Albarán cerrado',   desc: 'Al finalizar todas las firmas requeridas' },
-  { key: 'humedad', icon: Droplet,      tone: 'blue',  label: 'Humedad pendiente', desc: 'Cuando un albarán requiere análisis de humedad' },
+  { key: 'nuevo',   icon: Package,      label: 'Nuevo albarán',     desc: 'Se registra un albarán en el sistema' },
+  { key: 'firma',   icon: PenLine,      label: 'Firma registrada',  desc: 'Se completa una firma de campo o de instalación' },
+  { key: 'humedad', icon: Droplet,      label: 'Humedad pendiente', desc: 'El albarán necesita análisis de humedad' },
+  { key: 'cerrado', icon: CheckCircle2, label: 'Albarán cerrado',   desc: 'Están todas las firmas requeridas' },
 ]
 const getN = (p, k) => p?.[k] !== false
+
+const NIVELES = {
+  superadmin: { label: 'Superadministrador', resumen: 'Acceso completo a la plataforma' },
+  usuario:    { label: 'Usuario avanzado',   resumen: 'Gestiona albaranes, clientes y configuración' },
+  basico:     { label: 'Usuario básico',     resumen: 'Consulta y registra albaranes' },
+}
+const PERMISOS = [
+  { label: 'Ver y registrar albaranes',             niveles: ['basico', 'usuario', 'superadmin'] },
+  { label: 'Consultar historial y estadísticas',    niveles: ['basico', 'usuario', 'superadmin'] },
+  { label: 'Gestionar clientes y configuración',    niveles: ['usuario', 'superadmin'] },
+  { label: 'Regenerar accesos de clientes',         niveles: ['superadmin'] },
+  { label: 'Administrar usuarios y auditoría',      niveles: ['superadmin'] },
+]
+const CONTACTO = 'albaranes.bio@comsa.com'
 
 export default function Perfil({ usuario, actualizarUsuario, logout }) {
   const navigate = useNavigate()
@@ -25,19 +40,26 @@ export default function Perfil({ usuario, actualizarUsuario, logout }) {
   const iniciales = usuario?.nombre
     ? usuario.nombre.split(' ').map(n => n[0]).slice(0, 2).join('').toUpperCase()
     : '?'
-  const esSuperadmin = usuario?.nivel === 'superadmin'
-  const labelAcceso = esSuperadmin ? 'Superadministrador' : usuario?.nivel === 'usuario' ? 'Usuario avanzado' : 'Usuario básico'
+  const nivel = NIVELES[usuario?.nivel] ? usuario.nivel : 'basico'
+  const esSuperadmin = nivel === 'superadmin'
   const tieneBiomasa = usuario?.acceso_biomasa !== false
   const tieneTrabajo = !!usuario?.acceso_trabajo
-  const numApps = (tieneBiomasa ? 1 : 0) + (tieneTrabajo ? 1 : 0)
 
-  const silenciado = notifPrefs?.silenciado === true
-    || ['nuevo', 'firma', 'cerrado', 'humedad'].every(k => notifPrefs?.[k] === false)
+  const silenciado = notifPrefs?.silenciado === true || NOTIFS.every(({ key }) => notifPrefs?.[key] === false)
   const numActivas = NOTIFS.filter(({ key }) => getN(notifPrefs, key)).length
 
   const notifDirty =
     (notifPrefs?.silenciado ?? false) !== (usuario?.notificaciones?.silenciado ?? false) ||
     NOTIFS.some(({ key }) => getN(notifPrefs, key) !== getN(usuario?.notificaciones, key))
+
+  const toggleSilencio = () => setNotifPrefs(p => {
+    if (!silenciado) return { ...p, silenciado: true }
+    // Al reactivar sin ningún tipo marcado, se activan todos para que tenga efecto
+    const ninguno = NOTIFS.every(({ key }) => p?.[key] === false)
+    return ninguno
+      ? { ...p, silenciado: false, ...Object.fromEntries(NOTIFS.map(({ key }) => [key, true])) }
+      : { ...p, silenciado: false }
+  })
 
   const handleGuardarNotif = async () => {
     setNotifGuardando(true)
@@ -63,131 +85,131 @@ export default function Perfil({ usuario, actualizarUsuario, logout }) {
       </div>
 
       <div className="perfil-content">
-        {/* Identidad */}
-        <div className="card perfil-banner">
-          <div className="perfil-avatar">{iniciales}</div>
-          <div className="perfil-banner-info">
-            <div className="perfil-nombre">
-              {usuario?.nombre}
-              {esSuperadmin && <span className="perfil-super">★ Superadmin</span>}
+        {/* ── Identidad ── */}
+        <section className="card perfil-hero">
+          <div className="perfil-hero-top">
+            <div className="perfil-avatar">{iniciales}</div>
+            <div className="perfil-hero-id">
+              <h2 className="perfil-nombre">{usuario?.nombre}</h2>
+              <div className="perfil-email"><Mail size={13} /> {usuario?.email}</div>
             </div>
-            <div className="perfil-email"><Mail size={12} /> {usuario?.email}</div>
-            <div className="perfil-chips">
-              <span className="perfil-chip"><Briefcase size={11} /> {usuario?.rol || '—'}</span>
-              <span className="perfil-chip"><Shield size={11} /> {labelAcceso}</span>
-              <span className="perfil-chip"><LayoutGrid size={11} /> {numApps} app{numApps !== 1 ? 's' : ''} activa{numApps !== 1 ? 's' : ''}</span>
-              <span className="perfil-chip"><BellOff size={11} /> {silenciado ? 'Notificaciones off' : `${numActivas}/${NOTIFS.length} notificaciones`}</span>
-            </div>
-          </div>
-        </div>
-
-        <div className="perfil-layout">
-          {/* ── Columna izquierda ── */}
-          <div className="perfil-col">
-            <div className="card perfil-sec">
-              <div className="section-label">Información de cuenta</div>
-              {[
-                { icon: <Mail size={14} />,      label: 'Email',  value: usuario?.email },
-                { icon: <Briefcase size={14} />, label: 'Rol',    value: usuario?.rol },
-                { icon: <Shield size={14} />,    label: 'Acceso', value: esSuperadmin ? 'Superadministrador' : 'Usuario estándar' },
-              ].map(({ icon, label, value }) => (
-                <div key={label} className="perfil-row">
-                  <div className="perfil-row-icon">{icon}</div>
-                  <div>
-                    <div className="perfil-row-label">{label}</div>
-                    <div className="perfil-row-val">{value || '—'}</div>
-                  </div>
-                </div>
-              ))}
-            </div>
-
-            <div className="card perfil-sec">
-              <div className="section-label">Aplicaciones</div>
-              <div className="perfil-apps">
-                <div className={`perfil-app${tieneBiomasa ? ' activa' : ''}`}>
-                  <span className="perfil-app-icon perfil-app-icon--biomasa"><Leaf size={18} /></span>
-                  <div className="perfil-app-texto">
-                    <span className="perfil-app-nombre">Biomasa</span>
-                    <span className="perfil-app-desc">Gestión de albaranes de biomasa</span>
-                  </div>
-                  {tieneBiomasa && <CheckCircle size={15} className="perfil-app-check" />}
-                </div>
-                <div className={`perfil-app${tieneTrabajo ? ' activa' : ''}`}>
-                  <span className="perfil-app-icon perfil-app-icon--trabajo"><HardHat size={18} /></span>
-                  <div className="perfil-app-texto">
-                    <span className="perfil-app-nombre">Trabajo</span>
-                    <span className="perfil-app-desc">Próximamente</span>
-                  </div>
-                  {tieneTrabajo && <CheckCircle size={15} className="perfil-app-check" />}
-                </div>
-              </div>
-              {tieneBiomasa && tieneTrabajo && (
-                <button className="btn perfil-cambiar-app" onClick={() => navigate('/apps')}>
-                  <LayoutGrid size={13} /> Cambiar de aplicación
-                </button>
-              )}
-            </div>
-
-            <div className="card perfil-sec">
-              <div className="section-label">Sesión</div>
+            <div className="perfil-hero-actions">
               {!confirmLogout ? (
                 <button className="btn perfil-logout-btn" onClick={() => setConfirmLogout(true)}>
                   <LogOut size={14} /> Cerrar sesión
                 </button>
               ) : (
                 <div className="perfil-logout-confirm">
-                  <div className="perfil-logout-confirm-text">¿Seguro que quieres cerrar sesión?</div>
-                  <div className="perfil-logout-confirm-actions">
-                    <button className="btn" onClick={() => setConfirmLogout(false)}>Cancelar</button>
-                    <button className="btn perfil-logout-yes" onClick={handleLogout}>Sí, cerrar sesión</button>
-                  </div>
+                  <span>¿Cerrar sesión?</span>
+                  <button className="btn" onClick={() => setConfirmLogout(false)}>Cancelar</button>
+                  <button className="btn perfil-logout-yes" onClick={handleLogout}>Sí, salir</button>
                 </div>
               )}
             </div>
           </div>
 
-          {/* ── Columna derecha: notificaciones ── */}
-          <div className="card perfil-sec perfil-notif-card">
-            <div className="section-label">Notificaciones por email</div>
-
-            <div className={`perfil-silenciar${silenciado ? '' : ' activo'}`} onClick={() => setNotifPrefs(p => ({ ...p, silenciado: !p.silenciado }))}>
-              <div className="perfil-silenciar-info">
-                <BellOff size={14} />
-                <div>
-                  <div className="perfil-silenciar-title">{silenciado ? 'Silenciado — sin notificaciones' : 'Notificaciones activas'}</div>
-                  <div className="perfil-silenciar-sub">{silenciado ? 'No recibirás ningún correo' : 'Recibes los tipos activados abajo'}</div>
-                </div>
-              </div>
-              <div className={`perfil-sw${silenciado ? '' : ' on'}`}><div className="perfil-sw-thumb" /></div>
+          <dl className="perfil-facts">
+            <div className="perfil-fact">
+              <dt>Departamento</dt>
+              <dd>{usuario?.rol || '—'}</dd>
             </div>
+            <div className="perfil-fact">
+              <dt>Nivel de acceso</dt>
+              <dd>
+                {NIVELES[nivel].label}
+                {esSuperadmin && <span className="perfil-super">★</span>}
+              </dd>
+              <span className="perfil-fact-sub">{NIVELES[nivel].resumen}</span>
+            </div>
+            <div className="perfil-fact">
+              <dt>Aplicaciones</dt>
+              <dd className="perfil-apps">
+                <span className={`perfil-app${tieneBiomasa ? '' : ' off'}`}><Leaf size={13} /> Biomasa</span>
+                <span className={`perfil-app${tieneTrabajo ? '' : ' off'}`}><HardHat size={13} /> Trabajo</span>
+              </dd>
+              {tieneBiomasa && tieneTrabajo
+                ? <button className="perfil-link" onClick={() => navigate('/apps')}><LayoutGrid size={12} /> Cambiar de aplicación</button>
+                : <span className="perfil-fact-sub">{tieneTrabajo ? '' : 'Trabajo: próximamente'}</span>}
+            </div>
+          </dl>
+        </section>
 
-            <div className="perfil-notifs" style={{ opacity: silenciado ? 0.45 : 1 }}>
+        <div className="perfil-layout">
+          {/* ── Avisos por email ── */}
+          <section className="card perfil-notif">
+            <header className="perfil-notif-head">
+              <div>
+                <h3 className="perfil-h3">Avisos por email</h3>
+                <p className="perfil-notif-resumen">
+                  {silenciado
+                    ? 'Pausados: no recibirás ningún correo.'
+                    : <>Recibes <strong>{numActivas} de {NOTIFS.length}</strong> avisos en {usuario?.email}</>}
+                </p>
+              </div>
+              <label className="perfil-master">
+                <span>{silenciado ? 'Pausados' : 'Activados'}</span>
+                <button type="button" role="switch" aria-checked={!silenciado} aria-label="Recibir avisos por email"
+                  className={`perfil-sw${silenciado ? '' : ' on'}`} onClick={toggleSilencio}>
+                  <span className="perfil-sw-thumb" />
+                </button>
+              </label>
+            </header>
+
+            <div className="perfil-flujo-label">Ciclo de un albarán</div>
+            <ol className={`perfil-flujo${silenciado ? ' pausado' : ''}`}>
               {NOTIFS.map(n => {
                 const Icon = n.icon
+                const on = getN(notifPrefs, n.key)
                 return (
-                <div key={n.key} className="perfil-notif-card-item" onClick={() => setNotifPrefs(p => ({ ...p, [n.key]: !getN(p, n.key) }))}>
-                  <div className="perfil-notif-top">
-                    <span className={`perfil-notif-icon perfil-tone-${n.tone}`}><Icon size={15} /></span>
-                    <div className={`perfil-sw${getN(notifPrefs, n.key) ? ' on' : ''}`}><div className="perfil-sw-thumb" /></div>
-                  </div>
-                  <span className="perfil-notif-lbl">{n.label}</span>
-                  <span className="perfil-notif-desc">{n.desc}</span>
-                </div>
+                  <li key={n.key} className={`perfil-paso${on ? ' on' : ''}`}>
+                    <span className="perfil-paso-nodo"><Icon size={15} /></span>
+                    <div className="perfil-paso-txt">
+                      <span className="perfil-paso-lbl">{n.label}</span>
+                      <span className="perfil-paso-desc">{n.desc}</span>
+                    </div>
+                    <button type="button" role="switch" aria-checked={on} aria-label={n.label} disabled={silenciado}
+                      className={`perfil-sw${on ? ' on' : ''}`}
+                      onClick={() => setNotifPrefs(p => ({ ...p, [n.key]: !getN(p, n.key) }))}>
+                      <span className="perfil-sw-thumb" />
+                    </button>
+                  </li>
                 )
               })}
-            </div>
+            </ol>
 
             {(notifDirty || notifOk) && (
               <div className="perfil-notif-actions">
                 {notifOk
-                  ? <span className="perfil-notif-ok">✓ Guardado</span>
-                  : <button className="btn btn-primary" onClick={handleGuardarNotif} disabled={notifGuardando}>
-                      {notifGuardando ? 'Guardando...' : 'Guardar cambios'}
-                    </button>
-                }
+                  ? <span className="perfil-notif-ok"><Check size={14} /> Preferencias guardadas</span>
+                  : <>
+                      <span className="perfil-notif-pend">Tienes cambios sin guardar</span>
+                      <button className="btn" onClick={() => setNotifPrefs(usuario?.notificaciones || {})} disabled={notifGuardando}>Descartar</button>
+                      <button className="btn btn-primary" onClick={handleGuardarNotif} disabled={notifGuardando}>
+                        {notifGuardando ? 'Guardando...' : 'Guardar'}
+                      </button>
+                    </>}
               </div>
             )}
-          </div>
+          </section>
+
+          {/* ── Qué permite tu acceso ── */}
+          <aside className="card perfil-permisos">
+            <h3 className="perfil-h3">Qué puedes hacer</h3>
+            <ul className="perfil-permisos-lista">
+              {PERMISOS.map(p => {
+                const ok = p.niveles.includes(nivel)
+                return (
+                  <li key={p.label} className={ok ? 'ok' : 'no'}>
+                    {ok ? <Check size={14} /> : <Minus size={14} />} {p.label}
+                  </li>
+                )
+              })}
+            </ul>
+            <p className="perfil-ayuda">
+              ¿Algún dato incorrecto o necesitas más permisos? Escribe a{' '}
+              <a href={`mailto:${CONTACTO}`}>{CONTACTO}</a>
+            </p>
+          </aside>
         </div>
       </div>
     </div>
