@@ -1,6 +1,6 @@
 import { useState, useRef, useMemo, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Download, Search, FileSpreadsheet, CheckSquare, Upload, Trash2, Square, X, Send } from 'lucide-react'
+import { Download, Search, FileSpreadsheet, CheckSquare, Upload, Trash2, Square, X, Send, SlidersHorizontal } from 'lucide-react'
 import ExcelJS from 'exceljs'
 import { Badge, FirmaSteps } from '../components/Badge'
 import PdfLoadingOverlay from '../components/PdfLoadingOverlay'
@@ -11,6 +11,9 @@ import { api } from '../lib/api'
 import '../components/shared.css'
 import './Historial.css'
 
+const DOCS_COMPLETA   = '__completa'
+const DOCS_INCOMPLETA = '__incompleta'
+const pesoNeto = (a) => a.pesada?.entrada && a.pesada?.salida ? a.pesada.entrada - a.pesada.salida : null
 const TIPOS_DOC = ['Autodeclaración','Acuerdo de cesión','Contrato prestación servicios','Permiso de corta','Certificado SURE','Permiso de obra']
 
 export default function Historial({ albaranes, empresas = [], usuario, refetch, borrarAlbaran, enviarACampoAlbaran }) {
@@ -24,6 +27,16 @@ export default function Historial({ albaranes, empresas = [], usuario, refetch, 
   const [filtroEstado,       setFiltroEstado]       = useState([])
   const [filtroFechaDesde,   setFiltroFechaDesde]   = useState('')
   const [filtroFechaHasta,   setFiltroFechaHasta]   = useState('')
+  // Filtros avanzados (segunda fila, se despliega con "Más filtros")
+  const [masFiltros,         setMasFiltros]         = useState(false)
+  const [filtroDocs,         setFiltroDocs]         = useState([])
+  const [filtroBiomasa,      setFiltroBiomasa]      = useState([])
+  const [filtroEspecie,      setFiltroEspecie]      = useState([])
+  const [filtroEstella,      setFiltroEstella]      = useState([])
+  const [filtroTipoOp,       setFiltroTipoOp]       = useState([])
+  const [filtroHumedad,      setFiltroHumedad]      = useState([])
+  const [filtroPesoMin,      setFiltroPesoMin]      = useState('')
+  const [filtroPesoMax,      setFiltroPesoMax]      = useState('')
 
   // ── Selección masiva ──────────────────────────────────────────────
   const [seleccionando,   setSeleccionando]   = useState(false)
@@ -117,6 +130,20 @@ export default function Historial({ albaranes, empresas = [], usuario, refetch, 
   const proveedores     = [...new Set([...empresasByTipo('proveedor'),     ...albaranes.map(a => a.proveedor)    ].filter(Boolean))].sort()
   const transportistas  = [...new Set([...empresasByTipo('transportista'), ...albaranes.map(a => a.transportista)].filter(Boolean))].sort()
 
+  // Opciones de los filtros avanzados, sacadas de los propios albaranes
+  const valoresDe = (campo) => [...new Set(albaranes.map(a => a[campo]).filter(Boolean))].sort()
+  const tiposBiomasa = valoresDe('tipoBiomasa')
+  const especies     = valoresDe('especie')
+  const estellas     = valoresDe('estella')
+  const tiposOp      = [...new Set(albaranes.map(a => a.tipo?.split(' — ')[0]).filter(Boolean))].sort()
+    .map(op => ({ value: op, label: albaranes.find(a => a.tipo?.startsWith(op))?.tipo || op }))
+  const nombresDocs  = [...new Set([...TIPOS_DOC, ...albaranes.flatMap(a => Object.keys(a.docs || {}))])].sort()
+  const opcionesDocs = [
+    { value: DOCS_COMPLETA,   label: 'Documentación completa' },
+    { value: DOCS_INCOMPLETA, label: 'Falta documentación' },
+    ...nombresDocs.map(n => ({ value: n, label: `Con ${n}` })),
+  ]
+
   const filtrados = useMemo(() => albaranes.filter(a => {
     if (busqueda) {
       const q = busqueda.toLowerCase()
@@ -131,11 +158,36 @@ export default function Historial({ albaranes, empresas = [], usuario, refetch, 
     if (filtroEstado.length        && !filtroEstado.includes(a.estado))        return false
     if (filtroFechaDesde    && a.fecha         <  filtroFechaDesde)     return false
     if (filtroFechaHasta    && a.fecha         >  filtroFechaHasta)     return false
+    if (filtroBiomasa.length && !filtroBiomasa.includes(a.tipoBiomasa)) return false
+    if (filtroEspecie.length && !filtroEspecie.includes(a.especie))     return false
+    if (filtroEstella.length && !filtroEstella.includes(a.estella))     return false
+    if (filtroTipoOp.length  && !filtroTipoOp.some(op => a.tipo?.startsWith(op))) return false
+    if (filtroHumedad.length) {
+      const tiene = a.pesada?.humedad != null
+      if (!filtroHumedad.includes(tiene ? 'con' : 'pendiente')) return false
+    }
+    if (filtroPesoMin || filtroPesoMax) {
+      const neto = pesoNeto(a)
+      if (neto == null) return false
+      if (filtroPesoMin && neto < Number(filtroPesoMin)) return false
+      if (filtroPesoMax && neto > Number(filtroPesoMax)) return false
+    }
+    if (filtroDocs.length) {
+      const docs = Object.entries(a.docs || {})
+      const completa = docs.length > 0 && docs.every(([, d]) => d.adjunto)
+      for (const f of filtroDocs) {
+        if (f === DOCS_COMPLETA   && !completa) return false
+        if (f === DOCS_INCOMPLETA &&  completa) return false
+        if (f !== DOCS_COMPLETA && f !== DOCS_INCOMPLETA && !a.docs?.[f]?.adjunto) return false
+      }
+    }
     return true
-  }), [albaranes, busqueda, filtroInstalacion, filtroAstilladora, filtroProveedor, filtroTransportista, filtroEstado, filtroFechaDesde, filtroFechaHasta])
+  }), [albaranes, busqueda, filtroInstalacion, filtroAstilladora, filtroProveedor, filtroTransportista, filtroEstado, filtroFechaDesde, filtroFechaHasta,
+       filtroDocs, filtroBiomasa, filtroEspecie, filtroEstella, filtroTipoOp, filtroHumedad, filtroPesoMin, filtroPesoMax])
 
   // Resetear página al cambiar filtros
-  useEffect(() => { setPagina(1) }, [busqueda, filtroInstalacion, filtroAstilladora, filtroProveedor, filtroTransportista, filtroEstado, filtroFechaDesde, filtroFechaHasta])
+  useEffect(() => { setPagina(1) }, [busqueda, filtroInstalacion, filtroAstilladora, filtroProveedor, filtroTransportista, filtroEstado, filtroFechaDesde, filtroFechaHasta,
+    filtroDocs, filtroBiomasa, filtroEspecie, filtroEstella, filtroTipoOp, filtroHumedad, filtroPesoMin, filtroPesoMax])
 
   const totalPaginas = Math.ceil(filtrados.length / POR_PAGINA)
   const paginados    = filtrados.slice((pagina - 1) * POR_PAGINA, pagina * POR_PAGINA)
@@ -229,9 +281,13 @@ export default function Historial({ albaranes, empresas = [], usuario, refetch, 
     setBusqueda(''); setFiltroInstalacion([]); setFiltroAstilladora([])
     setFiltroProveedor([]); setFiltroTransportista([])
     setFiltroEstado([]); setFiltroFechaDesde(''); setFiltroFechaHasta('')
+    setFiltroDocs([]); setFiltroBiomasa([]); setFiltroEspecie([]); setFiltroEstella([])
+    setFiltroTipoOp([]); setFiltroHumedad([]); setFiltroPesoMin(''); setFiltroPesoMax('')
   }
 
-  const hayFiltros = !!(busqueda || filtroInstalacion.length || filtroAstilladora.length || filtroProveedor.length || filtroTransportista.length || filtroEstado.length || filtroFechaDesde || filtroFechaHasta)
+  const numAvanzados = [filtroDocs, filtroBiomasa, filtroEspecie, filtroEstella, filtroTipoOp, filtroHumedad].filter(f => f.length).length
+    + (filtroPesoMin || filtroPesoMax ? 1 : 0)
+  const hayFiltros = !!(busqueda || filtroInstalacion.length || filtroAstilladora.length || filtroProveedor.length || filtroTransportista.length || filtroEstado.length || filtroFechaDesde || filtroFechaHasta || numAvanzados)
   // Al filtrar, la página conserva el scroll en vez de saltar hacia arriba
   useScrollEstable(raizRef, `${filtrados.length}|${pagina}`)
   const mensajeVacio = hayFiltros ? 'No hay albaranes con los filtros seleccionados' : 'No hay albaranes actualmente'
@@ -314,7 +370,34 @@ export default function Historial({ albaranes, empresas = [], usuario, refetch, 
                 <input type="date" value={filtroFechaHasta} onChange={e => setFiltroFechaHasta(e.target.value)} />
               </div>
             </div>
+            <button type="button" className={`btn mas-filtros-btn${masFiltros || numAvanzados ? ' activo' : ''}`}
+              onClick={() => setMasFiltros(v => !v)} aria-expanded={masFiltros}>
+              <SlidersHorizontal size={13} /> Más filtros{numAvanzados > 0 && ` · ${numAvanzados}`}
+            </button>
           </div>
+
+          {(masFiltros || numAvanzados > 0) && (
+            <div className="filters-bar historial-filtros historial-filtros-mas">
+              <FilterSelect label="Documentación" value={filtroDocs}    onChange={setFiltroDocs}    options={opcionesDocs} />
+              <FilterSelect label="Tipo biomasa"  value={filtroBiomasa} onChange={setFiltroBiomasa} options={tiposBiomasa} />
+              <FilterSelect label="Especie"       value={filtroEspecie} onChange={setFiltroEspecie} options={especies} />
+              <FilterSelect label="Estella"       value={filtroEstella} onChange={setFiltroEstella} options={estellas} />
+              <FilterSelect label="Tipo operación" value={filtroTipoOp} onChange={setFiltroTipoOp}  options={tiposOp} />
+              <FilterSelect label="Humedad"       value={filtroHumedad} onChange={setFiltroHumedad}
+                options={[{ value: 'con', label: 'Analizada' }, { value: 'pendiente', label: 'Pendiente de análisis' }]} />
+              <div className={`date-range peso-range${filtroPesoMin || filtroPesoMax ? ' is-active' : ''}`}>
+                <div className="date-range-field">
+                  <span>Neto desde</span>
+                  <input type="number" min="0" inputMode="numeric" placeholder="kg" value={filtroPesoMin} onChange={e => setFiltroPesoMin(e.target.value)} />
+                </div>
+                <div className="date-range-sep" />
+                <div className="date-range-field">
+                  <span>hasta</span>
+                  <input type="number" min="0" inputMode="numeric" placeholder="kg" value={filtroPesoMax} onChange={e => setFiltroPesoMax(e.target.value)} />
+                </div>
+              </div>
+            </div>
+          )}
 
           <div style={{overflowX:'auto'}}>
           <table className="data-table historial-table">

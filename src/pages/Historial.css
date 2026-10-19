@@ -41,3 +41,12 @@
 @media (max-width: 1100px) {
   .historial-content { padding: 0 var(--gutter) 24px; }
 }
+
+/* Filtros avanzados: segunda fila, misma banda gris */
+.historial-filtros-mas { padding-top:0; }
+.mas-filtros-btn { height:40px; font-size:12.5px; color:var(--gray-600); white-space:nowrap; flex:0 0 auto; }
+.mas-filtros-btn.activo { color:var(--green-600); border-color:var(--green-400); }
+.peso-range { flex:1.4 1 240px; }
+.peso-range input[type="number"] { border:none; background:transparent; padding:0; width:100%; min-width:50px; height:auto; font-size:12px; outline:none; -moz-appearance:textfield; }
+.peso-range input[type="number"]::-webkit-outer-spin-button,
+.peso-range input[type="number"]::-webkit-inner-spin-button { -webkit-appearance:none; margin:0; }
