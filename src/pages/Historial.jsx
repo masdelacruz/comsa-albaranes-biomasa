@@ -6,6 +6,7 @@ import { Badge, FirmaSteps } from '../components/Badge'
 import PdfLoadingOverlay from '../components/PdfLoadingOverlay'
 import FilterSelect from '../components/FilterSelect'
 import { useScrollEstable } from '../hooks/useScrollEstable'
+import { useEstadoSesion, useAlCambiar, useScrollSesion } from '../hooks/useEstadoSesion'
 import { generarPDF } from '../utils/generarPDF'
 import { api } from '../lib/api'
 import '../components/shared.css'
@@ -16,27 +17,29 @@ const DOCS_INCOMPLETA = '__incompleta'
 const pesoNeto = (a) => a.pesada?.entrada && a.pesada?.salida ? a.pesada.entrada - a.pesada.salida : null
 const TIPOS_DOC = ['Autodeclaración','Acuerdo de cesión','Contrato prestación servicios','Permiso de corta','Certificado SURE','Permiso de obra']
 
+const RAIZ_SESION = 'historial'
+
 export default function Historial({ albaranes, empresas = [], usuario, refetch, borrarAlbaran, enviarACampoAlbaran }) {
   const navigate = useNavigate()
   const raizRef  = useRef(null)
-  const [busqueda, setBusqueda] = useState('')
-  const [filtroInstalacion,  setFiltroInstalacion]  = useState([])
-  const [filtroAstilladora,  setFiltroAstilladora]  = useState([])
-  const [filtroProveedor,    setFiltroProveedor]    = useState([])
-  const [filtroTransportista,setFiltroTransportista]= useState([])
-  const [filtroEstado,       setFiltroEstado]       = useState([])
-  const [filtroFechaDesde,   setFiltroFechaDesde]   = useState('')
-  const [filtroFechaHasta,   setFiltroFechaHasta]   = useState('')
+  const [busqueda, setBusqueda] = useEstadoSesion('historial:busqueda', '')
+  const [filtroInstalacion,  setFiltroInstalacion]  = useEstadoSesion('historial:filtroInstalacion', [])
+  const [filtroAstilladora,  setFiltroAstilladora]  = useEstadoSesion('historial:filtroAstilladora', [])
+  const [filtroProveedor,    setFiltroProveedor]    = useEstadoSesion('historial:filtroProveedor', [])
+  const [filtroTransportista,setFiltroTransportista]= useEstadoSesion('historial:filtroTransportista', [])
+  const [filtroEstado,       setFiltroEstado]       = useEstadoSesion('historial:filtroEstado', [])
+  const [filtroFechaDesde,   setFiltroFechaDesde]   = useEstadoSesion('historial:filtroFechaDesde', '')
+  const [filtroFechaHasta,   setFiltroFechaHasta]   = useEstadoSesion('historial:filtroFechaHasta', '')
   // Filtros avanzados (segunda fila, se despliega con "Más filtros")
-  const [masFiltros,         setMasFiltros]         = useState(false)
-  const [filtroDocs,         setFiltroDocs]         = useState([])
-  const [filtroBiomasa,      setFiltroBiomasa]      = useState([])
-  const [filtroEspecie,      setFiltroEspecie]      = useState([])
-  const [filtroEstella,      setFiltroEstella]      = useState([])
-  const [filtroTipoOp,       setFiltroTipoOp]       = useState([])
-  const [filtroHumedad,      setFiltroHumedad]      = useState([])
-  const [filtroPesoMin,      setFiltroPesoMin]      = useState('')
-  const [filtroPesoMax,      setFiltroPesoMax]      = useState('')
+  const [masFiltros,         setMasFiltros]         = useEstadoSesion('historial:masFiltros', false)
+  const [filtroDocs,         setFiltroDocs]         = useEstadoSesion('historial:filtroDocs', [])
+  const [filtroBiomasa,      setFiltroBiomasa]      = useEstadoSesion('historial:filtroBiomasa', [])
+  const [filtroEspecie,      setFiltroEspecie]      = useEstadoSesion('historial:filtroEspecie', [])
+  const [filtroEstella,      setFiltroEstella]      = useEstadoSesion('historial:filtroEstella', [])
+  const [filtroTipoOp,       setFiltroTipoOp]       = useEstadoSesion('historial:filtroTipoOp', [])
+  const [filtroHumedad,      setFiltroHumedad]      = useEstadoSesion('historial:filtroHumedad', [])
+  const [filtroPesoMin,      setFiltroPesoMin]      = useEstadoSesion('historial:filtroPesoMin', '')
+  const [filtroPesoMax,      setFiltroPesoMax]      = useEstadoSesion('historial:filtroPesoMax', '')
 
   // ── Selección masiva ──────────────────────────────────────────────
   const [seleccionando,   setSeleccionando]   = useState(false)
@@ -50,7 +53,7 @@ export default function Historial({ albaranes, empresas = [], usuario, refetch, 
   const [eliminando,        setEliminando]        = useState(false)
   const [enviandoACampo,    setEnviandoACampo]    = useState(false)
   const [confirmBorrarFila, setConfirmBorrarFila] = useState(null)  // id del albaran a borrar individualmente
-  const [pagina,          setPagina]          = useState(1)
+  const [pagina,          setPagina]          = useEstadoSesion('historial:pagina', 1)
   const POR_PAGINA = 25
 
   const esSuperadmin = usuario?.nivel === 'superadmin'
@@ -187,7 +190,7 @@ export default function Historial({ albaranes, empresas = [], usuario, refetch, 
        filtroDocs, filtroBiomasa, filtroEspecie, filtroEstella, filtroTipoOp, filtroHumedad, filtroPesoMin, filtroPesoMax])
 
   // Resetear página al cambiar filtros
-  useEffect(() => { setPagina(1) }, [busqueda, filtroInstalacion, filtroAstilladora, filtroProveedor, filtroTransportista, filtroEstado, filtroFechaDesde, filtroFechaHasta,
+  useAlCambiar(() => { setPagina(1) }, [busqueda, filtroInstalacion, filtroAstilladora, filtroProveedor, filtroTransportista, filtroEstado, filtroFechaDesde, filtroFechaHasta,
     filtroDocs, filtroBiomasa, filtroEspecie, filtroEstella, filtroTipoOp, filtroHumedad, filtroPesoMin, filtroPesoMax])
 
   const totalPaginas = Math.ceil(filtrados.length / POR_PAGINA)
@@ -291,6 +294,10 @@ export default function Historial({ albaranes, empresas = [], usuario, refetch, 
   const hayFiltros = !!(busqueda || filtroInstalacion.length || filtroAstilladora.length || filtroProveedor.length || filtroTransportista.length || filtroEstado.length || filtroFechaDesde || filtroFechaHasta || numAvanzados)
   // Al filtrar, la página conserva el scroll en vez de saltar hacia arriba
   useScrollEstable(raizRef, `${filtrados.length}|${pagina}`)
+  // Al volver del detalle de un albarán: misma posición de scroll que al salir
+  useScrollSesion(RAIZ_SESION, albaranes.length > 0)
+  // Si al volver hay menos resultados que antes, no quedarse en una página vacía
+  useEffect(() => { if (totalPaginas > 0 && pagina > totalPaginas) setPagina(totalPaginas) }, [totalPaginas, pagina])
   const mensajeVacio = hayFiltros ? 'No hay albaranes con los filtros seleccionados' : 'No hay albaranes actualmente'
 
   return (

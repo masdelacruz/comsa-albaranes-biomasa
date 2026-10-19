@@ -71,6 +71,8 @@ export const api = {
     localStorage.removeItem('biomasa_token')
     sessionStorage.removeItem('biomasa_token')
     localStorage.removeItem('biomasa_sso')
+    // Filtros y posición de los listados (ver hooks/useEstadoSesion)
+    try { Object.keys(sessionStorage).filter(k => k.startsWith('vista:')).forEach(k => sessionStorage.removeItem(k)) } catch { /* ignore */ }
   },
   // Marca que la sesión actual viene del login con Microsoft (para el logout)
   marcarSso()      { localStorage.setItem('biomasa_sso', '1') },

@@ -4,29 +4,32 @@ import { AlertTriangle, Plus, Trash2, Search, Filter, ClipboardList, CalendarClo
 import { Badge, FirmaSteps } from '../components/Badge'
 import FilterSelect from '../components/FilterSelect'
 import { useScrollEstable } from '../hooks/useScrollEstable'
+import { useEstadoSesion, useAlCambiar, useScrollSesion } from '../hooks/useEstadoSesion'
 import { labelSemanaActual, isoWeek, isoWeekYear, lunesDeSemana } from '../utils/semana'
 import '../components/shared.css'
 import './Dashboard.css'
 
 const DIAS_CORTOS = ['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom']
 
+const RAIZ_SESION = 'dashboard'
+
 export default function Dashboard({ albaranes, empresas = [], usuario, borrarAlbaran }) {
   const navigate = useNavigate()
   const raizRef  = useRef(null)
   const esSuperadmin = usuario?.nivel === 'superadmin'
 
-  const [busqueda,           setBusqueda]           = useState('')
-  const [filtroInstalacion,  setFiltroInstalacion]  = useState([])
-  const [filtroAstilladora,  setFiltroAstilladora]  = useState([])
-  const [filtroProveedor,    setFiltroProveedor]    = useState([])
-  const [filtroTransportista,setFiltroTransportista]= useState([])
-  const [filtroEstado,       setFiltroEstado]       = useState([])
-  const [filtroFechaDesde,   setFiltroFechaDesde]   = useState('')
-  const [filtroFechaHasta,   setFiltroFechaHasta]   = useState('')
-  const [soloActivos,        setSoloActivos]        = useState('activos')
+  const [busqueda,           setBusqueda]           = useEstadoSesion('dashboard:busqueda', '')
+  const [filtroInstalacion,  setFiltroInstalacion]  = useEstadoSesion('dashboard:filtroInstalacion', [])
+  const [filtroAstilladora,  setFiltroAstilladora]  = useEstadoSesion('dashboard:filtroAstilladora', [])
+  const [filtroProveedor,    setFiltroProveedor]    = useEstadoSesion('dashboard:filtroProveedor', [])
+  const [filtroTransportista,setFiltroTransportista]= useEstadoSesion('dashboard:filtroTransportista', [])
+  const [filtroEstado,       setFiltroEstado]       = useEstadoSesion('dashboard:filtroEstado', [])
+  const [filtroFechaDesde,   setFiltroFechaDesde]   = useEstadoSesion('dashboard:filtroFechaDesde', '')
+  const [filtroFechaHasta,   setFiltroFechaHasta]   = useEstadoSesion('dashboard:filtroFechaHasta', '')
+  const [soloActivos,        setSoloActivos]        = useEstadoSesion('dashboard:soloActivos', 'activos')
   const [confirmBorrar,      setConfirmBorrar]      = useState(null)
-  const [pagina,             setPagina]             = useState(1)
-  const [porPagina,          setPorPagina]          = useState(25)
+  const [pagina,             setPagina]             = useEstadoSesion('dashboard:pagina', 1)
+  const [porPagina,          setPorPagina]          = useEstadoSesion('dashboard:porPagina', 25)
 
   const hoy = new Date()
   const semanaActual = isoWeek(hoy)
@@ -89,7 +92,7 @@ export default function Dashboard({ albaranes, empresas = [], usuario, borrarAlb
   }), [albaranes, soloActivos, busqueda, filtroInstalacion, filtroAstilladora, filtroProveedor, filtroTransportista, filtroEstado, filtroFechaDesde, filtroFechaHasta])
 
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  useEffect(() => { setPagina(1) }, [soloActivos, busqueda, filtroInstalacion, filtroAstilladora, filtroProveedor, filtroTransportista, filtroEstado, filtroFechaDesde, filtroFechaHasta, porPagina])
+  useAlCambiar(() => { setPagina(1) }, [soloActivos, busqueda, filtroInstalacion, filtroAstilladora, filtroProveedor, filtroTransportista, filtroEstado, filtroFechaDesde, filtroFechaHasta, porPagina])
 
   const totalPaginas = Math.ceil(filtrados.length / porPagina)
   const paginados    = filtrados.slice((pagina - 1) * porPagina, pagina * porPagina)
@@ -97,6 +100,10 @@ export default function Dashboard({ albaranes, empresas = [], usuario, borrarAlb
   const hayFiltros = !!(busqueda || filtroInstalacion.length || filtroAstilladora.length || filtroProveedor.length || filtroTransportista.length || filtroEstado.length || filtroFechaDesde || filtroFechaHasta)
   // Al filtrar, la página conserva el scroll en vez de saltar hacia arriba
   useScrollEstable(raizRef, `${filtrados.length}|${pagina}`)
+  // Al volver del detalle de un albarán: misma posición de scroll que al salir
+  useScrollSesion(RAIZ_SESION, albaranes.length > 0)
+  // Si al volver hay menos resultados que antes, no quedarse en una página vacía
+  useEffect(() => { if (totalPaginas > 0 && pagina > totalPaginas) setPagina(totalPaginas) }, [totalPaginas, pagina])
   const TAB_ADJETIVO = { activos: 'activos', cerrados: 'finalizados', rechazados: 'rechazados' }
   const mensajeVacio = hayFiltros
     ? 'No hay albaranes con los filtros seleccionados'
