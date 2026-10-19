@@ -150,3 +150,12 @@
 .ver-field.full .ver-val:not(.vacio) { padding:0; background:none; border:none; }
 .pill-editando { padding:0; background:none; border:none; font-size:11px; text-transform:none; letter-spacing:0; }
 .pill-editando::before { content:'· '; color:var(--gray-300); }
+
+/* Rejilla fija de 4 columnas: cada grupo cabe en una sola línea */
+.ver-fila { grid-template-columns:96px 1fr; align-items:baseline; }
+.ver-fila-titulo { white-space:nowrap; }
+.ver-fila-campos { grid-template-columns:repeat(4, minmax(0, 1fr)); gap:6px 14px; }
+.ver-fila .ver-field.doble { grid-column:span 2; }
+@media (max-width: 1280px) {
+  .ver-fila-campos { grid-template-columns:repeat(2, minmax(0, 1fr)); }
+}

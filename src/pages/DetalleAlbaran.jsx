@@ -45,10 +45,10 @@ const TIPOS_OP = ['Opción 1 — Compra en monte / plataforma', 'Opción 2 — P
 // Botón (simple o con desplegable "solo albarán" / "+ ticket pesada" si aplica
 // certificación SURE) para generar el PDF, en modo descarga o vista previa.
 // Campo en modo lectura: etiqueta arriba y valor debajo, igual que el formulario de edición
-function Campo({ label, valor, full, children }) {
+function Campo({ label, valor, full, ancho, children }) {
   const vacio = children == null && (valor == null || valor === '' || valor === '—')
   return (
-    <div className={`ver-field${full ? ' full' : ''}`}>
+    <div className={`ver-field${full ? ' full' : ''}${ancho === 2 ? ' doble' : ''}`}>
       <span className="ver-label">{label}</span>
       <span className={`ver-val${vacio ? ' vacio' : ''}`}>{children ?? (vacio ? '—' : valor)}</span>
     </div>
@@ -958,7 +958,7 @@ export default function DetalleAlbaran({ albaranes, simularFirma, updateFirma, s
               ) : (
                 <div className="ver-grupos">
                   <Fila titulo="Operación">
-                    <Campo label="Tipo operación" valor={a.tipo} />
+                    <Campo label="Tipo operación" valor={a.tipo} ancho={2} />
                     <Campo label="Certificación">
                       {(() => {
                         // Puede llegar como texto "SURE,PEFC" o como array
@@ -981,7 +981,7 @@ export default function DetalleAlbaran({ albaranes, simularFirma, updateFirma, s
                     <Campo label="Tipo biomasa" valor={a.tipoBiomasa} />
                     <Campo label="Estella" valor={a.estella} />
                   </Fila>
-                  <Fila titulo="Origen y destino">
+                  <Fila titulo="Ubicación">
                     <Campo label="Origen" valor={a.origen} />
                     <Campo label="Permiso / Ref." valor={a.permiso} />
                     {a.tipo?.includes('2') && <Campo label="Referencia SURE" valor={a.referenciaSure} />}
