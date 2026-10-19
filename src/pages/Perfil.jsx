@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Mail, LogOut, LayoutGrid, Leaf, HardHat, Package, PenLine, CheckCircle2, Droplet, Check, Minus } from 'lucide-react'
+import { Mail, LogOut, ArrowRight, Leaf, HardHat, Package, PenLine, CheckCircle2, Droplet, Check, Minus } from 'lucide-react'
 import { api } from '../lib/api'
 import '../components/shared.css'
 import './Perfil.css'
@@ -124,12 +124,26 @@ export default function Perfil({ usuario, actualizarUsuario, logout }) {
             <div className="perfil-fact">
               <dt>Aplicaciones</dt>
               <dd className="perfil-apps">
-                <span className={`perfil-app${tieneBiomasa ? '' : ' off'}`}><Leaf size={13} /> Biomasa</span>
-                <span className={`perfil-app${tieneTrabajo ? '' : ' off'}`}><HardHat size={13} /> Trabajo</span>
+                {/* El perfil vive dentro de Biomasa: esa es la app actual */}
+                <span className="perfil-app actual">
+                  <span className="perfil-app-ico perfil-app-ico--biomasa"><Leaf size={14} /></span>
+                  <span className="perfil-app-nombre">Biomasa</span>
+                  <span className="perfil-app-estado">Estás aquí</span>
+                </span>
+                {tieneTrabajo ? (
+                  <button type="button" className="perfil-app abrir" onClick={() => navigate('/trabajo')}>
+                    <span className="perfil-app-ico perfil-app-ico--trabajo"><HardHat size={14} /></span>
+                    <span className="perfil-app-nombre">Trabajo</span>
+                    <span className="perfil-app-estado">Abrir <ArrowRight size={12} /></span>
+                  </button>
+                ) : (
+                  <span className="perfil-app off">
+                    <span className="perfil-app-ico"><HardHat size={14} /></span>
+                    <span className="perfil-app-nombre">Trabajo</span>
+                    <span className="perfil-app-estado">Sin acceso</span>
+                  </span>
+                )}
               </dd>
-              {tieneBiomasa && tieneTrabajo
-                ? <button className="perfil-link" onClick={() => navigate('/apps')}><LayoutGrid size={12} /> Cambiar de aplicación</button>
-                : <span className="perfil-fact-sub">{tieneTrabajo ? '' : 'Trabajo: próximamente'}</span>}
             </div>
           </dl>
         </section>
