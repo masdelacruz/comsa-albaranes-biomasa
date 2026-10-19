@@ -95,6 +95,44 @@ router.post('/upload/:albaranId/doc', requireAuth, upload.single('file'), async 
   res.json({ url: signPath(path) })
 })
 
+// ── DELETE /storage/upload/:albaranId/doc?docNombre=…  (requiere auth) ──
+// Quita el fichero adjunto de un documento; la fila del documento se conserva
+// como pendiente. En albaranes cerrados no se permite: la documentación forma
+// parte de lo firmado y debe quedar inalterada.
+router.delete('/upload/:albaranId/doc', requireAuth, async (req, res) => {
+  const minio  = req.app.get('minio')
+  const bucket = req.app.get('minio_bucket')
+  const { albaranId } = req.params
+  const docNombre = req.query.docNombre
+  if (!docNombre) return res.status(400).json({ error: 'Falta el documento' })
+
+  const { rows: [alb] } = await pool.query('SELECT estado FROM albaranes WHERE id=$1', [albaranId])
+  if (!alb) return res.status(404).json({ error: 'Albarán no encontrado' })
+  if (alb.estado === 'cerrado') return res.status(409).json({ error: 'No se puede eliminar documentación de un albarán cerrado' })
+
+  const { rows: [doc] } = await pool.query(
+    'SELECT url, nombre_fichero FROM docs WHERE albaran_id=$1 AND nombre=$2 AND adjunto=true', [albaranId, docNombre]
+  )
+  if (!doc) return res.status(404).json({ error: 'Documento no adjunto' })
+
+  if (doc.url) await minio.removeObject(bucket, toPath(doc.url)).catch(() => {})
+  await pool.query(
+    `UPDATE docs SET adjunto=false, url=NULL, nombre_fichero=NULL, tipo_fichero=NULL, tamanyo=NULL
+     WHERE albaran_id=$1 AND nombre=$2`,
+    [albaranId, docNombre]
+  )
+  const fecha = new Date().toLocaleString('es-ES')
+  await pool.query(
+    'INSERT INTO actividad (albaran_id,ts,texto,actor) VALUES ($1,$2,$3,$4)',
+    [albaranId, fecha, `Documento eliminado: ${docNombre}`, req.user.nombre || 'Oficina']
+  )
+  registrarAuditoria({
+    usuario: req.user, accion: 'borrar', entidad: 'documento', entidadId: albaranId,
+    detalle: `Documento eliminado del albarán ${albaranId}: ${docNombre} (${doc.nombre_fichero || 'sin nombre'})`,
+  })
+  res.json({ ok: true })
+})
+
 const ALLOWED_TICKET_EXTS = new Set(['pdf', 'jpg', 'jpeg', 'png', 'webp'])
 
 // ── POST /storage/upload/:albaranId/ticket  (oficina o token de campo) ──

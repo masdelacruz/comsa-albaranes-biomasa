@@ -144,13 +144,15 @@ function BannerRevision({ albaranId, onReabrir }) {
   )
 }
 
-export default function DetalleAlbaran({ albaranes, simularFirma, updateFirma, subirDocumento, subirTicketPesada, actualizarAlbaran, borrarAlbaran, reabrirAlbaran, enviarACampoAlbaran, regenerarEnlaceCampo, usuario, refetch }) {
+export default function DetalleAlbaran({ albaranes, simularFirma, updateFirma, subirDocumento, eliminarDocumento, subirTicketPesada, actualizarAlbaran, borrarAlbaran, reabrirAlbaran, enviarACampoAlbaran, regenerarEnlaceCampo, usuario, refetch }) {
   const { id } = useParams()
   const navigate = useNavigate()
   const fileRefs    = useRef({})
   const ticketRef   = useRef(null)
   const [subiendo, setSubiendo]             = useState({})
   const [subiendoTicket, setSubiendoTicket] = useState(false)
+  const [borrarDoc, setBorrarDoc]           = useState(null)   // nombre del doc pendiente de confirmar borrado
+  const [borrandoDoc, setBorrandoDoc]       = useState(false)
   const [confirmModal, setConfirmModal]     = useState(null)
   const [copiado, setCopiado]               = useState('')
   const [regenerando, setRegenerando]       = useState(false)
@@ -388,6 +390,19 @@ export default function DetalleAlbaran({ albaranes, simularFirma, updateFirma, s
   const handleSubirDoc = async (docNombre, e) => {
     await subirDoc(docNombre, e.target.files[0])
     e.target.value = ''
+  }
+
+  const confirmarBorrarDoc = async (docNombre) => {
+    setBorrandoDoc(true)
+    try {
+      await eliminarDocumento(a.id, docNombre)
+      mostrarToast('Documento eliminado')
+    } catch (e) {
+      mostrarToast(e?.message || 'No se pudo eliminar el documento')
+    } finally {
+      setBorrandoDoc(false)
+      setBorrarDoc(null)
+    }
   }
 
   const handleDropDoc = (docNombre, e) => {
@@ -1196,6 +1211,15 @@ export default function DetalleAlbaran({ albaranes, simularFirma, updateFirma, s
                                 ? 'Suelta para adjuntar'
                                 : doc.adjunto && doc.nombreFichero ? `${doc.nombreFichero} · ${formatBytes(doc.tamanyo)}` : ''}
                             </span>
+                            {borrarDoc === nombre ? (
+                            <div className="doc-acciones">
+                              <span className="doc-confirm">¿Eliminar archivo?</span>
+                              <button type="button" className="btn doc-btn" onClick={() => setBorrarDoc(null)} disabled={borrandoDoc}>No</button>
+                              <button type="button" className="btn doc-btn doc-btn-borrar" onClick={() => confirmarBorrarDoc(nombre)} disabled={borrandoDoc}>
+                                {borrandoDoc ? 'Eliminando…' : 'Sí, eliminar'}
+                              </button>
+                            </div>
+                            ) : (
                             <div className="doc-acciones">
                               {doc.adjunto && doc.url && (
                                 <a href={doc.url} target="_blank" rel="noreferrer" className="btn doc-btn"><Eye size={11} /> Ver</a>
@@ -1209,12 +1233,19 @@ export default function DetalleAlbaran({ albaranes, simularFirma, updateFirma, s
                               >
                                 {subiendo[nombre] ? 'Subiendo…' : doc.adjunto ? <><RefreshCw size={11} /> Cambiar</> : <><Upload size={11} /> Adjuntar</>}
                               </button>
+                              {doc.adjunto && a.estado !== 'cerrado' && (
+                                <button type="button" className="btn doc-btn doc-btn-icono" title="Eliminar archivo"
+                                  onClick={() => setBorrarDoc(nombre)}>
+                                  <Trash2 size={11} />
+                                </button>
+                              )}
                               <input
                                 type="file" accept=".pdf,.jpg,.jpeg,.png" style={{display:'none'}}
                                 ref={el => fileRefs.current[nombre] = el}
                                 onChange={e => handleSubirDoc(nombre, e)}
                               />
                             </div>
+                            )}
                           </div>
                         )
                       })}

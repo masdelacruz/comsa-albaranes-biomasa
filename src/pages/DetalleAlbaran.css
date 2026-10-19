@@ -218,3 +218,8 @@
 /* Botones de documentos iguales que el del ticket de pesada */
 .doc-row { padding:4px 0; }
 .doc-acciones { gap:6px; opacity:1; }
+.doc-btn-icono { padding:4px 6px; color:var(--gray-400); }
+.doc-btn-icono:hover { color:var(--red-700); border-color:var(--red-100); }
+.doc-confirm { font-size:11.5px; color:var(--red-700); margin-right:2px; }
+.doc-btn-borrar { color:var(--red-700); border-color:var(--red-100); }
+.doc-btn-borrar:hover { background:var(--red-50); }

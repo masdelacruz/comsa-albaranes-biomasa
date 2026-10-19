@@ -44,6 +44,11 @@ export function useAlbaranActions(refetch, usuario, campoToken = null) {
     await refetch()
   }
 
+  const eliminarDocumento = async (albaranId, docNombre) => {
+    await api.delete(`/storage/upload/${albaranId}/doc?docNombre=${encodeURIComponent(docNombre)}`)
+    await refetch()
+  }
+
   const subirTicketPesada = async (albaranId, fichero, actorExterno = null) => {
     const fd = new FormData()
     fd.append('file', fichero)
@@ -74,5 +79,5 @@ export function useAlbaranActions(refetch, usuario, campoToken = null) {
     return campoToken
   }
 
-  return { addAlbaran, enviarACampoAlbaran, updateFirma, simularFirmaOficina, subirDocumento, subirTicketPesada, actualizarAlbaran, borrarAlbaran, reabrirAlbaran, regenerarEnlaceCampo }
+  return { addAlbaran, enviarACampoAlbaran, updateFirma, simularFirmaOficina, subirDocumento, eliminarDocumento, subirTicketPesada, actualizarAlbaran, borrarAlbaran, reabrirAlbaran, regenerarEnlaceCampo }
 }
