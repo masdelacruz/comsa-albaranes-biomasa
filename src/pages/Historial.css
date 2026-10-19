@@ -50,3 +50,16 @@
 .peso-range input[type="number"] { border:none; background:transparent; padding:0; width:100%; min-width:50px; height:auto; font-size:12px; outline:none; -moz-appearance:textfield; }
 .peso-range input[type="number"]::-webkit-outer-spin-button,
 .peso-range input[type="number"]::-webkit-inner-spin-button { -webkit-appearance:none; margin:0; }
+
+/* Filtros avanzados ordenados en rejilla: material arriba, control abajo */
+.historial-filtros-mas { display:grid; grid-template-columns:repeat(4, minmax(0, 1fr)); gap:8px; }
+.historial-filtros-mas > * { min-width:0; }
+.historial-filtros-mas .peso-range { grid-column:span 2; flex:none; }
+.peso-range-label { font-size:11px; color:var(--gray-400); padding:0 10px 0 12px; white-space:nowrap; }
+.peso-range-guion { color:var(--gray-300); font-size:12px; }
+.peso-range .date-range-field { justify-content:center; }
+.peso-range input[type="number"] { text-align:center; }
+@media (max-width: 900px) {
+  .historial-filtros-mas { grid-template-columns:repeat(2, minmax(0, 1fr)); }
+}
+.historial-filtros-mas .peso-range.is-active { border-color:var(--green-400); }

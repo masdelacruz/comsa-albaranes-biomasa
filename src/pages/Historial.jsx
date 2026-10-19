@@ -378,25 +378,27 @@ export default function Historial({ albaranes, empresas = [], usuario, refetch, 
           </div>
 
           {(masFiltros || numAvanzados > 0) && (
-            <div className="filters-bar historial-filtros historial-filtros-mas">
-              <FilterSelect label="Documentación" value={filtroDocs}    onChange={setFiltroDocs}    options={opcionesDocs} />
-              <FilterSelect label="Tipo biomasa"  value={filtroBiomasa} onChange={setFiltroBiomasa} options={tiposBiomasa} />
-              <FilterSelect label="Especie"       value={filtroEspecie} onChange={setFiltroEspecie} options={especies} />
-              <FilterSelect label="Estella"       value={filtroEstella} onChange={setFiltroEstella} options={estellas} />
-              <FilterSelect label="Tipo operación" value={filtroTipoOp} onChange={setFiltroTipoOp}  options={tiposOp} />
-              <FilterSelect label="Humedad"       value={filtroHumedad} onChange={setFiltroHumedad}
-                options={[{ value: 'con', label: 'Analizada' }, { value: 'pendiente', label: 'Pendiente de análisis' }]} />
-              <div className={`date-range peso-range${filtroPesoMin || filtroPesoMax ? ' is-active' : ''}`}>
-                <div className="date-range-field">
-                  <span>Neto desde</span>
-                  <input type="number" min="0" step="0.1" inputMode="decimal" placeholder="t" value={filtroPesoMin} onChange={e => setFiltroPesoMin(e.target.value)} />
-                </div>
+            <div className="historial-filtros historial-filtros-mas">
+              {/* Material */}
+              <FilterSelect label="Tipo operación" value={filtroTipoOp}  onChange={setFiltroTipoOp}  options={tiposOp} />
+              <FilterSelect label="Tipo biomasa"   value={filtroBiomasa} onChange={setFiltroBiomasa} options={tiposBiomasa} />
+              <FilterSelect label="Especie"        value={filtroEspecie} onChange={setFiltroEspecie} options={especies} />
+              <FilterSelect label="Estella"        value={filtroEstella} onChange={setFiltroEstella} options={estellas} />
+              {/* Control: peso, humedad y papeles */}
+              <div className={`date-range peso-range${filtroPesoMin || filtroPesoMax ? ' is-active' : ''}`} title="Peso neto en toneladas">
+                <span className="peso-range-label">Toneladas</span>
                 <div className="date-range-sep" />
                 <div className="date-range-field">
-                  <span>hasta</span>
-                  <input type="number" min="0" step="0.1" inputMode="decimal" placeholder="t" value={filtroPesoMax} onChange={e => setFiltroPesoMax(e.target.value)} />
+                  <input type="number" min="0" step="0.1" inputMode="decimal" placeholder="Mín." aria-label="Peso neto mínimo en toneladas" value={filtroPesoMin} onChange={e => setFiltroPesoMin(e.target.value)} />
+                </div>
+                <span className="peso-range-guion">—</span>
+                <div className="date-range-field">
+                  <input type="number" min="0" step="0.1" inputMode="decimal" placeholder="Máx." aria-label="Peso neto máximo en toneladas" value={filtroPesoMax} onChange={e => setFiltroPesoMax(e.target.value)} />
                 </div>
               </div>
+              <FilterSelect label="Humedad"        value={filtroHumedad} onChange={setFiltroHumedad}
+                options={[{ value: 'con', label: 'Analizada' }, { value: 'pendiente', label: 'Pendiente de análisis' }]} />
+              <FilterSelect label="Documentación"  value={filtroDocs}    onChange={setFiltroDocs}    options={opcionesDocs} />
             </div>
           )}
 
