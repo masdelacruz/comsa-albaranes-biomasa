@@ -953,9 +953,14 @@ export default function DetalleAlbaran({ albaranes, simularFirma, updateFirma, s
                   <Grupo>Operación</Grupo>
                   <Campo label="Tipo operación" valor={a.tipo} />
                   <Campo label="Certificación">
-                    {a.certificacion
-                      ? <span className="ver-chips">{a.certificacion.split(',').filter(Boolean).map(c => <span key={c} className="ver-chip">{c}</span>)}</span>
-                      : null}
+                    {(() => {
+                      // Puede llegar como texto "SURE,PEFC" o como array
+                      const certs = (Array.isArray(a.certificacion) ? a.certificacion : String(a.certificacion || '').split(','))
+                        .map(c => String(c).trim()).filter(Boolean)
+                      return certs.length
+                        ? <span className="ver-chips">{certs.map(c => <span key={c} className="ver-chip">{c}</span>)}</span>
+                        : null
+                    })()}
                   </Campo>
 
                   <Grupo>Intervinientes</Grupo>
