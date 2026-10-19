@@ -1,6 +1,6 @@
 import { useState, useRef, useMemo, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Download, Search, FileSpreadsheet, Upload, Trash2, X, Send, SlidersHorizontal } from 'lucide-react'
+import { Download, Search, FileSpreadsheet, Upload, Trash2, X, Send, SlidersHorizontal, ListChecks } from 'lucide-react'
 import ExcelJS from 'exceljs'
 import { Badge, FirmaSteps } from '../components/Badge'
 import PdfLoadingOverlay from '../components/PdfLoadingOverlay'
@@ -43,7 +43,7 @@ export default function Historial({ albaranes, empresas = [], usuario, refetch, 
 
   // ── Selección masiva ──────────────────────────────────────────────
   const [seleccionados,   setSeleccionados]   = useState(new Set())
-  const seleccionando = seleccionados.size > 0  // la columna de casillas siempre está; la barra aparece al marcar
+  const [seleccionando,   setSeleccionando]   = useState(false)  // modo selección: casillas visibles y clic en fila = marcar
   const [modalAdjuntar,   setModalAdjuntar]   = useState(false)
   const [docTipo,         setDocTipo]         = useState('')
   const [docFichero,      setDocFichero]      = useState(null)
@@ -60,8 +60,8 @@ export default function Historial({ albaranes, empresas = [], usuario, refetch, 
 
   const toggleSeleccion   = (id) => setSeleccionados(prev => { const n = new Set(prev); n.has(id) ? n.delete(id) : n.add(id); return n })
   const seleccionarTodos  = () => setSeleccionados(new Set(filtrados.map(a => a.id)))
-  const cancelarSeleccion = () => setSeleccionados(new Set())
-  const toggleTodos       = () => todosMarcados ? cancelarSeleccion() : seleccionarTodos()
+  const cancelarSeleccion = () => { setSeleccionando(false); setSeleccionados(new Set()) }
+  const toggleTodos       = () => todosMarcados ? setSeleccionados(new Set()) : seleccionarTodos()
 
   const subirDocumento = async (albaranId, docNombre, fichero) => {
     const fd = new FormData()
@@ -355,6 +355,11 @@ export default function Historial({ albaranes, empresas = [], usuario, refetch, 
               onClick={() => setMasFiltros(v => !v)} aria-expanded={masFiltros}>
               <SlidersHorizontal size={13} /> Más filtros{numAvanzados > 0 && ` · ${numAvanzados}`}
             </button>
+            <button type="button" className={`btn mas-filtros-btn${seleccionando ? ' activo' : ''}`}
+              onClick={() => seleccionando ? cancelarSeleccion() : setSeleccionando(true)} aria-pressed={seleccionando}
+              title={seleccionando ? 'Salir del modo selección' : 'Seleccionar varios albaranes'}>
+              <ListChecks size={13} /> {seleccionando ? 'Salir de selección' : 'Seleccionar'}
+            </button>
           </div>
 
           {(masFiltros || numAvanzados > 0) && (
@@ -386,18 +391,20 @@ export default function Historial({ albaranes, empresas = [], usuario, refetch, 
           <table className="data-table historial-table">
             <thead>
               <tr>
-                <th className="col-check">
-                  <input type="checkbox" checked={todosMarcados} onChange={toggleTodos}
-                    ref={el => { if (el) el.indeterminate = seleccionando && !todosMarcados }}
-                    title={todosMarcados ? 'Quitar selección' : `Seleccionar los ${filtrados.length} albaranes filtrados`}
-                    aria-label="Seleccionar todos" disabled={filtrados.length === 0} />
-                </th>
+                {seleccionando && (
+                  <th className="col-check">
+                    <input type="checkbox" checked={todosMarcados} onChange={toggleTodos}
+                      ref={el => { if (el) el.indeterminate = seleccionados.size > 0 && !todosMarcados }}
+                      title={todosMarcados ? 'Quitar selección' : `Seleccionar los ${filtrados.length} albaranes filtrados`}
+                      aria-label="Seleccionar todos" disabled={filtrados.length === 0} />
+                  </th>
+                )}
                 <th>Nº albarán</th>
                 <th>Fecha</th>
-                <th>Proveedor</th>
-                <th>Astilladora</th>
-                <th>Transportista</th>
-                <th>Instalación</th>
+                <th className="col-texto">Proveedor</th>
+                <th className="col-texto col-opcional">Astilladora</th>
+                <th className="col-texto col-opcional">Transportista</th>
+                <th className="col-texto">Instalación</th>
                 <th>Especie</th>
                 <th>Estella</th>
                 <th style={{textAlign:'right'}}>Peso neto</th>
@@ -409,19 +416,22 @@ export default function Historial({ albaranes, empresas = [], usuario, refetch, 
             </thead>
             <tbody>
               {filtrados.length === 0 ? (
-                <tr><td colSpan={13 + (esSuperadmin ? 1 : 0)} className="empty-state">{mensajeVacio}</td></tr>
+                <tr><td colSpan={(seleccionando ? 1 : 0) + 12 + (esSuperadmin ? 1 : 0)} className="empty-state">{mensajeVacio}</td></tr>
               ) : paginados.map(a => (
                 <tr key={a.id} onClick={() => seleccionando ? toggleSeleccion(a.id) : navigate(`/albaran/${a.id}`)}
                   className={seleccionados.has(a.id) ? 'fila-marcada' : undefined} style={{cursor:'pointer'}}>
-                  <td className="col-check" onClick={e => { e.stopPropagation(); toggleSeleccion(a.id) }}>
-                    <input type="checkbox" checked={seleccionados.has(a.id)} onChange={() => {}} aria-label={`Seleccionar albarán ${a.id}`} />
-                  </td>
+                  {/* En modo selección toda la fila marca/desmarca; la casilla solo refleja el estado */}
+                  {seleccionando && (
+                    <td className="col-check">
+                      <input type="checkbox" checked={seleccionados.has(a.id)} readOnly tabIndex={-1} aria-label={`Seleccionar albarán ${a.id}`} />
+                    </td>
+                  )}
                   <td className="row-id">{a.id}</td>
                   <td>{a.fecha?.slice(0,10).split('-').reverse().join('/')}</td>
-                  <td>{a.proveedor}</td>
-                  <td>{a.astilladora}</td>
-                  <td>{a.transportista}</td>
-                  <td>{a.instalacion}</td>
+                  <td className="col-texto">{a.proveedor}</td>
+                  <td className="col-texto col-opcional">{a.astilladora}</td>
+                  <td className="col-texto col-opcional">{a.transportista}</td>
+                  <td className="col-texto">{a.instalacion}</td>
                   <td>{a.especie}</td>
                   <td>{a.estella}</td>
                   <td style={{textAlign:'right'}}>{a.pesada.entrada && a.pesada.salida ? ((a.pesada.entrada-a.pesada.salida)/1000).toFixed(1)+' t' : <span style={{color:'var(--gray-300)'}}>—</span>}</td>
