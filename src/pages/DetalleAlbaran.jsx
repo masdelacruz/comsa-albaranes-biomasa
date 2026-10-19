@@ -1175,7 +1175,6 @@ export default function DetalleAlbaran({ albaranes, simularFirma, updateFirma, s
                       {adjuntos === total ? <><Check size={12} /> Completa</> : <>{adjuntos} de {total} adjuntos</>}
                     </span>
                   </div>
-                  <div className="doc-barra"><span style={{width:`${total ? adjuntos / total * 100 : 0}%`}} /></div>
 
                   {grupos.map(g => (
                     <div key={g.titulo} className="doc-grupo">
@@ -1190,36 +1189,25 @@ export default function DetalleAlbaran({ albaranes, simularFirma, updateFirma, s
                             onDragLeave={e => { if (!e.currentTarget.contains(e.relatedTarget)) setDragOverDoc(null) }}
                             onDrop={e => handleDropDoc(nombre, e)}
                           >
-                            <span className="doc-estado">{doc.adjunto ? <CheckCircle size={15} /> : <span className="doc-hueco" />}</span>
-                            <div className="doc-info">
-                              <div className="doc-nombre">{nombre}</div>
-                              <div className="doc-meta">
-                                {isDragOver
-                                  ? 'Suelta el archivo para adjuntarlo'
-                                  : doc.adjunto
-                                    ? (doc.nombreFichero ? `${doc.nombreFichero} · ${formatBytes(doc.tamanyo)}` : 'Adjunto')
-                                    : 'Pendiente · arrastra aquí o adjunta'}
-                              </div>
-                            </div>
+                            <span className="doc-estado">{doc.adjunto ? <Check size={13} /> : <span className="doc-hueco" />}</span>
+                            <span className="doc-nombre">{nombre}</span>
+                            <span className="doc-meta">
+                              {isDragOver
+                                ? 'Suelta para adjuntar'
+                                : doc.adjunto && doc.nombreFichero ? `${doc.nombreFichero} · ${formatBytes(doc.tamanyo)}` : ''}
+                            </span>
                             <div className="doc-acciones">
                               {doc.adjunto && doc.url && (
-                                <a href={doc.url} target="_blank" rel="noreferrer" className="btn doc-btn">
-                                  <Eye size={11} /> Ver
-                                </a>
+                                <a href={doc.url} target="_blank" rel="noreferrer" className="doc-link">Ver</a>
                               )}
                               <button
-                                className="btn doc-btn"
+                                type="button"
+                                className="doc-link"
                                 onClick={() => fileRefs.current[nombre]?.click()}
                                 disabled={subiendo[nombre]}
-                                title={doc.adjunto ? 'Sustituir el archivo' : 'Adjuntar archivo'}
+                                title={doc.adjunto ? 'Sustituir el archivo' : 'Adjuntar archivo (o arrástralo a la fila)'}
                               >
-                                {subiendo[nombre]
-                                  ? <span style={{display:'flex',alignItems:'center',gap:4}}>
-                                      <div style={{width:10,height:10,border:'2px solid currentColor',borderTopColor:'transparent',borderRadius:'50%',animation:'spin 0.6s linear infinite'}} />
-                                      Subiendo
-                                    </span>
-                                  : doc.adjunto ? <><RefreshCw size={11} /> Cambiar</> : <><Upload size={11} /> Adjuntar</>
-                                }
+                                {subiendo[nombre] ? 'Subiendo…' : doc.adjunto ? 'Cambiar' : <><Upload size={11} /> Adjuntar</>}
                               </button>
                               <input
                                 type="file" accept=".pdf,.jpg,.jpeg,.png" style={{display:'none'}}

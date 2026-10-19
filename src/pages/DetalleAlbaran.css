@@ -199,3 +199,19 @@
 .doc-row.drag .doc-meta { color:var(--green-600); }
 .doc-acciones { display:flex; gap:6px; align-items:center; flex-shrink:0; }
 .doc-btn { font-size:11px; padding:4px 8px; }
+
+/* Documentación compacta: una línea por papel, acciones como texto */
+.doc-grupo { margin-top:8px; }
+.doc-grupo-titulo { font-size:10px; padding-bottom:2px; border-bottom:none; color:var(--gray-300); }
+.doc-row { padding:3px 0; border-bottom:none; gap:8px; min-height:26px; }
+.doc-estado { width:14px; }
+.doc-hueco { width:9px; height:9px; border-width:1.5px; }
+.doc-nombre { font-size:12.5px; flex-shrink:0; }
+.doc-row:not(.ok) .doc-nombre { color:var(--gray-400); font-weight:400; }
+.doc-meta { flex:1; min-width:0; font-size:11px; margin:0; }
+.doc-link { display:inline-flex; align-items:center; gap:3px; padding:0; border:none; background:none; font:inherit; font-size:11.5px; font-weight:500; color:var(--gray-400); cursor:pointer; text-decoration:none; transition:color 0.15s; }
+.doc-link:hover { color:var(--green-600); }
+.doc-row:not(.ok) .doc-link { color:var(--gray-600); }
+.doc-row:not(.ok) .doc-link:hover { color:var(--green-600); }
+.doc-acciones { gap:10px; opacity:0.85; }
+.doc-progreso { font-size:11.5px; font-weight:400; color:var(--gray-400); }
