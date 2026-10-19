@@ -184,6 +184,14 @@ export default function DetalleAlbaran({ albaranes, simularFirma, updateFirma, s
   const [transportistas, setTransportistas] = useState([])
   const [instalaciones,  setInstalaciones]  = useState([])
   const [todasEmpresas,  setTodasEmpresas]  = useState([])
+  // Nombre de interviniente → enlace a su ficha de cliente (si existe la empresa)
+  const linkEmpresa = (nombre, tipo) => {
+    if (!nombre) return null
+    const emp = todasEmpresas.find(e => e.nombre === nombre && e.tipo === tipo) || todasEmpresas.find(e => e.nombre === nombre)
+    return emp
+      ? <button type="button" className="ver-empresa" onClick={() => navigate(`/clientes/${emp.id}`)} title={`Ver ficha de ${nombre}`}>{nombre}</button>
+      : nombre
+  }
   const [tiposBiomasa,   setTiposBiomasa]   = useState(TIPOS_BIOMASA)
   const [especiesTipo,   setEspeciesTipo]   = useState(['Pinus SP','Otros'])
   const [estellas,       setEstellas]       = useState(ESPECIES)
@@ -958,7 +966,13 @@ export default function DetalleAlbaran({ albaranes, simularFirma, updateFirma, s
               ) : (
                 <div className="ver-grupos">
                   <Fila titulo="Operación">
-                    <Campo label="Tipo operación" valor={a.tipo} ancho={2} />
+                    <Campo label="Tipo operación">
+                      {a.tipo ? (() => {
+                        // "Opción 1 — Compra en monte / plataforma" → opción arriba, descripción debajo
+                        const [opcion, ...resto] = a.tipo.split(' — ')
+                        return <>{opcion}{resto.length > 0 && <span className="ver-sub">{resto.join(' — ')}</span>}</>
+                      })() : null}
+                    </Campo>
                     <Campo label="Certificación">
                       {(() => {
                         // Puede llegar como texto "SURE,PEFC" o como array
@@ -971,10 +985,10 @@ export default function DetalleAlbaran({ albaranes, simularFirma, updateFirma, s
                     </Campo>
                   </Fila>
                   <Fila titulo="Intervinientes">
-                    <Campo label="Proveedor" valor={a.proveedor} />
-                    {a.tipo?.includes('1') && <Campo label="Astilladora" valor={a.astilladora} />}
-                    {a.tipo?.includes('1') && <Campo label="Transportista" valor={a.transportista} />}
-                    <Campo label="Instalación" valor={a.instalacion} />
+                    <Campo label="Proveedor">{linkEmpresa(a.proveedor, 'proveedor')}</Campo>
+                    {a.tipo?.includes('1') && <Campo label="Astilladora">{linkEmpresa(a.astilladora, 'astilladora')}</Campo>}
+                    {a.tipo?.includes('1') && <Campo label="Transportista">{linkEmpresa(a.transportista, 'transportista')}</Campo>}
+                    <Campo label="Instalación">{linkEmpresa(a.instalacion, 'instalacion')}</Campo>
                   </Fila>
                   <Fila titulo="Material">
                     <Campo label="Especie" valor={a.especie} />
