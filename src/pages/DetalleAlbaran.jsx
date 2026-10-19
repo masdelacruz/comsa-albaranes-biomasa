@@ -48,7 +48,7 @@ const TIPOS_OP = ['Opción 1 — Compra en monte / plataforma', 'Opción 2 — P
 function Campo({ label, valor, full, ancho, children }) {
   const vacio = children == null && (valor == null || valor === '' || valor === '—')
   return (
-    <div className={`ver-field${full ? ' full' : ''}${ancho === 2 ? ' doble' : ''}`}>
+    <div className={`ver-field${full ? ' full' : ''}${ancho === 3 ? ' triple' : ''}`}>
       <span className="ver-label">{label}</span>
       <span className={`ver-val${vacio ? ' vacio' : ''}`}>{children ?? (vacio ? '—' : valor)}</span>
     </div>
@@ -966,13 +966,7 @@ export default function DetalleAlbaran({ albaranes, simularFirma, updateFirma, s
               ) : (
                 <div className="ver-grupos">
                   <Fila titulo="Operación">
-                    <Campo label="Tipo operación">
-                      {a.tipo ? (() => {
-                        // "Opción 1 — Compra en monte / plataforma" → opción arriba, descripción debajo
-                        const [opcion, ...resto] = a.tipo.split(' — ')
-                        return <>{opcion}{resto.length > 0 && <span className="ver-sub">{resto.join(' — ')}</span>}</>
-                      })() : null}
-                    </Campo>
+                    <Campo label="Tipo operación" valor={a.tipo} ancho={3} />
                     <Campo label="Certificación">
                       {(() => {
                         // Puede llegar como texto "SURE,PEFC" o como array

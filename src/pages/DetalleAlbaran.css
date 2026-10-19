@@ -165,3 +165,10 @@
 .ver-sub { display:block; font-size:11.5px; font-weight:400; color:var(--gray-400); margin-top:1px; }
 .ver-empresa { padding:0; border:none; background:none; font:inherit; color:inherit; text-align:left; cursor:pointer; text-decoration:underline; text-decoration-color:var(--gray-200); text-underline-offset:3px; transition:color 0.15s, text-decoration-color 0.15s; }
 .ver-empresa:hover { color:var(--green-600); text-decoration-color:currentColor; }
+
+/* Tipo de operación en una sola línea ocupando 3 columnas; Certificación cae en la 4ª */
+.ver-fila .ver-field.triple { grid-column:span 3; }
+.ver-fila .ver-field.triple .ver-val { white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+@media (max-width: 1280px) {
+  .ver-fila .ver-field.triple { grid-column:1 / -1; }
+}
