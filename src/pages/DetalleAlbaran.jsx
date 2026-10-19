@@ -1129,7 +1129,7 @@ export default function DetalleAlbaran({ albaranes, simularFirma, updateFirma, s
                     </a>
                   )}
                   <button
-                    className={`btn ${a.pesada.ticketUrl ? '' : 'btn-primary'}`}
+                    className="btn"
                     style={{fontSize:11,padding:'4px 8px'}}
                     onClick={() => ticketRef.current?.click()}
                     disabled={subiendoTicket}
