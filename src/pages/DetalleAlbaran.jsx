@@ -1229,12 +1229,6 @@ export default function DetalleAlbaran({ albaranes, simularFirma, updateFirma, s
                       </div>
                     )}
                     {firma.firmado && <div className="firma-fecha">{firma.fecha}</div>}
-                    {firma.firmado && firma.firmaImagen && (
-                      <img src={firma.firmaImagen} alt="Firma"
-                        style={{marginTop:8,width:'100%',maxHeight:70,objectFit:'contain',
-                          background:'#fafaf9',borderRadius:'var(--radius-sm)',border:'var(--border)'}}
-                      />
-                    )}
                     {!firma.firmado && a.estado !== 'cerrado' && key === 'oficina' && puedeOficinaFirmar && (
                       <button className="btn btn-primary" style={{fontSize:12,marginTop:8,width:'100%'}}
                         onClick={() => setFirmaOficinaModal(true)}>
