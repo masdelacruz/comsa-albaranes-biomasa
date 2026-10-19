@@ -63,3 +63,13 @@
   .historial-filtros-mas { grid-template-columns:repeat(2, minmax(0, 1fr)); }
 }
 .historial-filtros-mas .peso-range.is-active { border-color:var(--green-400); }
+/* En pantallas anchas todo en una línea; la rejilla de 4 queda para anchos medios */
+.historial-filtros-mas { grid-template-columns:repeat(8, minmax(0, 1fr)); }
+.peso-range .date-range-field { justify-content:flex-start; }
+.peso-range input[type="number"] { text-align:left; }
+@media (max-width: 1400px) {
+  .historial-filtros-mas { grid-template-columns:repeat(4, minmax(0, 1fr)); }
+}
+@media (max-width: 900px) {
+  .historial-filtros-mas { grid-template-columns:repeat(2, minmax(0, 1fr)); }
+}
