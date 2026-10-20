@@ -1,69 +1,100 @@
-/* Dashboard = resumen accionable: saludo, contadores por estado y dos colas
-   (lo que espera a la oficina y lo que está en curso). Tarjetas, filtros y
-   tabla compartidos viven en components/shared.css. */
+/* Dashboard = resumen accionable: saludo, tira del proceso por fases y una
+   bandeja con lo que espera a la oficina y lo que está en curso. */
 
 .dashboard { min-height:100vh; }
-.dashboard .dash-content { padding:0 var(--gutter) 32px; }
+.dashboard .dash-content { padding:0 var(--gutter) 32px; display:flex; flex-direction:column; gap:20px; }
 
-/* ── Cabecera: saludo + resumen en una frase ── */
-.dash-hero { display:flex; align-items:flex-end; justify-content:space-between; gap:20px; flex-wrap:wrap; }
+/* ── Cabecera ── */
+.dash-hero { display:flex; align-items:center; justify-content:space-between; gap:20px; flex-wrap:wrap; }
 .dash-hero-fecha { font-size:12px; font-weight:600; letter-spacing:.5px; text-transform:uppercase; color:var(--green-600); }
 .dash-hero-saludo { margin:6px 0 0; font-size:30px; font-weight:700; letter-spacing:-0.6px; line-height:1.15; color:var(--gray-900); }
 .dash-hero-resumen { margin:6px 0 0; font-size:14px; color:var(--gray-500); }
 .dash-hero-resumen strong { color:var(--amber-700); font-weight:600; }
 .dash-hero-acciones { display:flex; gap:8px; }
 
-/* ── Contadores: botones que abren Albaranes ya filtrado ── */
-.dashboard .stat-grid { margin-bottom:20px; }
-.dash-kpi { text-align:left; font:inherit; color:inherit; width:100%; }
-.dash-kpi:focus-visible { outline:2px solid var(--green-400); outline-offset:2px; }
-.stat-gray .stat-icon { color:var(--gray-500); }
-
-/* ── Colas ── */
-.dash-colas { display:grid; grid-template-columns:1fr 1fr; gap:16px; align-items:start; }
-.dash-cola {
-  background:#fff; border:1px solid #E8E8E5; border-radius:8px;
+/* ── Tira del proceso: una tarjeta, fases separadas por chevrons ── */
+.dash-proceso {
+  display:grid; grid-template-columns:repeat(5, minmax(0, 1fr));
+  background:#fff; border:1px solid #E8E8E5; border-radius:10px;
   box-shadow:0 1px 2px rgba(20,20,15,0.03); overflow:hidden;
 }
-.dash-cola-head { display:flex; align-items:flex-start; justify-content:space-between; gap:12px; padding:16px 20px 12px; border-bottom:1px solid #F0F0EC; }
-.dash-cola-titulo { margin:0; font-size:14px; font-weight:700; color:var(--gray-900); display:flex; align-items:baseline; gap:8px; }
-.dash-cola-num { font-size:13px; font-weight:600; color:var(--gray-400); font-variant-numeric:tabular-nums; }
-.dash-cola-sub { font-size:12px; color:var(--gray-400); margin-top:3px; }
-.dash-cola-ver {
-  display:inline-flex; align-items:center; gap:4px; flex-shrink:0; white-space:nowrap;
+.dash-fase {
+  position:relative; display:flex; flex-direction:column; align-items:flex-start; gap:2px;
+  padding:18px 22px 16px 26px; background:none; border:none; text-align:left; cursor:pointer; font:inherit;
+  transition:background .12s;
+}
+.dash-fase:hover { background:var(--gray-50); }
+.dash-fase:focus-visible { outline:2px solid var(--green-400); outline-offset:-2px; }
+/* Chevron entre fases, dibujado con dos bordes */
+.dash-fase + .dash-fase::before {
+  content:''; position:absolute; left:-7px; top:50%; width:13px; height:13px;
+  border-top:1px solid #E3E3DF; border-right:1px solid #E3E3DF;
+  transform:translateY(-50%) rotate(45deg); background:#fff;
+}
+.dash-fase:hover + .dash-fase::before { background:var(--gray-50); }
+.dash-fase + .dash-fase { border-left:1px solid #EFEFEC; }
+.dash-fase-cab { display:flex; align-items:center; gap:7px; font-size:12.5px; font-weight:500; color:var(--gray-500); }
+.dash-fase-cab svg { color:var(--gray-400); }
+.dash-fase-num { margin-top:8px; font-size:30px; font-weight:700; letter-spacing:-0.6px; line-height:1; color:var(--gray-900); font-variant-numeric:tabular-nums; }
+.dash-fase-sub { font-size:11.5px; color:var(--gray-400); }
+/* Matices solo en texto: lo vacío se apaga, lo que espera a oficina en ámbar, lo cerrado en verde */
+.dash-fase.cero .dash-fase-num { color:var(--gray-300); }
+.dash-fase.aviso .dash-fase-num,
+.dash-fase.aviso .dash-fase-cab svg { color:var(--amber-700); }
+.dash-fase.fin:not(.cero) .dash-fase-num,
+.dash-fase.fin .dash-fase-cab svg { color:var(--green-600); }
+
+/* ── Bandeja: una tarjeta, dos grupos, filas de una línea ── */
+.dash-bandeja {
+  background:#fff; border:1px solid #E8E8E5; border-radius:10px;
+  box-shadow:0 1px 2px rgba(20,20,15,0.03); overflow:hidden;
+}
+.dash-grupo + .dash-grupo { border-top:1px solid #EFEFEC; }
+.dash-grupo-head { display:flex; align-items:center; justify-content:space-between; gap:12px; padding:14px 22px 8px; }
+.dash-grupo-titulo { margin:0; display:flex; align-items:center; gap:8px; font-size:12px; font-weight:700; letter-spacing:.5px; text-transform:uppercase; color:var(--gray-500); }
+.dash-grupo-num { font-weight:600; color:var(--gray-400); font-variant-numeric:tabular-nums; }
+.dash-grupo-punto { width:7px; height:7px; border-radius:50%; background:var(--amber-400); }
+.dash-grupo-ver {
+  display:inline-flex; align-items:center; gap:4px; white-space:nowrap;
   background:none; border:none; padding:2px 0; cursor:pointer;
   font-size:12.5px; font-weight:600; color:var(--green-600);
 }
-.dash-cola-ver:hover { text-decoration:underline; }
+.dash-grupo-ver:hover { text-decoration:underline; }
+.dash-grupo-vacio { display:flex; align-items:center; gap:8px; padding:6px 22px 18px; font-size:13px; color:var(--gray-400); }
+.dash-grupo-vacio svg { color:var(--green-400); }
 
-.dash-cola-lista { list-style:none; margin:0; padding:0; }
-.dash-cola-lista li + li { border-top:1px solid #F4F4F1; }
-.dash-cola-fila {
-  display:grid; grid-template-columns:62px minmax(0,1fr) auto 14px; align-items:center; gap:12px;
-  width:100%; padding:11px 20px; background:none; border:none; text-align:left; cursor:pointer; font:inherit;
+.dash-filas { list-style:none; margin:0 0 6px; padding:0; }
+.dash-fila {
+  display:grid; grid-template-columns:64px minmax(0,1.1fr) minmax(0,1.1fr) minmax(0,1.4fr) 92px 14px;
+  align-items:center; gap:16px; width:100%; padding:10px 22px;
+  background:none; border:none; border-top:1px solid #F4F4F1; text-align:left; cursor:pointer; font:inherit; font-size:13px;
   transition:background .12s;
 }
-.dash-cola-fila:hover { background:var(--gray-50); }
-.dash-cola-id { font-family:var(--font-mono); font-size:12.5px; font-weight:700; color:var(--blue-700); }
-.dash-cola-info { display:flex; flex-direction:column; min-width:0; }
-.dash-cola-empresa { font-size:13px; font-weight:500; color:var(--gray-800); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
-.dash-cola-motivo { font-size:12px; color:var(--gray-500); margin-top:1px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
-.dash-cola-motivo.aviso { color:var(--amber-700); }
-.dash-cola-fecha { font-size:12px; color:var(--gray-400); white-space:nowrap; }
-.dash-cola-chevron { color:var(--gray-300); }
-.dash-cola-mas {
-  width:100%; padding:10px 20px; background:none; border:none; cursor:pointer; text-align:left;
-  font-size:12.5px; color:var(--gray-500);
-}
-.dash-cola-mas:hover { color:var(--green-600); background:var(--gray-50); }
-.dash-cola-vacio { display:flex; align-items:center; gap:8px; padding:28px 20px; font-size:13px; color:var(--gray-400); }
-.dash-cola-vacio svg { color:var(--green-400); }
+.dash-fila:hover { background:var(--gray-50); }
+.dash-fila > span { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.dash-fila-id { font-family:var(--font-mono); font-size:12.5px; font-weight:700; color:var(--blue-700); }
+.dash-fila-empresa { font-weight:500; color:var(--gray-800); }
+.dash-fila-inst { color:var(--gray-500); }
+.dash-fila-motivo { color:var(--gray-500); }
+.dash-fila-motivo.aviso { color:var(--amber-700); font-weight:500; }
+.dash-fila-fecha { color:var(--gray-400); font-size:12px; text-align:right; }
+.dash-fila-chevron { color:var(--gray-300); }
 
 @media (max-width: 1280px) {
   .dash-hero-saludo { font-size:24px; }
+  .dash-fase { padding:16px 16px 14px 20px; }
+  .dash-fase-num { font-size:26px; }
 }
 @media (max-width: 1000px) {
-  .dash-colas { grid-template-columns:1fr; }
+  .dash-fila { grid-template-columns:60px minmax(0,1fr) minmax(0,1.3fr) 80px 14px; }
+  .dash-fila-inst { display:none; }
+}
+@media (max-width: 760px) {
+  .dash-proceso { grid-template-columns:repeat(2, minmax(0, 1fr)); }
+  .dash-fase + .dash-fase::before { display:none; }
+  .dash-fase { border-top:1px solid #EFEFEC; }
+  .dash-fila { grid-template-columns:56px minmax(0,1fr) 14px; }
+  .dash-fila-motivo, .dash-fila-fecha { display:none; }
 }
 @media (max-width: 600px) {
   .dash-hero-acciones { width:100%; }
