@@ -48,3 +48,14 @@ export function useScrollSesion(clave, listo) {
     if (y > 0) requestAnimationFrame(() => window.scrollTo(0, y))
   }, [clave, listo])
 }
+
+// Deja preparada una vista antes de navegar a ella (p. ej. desde un aviso del
+// Dashboard: "abrir Albaranes con estos filtros"). Borra el estado anterior de
+// esa vista — filtros, página y scroll — y escribe solo los valores indicados.
+export function prepararVista(raiz, valores = {}) {
+  try {
+    const pre = PREFIJO + raiz + ':'
+    Object.keys(sessionStorage).filter(k => k.startsWith(pre)).forEach(k => sessionStorage.removeItem(k))
+    Object.entries(valores).forEach(([k, v]) => sessionStorage.setItem(pre + k, JSON.stringify(v)))
+  } catch { /* sin sessionStorage: se abre la vista tal cual */ }
+}

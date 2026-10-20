@@ -165,7 +165,8 @@ function AppConDatos({ usuario, logout, actualizarUsuario }) {
         <Route path="dashboard"      element={<Dashboard albaranes={albaranes} empresas={empresas} usuario={usuario} borrarAlbaran={borrarAlbaran} refetch={refetch} />} />
         <Route path="nuevo"          element={<NuevoAlbaran addAlbaran={addAlbaran} usuario={usuario} />} />
         <Route path="albaran/:id"    element={<DetalleAlbaran albaranes={albaranes} simularFirma={simularFirmaOficina} updateFirma={updateFirma} subirDocumento={subirDocumento} eliminarDocumento={eliminarDocumento} subirTicketPesada={subirTicketPesada} actualizarAlbaran={actualizarAlbaran} borrarAlbaran={borrarAlbaran} reabrirAlbaran={reabrirAlbaran} enviarACampoAlbaran={enviarACampoAlbaran} regenerarEnlaceCampo={regenerarEnlaceCampo} usuario={usuario} refetch={refetch} />} />
-        <Route path="historial"      element={<Historial albaranes={albaranes} empresas={empresas} usuario={usuario} refetch={refetch} borrarAlbaran={borrarAlbaran} enviarACampoAlbaran={enviarACampoAlbaran} />} />
+        <Route path="historial"      element={<Navigate to="/albaranes" replace />} />
+        <Route path="albaranes"      element={<Historial albaranes={albaranes} empresas={empresas} usuario={usuario} refetch={refetch} borrarAlbaran={borrarAlbaran} enviarACampoAlbaran={enviarACampoAlbaran} />} />
         <Route path="estadisticas"   element={<Estadisticas albaranes={albaranes} />} />
         <Route path="clientes"       element={<Clientes albaranes={albaranes} usuario={usuario} />} />
         <Route path="clientes/:id"   element={<ClienteDetalle albaranes={albaranes} usuario={usuario} />} />

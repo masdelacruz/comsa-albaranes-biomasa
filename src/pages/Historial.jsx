@@ -1,6 +1,6 @@
 import { useState, useRef, useMemo, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Download, Search, FileSpreadsheet, Upload, Trash2, X, Send, SlidersHorizontal, ListChecks } from 'lucide-react'
+import { Download, Search, FileSpreadsheet, Upload, Trash2, X, Send, SlidersHorizontal, ListChecks, Plus } from 'lucide-react'
 import ExcelJS from 'exceljs'
 import { Badge, FirmaSteps } from '../components/Badge'
 import PdfLoadingOverlay from '../components/PdfLoadingOverlay'
@@ -19,9 +19,25 @@ const TIPOS_DOC = ['Autodeclaración','Acuerdo de cesión','Contrato prestación
 
 const RAIZ_SESION = 'historial'
 
+// Pestañas del listado: separan lo que está en marcha de lo ya terminado
+const ESTADOS_RECHAZADO = ['rechazado_campo_astilladora', 'rechazado_campo_instalacion', 'cancelado']
+const enVista = (vista, a) => {
+  if (vista === 'activos')    return a.estado !== 'cerrado' && !ESTADOS_RECHAZADO.includes(a.estado)
+  if (vista === 'cerrados')   return a.estado === 'cerrado'
+  if (vista === 'rechazados') return ESTADOS_RECHAZADO.includes(a.estado)
+  return true
+}
+const VISTAS = [
+  { val: 'activos',    label: 'Activos' },
+  { val: 'cerrados',   label: 'Finalizados' },
+  { val: 'rechazados', label: 'Rechazados' },
+  { val: 'todos',      label: 'Todos' },
+]
+
 export default function Historial({ albaranes, empresas = [], usuario, refetch, borrarAlbaran, enviarACampoAlbaran }) {
   const navigate = useNavigate()
   const raizRef  = useRef(null)
+  const [vista,    setVista]    = useEstadoSesion('historial:vista', 'activos')
   const [busqueda, setBusqueda] = useEstadoSesion('historial:busqueda', '')
   const [filtroInstalacion,  setFiltroInstalacion]  = useEstadoSesion('historial:filtroInstalacion', [])
   const [filtroAstilladora,  setFiltroAstilladora]  = useEstadoSesion('historial:filtroAstilladora', [])
@@ -148,6 +164,7 @@ export default function Historial({ albaranes, empresas = [], usuario, refetch, 
   ]
 
   const filtrados = useMemo(() => albaranes.filter(a => {
+    if (!enVista(vista, a)) return false
     if (busqueda) {
       const q = busqueda.toLowerCase()
       const hay = [a.id, a.proveedor, a.astilladora, a.transportista, a.instalacion, a.especie, a.estella, a.origen, a.permiso]
@@ -186,11 +203,11 @@ export default function Historial({ albaranes, empresas = [], usuario, refetch, 
       }
     }
     return true
-  }), [albaranes, busqueda, filtroInstalacion, filtroAstilladora, filtroProveedor, filtroTransportista, filtroEstado, filtroFechaDesde, filtroFechaHasta,
+  }), [albaranes, vista, busqueda, filtroInstalacion, filtroAstilladora, filtroProveedor, filtroTransportista, filtroEstado, filtroFechaDesde, filtroFechaHasta,
        filtroDocs, filtroBiomasa, filtroEspecie, filtroEstella, filtroTipoOp, filtroHumedad, filtroPesoMin, filtroPesoMax])
 
   // Resetear página al cambiar filtros
-  useAlCambiar(() => { setPagina(1) }, [busqueda, filtroInstalacion, filtroAstilladora, filtroProveedor, filtroTransportista, filtroEstado, filtroFechaDesde, filtroFechaHasta,
+  useAlCambiar(() => { setPagina(1) }, [vista, busqueda, filtroInstalacion, filtroAstilladora, filtroProveedor, filtroTransportista, filtroEstado, filtroFechaDesde, filtroFechaHasta,
     filtroDocs, filtroBiomasa, filtroEspecie, filtroEstella, filtroTipoOp, filtroHumedad, filtroPesoMin, filtroPesoMax])
 
   const totalPaginas = Math.ceil(filtrados.length / POR_PAGINA)
@@ -299,29 +316,47 @@ export default function Historial({ albaranes, empresas = [], usuario, refetch, 
   useScrollSesion(RAIZ_SESION, albaranes.length > 0)
   // Si al volver hay menos resultados que antes, no quedarse en una página vacía
   useEffect(() => { if (totalPaginas > 0 && pagina > totalPaginas) setPagina(totalPaginas) }, [totalPaginas, pagina])
-  const mensajeVacio = hayFiltros ? 'No hay albaranes con los filtros seleccionados' : 'No hay albaranes actualmente'
+  const conteoVistas = Object.fromEntries(VISTAS.map(v => [v.val, albaranes.filter(a => enVista(v.val, a)).length]))
+  const ADJETIVO = { activos: 'activos', cerrados: 'finalizados', rechazados: 'rechazados' }
+  const mensajeVacio = hayFiltros ? 'No hay albaranes con los filtros seleccionados'
+    : ADJETIVO[vista] ? `No hay albaranes ${ADJETIVO[vista]} actualmente` : 'No hay albaranes actualmente'
 
   return (
     <div className="historial-page" ref={raizRef}>
       <PdfLoadingOverlay show={descargando} texto="Generando PDFs..." />
       <div className="page-header">
-        <div style={{display:'flex',alignItems:'center',justifyContent:'space-between'}}>
+        <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',gap:16}}>
           <div>
-            <div className="page-title">Historial de albaranes</div>
+            <div className="page-title">Albaranes</div>
             <div className="page-sub historial-sub">
-              {filtrados.length} registros encontrados
+              {filtrados.length} {filtrados.length === 1 ? 'albarán' : 'albaranes'}
               {/* Fuera de la barra de filtros para que al aparecer no la haga crecer */}
               {hayFiltros && <button className="list-clear-filtros" onClick={limpiarFiltros}>× Limpiar filtros</button>}
             </div>
           </div>
-          <button className="btn btn-primary" onClick={exportarExcel}>
-            <FileSpreadsheet size={15} /> Exportar Excel
-          </button>
+          <div className="historial-acciones">
+            <button className="btn" onClick={exportarExcel} title="Exporta los albaranes filtrados">
+              <FileSpreadsheet size={15} /> Exportar Excel
+            </button>
+            <button className="btn btn-primary" onClick={() => navigate('/nuevo')}>
+              <Plus size={16} /> Nuevo albarán
+            </button>
+          </div>
         </div>
       </div>
 
       <div className="historial-content">
         <div className="card" style={{padding:0, overflow:'clip'}}>
+          {/* Pestañas: en marcha / terminados / rechazados / todos */}
+          <div className="historial-tabs" role="tablist">
+            {VISTAS.map(v => (
+              <button key={v.val} role="tab" aria-selected={vista === v.val}
+                className={`historial-tab${vista === v.val ? ' activa' : ''}`}
+                onClick={() => { setVista(v.val); setFiltroEstado([]) }}>
+                {v.label} <span className="historial-tab-num">{conteoVistas[v.val]}</span>
+              </button>
+            ))}
+          </div>
           {/* Filtros — cabecera de la misma tarjeta que la tabla */}
           <div className="filters-bar historial-filtros">
             {/* Primero, sobre la columna de casillas: activa/desactiva el modo selección.
@@ -346,7 +381,10 @@ export default function Historial({ albaranes, empresas = [], usuario, refetch, 
                 { value: 'pendiente_oficina', label: 'Pendiente oficina' },
                 { value: 'humedad_pendiente', label: 'Humedad pendiente' },
                 { value: 'cerrado',           label: 'Cerrado' },
-              ]} />
+                { value: 'rechazado_campo_astilladora', label: 'No gestionado · Astilladora' },
+                { value: 'rechazado_campo_instalacion', label: 'No gestionado · Instalación' },
+                { value: 'cancelado',         label: 'Anulado' },
+              ].filter(o => enVista(vista, { estado: o.value }))} />
             <div className={`date-range${filtroFechaDesde || filtroFechaHasta ? ' is-active' : ''}`}>
               <div className="date-range-field">
                 <span>Desde</span>

@@ -1,6 +1,6 @@
 import { useEffect } from 'react'
 import { Outlet, useNavigate, useLocation } from 'react-router-dom'
-import { LayoutDashboard, FileClock, BarChart2, Settings, Handshake } from 'lucide-react'
+import { LayoutDashboard, FileText, BarChart2, Settings, Handshake } from 'lucide-react'
 import Header from './Header'
 import './Layout.css'
 
@@ -32,7 +32,7 @@ export default function Layout({ usuario, albaranes = [], logout }) {
   // El perfil no va aquí: ya está a la derecha de la cabecera
   const apartados = [
     { key: 'dashboard',    label: 'Dashboard',    icon: <LayoutDashboard size={16} />, active: location.pathname === '/dashboard',      badge: pendientesOficina, onClick: irA('/dashboard') },
-    { key: 'historial',    label: 'Historial',    icon: <FileClock size={16} />,       active: location.pathname === '/historial',      onClick: irA('/historial') },
+    { key: 'albaranes',    label: 'Albaranes',    icon: <FileText size={16} />,        active: location.pathname === '/albaranes' || location.pathname.startsWith('/albaran/'), onClick: irA('/albaranes') },
     { key: 'estadisticas', label: 'Estadísticas', icon: <BarChart2 size={16} />,       active: location.pathname === '/estadisticas',   onClick: irA('/estadisticas') },
     { key: 'clientes',     label: 'Clientes',     icon: <Handshake size={16} />,       active: location.pathname.startsWith('/clientes'), onClick: irA('/clientes') },
     ...(puedeConfiguracion ? [

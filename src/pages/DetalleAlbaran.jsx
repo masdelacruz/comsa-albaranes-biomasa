@@ -1491,7 +1491,7 @@ export default function DetalleAlbaran({ albaranes, simularFirma, updateFirma, s
             <span style={{fontSize:16,fontWeight:600}}>Anular albarán</span>
           </div>
           <p style={{fontSize:14,color:'var(--gray-600)',marginBottom:14}}>
-            El albarán <strong>{a.id}</strong> quedará marcado como <em>anulado</em>. Podrá consultarse en el historial pero no se podrá firmar.
+            El albarán <strong>{a.id}</strong> quedará marcado como <em>anulado</em>. Podrá consultarse en Albaranes pero no se podrá firmar.
           </p>
           <textarea
             autoFocus

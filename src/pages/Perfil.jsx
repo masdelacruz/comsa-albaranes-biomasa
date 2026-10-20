@@ -21,7 +21,7 @@ const NIVELES = {
 }
 const PERMISOS = [
   { label: 'Ver y registrar albaranes',             niveles: ['basico', 'usuario', 'superadmin'] },
-  { label: 'Consultar historial y estadísticas',    niveles: ['basico', 'usuario', 'superadmin'] },
+  { label: 'Consultar albaranes y estadísticas',    niveles: ['basico', 'usuario', 'superadmin'] },
   { label: 'Gestionar clientes y configuración',    niveles: ['usuario', 'superadmin'] },
   { label: 'Regenerar accesos de clientes',         niveles: ['superadmin'] },
   { label: 'Administrar usuarios y auditoría',      niveles: ['superadmin'] },

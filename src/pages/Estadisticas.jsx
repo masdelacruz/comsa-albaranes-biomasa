@@ -1,9 +1,10 @@
 import { useMemo } from 'react'
-import { Package, CheckCircle2, Scale, Building2, Factory, PieChart, TrendingUp, TrendingDown, Minus, Table2 } from 'lucide-react'
-import { ultimas4Semanas } from '../utils/semana'
+import { Package, CheckCircle2, Scale, Building2, Factory, PieChart, TrendingUp, TrendingDown, Minus, Table2, CalendarDays } from 'lucide-react'
+import { ultimas4Semanas, isoWeek, isoWeekYear, lunesDeSemana } from '../utils/semana'
 import '../components/shared.css'
 import './Estadisticas.css'
 
+const DIAS_CORTOS = ['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom']
 const COLORES = ['#1D9E75','#3b82f6','#f5a623','#e24b4a','#8b5cf6','#ec4899']
 
 export default function Estadisticas({ albaranes }) {
@@ -57,7 +58,25 @@ export default function Estadisticas({ albaranes }) {
     const tendenciaPct = previa > 0 ? Math.round(((actual - previa) / previa) * 100) : (actual > 0 ? 100 : 0)
     const tendencia = actual === previa ? 'flat' : (actual > previa ? 'up' : 'down')
 
+    // Actividad de la semana en curso: albaranes por día, lunes a domingo
+    const hoy = new Date()
+    const lunes = lunesDeSemana(hoy)
+    const dos = (n) => String(n).padStart(2, '0')
+    const dias = Array.from({ length: 7 }, (_, i) => {
+      const d = new Date(lunes)
+      d.setDate(lunes.getDate() + i)
+      const clave = `${d.getFullYear()}-${dos(d.getMonth() + 1)}-${dos(d.getDate())}`
+      return { clave, dia: DIAS_CORTOS[i], fecha: `${dos(d.getDate())}/${dos(d.getMonth() + 1)}`,
+        count: albaranes.filter(a => a.fecha?.slice(0, 10) === clave).length }
+    })
+    const estaSemana = albaranes.filter(a => {
+      if (!a.fecha) return false
+      const d = new Date(a.fecha)
+      return isoWeek(d) === isoWeek(hoy) && isoWeekYear(d) === isoWeekYear(hoy)
+    }).length
+
     return {
+      dias, maxDia: Math.max(3, ...dias.map(d => d.count)), estaSemana,
       total, cerrados, pendientes, humedadMedia, pesoTotal,
       porInstalacion: Object.entries(porInstalacion).sort((a,b) => b[1].total - a[1].total),
       porAstilladora: Object.entries(porAstilladora).sort((a,b) => b[1] - a[1]),
@@ -89,6 +108,14 @@ export default function Estadisticas({ albaranes }) {
           </div>
           <div className="es-kpi">
             <div className="es-kpi-top">
+              <span className="es-kpi-label">Esta semana</span>
+              <span className="es-icon tone-blue"><CalendarDays size={14} /></span>
+            </div>
+            <div className="es-kpi-val">{stats.estaSemana}</div>
+            <div className="es-kpi-sub">albaranes creados</div>
+          </div>
+          <div className="es-kpi">
+            <div className="es-kpi-top">
               <span className="es-kpi-label">Cerrados correctamente</span>
               <span className="es-icon tone-green"><CheckCircle2 size={14} /></span>
             </div>
@@ -102,6 +129,66 @@ export default function Estadisticas({ albaranes }) {
             </div>
             <div className="es-kpi-val">{stats.pesoTotal > 0 ? (stats.pesoTotal/1000).toFixed(1) + ' t' : '—'}</div>
             <div className="es-kpi-sub">con pesada registrada</div>
+          </div>
+        </div>
+
+        <div className="section-label">Actividad</div>
+        <div className="stats-grid">
+          <div className="es-card">
+            <div className="es-card-head">
+              <div className="es-card-head-left">
+                <span className="es-icon tone-blue"><CalendarDays size={14} /></span>
+                <span className="es-card-title">Esta semana, por día</span>
+              </div>
+              <span className="es-card-meta">{stats.estaSemana} albaranes</span>
+            </div>
+            <div className="es-act-plot">
+              {[stats.maxDia, Math.round(stats.maxDia * 2 / 3), Math.round(stats.maxDia / 3), 0].map((v, i) => (
+                <div key={i} className="es-act-linea" style={{ bottom: `${(v / stats.maxDia) * 100}%` }}>
+                  <span className="es-act-linea-num">{v}</span>
+                </div>
+              ))}
+              <div className="es-act-barras">
+                {stats.dias.map(d => (
+                  <div key={d.clave} className="es-act-col">
+                    {d.count > 0 && <div className="es-act-val">{d.count}</div>}
+                    <div className={`es-act-barra${d.count === 0 ? ' vacio' : ''}`} style={{ height: `${(d.count / stats.maxDia) * 100}%` }} />
+                  </div>
+                ))}
+              </div>
+            </div>
+            <div className="es-act-dias">
+              {stats.dias.map(d => <div key={d.clave}>{d.dia} {d.fecha}</div>)}
+            </div>
+          </div>
+
+          <div className="es-card">
+            <div className="es-card-head">
+              <div className="es-card-head-left">
+                <span className="es-icon tone-green"><TrendingUp size={14} /></span>
+                <span className="es-card-title">Últimas 4 semanas</span>
+              </div>
+              <span className={`tendencia ${stats.tendencia}`}>
+                {stats.tendencia === 'up' ? <TrendingUp size={11} /> : stats.tendencia === 'down' ? <TrendingDown size={11} /> : <Minus size={11} />}
+                {stats.tendencia === 'flat' ? 'Igual' : `${stats.tendenciaPct > 0 ? '+' : ''}${stats.tendenciaPct}%`}
+              </span>
+            </div>
+            <div className="timeline-semana">
+              {stats.semanas.map(s => (
+                <div key={s.label} className="semana-bar-wrap">
+                  <div className="semana-val">{s.val}</div>
+                  <div
+                    className={`semana-bar ${s.activa ? '' : 'inactive'}`}
+                    style={{height: `${(s.val / stats.maxSemana) * 100}%`}}
+                  />
+                  <div className="semana-label">{s.label}</div>
+                </div>
+              ))}
+            </div>
+            <div style={{marginTop:12,paddingTop:10,borderTop:'var(--border)',fontSize:12,color:'var(--gray-400)'}}>
+              Humedad media: <strong style={{color:'var(--gray-800)'}}>{stats.humedadMedia ? stats.humedadMedia + '%' : '—'}</strong>
+              &nbsp;·&nbsp; Pendientes: <strong style={{color:'var(--amber-700)'}}>{stats.pendientes}</strong>
+            </div>
           </div>
         </div>
 
@@ -152,7 +239,7 @@ export default function Estadisticas({ albaranes }) {
           </div>
         </div>
 
-        <div className="section-label">Estado y tendencia</div>
+        <div className="section-label">Estado y material</div>
         <div className="stats-grid">
           <div className="es-card">
             <div className="es-card-head">
@@ -200,30 +287,20 @@ export default function Estadisticas({ albaranes }) {
           <div className="es-card">
             <div className="es-card-head">
               <div className="es-card-head-left">
-                <span className="es-icon tone-green"><TrendingUp size={14} /></span>
-                <span className="es-card-title">Volumen semanal</span>
+                <span className="es-icon tone-green"><Package size={14} /></span>
+                <span className="es-card-title">Albaranes por especie</span>
               </div>
-              <span className={`tendencia ${stats.tendencia}`}>
-                {stats.tendencia === 'up' ? <TrendingUp size={11} /> : stats.tendencia === 'down' ? <TrendingDown size={11} /> : <Minus size={11} />}
-                {stats.tendencia === 'flat' ? 'Igual' : `${stats.tendenciaPct > 0 ? '+' : ''}${stats.tendenciaPct}%`}
-              </span>
             </div>
-            <div className="timeline-semana">
-              {stats.semanas.map(s => (
-                <div key={s.label} className="semana-bar-wrap">
-                  <div className="semana-val">{s.val}</div>
-                  <div
-                    className={`semana-bar ${s.activa ? '' : 'inactive'}`}
-                    style={{height: `${(s.val / stats.maxSemana) * 100}%`}}
-                  />
-                  <div className="semana-label">{s.label}</div>
+            {stats.porEspecie.map(([esp, count], i) => (
+              <div key={esp} className="bar-row">
+                <div className="bar-label" title={esp}>{esp}</div>
+                <div className="bar-track">
+                  <div className="bar-fill" style={{ width: `${(count / stats.total) * 100}%`, background: COLORES[i % COLORES.length] }} />
                 </div>
-              ))}
-            </div>
-            <div style={{marginTop:12,paddingTop:10,borderTop:'var(--border)',fontSize:12,color:'var(--gray-400)'}}>
-              Humedad media: <strong style={{color:'var(--gray-800)'}}>{stats.humedadMedia ? stats.humedadMedia + '%' : '—'}</strong>
-              &nbsp;·&nbsp; Pendientes: <strong style={{color:'var(--amber-700)'}}>{stats.pendientes}</strong>
-            </div>
+                <div className="bar-pct">{Math.round(count / stats.total * 100)}%</div>
+                <div className="bar-val">{count}</div>
+              </div>
+            ))}
           </div>
         </div>
 
