@@ -129,7 +129,7 @@ function InicioRedirect({ usuario }) {
   const tieneTrabajo = !!usuario?.acceso_trabajo
   if (tieneBiomasa && tieneTrabajo) return <Navigate to="/apps" replace />
   if (tieneTrabajo && !tieneBiomasa) return <Navigate to="/trabajo" replace />
-  return <Navigate to="/dashboard" replace />
+  return <Navigate to="/albaranes" replace />
 }
 
 function AppConDatos({ usuario, logout, actualizarUsuario }) {
@@ -149,12 +149,12 @@ function AppConDatos({ usuario, logout, actualizarUsuario }) {
       <Route path="/apps" element={
         tieneBiomasa && tieneTrabajo
           ? <SelectorApp usuario={usuario} logout={logout} />
-          : <Navigate to={tieneTrabajo ? '/trabajo' : '/dashboard'} replace />
+          : <Navigate to={tieneTrabajo ? '/trabajo' : '/albaranes'} replace />
       } />
       <Route path="/trabajo/*" element={
         tieneTrabajo
           ? <Trabajo usuario={usuario} logout={logout} />
-          : <Navigate to={tieneBiomasa ? '/dashboard' : '/apps'} replace />
+          : <Navigate to={tieneBiomasa ? '/albaranes' : '/apps'} replace />
       } />
       <Route path="/" element={
         tieneBiomasa
@@ -162,7 +162,8 @@ function AppConDatos({ usuario, logout, actualizarUsuario }) {
           : <Navigate to={tieneTrabajo ? '/trabajo' : '/apps'} replace />
       }>
         <Route index element={<InicioRedirect usuario={usuario} />} />
-        <Route path="dashboard"      element={<Dashboard albaranes={albaranes} empresas={empresas} usuario={usuario} borrarAlbaran={borrarAlbaran} refetch={refetch} />} />
+        <Route path="dashboard"      element={<Navigate to="/panel" replace />} />
+        <Route path="panel"          element={<Dashboard albaranes={albaranes} empresas={empresas} usuario={usuario} borrarAlbaran={borrarAlbaran} refetch={refetch} />} />
         <Route path="nuevo"          element={<NuevoAlbaran addAlbaran={addAlbaran} usuario={usuario} />} />
         <Route path="albaran/:id"    element={<DetalleAlbaran albaranes={albaranes} simularFirma={simularFirmaOficina} updateFirma={updateFirma} subirDocumento={subirDocumento} eliminarDocumento={eliminarDocumento} subirTicketPesada={subirTicketPesada} actualizarAlbaran={actualizarAlbaran} borrarAlbaran={borrarAlbaran} reabrirAlbaran={reabrirAlbaran} enviarACampoAlbaran={enviarACampoAlbaran} regenerarEnlaceCampo={regenerarEnlaceCampo} usuario={usuario} refetch={refetch} />} />
         <Route path="historial"      element={<Navigate to="/albaranes" replace />} />
@@ -174,17 +175,17 @@ function AppConDatos({ usuario, logout, actualizarUsuario }) {
         <Route path="configuracion"  element={
           usuario?.nivel !== 'basico'
             ? <Administracion usuario={usuario} />
-            : <Navigate to="/dashboard" replace />
+            : <Navigate to="/albaranes" replace />
         } />
         <Route path="usuarios"       element={
           usuario?.nivel === 'superadmin'
             ? <Navigate to="/configuracion?tab=usuarios" replace />
-            : <Navigate to="/dashboard" replace />
+            : <Navigate to="/albaranes" replace />
         } />
         <Route path="auditoria"      element={
           usuario?.nivel === 'superadmin'
             ? <Navigate to="/configuracion?tab=auditoria" replace />
-            : <Navigate to="/dashboard" replace />
+            : <Navigate to="/albaranes" replace />
         } />
         <Route path="perfil"         element={<Perfil usuario={usuario} actualizarUsuario={actualizarUsuario} logout={logout} />} />
       </Route>

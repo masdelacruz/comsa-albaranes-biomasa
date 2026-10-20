@@ -70,7 +70,7 @@ export default function NuevoAlbaran({ addAlbaran }) {
           await addAlbaran({ ...form, numCamiones: 1, grupoId, camionOrden: i + 1 }, enviarACampo)
         }
         setGuardado(true)
-        setTimeout(() => navigate('/dashboard'), 1200)
+        setTimeout(() => navigate('/albaranes'), 1200)
       }
     } catch {
       setErrorGuardar('Error al guardar. Comprueba la conexión e inténtalo de nuevo.')
@@ -99,7 +99,7 @@ export default function NuevoAlbaran({ addAlbaran }) {
   return (
     <div className="nuevo-page">
       <div className="page-header">
-        <button className="btn btn-ghost" onClick={() => navigate('/dashboard')} style={{marginBottom:12}}>
+        <button className="btn btn-ghost" onClick={() => navigate('/albaranes')} style={{marginBottom:12}}>
           <ArrowLeft size={14} /> Volver
         </button>
         <div className="page-title">Nuevo albarán</div>
@@ -229,7 +229,7 @@ export default function NuevoAlbaran({ addAlbaran }) {
           </div>
         )}
         <div className="form-actions">
-          <button className="btn" onClick={() => navigate('/dashboard')}>Cancelar</button>
+          <button className="btn" onClick={() => navigate('/albaranes')}>Cancelar</button>
           <button className="btn" onClick={() => handleGuardar(false)} disabled={!camposObligatorios || guardando}>
             {guardando ? 'Guardando...' : 'Guardar'}
           </button>

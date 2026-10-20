@@ -1542,7 +1542,7 @@ export default function DetalleAlbaran({ albaranes, simularFirma, updateFirma, s
             <button
               className="btn"
               style={{background:'var(--red-400)',color:'#fff',borderColor:'var(--red-400)'}}
-              onClick={async () => { await borrarAlbaran(a.id); setConfirmBorrar(false); navigate('/dashboard') }}
+              onClick={async () => { await borrarAlbaran(a.id); setConfirmBorrar(false); navigate('/albaranes') }}
             >
               <Trash2 size={14} /> Borrar definitivamente
             </button>
