@@ -1,5 +1,5 @@
 import { useNavigate } from 'react-router-dom'
-import { Plus, CalendarClock, Truck, PenLine, Droplets, CheckCircle2, ChevronRight, ArrowRight, List } from 'lucide-react'
+import { Plus, CalendarClock, Truck, PenLine, Droplets, CheckCircle2, List } from 'lucide-react'
 import { prepararVista } from '../hooks/useEstadoSesion'
 import { isoWeek, isoWeekYear } from '../utils/semana'
 import '../components/shared.css'
@@ -9,7 +9,7 @@ import './Dashboard.css'
 // oficina. El listado completo vive en Albaranes y las gráficas en
 // Estadísticas; aquí solo lo accionable.
 
-const MAX_FILAS = 5
+const MAX_TARJETAS = 4
 
 const saludo = () => {
   const h = new Date().getHours()
@@ -24,14 +24,7 @@ const hace = (fecha) => {
   return `hace ${dias} días`
 }
 
-// Por qué un albarán necesita a la oficina (orden = prioridad)
-const motivoAtencion = (a) => {
-  if (a.solicitaRevision)               return 'Revisión solicitada desde campo'
-  if (a.estado === 'pendiente_oficina') return 'Falta la firma de oficina'
-  if (a.estado === 'humedad_pendiente') return 'Falta el análisis de humedad'
-  return null
-}
-const motivoEnCurso = (a) => a.estado === 'programado' ? 'Programado, sin enviar a campo' : 'En campo, esperando firmas'
+const necesitaOficina = (a) => a.estado !== 'cerrado' && (a.solicitaRevision || a.estado === 'pendiente_oficina' || a.estado === 'humedad_pendiente')
 
 export default function Dashboard({ albaranes, usuario }) {
   const navigate = useNavigate()
@@ -48,19 +41,19 @@ export default function Dashboard({ albaranes, usuario }) {
   const cerradosSem  = deEstado('cerrado').filter(a => esEstaSemana(a.fecha))
 
   const porAntiguedad = (x, y) => (x.fecha || '').localeCompare(y.fecha || '')
-  const atencion = albaranes.filter(a => motivoAtencion(a) && a.estado !== 'cerrado').sort(porAntiguedad)
-  const enCurso  = [...programados, ...enCampo].sort(porAntiguedad)
+  const atencion = albaranes.filter(necesitaOficina)
+  const enCurso  = [...programados, ...enCampo]
 
   // Abre Albaranes con la vista ya filtrada (sustituye los filtros que hubiera)
   const abrirListado = (valores) => { prepararVista('historial', valores); navigate('/albaranes') }
 
   // Las fases del proceso, en orden: el albarán avanza de izquierda a derecha
   const fases = [
-    { key: 'prog', label: 'Programados',       valor: programados.length, Icon: CalendarClock, vista: { vista: 'activos', filtroEstado: ['programado'] } },
-    { key: 'camp', label: 'En campo',          valor: enCampo.length,     Icon: Truck,         vista: { vista: 'activos', filtroEstado: ['pendiente_campo'] } },
-    { key: 'ofi',  label: 'Firma de oficina',  valor: oficina.length,     Icon: PenLine,       vista: { vista: 'activos', filtroEstado: ['pendiente_oficina'] }, aviso: true },
-    { key: 'hum',  label: 'Humedad pendiente', valor: humedad.length,     Icon: Droplets,      vista: { vista: 'activos', filtroEstado: ['humedad_pendiente'] }, aviso: true },
-    { key: 'fin',  label: 'Cerrados',          sub: 'esta semana', valor: cerradosSem.length, Icon: CheckCircle2, vista: { vista: 'cerrados' }, fin: true },
+    { key: 'prog', label: 'Programados',       items: programados.sort(porAntiguedad), valor: programados.length, Icon: CalendarClock, vista: { vista: 'activos', filtroEstado: ['programado'] } },
+    { key: 'camp', label: 'En campo',          items: enCampo.sort(porAntiguedad), valor: enCampo.length,     Icon: Truck,         vista: { vista: 'activos', filtroEstado: ['pendiente_campo'] } },
+    { key: 'ofi',  label: 'Firma de oficina',  items: oficina.sort(porAntiguedad), valor: oficina.length,     Icon: PenLine,       vista: { vista: 'activos', filtroEstado: ['pendiente_oficina'] }, aviso: true },
+    { key: 'hum',  label: 'Humedad pendiente', items: humedad.sort(porAntiguedad), valor: humedad.length,     Icon: Droplets,      vista: { vista: 'activos', filtroEstado: ['humedad_pendiente'] }, aviso: true },
+    { key: 'fin',  label: 'Cerrados',          sub: 'esta semana', items: cerradosSem.sort((x, y) => porAntiguedad(y, x)), valor: cerradosSem.length, Icon: CheckCircle2, vista: { vista: 'cerrados' }, fin: true },
   ]
 
   const nombre = usuario?.nombre?.split(' ')[0]
@@ -92,7 +85,8 @@ export default function Dashboard({ albaranes, usuario }) {
       </div>
 
       <div className="dash-content">
-        {/* Proceso: una sola tira con las fases encadenadas */}
+        {/* Proceso + tablero en una sola tarjeta: cada columna bajo su fase */}
+        <div className="dash-panel">
         <nav className="dash-proceso" aria-label="Albaranes por fase">
           {fases.map(({ key, label, sub, valor, Icon, vista, aviso, fin }) => (
             <button key={key} type="button" onClick={() => abrirListado(vista)}
@@ -105,55 +99,38 @@ export default function Dashboard({ albaranes, usuario }) {
           ))}
         </nav>
 
-        {/* Bandeja: lo que espera a la oficina y lo que está en marcha */}
-        <section className="dash-bandeja">
-          <Grupo
-            titulo="Requieren tu atención" items={atencion} motivo={motivoAtencion} aviso
-            vacio="Nada pendiente para la oficina. Todo al día."
-            onAbrir={a => navigate(`/albaran/${a.id}`)}
-            onVerTodos={() => abrirListado({ vista: 'activos', filtroEstado: ['pendiente_oficina', 'humedad_pendiente'] })}
-          />
-          <Grupo
-            titulo="En curso" items={enCurso} motivo={motivoEnCurso}
-            vacio="No hay albaranes programados ni en campo."
-            onAbrir={a => navigate(`/albaran/${a.id}`)}
-            onVerTodos={() => abrirListado({ vista: 'activos', filtroEstado: ['programado', 'pendiente_campo'] })}
-          />
-        </section>
+        {/* Tablero: bajo cada fase, sus albaranes (lo más antiguo arriba) */}
+        <div className="dash-tablero">
+          {fases.map(fase => (
+            <Columna key={fase.key} fase={fase}
+              onAbrir={a => navigate(`/albaran/${a.id}`)}
+              onVerTodos={() => abrirListado(fase.vista)} />
+          ))}
+        </div>
+        </div>
       </div>
     </div>
   )
 }
 
-function Grupo({ titulo, items, motivo, aviso, vacio, onAbrir, onVerTodos }) {
+function Columna({ fase, onAbrir, onVerTodos }) {
+  const { items } = fase
+  if (items.length === 0) return <div className="dash-col vacia"><span className="dash-col-vacio">Sin albaranes</span></div>
   return (
-    <div className="dash-grupo">
-      <header className="dash-grupo-head">
-        <h2 className="dash-grupo-titulo">
-          {aviso && items.length > 0 && <span className="dash-grupo-punto" aria-hidden="true" />}
-          {titulo} <span className="dash-grupo-num">{items.length}</span>
-        </h2>
-        {items.length > MAX_FILAS && (
-          <button className="dash-grupo-ver" onClick={onVerTodos}>Ver los {items.length} <ArrowRight size={13} /></button>
-        )}
-      </header>
-      {items.length === 0 ? (
-        <div className="dash-grupo-vacio"><CheckCircle2 size={16} /> {vacio}</div>
-      ) : (
-        <ul className="dash-filas">
-          {items.slice(0, MAX_FILAS).map(a => (
-            <li key={a.id}>
-              <button className="dash-fila" onClick={() => onAbrir(a)}>
-                <span className="dash-fila-id">{a.id}</span>
-                <span className="dash-fila-empresa">{a.proveedor || '—'}</span>
-                <span className="dash-fila-inst">{a.instalacion || ''}</span>
-                <span className={`dash-fila-motivo${aviso ? ' aviso' : ''}`}>{motivo(a)}</span>
-                <span className="dash-fila-fecha">{hace(a.fecha)}</span>
-                <ChevronRight size={14} className="dash-fila-chevron" />
-              </button>
-            </li>
-          ))}
-        </ul>
+    <div className="dash-col">
+      {items.slice(0, MAX_TARJETAS).map(a => (
+        <button key={a.id} className="dash-tarjeta" onClick={() => onAbrir(a)}>
+          <span className="dash-tarjeta-cab">
+            <span className="dash-tarjeta-id">{a.id}</span>
+            <span className="dash-tarjeta-fecha">{hace(a.fecha)}</span>
+          </span>
+          <span className="dash-tarjeta-empresa">{a.proveedor || '—'}</span>
+          <span className="dash-tarjeta-inst">{a.instalacion || ''}</span>
+          {a.solicitaRevision && <span className="dash-tarjeta-aviso">Revisión solicitada</span>}
+        </button>
+      ))}
+      {items.length > MAX_TARJETAS && (
+        <button className="dash-col-mas" onClick={onVerTodos}>+{items.length - MAX_TARJETAS} más</button>
       )}
     </div>
   )

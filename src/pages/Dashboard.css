@@ -12,15 +12,17 @@
 .dash-hero-resumen strong { color:var(--amber-700); font-weight:600; }
 .dash-hero-acciones { display:flex; gap:8px; }
 
-/* ── Tira del proceso: una tarjeta, fases separadas por chevrons ── */
-.dash-proceso {
-  display:grid; grid-template-columns:repeat(5, minmax(0, 1fr));
+/* ── Panel: tira de fases arriba, tablero debajo, mismas 5 columnas ── */
+.dash-panel {
   background:#fff; border:1px solid #E8E8E5; border-radius:10px;
   box-shadow:0 1px 2px rgba(20,20,15,0.03); overflow:hidden;
 }
+.dash-proceso, .dash-tablero { display:grid; grid-template-columns:repeat(5, minmax(0, 1fr)); }
+.dash-proceso { border-bottom:1px solid #EFEFEC; }
+
 .dash-fase {
   position:relative; display:flex; flex-direction:column; align-items:flex-start; gap:2px;
-  padding:18px 22px 16px 26px; background:none; border:none; text-align:left; cursor:pointer; font:inherit;
+  padding:18px 18px 16px 22px; background:none; border:none; text-align:left; cursor:pointer; font:inherit;
   transition:background .12s;
 }
 .dash-fase:hover { background:var(--gray-50); }
@@ -44,57 +46,44 @@
 .dash-fase.fin:not(.cero) .dash-fase-num,
 .dash-fase.fin .dash-fase-cab svg { color:var(--green-600); }
 
-/* ── Bandeja: una tarjeta, dos grupos, filas de una línea ── */
-.dash-bandeja {
-  background:#fff; border:1px solid #E8E8E5; border-radius:10px;
-  box-shadow:0 1px 2px rgba(20,20,15,0.03); overflow:hidden;
+/* Tablero: fondo apenas gris para que las tarjetas blancas se lean como piezas */
+.dash-tablero { background:#FAFAF8; }
+.dash-col { display:flex; flex-direction:column; gap:8px; padding:12px; min-width:0; }
+.dash-col + .dash-col { border-left:1px solid #EFEFEC; }
+.dash-col.vacia { justify-content:flex-start; }
+.dash-col-vacio { padding:6px 10px; font-size:12px; color:var(--gray-300); }
+
+.dash-tarjeta {
+  display:flex; flex-direction:column; gap:2px; width:100%; min-width:0;
+  padding:10px 12px; background:#fff; border:1px solid #ECECE8; border-radius:7px;
+  text-align:left; cursor:pointer; font:inherit;
+  transition:border-color .12s, box-shadow .12s;
 }
-.dash-grupo + .dash-grupo { border-top:1px solid #EFEFEC; }
-.dash-grupo-head { display:flex; align-items:center; justify-content:space-between; gap:12px; padding:14px 22px 8px; }
-.dash-grupo-titulo { margin:0; display:flex; align-items:center; gap:8px; font-size:12px; font-weight:700; letter-spacing:.5px; text-transform:uppercase; color:var(--gray-500); }
-.dash-grupo-num { font-weight:600; color:var(--gray-400); font-variant-numeric:tabular-nums; }
-.dash-grupo-punto { width:7px; height:7px; border-radius:50%; background:var(--amber-400); }
-.dash-grupo-ver {
-  display:inline-flex; align-items:center; gap:4px; white-space:nowrap;
-  background:none; border:none; padding:2px 0; cursor:pointer;
+.dash-tarjeta:hover { border-color:var(--gray-300); box-shadow:0 2px 6px rgba(20,20,15,0.06); }
+.dash-tarjeta > span { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; max-width:100%; }
+.dash-tarjeta-cab { display:flex; align-items:baseline; justify-content:space-between; gap:8px; }
+.dash-tarjeta-id { font-family:var(--font-mono); font-size:12.5px; font-weight:700; color:var(--blue-700); }
+.dash-tarjeta-fecha { font-size:11px; color:var(--gray-400); white-space:nowrap; }
+.dash-tarjeta-empresa { margin-top:3px; font-size:13px; font-weight:500; color:var(--gray-800); }
+.dash-tarjeta-inst { font-size:12px; color:var(--gray-500); }
+.dash-tarjeta-aviso { margin-top:3px; font-size:11.5px; font-weight:600; color:var(--amber-700); }
+
+.dash-col-mas {
+  padding:6px 10px; background:none; border:none; border-radius:6px; cursor:pointer; text-align:left;
   font-size:12.5px; font-weight:600; color:var(--green-600);
 }
-.dash-grupo-ver:hover { text-decoration:underline; }
-.dash-grupo-vacio { display:flex; align-items:center; gap:8px; padding:6px 22px 18px; font-size:13px; color:var(--gray-400); }
-.dash-grupo-vacio svg { color:var(--green-400); }
-
-.dash-filas { list-style:none; margin:0 0 6px; padding:0; }
-.dash-fila {
-  display:grid; grid-template-columns:64px minmax(0,1.1fr) minmax(0,1.1fr) minmax(0,1.4fr) 92px 14px;
-  align-items:center; gap:16px; width:100%; padding:10px 22px;
-  background:none; border:none; border-top:1px solid #F4F4F1; text-align:left; cursor:pointer; font:inherit; font-size:13px;
-  transition:background .12s;
-}
-.dash-fila:hover { background:var(--gray-50); }
-.dash-fila > span { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
-.dash-fila-id { font-family:var(--font-mono); font-size:12.5px; font-weight:700; color:var(--blue-700); }
-.dash-fila-empresa { font-weight:500; color:var(--gray-800); }
-.dash-fila-inst { color:var(--gray-500); }
-.dash-fila-motivo { color:var(--gray-500); }
-.dash-fila-motivo.aviso { color:var(--amber-700); font-weight:500; }
-.dash-fila-fecha { color:var(--gray-400); font-size:12px; text-align:right; }
-.dash-fila-chevron { color:var(--gray-300); }
+.dash-col-mas:hover { background:#fff; }
 
 @media (max-width: 1280px) {
   .dash-hero-saludo { font-size:24px; }
   .dash-fase { padding:16px 16px 14px 20px; }
   .dash-fase-num { font-size:26px; }
 }
-@media (max-width: 1000px) {
-  .dash-fila { grid-template-columns:60px minmax(0,1fr) minmax(0,1.3fr) 80px 14px; }
-  .dash-fila-inst { display:none; }
-}
 @media (max-width: 760px) {
   .dash-proceso { grid-template-columns:repeat(2, minmax(0, 1fr)); }
   .dash-fase + .dash-fase::before { display:none; }
   .dash-fase { border-top:1px solid #EFEFEC; }
-  .dash-fila { grid-template-columns:56px minmax(0,1fr) 14px; }
-  .dash-fila-motivo, .dash-fila-fecha { display:none; }
+  .dash-tablero { display:none; }
 }
 @media (max-width: 600px) {
   .dash-hero-acciones { width:100%; }
