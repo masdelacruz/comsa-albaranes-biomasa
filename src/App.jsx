@@ -129,7 +129,7 @@ function InicioRedirect({ usuario }) {
   const tieneTrabajo = !!usuario?.acceso_trabajo
   if (tieneBiomasa && tieneTrabajo) return <Navigate to="/apps" replace />
   if (tieneTrabajo && !tieneBiomasa) return <Navigate to="/trabajo" replace />
-  return <Navigate to="/albaranes" replace />
+  return <Navigate to="/panel" replace />
 }
 
 function AppConDatos({ usuario, logout, actualizarUsuario }) {
@@ -149,12 +149,12 @@ function AppConDatos({ usuario, logout, actualizarUsuario }) {
       <Route path="/apps" element={
         tieneBiomasa && tieneTrabajo
           ? <SelectorApp usuario={usuario} logout={logout} />
-          : <Navigate to={tieneTrabajo ? '/trabajo' : '/albaranes'} replace />
+          : <Navigate to={tieneTrabajo ? '/trabajo' : '/panel'} replace />
       } />
       <Route path="/trabajo/*" element={
         tieneTrabajo
           ? <Trabajo usuario={usuario} logout={logout} />
-          : <Navigate to={tieneBiomasa ? '/albaranes' : '/apps'} replace />
+          : <Navigate to={tieneBiomasa ? '/panel' : '/apps'} replace />
       } />
       <Route path="/" element={
         tieneBiomasa

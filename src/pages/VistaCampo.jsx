@@ -867,7 +867,7 @@ export default function VistaCampo({ albaranes, updateFirma, subirTicketPesada, 
         </div>
       </div>
       <div style={{textAlign:'center'}}>
-        <button onClick={() => navigate('/albaranes')} style={{background:'none',border:'none',color:'var(--gray-400)',fontSize:13,cursor:'pointer',padding:'8px 0'}}>
+        <button onClick={() => navigate('/panel')} style={{background:'none',border:'none',color:'var(--gray-400)',fontSize:13,cursor:'pointer',padding:'8px 0'}}>
           ← Volver al panel interno
         </button>
       </div>

@@ -20,7 +20,7 @@ export default function SelectorApp({ usuario, logout }) {
         </div>
 
         <div className="sa-grid">
-          <button className="sa-card sa-card-biomasa" onClick={() => navigate('/albaranes')}>
+          <button className="sa-card sa-card-biomasa" onClick={() => navigate('/panel')}>
             <span className="sa-card-icon"><img src={logoBiomasa} alt="" /></span>
             <span className="sa-card-name">Biomasa</span>
             <span className="sa-card-desc">Gestión de albaranes de biomasa</span>
