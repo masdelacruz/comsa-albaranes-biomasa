@@ -98,7 +98,7 @@ export default function Estadisticas({ albaranes }) {
       <div className="stats-content">
         <div className="section-label">Resumen general</div>
         <div className="es-kpi-grid">
-          <div className="es-kpi">
+          <div className="es-kpi tone-blue">
             <div className="es-kpi-top">
               <span className="es-kpi-label">Albaranes totales</span>
               <span className="es-icon tone-blue"><Package size={14} /></span>
@@ -106,7 +106,7 @@ export default function Estadisticas({ albaranes }) {
             <div className="es-kpi-val">{stats.total}</div>
             <div className="es-kpi-sub">en total</div>
           </div>
-          <div className="es-kpi">
+          <div className="es-kpi tone-blue">
             <div className="es-kpi-top">
               <span className="es-kpi-label">Esta semana</span>
               <span className="es-icon tone-blue"><CalendarDays size={14} /></span>
@@ -114,7 +114,7 @@ export default function Estadisticas({ albaranes }) {
             <div className="es-kpi-val">{stats.estaSemana}</div>
             <div className="es-kpi-sub">albaranes creados</div>
           </div>
-          <div className="es-kpi">
+          <div className="es-kpi tone-green">
             <div className="es-kpi-top">
               <span className="es-kpi-label">Cerrados correctamente</span>
               <span className="es-icon tone-green"><CheckCircle2 size={14} /></span>
@@ -122,7 +122,7 @@ export default function Estadisticas({ albaranes }) {
             <div className="es-kpi-val">{stats.cerrados}</div>
             <div className="es-kpi-sub">{stats.total > 0 ? Math.round(stats.cerrados/stats.total*100) : 0}% del total</div>
           </div>
-          <div className="es-kpi">
+          <div className="es-kpi tone-purple">
             <div className="es-kpi-top">
               <span className="es-kpi-label">Peso neto gestionado</span>
               <span className="es-icon tone-purple"><Scale size={14} /></span>
