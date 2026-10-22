@@ -238,10 +238,10 @@ export default function ClienteDetalle({ albaranes = [], usuario }) {
   const datosEmpresa = datosHero.slice(2)
 
   const kpis = [
-    { icon: FileText,  label: 'Albaranes',     valor: stats.total, sub: `${stats.cerrados} ${stats.cerrados === 1 ? 'cerrado' : 'cerrados'}`, ref: refAlbaranes },
-    { icon: Hourglass, label: 'En curso',      valor: stats.enCurso, sub: 'pendientes de cerrar', ref: refAlbaranes },
-    { icon: Weight,    label: 'Biomasa',       valor: stats.pesoKg > 0 ? fmtNum(stats.pesoKg / 1000) : '—', unidad: stats.pesoKg > 0 ? 't' : '', sub: 'peso neto total', ref: refActividad },
-    { icon: Droplets,  label: 'Humedad media', valor: stats.humedadMedia != null ? fmtNum(stats.humedadMedia) : '—', unidad: stats.humedadMedia != null ? '%' : '', sub: stats.humedadesMedidas ? `de ${stats.humedadesMedidas} albaranes medidos` : 'sin mediciones todavía', ref: refActividad },
+    { icon: FileText,  label: 'Albaranes', tono: 'blue',     valor: stats.total, sub: `${stats.cerrados} ${stats.cerrados === 1 ? 'cerrado' : 'cerrados'}`, ref: refAlbaranes },
+    { icon: Hourglass, label: 'En curso', tono: 'amber',      valor: stats.enCurso, sub: 'pendientes de cerrar', ref: refAlbaranes },
+    { icon: Weight,    label: 'Biomasa', tono: 'purple',       valor: stats.pesoKg > 0 ? fmtNum(stats.pesoKg / 1000) : '—', unidad: stats.pesoKg > 0 ? 't' : '', sub: 'peso neto total', ref: refActividad },
+    { icon: Droplets,  label: 'Humedad media', tono: 'green', valor: stats.humedadMedia != null ? fmtNum(stats.humedadMedia) : '—', unidad: stats.humedadMedia != null ? '%' : '', sub: stats.humedadesMedidas ? `de ${stats.humedadesMedidas} albaranes medidos` : 'sin mediciones todavía', ref: refActividad },
   ]
 
   const campoRel = cliente.tipo === 'instalacion' ? 'proveedor' : 'instalacion'
@@ -347,7 +347,7 @@ export default function ClienteDetalle({ albaranes = [], usuario }) {
       {/* ══ KPIs ══ */}
       <section className="cd-kpis">
         {kpis.map(k => (
-          <button key={k.label} className="cd-kpi" onClick={() => irA(k.ref)}>
+          <button key={k.label} className={`cd-kpi tone-${k.tono}`} onClick={() => irA(k.ref)}>
             <div className="cd-kpi-top">
               <span className="cd-kpi-icon"><k.icon size={18} /></span>
               <ArrowUpRight size={16} className="cd-kpi-arrow" />
