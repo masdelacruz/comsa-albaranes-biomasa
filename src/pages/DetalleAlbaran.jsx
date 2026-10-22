@@ -986,13 +986,13 @@ export default function DetalleAlbaran({ albaranes, simularFirma, updateFirma, s
                   {formDatos.tipo?.includes('1') && (
                   <div className="edit-field">
                     <label className="edit-label">Matrícula tractora</label>
-                    <input className="edit-input" value={formDatos.matriculaTractora} onChange={e => setD('matriculaTractora', e.target.value)} placeholder="Ej: 1234ABC" />
+                    <input className="edit-input" value={formDatos.matriculaTractora} onChange={e => setD('matriculaTractora', e.target.value.toUpperCase())} autoCapitalize="characters" placeholder="Ej: 1234ABC" />
                   </div>
                   )}
                   {formDatos.tipo?.includes('1') && (
                   <div className="edit-field">
                     <label className="edit-label">Matrícula remolque</label>
-                    <input className="edit-input" value={formDatos.matriculaRemolque} onChange={e => setD('matriculaRemolque', e.target.value)} placeholder="Ej: R-1234-ABC" />
+                    <input className="edit-input" value={formDatos.matriculaRemolque} onChange={e => setD('matriculaRemolque', e.target.value.toUpperCase())} autoCapitalize="characters" placeholder="Ej: R-1234-ABC" />
                   </div>
                   )}
                   <div className="edit-field" style={{gridColumn:'1/-1'}}>

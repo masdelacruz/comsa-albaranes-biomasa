@@ -379,11 +379,11 @@ function PasoFirma({ rol, a, updateFirma, subirTicketPesada, onCompletado, total
           <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:10}}>
             <div className="campo-field">
               <label>Matrícula tractora *</label>
-              <input type="text" placeholder="Ej: 1234 ABC" value={matriculaTractora} onChange={e => setMatriculaTractora(e.target.value)} />
+              <input type="text" placeholder="Ej: 1234 ABC" value={matriculaTractora} onChange={e => setMatriculaTractora(e.target.value.toUpperCase())} autoCapitalize="characters" />
             </div>
             <div className="campo-field">
               <label>Matrícula remolque</label>
-              <input type="text" placeholder="Ej: R-1234-ABC" value={matriculaRemolque} onChange={e => setMatriculaRemolque(e.target.value)} />
+              <input type="text" placeholder="Ej: R-1234-ABC" value={matriculaRemolque} onChange={e => setMatriculaRemolque(e.target.value.toUpperCase())} autoCapitalize="characters" />
             </div>
           </div>
           <div className="campo-field" style={{marginTop:4}}>

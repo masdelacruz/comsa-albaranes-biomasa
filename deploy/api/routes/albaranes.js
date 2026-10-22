@@ -17,6 +17,13 @@ function toTitleCase(str) {
   return str.toLowerCase().replace(/\b\w/g, c => c.toUpperCase())
 }
 
+// ── Helper: matrículas siempre en mayúsculas y sin espacios sobrantes ──
+const MATRICULAS = ['matricula_tractora', 'matricula_remolque']
+function matricula(v) {
+  if (typeof v !== 'string') return v ?? null
+  return v.trim().replace(/\s+/g, ' ').toUpperCase() || null
+}
+
 // ── Helper: ¿la firma se hizo hoy? (fecha formato "d/m/yyyy, hh:mm:ss") ──
 function esFirmaHoy(fechaStr) {
   if (!fechaStr) return false
@@ -822,7 +829,7 @@ router.post('/', requireAuth, async (req, res) => {
        f.permiso, f.observaciones,
        f.enviarACampo ? 'pendiente_campo' : 'programado',
        f.mapsOrigen, f.mapsDestino,
-       f.matriculaTractora, f.matriculaRemolque, f.chofer,
+       matricula(f.matriculaTractora), matricula(f.matriculaRemolque), f.chofer,
        certArray, f.grupoId || null, f.camionOrden || 1, referenciaSure]
     )
 
@@ -916,7 +923,7 @@ router.patch('/:id', requireAuth, async (req, res) => {
     const safeCols = Object.keys(campos).filter(k => ALLOWED_ALBARAN_COLS.has(k))
     if (safeCols.length) {
       const sets = safeCols.map((k, i) => `${k} = $${i+2}`).join(', ')
-      const vals = safeCols.map(k => campos[k])
+      const vals = safeCols.map(k => MATRICULAS.includes(k) ? matricula(campos[k]) : campos[k])
       await pool.query(`UPDATE albaranes SET ${sets} WHERE id = $1`, [id, ...vals])
     }
     // Cambiar de proveedor o de tipo de operación cambia la referencia SURE heredada
@@ -1082,7 +1089,7 @@ router.post('/:id/firmas/:rol', requireAuthOrCampoToken(), async (req, res) => {
     }
     const cols = Object.entries(campoData)
       .filter(([k]) => map[k])
-      .map(([k, v]) => [map[k], v])
+      .map(([k, v]) => [map[k], MATRICULAS.includes(map[k]) ? matricula(v) : v])
     if (cols.length) {
       const sets = cols.map(([c], i) => `${c} = $${i+2}`).join(', ')
       await pool.query(`UPDATE albaranes SET ${sets} WHERE id = $1`,
