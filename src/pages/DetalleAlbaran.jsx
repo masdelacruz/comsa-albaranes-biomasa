@@ -72,6 +72,18 @@ const Fila = ({ titulo, children }) => (
 
 function MenuPDF({ a, modo, generando, onGenerar }) {
   const [open, setOpen] = useState(false)
+  const menuRef = useRef(null)
+
+  // El desplegable se cierra al pulsar fuera o con Escape
+  useEffect(() => {
+    if (!open) return
+    const fuera = e => { if (!menuRef.current?.contains(e.target)) setOpen(false) }
+    const tecla = e => { if (e.key === 'Escape') setOpen(false) }
+    document.addEventListener('mousedown', fuera)
+    document.addEventListener('keydown', tecla)
+    return () => { document.removeEventListener('mousedown', fuera); document.removeEventListener('keydown', tecla) }
+  }, [open])
+
   const Icon  = modo === 'preview' ? Eye : FileDown
   const label = modo === 'preview' ? 'Vista previa' : 'Descargar PDF'
   const baseOpts = modo === 'preview' ? { preview: true } : {}
@@ -91,7 +103,7 @@ function MenuPDF({ a, modo, generando, onGenerar }) {
   }
 
   return (
-    <div style={{position:'relative'}}>
+    <div ref={menuRef} style={{position:'relative'}}>
       <button className="btn" onClick={() => setOpen(o => !o)} disabled={generando}>
         <Icon size={15} /> {generando ? 'Generando...' : `${label} ▾`}
       </button>
