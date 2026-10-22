@@ -847,11 +847,23 @@ router.post('/', requireAuth, async (req, res) => {
       )
     }
 
+    // El albarán aparece desde ya en el panel de cada empresa con paso propio
+    // (planificado mientras no se envíe a campo)
     const actorNombre = f.actorNombre || 'Oficina'
+    const paneles = [...new Set(firmasBase.filter(fr => fr.rol !== 'oficina').map(fr => fr.actor))]
+    const textoPaneles = paneles.length
+      ? `Añadido al panel de ${paneles.length > 1 ? paneles.slice(0, -1).join(', ') + ' y ' + paneles.at(-1) : paneles[0]}`
+      : null
     await client.query(
-      'INSERT INTO actividad (albaran_id,ts,texto,actor) VALUES ($1,$2,$3,$4),($1,$2,$5,$6)',
-      [id, fecha, 'Albarán creado', actorNombre, 'Enlace generado para campo', 'Sistema']
+      'INSERT INTO actividad (albaran_id,ts,texto,actor) VALUES ($1,$2,$3,$4)',
+      [id, fecha, 'Albarán creado', actorNombre]
     )
+    if (textoPaneles) {
+      await client.query(
+        'INSERT INTO actividad (albaran_id,ts,texto,actor) VALUES ($1,$2,$3,$4)',
+        [id, fecha, textoPaneles, 'Sistema']
+      )
+    }
 
     await client.query('COMMIT')
     if (f.enviarACampo && esOpcion2(f.tipo) && f.proveedor) {
