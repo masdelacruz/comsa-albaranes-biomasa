@@ -33,6 +33,7 @@ const necesitaOficina = (a) => a.estado !== 'cerrado' && (a.solicitaRevision || 
 
 export default function Dashboard({ albaranes, empresas = [], usuario, refetch, onEmpresaActualizada }) {
   const navigate = useNavigate()
+  const [tableroAbierto, setTableroAbierto] = useState(false)
 
   const hoy = new Date()
   const semana = isoWeek(hoy), anio = isoWeekYear(hoy)
@@ -60,6 +61,8 @@ export default function Dashboard({ albaranes, empresas = [], usuario, refetch, 
     { key: 'hum',  label: 'Humedad pendiente', items: humedad.sort(porAntiguedad), valor: humedad.length,     Icon: Droplets,      vista: { vista: 'activos', filtroEstado: ['humedad_pendiente'] }, aviso: true },
     { key: 'fin',  label: 'Cerrados',          sub: 'esta semana', items: cerradosSem.sort((x, y) => porAntiguedad(y, x)), valor: cerradosSem.length, Icon: CheckCircle2, vista: { vista: 'cerrados' }, fin: true },
   ]
+
+  const faseMasLarga = fases.reduce((m, f) => f.items.length > m.items.length ? f : m, fases[0]).key
 
   const nombre = usuario?.nombre?.split(' ')[0]
   const fechaLarga = hoy.toLocaleDateString('es-ES', { weekday: 'long', day: 'numeric', month: 'long' })
@@ -107,7 +110,8 @@ export default function Dashboard({ albaranes, empresas = [], usuario, refetch, 
         {/* Tablero: bajo cada fase, sus albaranes (lo más antiguo arriba) */}
         <div className="dash-tablero">
           {fases.map(fase => (
-            <Columna key={fase.key} fase={fase}
+            <Columna key={fase.key} fase={fase} abierto={tableroAbierto} onAlternar={() => setTableroAbierto(v => !v)}
+              esLaMasLarga={fase.key === faseMasLarga}
               onAbrir={a => navigate(`/albaran/${a.id}`)} />
           ))}
         </div>
@@ -120,15 +124,15 @@ export default function Dashboard({ albaranes, empresas = [], usuario, refetch, 
   )
 }
 
-// "+N más" despliega la columna en el sitio; para ir al listado completo de
-// la fase está su cabecera en la tira de arriba.
-function Columna({ fase, onAbrir }) {
+// "+N más" despliega todo el tablero en el sitio (para ir al listado completo
+// de una fase está su cabecera en la tira de arriba). Desplegado, el "Ver
+// menos" va solo al pie de la columna más larga.
+function Columna({ fase, abierto, onAlternar, esLaMasLarga, onAbrir }) {
   const { items } = fase
-  const [abierta, setAbierta] = useState(false)
   if (items.length === 0) return <div className="dash-col vacia"><span className="dash-col-vacio">Sin albaranes</span></div>
   return (
     <div className="dash-col">
-      {(abierta ? items : items.slice(0, MAX_TARJETAS)).map(a => (
+      {(abierto ? items : items.slice(0, MAX_TARJETAS)).map(a => (
         <button key={a.id} className="dash-tarjeta" onClick={() => onAbrir(a)}>
           <span className="dash-tarjeta-cab">
             <span className="dash-tarjeta-id">{a.id}</span>
@@ -139,10 +143,11 @@ function Columna({ fase, onAbrir }) {
           {a.solicitaRevision && <span className="dash-tarjeta-aviso">Revisión solicitada</span>}
         </button>
       ))}
-      {items.length > MAX_TARJETAS && (
-        <button className="dash-col-mas" onClick={() => setAbierta(v => !v)} aria-expanded={abierta}>
-          {abierta ? 'Ver menos' : `+${items.length - MAX_TARJETAS} más`}
-        </button>
+      {!abierto && items.length > MAX_TARJETAS && (
+        <button className="dash-col-mas" onClick={onAlternar} aria-expanded={false}>+{items.length - MAX_TARJETAS} más</button>
+      )}
+      {abierto && esLaMasLarga && (
+        <button className="dash-col-mas" onClick={onAlternar} aria-expanded={true}>Ver menos</button>
       )}
     </div>
   )
