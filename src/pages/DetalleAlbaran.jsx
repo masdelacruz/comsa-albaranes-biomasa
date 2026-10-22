@@ -794,80 +794,80 @@ export default function DetalleAlbaran({ albaranes, simularFirma, updateFirma, s
         <div className="page-sub">{a.astilladora || a.proveedor} → {a.instalacion} · {a.fecha?.slice(0,10).split('-').reverse().join('/')}{a.hora ? ` · ${a.hora} h` : ''}</div>
       </div>
 
-      {/* Banner solicitud de revisión */}
-      {a.solicitaRevision && (
-        <BannerRevision albaranId={a.id} onReabrir={async () => { await refetch?.(); mostrarToast('Albarán reabierto para campo ✓') }} />
-      )}
-
-      {/* Banner anulado por oficina */}
-      {a.estado === 'cancelado' && (
-        <div style={{margin:'0 0 16px',padding:'12px 16px',background:'var(--red-50)',border:'1px solid var(--red-100)',
-          borderRadius:'var(--radius-lg)',display:'flex',alignItems:'center',gap:12}}>
-          <span style={{fontSize:18,flexShrink:0}}>🚫</span>
-          <div style={{flex:1}}>
-            <div style={{fontSize:13,fontWeight:600,color:'var(--red-700)'}}>Albarán anulado</div>
-            <div style={{fontSize:12,color:'var(--red-700)',marginTop:2,opacity:0.8}}>
-              {a.motivoRechazoCampo || 'Anulado desde oficina sin motivo especificado.'}
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Banner rechazado desde campo */}
-      {(a.estado === 'rechazado_campo_astilladora' || a.estado === 'rechazado_campo_instalacion') && (
-        <div style={{margin:'0 0 16px',padding:'12px 16px',background:'#fff1f2',border:'1px solid #fecdd3',
-          borderRadius:'var(--radius-lg)',display:'flex',alignItems:'center',gap:12}}>
-          <span style={{fontSize:18,flexShrink:0}}>⛔</span>
-          <div style={{flex:1}}>
-            <div style={{fontSize:13,fontWeight:600,color:'#991b1b'}}>
-              Rechazado desde campo · {a.estado === 'rechazado_campo_astilladora' ? 'Astilladora' : 'Instalación'}
-            </div>
-            <div style={{fontSize:12,color:'#b91c1c',marginTop:2}}>
-              {a.motivoRechazoCampo
-                ? a.motivoRechazoCampo
-                : 'El equipo de campo marcó este albarán como no gestionado.'}
-            </div>
-          </div>
-          <button
-            onClick={async () => {
-              setEnviandoACampo(true)
-              try { await api.post(`/albaranes/${a.id}/reenviar-campo`); await refetch?.(); mostrarToast('Reenviado a campo ✓') }
-              catch {}
-              setEnviandoACampo(false)
-            }}
-            disabled={enviandoACampo}
-            style={{padding:'6px 14px',background:'#dc2626',color:'#fff',border:'none',borderRadius:'var(--radius-md)',
-              fontSize:12,fontWeight:600,cursor:'pointer',flexShrink:0,opacity:enviandoACampo?0.6:1,whiteSpace:'nowrap'}}>
-            {enviandoACampo ? '...' : 'Reenviar a campo'}
-          </button>
-        </div>
-      )}
-
-      {/* Banner programado — pendiente de enviar a campo */}
-      {a.estado === 'programado' && (
-        <div style={{margin:'0 0 16px',padding:'12px 16px',background:'#f5f3ff',border:'1px solid #ddd6fe',
-          borderRadius:'var(--radius-lg)',display:'flex',alignItems:'center',gap:12}}>
-          <span style={{fontSize:18,flexShrink:0}}>📋</span>
-          <div style={{flex:1}}>
-            <div style={{fontSize:13,fontWeight:600,color:'#5b21b6'}}>Albarán programado — no enviado a campo</div>
-            <div style={{fontSize:12,color:'#7c3aed',marginTop:2}}>El equipo de campo no puede ver ni firmar este albarán hasta que lo envíes.</div>
-          </div>
-          <button
-            onClick={async () => {
-              setEnviandoACampo(true)
-              try { await enviarACampoAlbaran?.([a.id]); mostrarToast('Enviado a campo ✓') }
-              catch {}
-              setEnviandoACampo(false)
-            }}
-            disabled={enviandoACampo}
-            style={{padding:'6px 14px',background:'#7c3aed',color:'#fff',border:'none',borderRadius:'var(--radius-md)',
-              fontSize:12,fontWeight:600,cursor:'pointer',flexShrink:0,opacity:enviandoACampo?0.6:1,whiteSpace:'nowrap'}}>
-            {enviandoACampo ? '...' : 'Enviar a campo'}
-          </button>
-        </div>
-      )}
-
       <div className="detalle-content">
+        {/* Banner solicitud de revisión */}
+        {a.solicitaRevision && (
+          <BannerRevision albaranId={a.id} onReabrir={async () => { await refetch?.(); mostrarToast('Albarán reabierto para campo ✓') }} />
+        )}
+
+        {/* Banner anulado por oficina */}
+        {a.estado === 'cancelado' && (
+          <div style={{margin:'0 0 16px',padding:'12px 16px',background:'var(--red-50)',border:'1px solid var(--red-100)',
+            borderRadius:'var(--radius-lg)',display:'flex',alignItems:'center',gap:12}}>
+            <span style={{fontSize:18,flexShrink:0}}>🚫</span>
+            <div style={{flex:1}}>
+              <div style={{fontSize:13,fontWeight:600,color:'var(--red-700)'}}>Albarán anulado</div>
+              <div style={{fontSize:12,color:'var(--red-700)',marginTop:2,opacity:0.8}}>
+                {a.motivoRechazoCampo || 'Anulado desde oficina sin motivo especificado.'}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Banner rechazado desde campo */}
+        {(a.estado === 'rechazado_campo_astilladora' || a.estado === 'rechazado_campo_instalacion') && (
+          <div style={{margin:'0 0 16px',padding:'12px 16px',background:'#fff1f2',border:'1px solid #fecdd3',
+            borderRadius:'var(--radius-lg)',display:'flex',alignItems:'center',gap:12}}>
+            <span style={{fontSize:18,flexShrink:0}}>⛔</span>
+            <div style={{flex:1}}>
+              <div style={{fontSize:13,fontWeight:600,color:'#991b1b'}}>
+                Rechazado desde campo · {a.estado === 'rechazado_campo_astilladora' ? 'Astilladora' : 'Instalación'}
+              </div>
+              <div style={{fontSize:12,color:'#b91c1c',marginTop:2}}>
+                {a.motivoRechazoCampo
+                  ? a.motivoRechazoCampo
+                  : 'El equipo de campo marcó este albarán como no gestionado.'}
+              </div>
+            </div>
+            <button
+              onClick={async () => {
+                setEnviandoACampo(true)
+                try { await api.post(`/albaranes/${a.id}/reenviar-campo`); await refetch?.(); mostrarToast('Reenviado a campo ✓') }
+                catch {}
+                setEnviandoACampo(false)
+              }}
+              disabled={enviandoACampo}
+              style={{padding:'6px 14px',background:'#dc2626',color:'#fff',border:'none',borderRadius:'var(--radius-md)',
+                fontSize:12,fontWeight:600,cursor:'pointer',flexShrink:0,opacity:enviandoACampo?0.6:1,whiteSpace:'nowrap'}}>
+              {enviandoACampo ? '...' : 'Reenviar a campo'}
+            </button>
+          </div>
+        )}
+
+        {/* Banner programado — pendiente de enviar a campo */}
+        {a.estado === 'programado' && (
+          <div style={{margin:'0 0 16px',padding:'12px 16px',background:'#f5f3ff',border:'1px solid #ddd6fe',
+            borderRadius:'var(--radius-lg)',display:'flex',alignItems:'center',gap:12}}>
+            <span style={{fontSize:18,flexShrink:0}}>📋</span>
+            <div style={{flex:1}}>
+              <div style={{fontSize:13,fontWeight:600,color:'#5b21b6'}}>Albarán programado — no enviado a campo</div>
+              <div style={{fontSize:12,color:'#7c3aed',marginTop:2}}>El equipo de campo no puede ver ni firmar este albarán hasta que lo envíes.</div>
+            </div>
+            <button
+              onClick={async () => {
+                setEnviandoACampo(true)
+                try { await enviarACampoAlbaran?.([a.id]); mostrarToast('Enviado a campo ✓') }
+                catch {}
+                setEnviandoACampo(false)
+              }}
+              disabled={enviandoACampo}
+              style={{padding:'6px 14px',background:'#7c3aed',color:'#fff',border:'none',borderRadius:'var(--radius-md)',
+                fontSize:12,fontWeight:600,cursor:'pointer',flexShrink:0,opacity:enviandoACampo?0.6:1,whiteSpace:'nowrap'}}>
+              {enviandoACampo ? '...' : 'Enviar a campo'}
+            </button>
+          </div>
+        )}
+
         <div className="detalle-cols">
           <div className="detalle-left">
 

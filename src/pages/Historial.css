@@ -96,6 +96,3 @@
 @media (max-width: 700px) {
   .historial-acciones .btn:first-child { display:none; }
 }
-
-/* Marca "Notificado" bajo el estado de los albaranes en campo (solo texto) */
-.fila-notificado { margin-top: 3px; font-size: 11px; color: var(--green-600); }

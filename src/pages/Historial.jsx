@@ -9,7 +9,7 @@ import { useScrollEstable } from '../hooks/useScrollEstable'
 import { useEstadoSesion, useAlCambiar, useScrollSesion } from '../hooks/useEstadoSesion'
 import { generarPDF } from '../utils/generarPDF'
 import { api } from '../lib/api'
-import { pasoPendiente, textoNotificado } from '../utils/pasos'
+import { pasoPendiente } from '../utils/pasos'
 import '../components/shared.css'
 import './Historial.css'
 
@@ -495,11 +495,7 @@ export default function Historial({ albaranes, empresas = [], usuario, refetch, 
                   <td style={{textAlign:'right'}}>{a.pesada.humedad != null ? `${a.pesada.humedad}%` : <span style={{color:'var(--gray-300)'}}>—</span>}</td>
                   <td style={{whiteSpace:'nowrap'}}>
                     <Badge estado={a.estado} />
-                    {a.solicitaRevision && <span title="Solicitud de revisión desde campo" style={{marginLeft:6,color:'#d97706',fontSize:13,verticalAlign:'middle'}}>⚠</span>}
-                    {pasoPendiente(a)?.notificado && (
-                      <div className="fila-notificado" title={textoNotificado(pasoPendiente(a).notificado, { conQuien: true })}>Notificado</div>
-                    )}
-                  </td>
+                    {a.solicitaRevision && <span title="Solicitud de revisión desde campo" style={{marginLeft:6,color:'#d97706',fontSize:13,verticalAlign:'middle'}}>⚠</span>}                  </td>
                   <td><FirmaSteps firmas={a.firmas} estado={a.estado} /></td>
                   {esSuperadmin && (
                     <td style={{width:36,padding:'4px',textAlign:'center'}} onClick={e => e.stopPropagation()}>

@@ -5,7 +5,7 @@ import { prepararVista } from '../hooks/useEstadoSesion'
 import { isoWeek, isoWeekYear } from '../utils/semana'
 import { api } from '../lib/api'
 import { contactosEmpresa } from '../utils/clientes'
-import { pasoPendiente, pendientesPorCliente, mensajeCliente, asuntoCliente, textoNotificado, ROL_CLIENTE } from '../utils/pasos'
+import { pendientesPorCliente, mensajeCliente, asuntoCliente, textoNotificado, ROL_CLIENTE } from '../utils/pasos'
 import CompartirWhatsApp, { WaIcon } from '../components/CompartirWhatsApp'
 import '../components/shared.css'
 import './Dashboard.css'
@@ -135,7 +135,6 @@ function Columna({ fase, onAbrir, onVerTodos }) {
           <span className="dash-tarjeta-empresa">{a.proveedor || '—'}</span>
           <span className="dash-tarjeta-inst">{a.instalacion || ''}</span>
           {a.solicitaRevision && <span className="dash-tarjeta-aviso">Revisión solicitada</span>}
-          {pasoPendiente(a)?.notificado && <span className="dash-tarjeta-notif"><Check size={11} /> Notificado</span>}
         </button>
       ))}
       {items.length > MAX_TARJETAS && (
