@@ -24,7 +24,8 @@ const primerNombre = n => String(n || '').trim().split(/\s+/)[0] || ''
 // ficha) y deja revisar el mensaje antes de abrir WhatsApp.
 //   empresa: fila de /empresas (puede faltar si la empresa no está dada de alta)
 //   mensaje(nombre): texto del mensaje saludando a esa persona
-export default function CompartirWhatsApp({ titulo, empresa, nombreEmpresa, mensaje, onClose, onContactoGuardado }) {
+//   onEnviado(): tras abrir WhatsApp (p. ej. para marcar como notificado)
+export default function CompartirWhatsApp({ titulo, empresa, nombreEmpresa, mensaje, onClose, onContactoGuardado, onEnviado }) {
   const contactos = useMemo(
     () => contactosEmpresa(empresa).filter(c => telWhatsApp(c.telefono)),
     [empresa]
@@ -68,6 +69,7 @@ export default function CompartirWhatsApp({ titulo, empresa, nombreEmpresa, mens
       setEnviando(false)
     }
     window.open(`https://wa.me/${tel}?text=${encodeURIComponent(texto)}`, '_blank')
+    onEnviado?.()
     onClose()
   }
 

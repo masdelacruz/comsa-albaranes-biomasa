@@ -229,6 +229,9 @@ function buildAlbaran(a, firmas, pesada, docs, actividad, observacionesPost, emp
       ipOrigen: f.ip_origen || null,
       observacionesFirma: f.observaciones_firma || null,
       observacionesExtra: obsExtra,
+      notificado: f.notificado_at
+        ? { fecha: f.notificado_at, por: f.notificado_por || null, medio: f.notificado_medio || null }
+        : null,
     }
   })
   const p = pesada || {}
@@ -623,6 +626,11 @@ router.post('/:id/reenviar-campo', requireAuth, async (req, res) => {
     "UPDATE albaranes SET estado='pendiente_campo', motivo_rechazo_campo=NULL WHERE id=$1",
     [id]
   )
+  // Tras el rechazo hay que volver a avisar al cliente
+  await pool.query(
+    'UPDATE firmas SET notificado_at=NULL, notificado_por=NULL, notificado_medio=NULL WHERE albaran_id=$1 AND NOT firmado',
+    [id]
+  )
   const fecha = new Date().toLocaleString('es-ES')
   const actor = req.user.nombre || 'Oficina'
   const textoActividad = prev.motivo_rechazo_campo
@@ -661,6 +669,54 @@ router.post('/:id/cancelar', requireAuth, async (req, res) => {
   })
   const albaran = await fetchOne(id)
   res.json({ albaran })
+})
+
+// ── POST /albaranes/notificar  (requiere auth — oficina) ─────────
+// Marca (o desmarca con quitar:true) como notificado al cliente el paso de
+// campo pendiente de cada albarán: el primer paso externo sin firmar. Solo
+// informativo: no cambia el estado ni bloquea nada.
+const ORDEN_PASOS_CAMPO = ['proveedor', 'astilladora', 'transportista', 'instalacion']
+const MEDIOS_NOTIFICACION = { whatsapp: 'por WhatsApp', email: 'por email', manual: '' }
+router.post('/notificar', requireAuth, async (req, res) => {
+  const { ids, medio = 'manual', quitar = false } = req.body || {}
+  if (!Array.isArray(ids) || !ids.length || ids.length > 500) return res.status(400).json({ error: 'ids requerido' })
+  if (!Object.hasOwn(MEDIOS_NOTIFICACION, medio)) return res.status(400).json({ error: 'Medio no válido' })
+  const actor = req.user.nombre || 'Oficina'
+  const fecha = new Date().toLocaleString('es-ES')
+  const marcados = []
+  for (const id of ids.map(String)) {
+    const { rows } = await pool.query(
+      `SELECT f.rol, f.actor FROM firmas f JOIN albaranes a ON a.id = f.albaran_id
+       WHERE f.albaran_id=$1 AND a.estado='pendiente_campo' AND NOT f.firmado AND f.rol = ANY($2)`,
+      [id, ORDEN_PASOS_CAMPO]
+    )
+    const paso = rows.sort((x, y) => ORDEN_PASOS_CAMPO.indexOf(x.rol) - ORDEN_PASOS_CAMPO.indexOf(y.rol))[0]
+    if (!paso) continue
+    if (quitar) {
+      await pool.query(
+        'UPDATE firmas SET notificado_at=NULL, notificado_por=NULL, notificado_medio=NULL WHERE albaran_id=$1 AND rol=$2',
+        [id, paso.rol]
+      )
+    } else {
+      await pool.query(
+        'UPDATE firmas SET notificado_at=NOW(), notificado_por=$3, notificado_medio=$4 WHERE albaran_id=$1 AND rol=$2',
+        [id, paso.rol, actor, medio]
+      )
+    }
+    const quien = paso.actor || 'Cliente'
+    const texto = quitar
+      ? `Quitada la marca de notificado a ${quien}`
+      : `${quien} notificado${MEDIOS_NOTIFICACION[medio] ? ' ' + MEDIOS_NOTIFICACION[medio] : ''}`
+    await pool.query('INSERT INTO actividad (albaran_id,ts,texto,actor) VALUES ($1,$2,$3,$4)', [id, fecha, texto, actor])
+    marcados.push(id)
+  }
+  if (marcados.length) {
+    registrarAuditoria({
+      usuario: req.user, accion: 'editar', entidad: 'albaran', entidadId: marcados.join(',').slice(0, 200),
+      detalle: `${quitar ? 'Quitada marca de notificado' : `Cliente notificado (${medio})`}: ${marcados.length} albarán(es)`,
+    })
+  }
+  res.json({ ok: true, marcados })
 })
 
 // ── POST /albaranes/enviar-a-campo  (bulk, requiere auth) ────────

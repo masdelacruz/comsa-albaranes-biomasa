@@ -1,7 +1,12 @@
 import { useNavigate } from 'react-router-dom'
-import { Plus, CalendarClock, Truck, PenLine, Droplets, CheckCircle2, List } from 'lucide-react'
+import { useState } from 'react'
+import { Plus, CalendarClock, Truck, PenLine, Droplets, CheckCircle2, List, Users, Mail, Check } from 'lucide-react'
 import { prepararVista } from '../hooks/useEstadoSesion'
 import { isoWeek, isoWeekYear } from '../utils/semana'
+import { api } from '../lib/api'
+import { contactosEmpresa } from '../utils/clientes'
+import { pasoPendiente, pendientesPorCliente, mensajeCliente, asuntoCliente, textoNotificado, ROL_CLIENTE } from '../utils/pasos'
+import CompartirWhatsApp, { WaIcon } from '../components/CompartirWhatsApp'
 import '../components/shared.css'
 import './Dashboard.css'
 
@@ -26,7 +31,7 @@ const hace = (fecha) => {
 
 const necesitaOficina = (a) => a.estado !== 'cerrado' && (a.solicitaRevision || a.estado === 'pendiente_oficina' || a.estado === 'humedad_pendiente')
 
-export default function Dashboard({ albaranes, usuario }) {
+export default function Dashboard({ albaranes, empresas = [], usuario, refetch, onEmpresaActualizada }) {
   const navigate = useNavigate()
 
   const hoy = new Date()
@@ -40,6 +45,8 @@ export default function Dashboard({ albaranes, usuario }) {
   const humedad      = deEstado('humedad_pendiente')
   const cerradosSem  = deEstado('cerrado').filter(a => esEstaSemana(a.fecha))
 
+  const sinNotificar = enCampo.filter(a => { const p = pasoPendiente(a); return p && !p.notificado }).length
+
   const porAntiguedad = (x, y) => (x.fecha || '').localeCompare(y.fecha || '')
   const atencion = albaranes.filter(necesitaOficina)
   const enCurso  = [...programados, ...enCampo]
@@ -50,7 +57,7 @@ export default function Dashboard({ albaranes, usuario }) {
   // Las fases del proceso, en orden: el albarán avanza de izquierda a derecha
   const fases = [
     { key: 'prog', label: 'Programados',       items: programados.sort(porAntiguedad), valor: programados.length, Icon: CalendarClock, vista: { vista: 'activos', filtroEstado: ['programado'] } },
-    { key: 'camp', label: 'En campo',          items: enCampo.sort(porAntiguedad), valor: enCampo.length,     Icon: Truck,         vista: { vista: 'activos', filtroEstado: ['pendiente_campo'] } },
+    { key: 'camp', label: 'En campo',          sub: sinNotificar > 0 ? `${sinNotificar} sin notificar` : null, items: enCampo.sort(porAntiguedad), valor: enCampo.length,     Icon: Truck,         vista: { vista: 'activos', filtroEstado: ['pendiente_campo'] } },
     { key: 'ofi',  label: 'Firma de oficina',  items: oficina.sort(porAntiguedad), valor: oficina.length,     Icon: PenLine,       vista: { vista: 'activos', filtroEstado: ['pendiente_oficina'] }, aviso: true },
     { key: 'hum',  label: 'Humedad pendiente', items: humedad.sort(porAntiguedad), valor: humedad.length,     Icon: Droplets,      vista: { vista: 'activos', filtroEstado: ['humedad_pendiente'] }, aviso: true },
     { key: 'fin',  label: 'Cerrados',          sub: 'esta semana', items: cerradosSem.sort((x, y) => porAntiguedad(y, x)), valor: cerradosSem.length, Icon: CheckCircle2, vista: { vista: 'cerrados' }, fin: true },
@@ -108,6 +115,9 @@ export default function Dashboard({ albaranes, usuario }) {
           ))}
         </div>
         </div>
+
+        <PendientesPorCliente albaranes={albaranes} empresas={empresas} refetch={refetch} onEmpresaActualizada={onEmpresaActualizada}
+          onAbrir={a => navigate(`/albaran/${a.id}`)} />
       </div>
     </div>
   )
@@ -127,11 +137,103 @@ function Columna({ fase, onAbrir, onVerTodos }) {
           <span className="dash-tarjeta-empresa">{a.proveedor || '—'}</span>
           <span className="dash-tarjeta-inst">{a.instalacion || ''}</span>
           {a.solicitaRevision && <span className="dash-tarjeta-aviso">Revisión solicitada</span>}
+          {pasoPendiente(a)?.notificado && <span className="dash-tarjeta-notif"><Check size={11} /> Notificado</span>}
         </button>
       ))}
       {items.length > MAX_TARJETAS && (
         <button className="dash-col-mas" onClick={onVerTodos}>+{items.length - MAX_TARJETAS} más</button>
       )}
     </div>
+  )
+}
+
+// Clientes con albaranes en campo esperando su gestión: un aviso por cliente
+// con todo lo que tiene pendiente y el enlace a su panel. Al avisar, esos
+// albaranes quedan marcados como "Notificado" (solo informativo).
+function PendientesPorCliente({ albaranes, empresas, refetch, onEmpresaActualizada, onAbrir }) {
+  const [waModal, setWaModal] = useState(null)
+  const [marcando, setMarcando] = useState(null)
+  const grupos = pendientesPorCliente(albaranes)
+  if (!grupos.length) return null
+
+  const filaEmpresa = g => empresas.find(e => e.nombre === g.nombre && e.tipo === g.rol) || empresas.find(e => e.nombre === g.nombre)
+  const sinNotificar = grupos.reduce((n, g) => n + g.sinNotificar.length, 0)
+
+  const marcar = async (g, medio) => {
+    setMarcando(g.clave)
+    try {
+      await api.post('/albaranes/notificar', { ids: g.albaranes.map(a => a.id), medio })
+      await refetch?.()
+    } catch { /* la marca es informativa: si falla, el aviso ya se ha enviado */ }
+    setMarcando(null)
+  }
+
+  const whatsapp = g => setWaModal({
+    titulo: `${g.albaranes.length} pendiente${g.albaranes.length === 1 ? '' : 's'} · ${ROL_CLIENTE[g.rol]}`,
+    empresa: filaEmpresa(g), nombreEmpresa: g.nombre,
+    mensaje: nombre => mensajeCliente({ rol: g.rol, nombre, albaranes: g.albaranes, panelUrl: g.panelUrl }),
+    onEnviado: () => marcar(g, 'whatsapp'),
+  })
+
+  const email = g => {
+    const emp = filaEmpresa(g)
+    const nombre = (contactosEmpresa(emp)[0]?.nombre || '').trim().split(/\s+/)[0]
+    const body = mensajeCliente({ rol: g.rol, nombre, albaranes: g.albaranes, panelUrl: g.panelUrl, fmt: 'email' })
+    window.open(`mailto:${emp?.email || ''}?subject=${encodeURIComponent(asuntoCliente(g.rol, g.albaranes.length))}&body=${encodeURIComponent(body)}`, '_blank')
+    marcar(g, 'email')
+  }
+
+  return (
+    <section className="dash-panel dash-clientes" aria-label="Pendientes por cliente">
+      <div className="dash-sec-cab">
+        <span className="dash-sec-titulo"><Users size={15} strokeWidth={1.8} /> Pendientes por cliente</span>
+        <span className="dash-sec-sub">
+          {grupos.length} {grupos.length === 1 ? 'cliente' : 'clientes'}
+          {sinNotificar > 0 && <> · <span className="sin">{sinNotificar} sin notificar</span></>}
+        </span>
+      </div>
+      {grupos.map(g => {
+        const emp = filaEmpresa(g)
+        const todos = g.sinNotificar.length === 0
+        return (
+          <div key={g.clave} className="dash-cli">
+            <div className="dash-cli-info">
+              <div className="dash-cli-nombre">{g.nombre} <span className="dash-cli-rol">{ROL_CLIENTE[g.rol]}</span></div>
+              <div className="dash-cli-meta">
+                {g.albaranes.length} {g.albaranes.length === 1 ? 'albarán' : 'albaranes'}
+                {' · '}
+                {todos
+                  ? <span className="ok"><Check size={11} /> {textoNotificado(g.ultimoAviso)}</span>
+                  : <span className="sin">{g.sinNotificar.length === g.albaranes.length ? 'Sin notificar' : `${g.sinNotificar.length} sin notificar`}</span>}
+              </div>
+              <div className="dash-cli-ids">
+                {g.albaranes.map(a => (
+                  <button key={a.id} type="button" onClick={() => onAbrir(a)} className={a.paso.notificado ? '' : 'sin'}
+                    title={a.paso.notificado ? textoNotificado(a.paso.notificado, { conQuien: true }) : 'Sin notificar'}>{a.id}</button>
+                ))}
+              </div>
+            </div>
+            <div className="dash-cli-acc">
+              <button type="button" className="btn dash-cli-wa" onClick={() => whatsapp(g)} disabled={marcando === g.clave}>
+                <WaIcon size={13} /> WhatsApp
+              </button>
+              <button type="button" className="btn" onClick={() => email(g)} disabled={!emp?.email || marcando === g.clave}
+                title={emp?.email ? `Email a ${emp.email}` : 'Sin email registrado'}>
+                <Mail size={13} /> Email
+              </button>
+              {!todos && (
+                <button type="button" className="btn dash-cli-marcar" onClick={() => marcar(g, 'manual')} disabled={marcando === g.clave}
+                  title="Dejar constancia de que ya se le ha avisado (p. ej. por teléfono)">
+                  <Check size={13} /> Marcar notificado
+                </button>
+              )}
+            </div>
+          </div>
+        )
+      })}
+      {waModal && (
+        <CompartirWhatsApp {...waModal} onClose={() => setWaModal(null)} onContactoGuardado={onEmpresaActualizada} />
+      )}
+    </section>
   )
 }

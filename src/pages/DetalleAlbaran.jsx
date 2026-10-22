@@ -9,6 +9,7 @@ import { ESPECIES, TIPOS_BIOMASA } from '../data/mockData'
 import SelectField from '../components/SelectField'
 import CompartirWhatsApp, { WaIcon } from '../components/CompartirWhatsApp'
 import { contactosEmpresa } from '../utils/clientes'
+import { pasoPendiente, textoNotificado } from '../utils/pasos'
 import '../components/shared.css'
 import './DetalleAlbaran.css'
 
@@ -279,11 +280,13 @@ export default function DetalleAlbaran({ albaranes, simularFirma, updateFirma, s
     firmasOrdenadas.filter(k => k !== 'oficina').every(k => a.firmas?.[k]?.firmado)
 
   const siguientePaso    = getSiguientePaso()
+  // Astilladora, instalación y proveedor reciben siempre su panel (el mismo
+  // enlace para todos sus albaranes); el resto, el enlace de este albarán.
   const urlSiguientePaso = siguientePaso
     ? siguientePaso === 'instalacion'
-      ? (a.panelInstalacionUrl ? `${a.panelInstalacionUrl}&desde=${a.id}` : null)
+      ? a.panelInstalacionUrl || null
       : siguientePaso === 'astilladora'
-      ? (a.panelAstilladoraUrl ? `${a.panelAstilladoraUrl}&desde=${a.id}` : null)
+      ? a.panelAstilladoraUrl || null
       : siguientePaso === 'proveedor' && a.panelProveedorUrl
       ? a.panelProveedorUrl
       : `${window.location.origin}/campo/${a.id}/${siguientePaso}?t=${encodeURIComponent(a.campoToken || '')}`
@@ -570,7 +573,7 @@ export default function DetalleAlbaran({ albaranes, simularFirma, updateFirma, s
       datos = [['Fecha', fechaAlb], ['Transportista', a.transportista || '—'], ['Matrícula', matricula], ['Biomasa', lineaBiomasa], ['Destino', a.instalacion || '—']]
     }
     const cierre = esPanelPaso
-      ? `${siguientePaso === 'proveedor' ? 'Tu panel' : 'Lo verás marcado al abrir tu panel'} (es siempre el mismo enlace: guárdalo y no lo compartas fuera de tu empresa):`
+      ? `Tu panel (es siempre el mismo enlace: guárdalo y no lo compartas fuera de tu empresa):`
       : 'Este enlace es exclusivo de este albarán; no lo reenvíes:'
     return `Hola${nombre ? ' ' + nombre : ''},\n\n${intro}\n\n${datos.map(dato).join('\n')}\n\n${cierre}\n${urlSiguientePaso}`
   }
@@ -583,12 +586,23 @@ export default function DetalleAlbaran({ albaranes, simularFirma, updateFirma, s
 
   const nombreDeContacto = emp => (contactosEmpresa(emp)[0]?.nombre || '').trim().split(/\s+/)[0] || actorNombre || ''
 
+  // Marca "Notificado" del paso en curso (informativa, no cambia el estado)
+  const notificado = pasoPendiente(a)?.notificado || null
+  const marcarNotificado = async (medio, quitar = false) => {
+    if (a.estado !== 'pendiente_campo') return
+    try {
+      await api.post('/albaranes/notificar', { ids: [a.id], medio, quitar })
+      await refetch?.()
+    } catch { mostrarToast('No se pudo guardar la marca de notificado') }
+  }
+
   const compartirUrl = (url, medio) => {
     if (medio === 'whatsapp') {
       setWaModal({
         titulo: `${getRolLabel(siguientePaso)} · Albarán ${a.id}`,
         empresa: actorEmpresa, nombreEmpresa: actorNombre || '—',
         mensaje: nombre => textoSiguientePaso(nombre, 'wa'),
+        onEnviado: () => marcarNotificado('whatsapp'),
       })
     }
     if (medio === 'email') {
@@ -596,6 +610,7 @@ export default function DetalleAlbaran({ albaranes, simularFirma, updateFirma, s
         `Gracias por tu colaboración.\n\n` +
         `Comsa Service — Gestión de Albaranes de Biomasa`
       window.open(`mailto:${actorEmail || ''}?subject=${encodeURIComponent(asuntoSiguientePaso())}&body=${encodeURIComponent(body)}`, '_blank')
+      marcarNotificado('email')
     }
     if (medio === 'copiar') copiar(url, 'siguiente')
   }
@@ -1361,6 +1376,15 @@ export default function DetalleAlbaran({ albaranes, simularFirma, updateFirma, s
                       </div>
                     )}
                   </div>
+                  {a.estado === 'pendiente_campo' && (
+                    <div className="aviso-notificado">
+                      {notificado
+                        ? <><span className="aviso-notificado-si"><Check size={11} /> {textoNotificado(notificado, { conQuien: true })}</span>
+                            <button type="button" onClick={() => marcarNotificado('manual', true)}>Quitar</button></>
+                        : <><span>Sin notificar</span>
+                            <button type="button" onClick={() => marcarNotificado('manual')}>Marcar como notificado</button></>}
+                    </div>
+                  )}
                 </div>
               ) : (
                 <div style={{fontSize:12,color:'var(--gray-400)',fontStyle:'italic'}}>

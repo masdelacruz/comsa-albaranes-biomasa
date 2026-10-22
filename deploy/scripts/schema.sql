@@ -48,6 +48,9 @@ CREATE TABLE IF NOT EXISTS firmas (
   created_at     TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   ip_origen           TEXT,
   observaciones_firma TEXT,
+  notificado_at       TIMESTAMPTZ,
+  notificado_por      TEXT,
+  notificado_medio    TEXT,
   UNIQUE (albaran_id, rol)
 );
 

@@ -138,6 +138,12 @@ function AppConDatos({ usuario, logout, actualizarUsuario }) {
 
   const [empresas, setEmpresas] = useState([])
   useEffect(() => { api.get('/empresas').then(d => setEmpresas(d || [])).catch(() => {}) }, [])
+  // Contacto añadido al compartir: los contactos son comunes a todas las fichas de la empresa
+  const actualizarEmpresa = useCallback(fila => {
+    if (!fila?.nombre) return
+    setEmpresas(prev => prev.map(e => e.nombre.toLowerCase() === fila.nombre.toLowerCase()
+      ? { ...e, contactos: fila.contactos, contacto: fila.contacto, telefono: fila.telefono } : e))
+  }, [])
 
   if (dataLoading) return <Spinner />
 
@@ -163,7 +169,7 @@ function AppConDatos({ usuario, logout, actualizarUsuario }) {
       }>
         <Route index element={<InicioRedirect usuario={usuario} />} />
         <Route path="dashboard"      element={<Navigate to="/panel" replace />} />
-        <Route path="panel"          element={<Dashboard albaranes={albaranes} empresas={empresas} usuario={usuario} borrarAlbaran={borrarAlbaran} refetch={refetch} />} />
+        <Route path="panel"          element={<Dashboard albaranes={albaranes} empresas={empresas} onEmpresaActualizada={actualizarEmpresa} usuario={usuario} borrarAlbaran={borrarAlbaran} refetch={refetch} />} />
         <Route path="nuevo"          element={<NuevoAlbaran addAlbaran={addAlbaran} usuario={usuario} />} />
         <Route path="albaran/:id"    element={<DetalleAlbaran albaranes={albaranes} simularFirma={simularFirmaOficina} updateFirma={updateFirma} subirDocumento={subirDocumento} eliminarDocumento={eliminarDocumento} subirTicketPesada={subirTicketPesada} actualizarAlbaran={actualizarAlbaran} borrarAlbaran={borrarAlbaran} reabrirAlbaran={reabrirAlbaran} enviarACampoAlbaran={enviarACampoAlbaran} regenerarEnlaceCampo={regenerarEnlaceCampo} usuario={usuario} refetch={refetch} />} />
         <Route path="historial"      element={<Navigate to="/albaranes" replace />} />
