@@ -324,13 +324,13 @@ function GrupoInstalacion({ instalacion, albaranes, renderTarjeta }) {
   const pct        = total > 0 ? Math.round((completos / total) * 100) : 0
 
   // Pendientes primero; los completados por orden de completado (astilladora)
-  // o de fecha (proveedor)
+  // o de fecha (proveedor). Por fecha, lo más reciente arriba.
   const sorted = [...activos].sort((a, b) => {
     if (!a.completado && b.completado) return -1
     if (a.completado && !b.completado) return 1
     if (a.completado && b.completado && a.astilladoraFecha && b.astilladoraFecha)
       return new Date(a.astilladoraFecha) - new Date(b.astilladoraFecha)
-    return (a.fecha || '').localeCompare(b.fecha || '')
+    return (b.fecha || '').localeCompare(a.fecha || '')
   })
 
   return (
@@ -457,7 +457,9 @@ export default function PanelEmpresa({ tipo }) {
     const bPend = b.some(x => !x.planificado && !x.completado)
     if (aPend && !bPend) return -1
     if (!aPend && bPend) return 1
-    return 0
+    // Después, la instalación con el albarán más reciente arriba
+    const ultima = l => l.reduce((m, x) => (x.fecha || '') > m ? x.fecha : m, '')
+    return ultima(b).localeCompare(ultima(a))
   })
 
   // Completados que no salen en la vista actual: siempre consultables abajo
