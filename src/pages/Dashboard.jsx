@@ -1,11 +1,11 @@
 import { useNavigate } from 'react-router-dom'
 import { useState } from 'react'
-import { Plus, CalendarClock, Truck, PenLine, Droplets, CheckCircle2, List, Users, Mail, Check } from 'lucide-react'
+import { Plus, CalendarClock, Truck, PenLine, Droplets, CheckCircle2, List, Users, Mail } from 'lucide-react'
 import { prepararVista } from '../hooks/useEstadoSesion'
 import { isoWeek, isoWeekYear } from '../utils/semana'
 import { api } from '../lib/api'
 import { contactosEmpresa } from '../utils/clientes'
-import { pendientesPorCliente, mensajeCliente, asuntoCliente, textoNotificado, ROL_CLIENTE } from '../utils/pasos'
+import { pendientesPorCliente, mensajeCliente, asuntoCliente, ROL_CLIENTE } from '../utils/pasos'
 import CompartirWhatsApp, { WaIcon } from '../components/CompartirWhatsApp'
 import '../components/shared.css'
 import './Dashboard.css'
@@ -146,8 +146,8 @@ function Columna({ fase, onAbrir, onVerTodos }) {
 
 // Clientes con albaranes en campo esperando su gestión. El sistema ya les
 // avisa solo (email y aviso en su panel) al enviar a campo; desde aquí se
-// puede mandar un recordatorio con todo lo pendiente y el enlace a su panel.
-// "Notificado" es solo un dato de consulta: no hay nada que marcar a mano.
+// puede mandar un recordatorio con todo lo pendiente y el enlace a su panel
+// (queda registrado en la actividad de cada albarán).
 function PendientesPorCliente({ albaranes, empresas, refetch, onEmpresaActualizada, onAbrir }) {
   const [waModal, setWaModal] = useState(null)
   const [marcando, setMarcando] = useState(null)
@@ -190,20 +190,16 @@ function PendientesPorCliente({ albaranes, empresas, refetch, onEmpresaActualiza
       </div>
       {grupos.map(g => {
         const emp = filaEmpresa(g)
-        const nuevos = g.ultimoAviso ? g.sinNotificar.length : 0
         return (
           <div key={g.clave} className="dash-cli">
             <div className="dash-cli-info">
               <div className="dash-cli-nombre">{g.nombre} <span className="dash-cli-rol">{ROL_CLIENTE[g.rol]}</span></div>
               <div className="dash-cli-meta">
                 {g.albaranes.length} {g.albaranes.length === 1 ? 'albarán' : 'albaranes'}
-                {g.ultimoAviso && <> · <span className="ok"><Check size={11} /> {textoNotificado(g.ultimoAviso)}</span></>}
-                {nuevos > 0 && <> · {nuevos} {nuevos === 1 ? 'nuevo' : 'nuevos'} desde entonces</>}
               </div>
               <div className="dash-cli-ids">
                 {g.albaranes.map(a => (
-                  <button key={a.id} type="button" onClick={() => onAbrir(a)}
-                    title={a.paso.notificado ? textoNotificado(a.paso.notificado, { conQuien: true }) : undefined}>{a.id}</button>
+                  <button key={a.id} type="button" onClick={() => onAbrir(a)}>{a.id}</button>
                 ))}
               </div>
             </div>

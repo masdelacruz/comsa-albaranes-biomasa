@@ -9,7 +9,6 @@ import { ESPECIES, TIPOS_BIOMASA } from '../data/mockData'
 import SelectField from '../components/SelectField'
 import CompartirWhatsApp, { WaIcon } from '../components/CompartirWhatsApp'
 import { contactosEmpresa } from '../utils/clientes'
-import { pasoPendiente, textoNotificado } from '../utils/pasos'
 import '../components/shared.css'
 import './DetalleAlbaran.css'
 
@@ -586,14 +585,13 @@ export default function DetalleAlbaran({ albaranes, simularFirma, updateFirma, s
 
   const nombreDeContacto = emp => (contactosEmpresa(emp)[0]?.nombre || '').trim().split(/\s+/)[0] || actorNombre || ''
 
-  // Marca "Notificado" del paso en curso (informativa, no cambia el estado)
-  const notificado = pasoPendiente(a)?.notificado || null
-  const marcarNotificado = async (medio, quitar = false) => {
+  // Deja constancia en la actividad del albarán de que se ha avisado al cliente
+  const marcarNotificado = async (medio) => {
     if (a.estado !== 'pendiente_campo') return
     try {
-      await api.post('/albaranes/notificar', { ids: [a.id], medio, quitar })
+      await api.post('/albaranes/notificar', { ids: [a.id], medio })
       await refetch?.()
-    } catch { mostrarToast('No se pudo guardar la marca de notificado') }
+    } catch { /* solo es un registro: el aviso ya se ha enviado */ }
   }
 
   const compartirUrl = (url, medio) => {
@@ -1376,15 +1374,6 @@ export default function DetalleAlbaran({ albaranes, simularFirma, updateFirma, s
                       </div>
                     )}
                   </div>
-                  {a.estado === 'pendiente_campo' && (
-                    <div className="aviso-notificado">
-                      {notificado
-                        ? <><span className="aviso-notificado-si"><Check size={11} /> {textoNotificado(notificado, { conQuien: true })}</span>
-                            <button type="button" onClick={() => marcarNotificado('manual', true)}>Quitar</button></>
-                        : <button type="button" onClick={() => marcarNotificado('manual')}
-                            title="Opcional: deja constancia si le has avisado por otra vía">Marcar como notificado</button>}
-                    </div>
-                  )}
                 </div>
               ) : (
                 <div style={{fontSize:12,color:'var(--gray-400)',fontStyle:'italic'}}>

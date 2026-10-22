@@ -1,6 +1,6 @@
 import { useState, useRef, useMemo, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Download, Search, FileSpreadsheet, Upload, Trash2, X, Send, SlidersHorizontal, ListChecks, Plus, BellRing } from 'lucide-react'
+import { Download, Search, FileSpreadsheet, Upload, Trash2, X, Send, SlidersHorizontal, ListChecks, Plus } from 'lucide-react'
 import ExcelJS from 'exceljs'
 import { Badge, FirmaSteps } from '../components/Badge'
 import PdfLoadingOverlay from '../components/PdfLoadingOverlay'
@@ -9,7 +9,6 @@ import { useScrollEstable } from '../hooks/useScrollEstable'
 import { useEstadoSesion, useAlCambiar, useScrollSesion } from '../hooks/useEstadoSesion'
 import { generarPDF } from '../utils/generarPDF'
 import { api } from '../lib/api'
-import { pasoPendiente } from '../utils/pasos'
 import '../components/shared.css'
 import './Historial.css'
 
@@ -142,22 +141,6 @@ export default function Historial({ albaranes, empresas = [], usuario, refetch, 
       if (programadosIds.length) await enviarACampoAlbaran(programadosIds)
       cancelarSeleccion()
     } finally { setEnviandoACampo(false) }
-  }
-
-  // Marca "Notificado" en los seleccionados que estén en campo (informativa)
-  const [marcandoNotif, setMarcandoNotif] = useState(false)
-  const idsSinNotificar = [...seleccionados].filter(id => {
-    const p = pasoPendiente(albaranes.find(x => x.id === id))
-    return p && !p.notificado
-  })
-  const handleMarcarNotificado = async () => {
-    setMarcandoNotif(true)
-    try {
-      await api.post('/albaranes/notificar', { ids: idsSinNotificar, medio: 'manual' })
-      await refetch?.()
-      cancelarSeleccion()
-    } catch { /* se mantiene la selección para reintentar */ }
-    setMarcandoNotif(false)
   }
 
   const empresasByTipo = (tipo) => empresas.filter(e => e.tipo === tipo).map(e => e.nombre)
@@ -555,13 +538,6 @@ export default function Historial({ albaranes, empresas = [], usuario, refetch, 
             <button onClick={handleEnviarACampo} disabled={enviandoACampo}
               style={{display:'inline-flex',alignItems:'center',gap:5,padding:'6px 12px',borderRadius:5,border:'1px solid rgba(29,158,117,0.5)',background:'rgba(29,158,117,0.2)',color:'#6ee7c7',fontSize:12,fontWeight:500,cursor:'pointer',opacity:enviandoACampo?0.6:1}}>
               <Send size={13}/> {enviandoACampo ? 'Enviando...' : 'Enviar a campo'}
-            </button>
-          )}
-          {idsSinNotificar.length > 0 && (
-            <button onClick={handleMarcarNotificado} disabled={marcandoNotif}
-              title="Deja constancia de que ya se ha avisado al cliente"
-              style={{display:'inline-flex',alignItems:'center',gap:5,padding:'6px 12px',borderRadius:5,border:'1px solid rgba(255,255,255,0.15)',background:'rgba(255,255,255,0.1)',color:'#fff',fontSize:12,fontWeight:500,cursor:'pointer',opacity:marcandoNotif?0.6:1}}>
-              <BellRing size={13}/> {marcandoNotif ? 'Marcando...' : 'Marcar notificado'}
             </button>
           )}
           <button onClick={() => setModalAdjuntar(true)}
