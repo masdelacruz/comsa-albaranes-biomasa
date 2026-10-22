@@ -45,8 +45,6 @@ export default function Dashboard({ albaranes, empresas = [], usuario, refetch, 
   const humedad      = deEstado('humedad_pendiente')
   const cerradosSem  = deEstado('cerrado').filter(a => esEstaSemana(a.fecha))
 
-  const sinNotificar = enCampo.filter(a => { const p = pasoPendiente(a); return p && !p.notificado }).length
-
   const porAntiguedad = (x, y) => (x.fecha || '').localeCompare(y.fecha || '')
   const atencion = albaranes.filter(necesitaOficina)
   const enCurso  = [...programados, ...enCampo]
@@ -57,7 +55,7 @@ export default function Dashboard({ albaranes, empresas = [], usuario, refetch, 
   // Las fases del proceso, en orden: el albarán avanza de izquierda a derecha
   const fases = [
     { key: 'prog', label: 'Programados',       items: programados.sort(porAntiguedad), valor: programados.length, Icon: CalendarClock, vista: { vista: 'activos', filtroEstado: ['programado'] } },
-    { key: 'camp', label: 'En campo',          sub: sinNotificar > 0 ? `${sinNotificar} sin notificar` : null, items: enCampo.sort(porAntiguedad), valor: enCampo.length,     Icon: Truck,         vista: { vista: 'activos', filtroEstado: ['pendiente_campo'] } },
+    { key: 'camp', label: 'En campo',          items: enCampo.sort(porAntiguedad), valor: enCampo.length,     Icon: Truck,         vista: { vista: 'activos', filtroEstado: ['pendiente_campo'] } },
     { key: 'ofi',  label: 'Firma de oficina',  items: oficina.sort(porAntiguedad), valor: oficina.length,     Icon: PenLine,       vista: { vista: 'activos', filtroEstado: ['pendiente_oficina'] }, aviso: true },
     { key: 'hum',  label: 'Humedad pendiente', items: humedad.sort(porAntiguedad), valor: humedad.length,     Icon: Droplets,      vista: { vista: 'activos', filtroEstado: ['humedad_pendiente'] }, aviso: true },
     { key: 'fin',  label: 'Cerrados',          sub: 'esta semana', items: cerradosSem.sort((x, y) => porAntiguedad(y, x)), valor: cerradosSem.length, Icon: CheckCircle2, vista: { vista: 'cerrados' }, fin: true },
@@ -147,9 +145,10 @@ function Columna({ fase, onAbrir, onVerTodos }) {
   )
 }
 
-// Clientes con albaranes en campo esperando su gestión: un aviso por cliente
-// con todo lo que tiene pendiente y el enlace a su panel. Al avisar, esos
-// albaranes quedan marcados como "Notificado" (solo informativo).
+// Clientes con albaranes en campo esperando su gestión. El sistema ya les
+// avisa solo (email y aviso en su panel) al enviar a campo; desde aquí se
+// puede mandar un recordatorio con todo lo pendiente y el enlace a su panel.
+// "Notificado" es solo un dato de consulta: no hay nada que marcar a mano.
 function PendientesPorCliente({ albaranes, empresas, refetch, onEmpresaActualizada, onAbrir }) {
   const [waModal, setWaModal] = useState(null)
   const [marcando, setMarcando] = useState(null)
@@ -157,7 +156,6 @@ function PendientesPorCliente({ albaranes, empresas, refetch, onEmpresaActualiza
   if (!grupos.length) return null
 
   const filaEmpresa = g => empresas.find(e => e.nombre === g.nombre && e.tipo === g.rol) || empresas.find(e => e.nombre === g.nombre)
-  const sinNotificar = grupos.reduce((n, g) => n + g.sinNotificar.length, 0)
 
   const marcar = async (g, medio) => {
     setMarcando(g.clave)
@@ -189,27 +187,24 @@ function PendientesPorCliente({ albaranes, empresas, refetch, onEmpresaActualiza
         <span className="dash-sec-titulo"><Users size={15} strokeWidth={1.8} /> Pendientes por cliente</span>
         <span className="dash-sec-sub">
           {grupos.length} {grupos.length === 1 ? 'cliente' : 'clientes'}
-          {sinNotificar > 0 && <> · <span className="sin">{sinNotificar} sin notificar</span></>}
         </span>
       </div>
       {grupos.map(g => {
         const emp = filaEmpresa(g)
-        const todos = g.sinNotificar.length === 0
+        const nuevos = g.ultimoAviso ? g.sinNotificar.length : 0
         return (
           <div key={g.clave} className="dash-cli">
             <div className="dash-cli-info">
               <div className="dash-cli-nombre">{g.nombre} <span className="dash-cli-rol">{ROL_CLIENTE[g.rol]}</span></div>
               <div className="dash-cli-meta">
                 {g.albaranes.length} {g.albaranes.length === 1 ? 'albarán' : 'albaranes'}
-                {' · '}
-                {todos
-                  ? <span className="ok"><Check size={11} /> {textoNotificado(g.ultimoAviso)}</span>
-                  : <span className="sin">{g.sinNotificar.length === g.albaranes.length ? 'Sin notificar' : `${g.sinNotificar.length} sin notificar`}</span>}
+                {g.ultimoAviso && <> · <span className="ok"><Check size={11} /> {textoNotificado(g.ultimoAviso)}</span></>}
+                {nuevos > 0 && <> · {nuevos} {nuevos === 1 ? 'nuevo' : 'nuevos'} desde entonces</>}
               </div>
               <div className="dash-cli-ids">
                 {g.albaranes.map(a => (
-                  <button key={a.id} type="button" onClick={() => onAbrir(a)} className={a.paso.notificado ? '' : 'sin'}
-                    title={a.paso.notificado ? textoNotificado(a.paso.notificado, { conQuien: true }) : 'Sin notificar'}>{a.id}</button>
+                  <button key={a.id} type="button" onClick={() => onAbrir(a)}
+                    title={a.paso.notificado ? textoNotificado(a.paso.notificado, { conQuien: true }) : undefined}>{a.id}</button>
                 ))}
               </div>
             </div>
@@ -221,12 +216,6 @@ function PendientesPorCliente({ albaranes, empresas, refetch, onEmpresaActualiza
                 title={emp?.email ? `Email a ${emp.email}` : 'Sin email registrado'}>
                 <Mail size={13} /> Email
               </button>
-              {!todos && (
-                <button type="button" className="btn dash-cli-marcar" onClick={() => marcar(g, 'manual')} disabled={marcando === g.clave}
-                  title="Dejar constancia de que ya se le ha avisado (p. ej. por teléfono)">
-                  <Check size={13} /> Marcar notificado
-                </button>
-              )}
             </div>
           </div>
         )

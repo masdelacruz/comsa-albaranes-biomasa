@@ -1381,8 +1381,8 @@ export default function DetalleAlbaran({ albaranes, simularFirma, updateFirma, s
                       {notificado
                         ? <><span className="aviso-notificado-si"><Check size={11} /> {textoNotificado(notificado, { conQuien: true })}</span>
                             <button type="button" onClick={() => marcarNotificado('manual', true)}>Quitar</button></>
-                        : <><span>Sin notificar</span>
-                            <button type="button" onClick={() => marcarNotificado('manual')}>Marcar como notificado</button></>}
+                        : <button type="button" onClick={() => marcarNotificado('manual')}
+                            title="Opcional: deja constancia si le has avisado por otra vía">Marcar como notificado</button>}
                     </div>
                   )}
                 </div>

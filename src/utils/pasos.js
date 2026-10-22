@@ -20,7 +20,7 @@ export const panelDeRol = (a, rol) =>
   ({ astilladora: a.panelAstilladoraUrl, instalacion: a.panelInstalacionUrl, proveedor: a.panelProveedorUrl })[rol] || null
 
 // Albaranes en campo agrupados por el cliente al que le toca gestionarlos.
-// Primero los clientes con algo sin notificar y, dentro, los más antiguos.
+// Primero el cliente con el pendiente más antiguo.
 export function pendientesPorCliente(albaranes) {
   const grupos = new Map()
   for (const a of albaranes) {
@@ -38,8 +38,7 @@ export function pendientesPorCliente(albaranes) {
     g.ultimoAviso = g.albaranes.map(a => a.paso.notificado).filter(Boolean)
       .sort((x, y) => String(y.fecha).localeCompare(String(x.fecha)))[0] || null
     return g
-  }).sort((x, y) => (y.sinNotificar.length > 0) - (x.sinNotificar.length > 0)
-    || (x.albaranes[0]?.fecha || '').localeCompare(y.albaranes[0]?.fecha || ''))
+  }).sort((x, y) => (x.albaranes[0]?.fecha || '').localeCompare(y.albaranes[0]?.fecha || ''))
 }
 
 const fechaCorta = f => f ? f.slice(0, 10).split('-').reverse().slice(0, 2).join('/') : '—'

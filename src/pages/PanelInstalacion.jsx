@@ -308,7 +308,8 @@ export default function PanelInstalacion() {
     if (!gruposPorFecha[fk][hk]) gruposPorFecha[fk][hk] = []
     gruposPorFecha[fk][hk].push(a)
   })
-  const fechasOrdenadas = Object.keys(gruposPorFecha).sort()
+  // Lo más reciente arriba: hoy, ayer y después los días anteriores
+  const fechasOrdenadas = Object.keys(gruposPorFecha).sort().reverse()
   const multiplesFechas = fechasOrdenadas.length > 1
 
   function sortHoras(entries) {
