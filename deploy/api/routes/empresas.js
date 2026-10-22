@@ -237,6 +237,43 @@ router.patch('/:id', requireAuth, requireConfigAccess, async (req, res) => {
   res.json(rows[0])
 })
 
+// ── POST /empresas/:id/contactos ──────────────────────────────────
+// Añade una persona de contacto desde "Compartir por WhatsApp" del detalle
+// del albarán. Lo puede hacer cualquier usuario con sesión (no hace falta
+// acceso a Configuración): solo añade al final de la lista, no edita ni
+// borra los existentes. Si el teléfono ya está, devuelve la ficha tal cual.
+const digitos = t => String(t || '').replace(/\D/g, '').replace(/^0034/, '34').replace(/^34(?=[6789]\d{8}$)/, '')
+router.post('/:id/contactos', requireAuth, async (req, res) => {
+  const nombre   = toTitleCase(String(req.body?.nombre || '').trim()).slice(0, 80)
+  const telefono = String(req.body?.telefono || '').trim()
+  if (!/^[+\d\s().-]{6,30}$/.test(telefono) || digitos(telefono).length < 9) {
+    return res.status(400).json({ error: 'Teléfono no válido' })
+  }
+  const { rows: [e] } = await pool.query('SELECT id, nombre, contactos, contacto, telefono FROM proveedores WHERE id=$1', [req.params.id])
+  if (!e) return res.status(404).json({ error: 'No encontrado' })
+
+  const actuales = normalizarContactos(
+    Array.isArray(e.contactos) && e.contactos.length ? e.contactos
+      : (e.contacto || e.telefono ? [{ nombre: e.contacto, telefono: e.telefono }] : [])
+  )
+  if (!actuales.some(c => digitos(c.telefono) === digitos(telefono))) {
+    if (actuales.length >= 10) return res.status(400).json({ error: 'La empresa ya tiene 10 contactos' })
+    const body = { contactos: [...actuales, { nombre, telefono }] }
+    aplicarContactos(body)
+    await pool.query(
+      'UPDATE proveedores SET contactos=$1, contacto=$2, telefono=$3 WHERE id=$4',
+      [JSON.stringify(body.contactos), body.contacto, body.telefono, e.id]
+    )
+    await sincronizarHermanas(e.id)
+    registrarAuditoria({
+      usuario: req.user, accion: 'editar', entidad: 'proveedor', entidadId: e.id,
+      detalle: `${e.nombre} — contacto añadido al compartir: ${nombre || 'sin nombre'}`,
+    })
+  }
+  const { rows } = await pool.query('SELECT * FROM proveedores WHERE id=$1', [e.id])
+  res.json(rows[0])
+})
+
 // ── POST /empresas/:id/regenerar-codigo-acceso ──────────────────────
 // Invalida el enlace de panel público actual de la empresa (con su código
 // viejo) y genera uno nuevo. Solo superadmin. Si la empresa tiene varios

@@ -7,6 +7,8 @@ import { generarPDF, generarPDFA5, cargarLogos } from '../utils/generarPDF'
 import { api } from '../lib/api'
 import { ESPECIES, TIPOS_BIOMASA } from '../data/mockData'
 import SelectField from '../components/SelectField'
+import CompartirWhatsApp, { WaIcon } from '../components/CompartirWhatsApp'
+import { contactosEmpresa } from '../utils/clientes'
 import '../components/shared.css'
 import './DetalleAlbaran.css'
 
@@ -168,6 +170,7 @@ export default function DetalleAlbaran({ albaranes, simularFirma, updateFirma, s
   const [confirmModal, setConfirmModal]     = useState(null)
   const [copiado, setCopiado]               = useState('')
   const [regenerando, setRegenerando]       = useState(false)
+  const [waModal, setWaModal]               = useState(null)
   const [dragOverDoc, setDragOverDoc]       = useState(null)   // nombre del doc sobre el que se arrastra
   const [dragOverTicket, setDragOverTicket] = useState(false)
   // Un flag por botón (preview / descargar): antes era un único booleano
@@ -531,127 +534,111 @@ export default function DetalleAlbaran({ albaranes, simularFirma, updateFirma, s
   const setD = (k, v) => setFormDatos(p => ({ ...p, [k]: v }))
   const setP = (k, v) => setFormPesada(p => ({ ...p, [k]: v }))
 
-  // Empresa del siguiente paso (para pre-rellenar destinatario en WhatsApp y Email)
-  const primerRol     = siguientePaso?.split(',')[0]
-  const actorNombre   = primerRol ? a.firmas[primerRol]?.actor : null
-  const actorEmpresa  = todasEmpresas.find(e => e.nombre === actorNombre)
-  const actorEmail    = actorEmpresa?.email    || null
-  // Limpia el teléfono a solo dígitos; si empieza por 6/7 asume España (+34)
-  const rawTel        = actorEmpresa?.telefono || ''
-  const actorTelefono = rawTel
-    ? rawTel.replace(/[\s\-().]/g, '').replace(/^\+/, '').replace(/^0034/, '34').replace(/^(?=[67])/, '34')
-    : ''
+  // ── Compartir enlaces (WhatsApp / email) ──────────────────────────
+  // Astilladora, instalación y proveedor tienen un panel fijo por empresa
+  // (el mismo enlace para todos sus albaranes); el resto de pasos usa el
+  // enlace de campo exclusivo de este albarán.
+  const filaEmpresa = (nombre, tipo) => nombre
+    ? todasEmpresas.find(e => e.nombre === nombre && e.tipo === tipo) || todasEmpresas.find(e => e.nombre === nombre)
+    : null
+  const primerRol    = siguientePaso?.split(',')[0]
+  const actorNombre  = primerRol ? (a.firmas[primerRol]?.actor || a[primerRol]) : null
+  const actorEmpresa = filaEmpresa(actorNombre, primerRol)
+  const actorEmail   = actorEmpresa?.email || null
+  const esPanelPaso  = !!{ astilladora: a.panelAstilladoraUrl, instalacion: a.panelInstalacionUrl, proveedor: a.panelProveedorUrl }[siguientePaso]
+
+  const fechaAlb     = a.fecha?.slice(0,10).split('-').reverse().join('/') || '—'
+  const lineaBiomasa = [a.especie, a.tipoBiomasa, a.estella].filter(Boolean).join(' · ') || '—'
+  const matricula    = [a.matriculaTractora, a.matriculaRemolque].filter(Boolean).join(' · ') || '—'
+
+  // Texto del enlace del siguiente paso. fmt 'wa' usa negritas de WhatsApp;
+  // 'email' alinea los datos en columnas para el cuerpo en texto plano.
+  const textoSiguientePaso = (nombre, fmt) => {
+    const dato = fmt === 'wa' ? ([k, v]) => `*${k}:* ${v}` : ([k, v]) => `   ${k.padEnd(14)}: ${v}`
+    let intro, datos
+    if (siguientePaso === 'proveedor' && esPanelPaso) {
+      intro = `Tienes un suministro programado para el ${fechaAlb} (Albarán ${a.id}). Desde tu panel de Comsa Service puedes adjuntar tu albarán${a.origen ? '' : ' e indicar el origen de la biomasa'}.`
+      datos = [['Fecha', fechaAlb], ['Destino', a.instalacion || '—'], ['Biomasa', lineaBiomasa]]
+    } else if (siguientePaso === 'astilladora' && esPanelPaso) {
+      intro = `Tienes un nuevo albarán pendiente de confirmar en tu panel de Comsa Service: el Albarán ${a.id}.`
+      datos = [['Fecha', fechaAlb], ['Transportista', a.transportista || '—'], ['Biomasa', lineaBiomasa], ['Destino', a.instalacion || '—']]
+    } else if (siguientePaso === 'instalacion' && esPanelPaso) {
+      intro = `Va de camino un camión con destino a ${a.instalacion} (Albarán ${a.id}). Cuando llegue, confirma la recepción desde tu panel de Comsa Service.`
+      datos = [['Transportista', a.transportista || '—'], ...(a.chofer ? [['Conductor', a.chofer]] : []), ['Matrícula', matricula], ['Biomasa', lineaBiomasa]]
+    } else {
+      intro = `Te enviamos el Albarán ${a.id} para que lo confirmes como ${getRolLabel(siguientePaso).toLowerCase()}.`
+      datos = [['Fecha', fechaAlb], ['Transportista', a.transportista || '—'], ['Matrícula', matricula], ['Biomasa', lineaBiomasa], ['Destino', a.instalacion || '—']]
+    }
+    const cierre = esPanelPaso
+      ? `${siguientePaso === 'proveedor' ? 'Tu panel' : 'Lo verás marcado al abrir tu panel'} (es siempre el mismo enlace: guárdalo y no lo compartas fuera de tu empresa):`
+      : 'Este enlace es exclusivo de este albarán; no lo reenvíes:'
+    return `Hola${nombre ? ' ' + nombre : ''},\n\n${intro}\n\n${datos.map(dato).join('\n')}\n\n${cierre}\n${urlSiguientePaso}`
+  }
+
+  const asuntoSiguientePaso = () => {
+    if (esPanelPaso && siguientePaso === 'proveedor')   return `Albarán ${a.id} — adjunta tu albarán${a.origen ? '' : ' e indica el origen'} · Comsa Service`
+    if (esPanelPaso && siguientePaso === 'instalacion') return `Camión en camino — Albarán ${a.id} · Comsa Service`
+    return `Albarán ${a.id} pendiente de confirmar · Comsa Service`
+  }
+
+  const nombreDeContacto = emp => (contactosEmpresa(emp)[0]?.nombre || '').trim().split(/\s+/)[0] || actorNombre || ''
 
   const compartirUrl = (url, medio) => {
-    const empresa = actorNombre || a.astilladora || a.proveedor || ''
-    const esInstalacion = siguientePaso === 'instalacion'
-    const esProveedor   = siguientePaso === 'proveedor'
-    const lineaBiomasa = [a.especie, a.tipoBiomasa, a.estella].filter(Boolean).join(' · ') || '—'
-    const intro = esProveedor
-      ? `Para el Albarán ${a.id} necesitamos que adjuntes tu albarán${a.origen ? '' : ' e indiques el origen'}.`
-      : `Ya puedes trabajar con el Albarán ${a.id}.`
-
-    const cuerpoWA = esProveedor
-      ? [
-          `*Fecha:* ${a.fecha?.slice(0,10).split('-').reverse().join('/') || '—'}`,
-          `*Instalación destino:* ${a.instalacion || '—'}`,
-          lineaBiomasa,
-        ].join('\n')
-      : esInstalacion
-      ? [
-          `*Transportista:* ${a.transportista || '—'}`,
-          ...(a.chofer ? [`*Conductor:* ${a.chofer}`] : []),
-          `*Matrícula:* ${[a.matriculaTractora, a.matriculaRemolque].filter(Boolean).join(' · ') || '—'}`,
-          lineaBiomasa,
-        ].join('\n')
-      : [
-          `*Transportista:* ${a.transportista || '—'}`,
-          `*Especie:* ${a.especie || '—'}`,
-          `*Biomasa:* ${[a.tipoBiomasa, a.estella].filter(Boolean).join(' · ') || '—'}`,
-          `*Instalación destino:* ${a.instalacion || '—'}`,
-        ].join('\n')
-
-    const cuerpoEmail = esProveedor
-      ? [
-          `   Fecha         : ${a.fecha?.slice(0,10).split('-').reverse().join('/') || '—'}`,
-          `   Instalación   : ${a.instalacion || '—'}`,
-          `   Biomasa       : ${lineaBiomasa}`,
-        ].join('\n')
-      : esInstalacion
-      ? [
-          `   Transportista : ${a.transportista || '—'}`,
-          ...(a.chofer ? [`   Conductor     : ${a.chofer}`] : []),
-          `   Matrícula     : ${[a.matriculaTractora, a.matriculaRemolque].filter(Boolean).join(' · ') || '—'}`,
-          `   Biomasa       : ${lineaBiomasa}`,
-        ].join('\n')
-      : [
-          `   Transportista : ${a.transportista || '—'}`,
-          `   Especie       : ${a.especie || '—'}`,
-          `   Biomasa       : ${[a.tipoBiomasa, a.estella].filter(Boolean).join(' · ') || '—'}`,
-          `   Instalación   : ${a.instalacion || '—'}`,
-        ].join('\n')
-
     if (medio === 'whatsapp') {
-      const msg = encodeURIComponent(
-        `Hola ${empresa},\n\n` +
-        `${intro}\n\n` +
-        `${cuerpoWA}\n\n` +
-        `${esProveedor ? 'Accede a tu panel' : 'Firma aquí'}:\n${url}`
-      )
-      window.open(`https://wa.me/${actorTelefono}?text=${msg}`, '_blank')
+      setWaModal({
+        titulo: `${getRolLabel(siguientePaso)} · Albarán ${a.id}`,
+        empresa: actorEmpresa, nombreEmpresa: actorNombre || '—',
+        mensaje: nombre => textoSiguientePaso(nombre, 'wa'),
+      })
     }
     if (medio === 'email') {
-      const subject = encodeURIComponent(`Firma pendiente — Albarán ${a.id} · Comsa Service`)
-      const body    = encodeURIComponent(
-        `Hola ${empresa},\n\n` +
-        `${intro}\n\n` +
-        `${cuerpoEmail}\n\n` +
-        `Accede al formulario de firma en el siguiente enlace:\n` +
-        `${url}\n\n` +
+      const body = `${textoSiguientePaso(nombreDeContacto(actorEmpresa), 'email')}\n\n` +
         `Gracias por tu colaboración.\n\n` +
-        `Comsa Service — Gestión de Albaranes de Biomasa\n` +
-        `biomasa.cserintranet.com`
-      )
-      window.open(`mailto:${actorEmail || ''}?subject=${subject}&body=${body}`, '_blank')
+        `Comsa Service — Gestión de Albaranes de Biomasa`
+      window.open(`mailto:${actorEmail || ''}?subject=${encodeURIComponent(asuntoSiguientePaso())}&body=${encodeURIComponent(body)}`, '_blank')
     }
     if (medio === 'copiar') copiar(url, 'siguiente')
   }
 
-  // Links de panel permanente para astilladora e instalación
-  const normalTel = (raw) => raw
-    ? raw.replace(/[\s\-().]/g, '').replace(/^\+/, '').replace(/^0034/, '34').replace(/^(?=[67])/, '34')
-    : ''
-  const astiEmpresa = todasEmpresas.find(e => e.nombre === a.astilladora)
-  const instEmpresa = todasEmpresas.find(e => e.nombre === a.instalacion)
-  const provEmpresa = todasEmpresas.find(e => e.nombre === a.proveedor && e.tipo === 'proveedor')
+  // Enlaces de panel permanente de cada empresa del albarán
   const paneles = [
     a.proveedor && a.panelProveedorUrl && {
-      rol: 'proveedor', nombre: a.proveedor,
-      url: a.panelProveedorUrl,
-      tel: normalTel(provEmpresa?.telefono || ''),
+      rol: 'proveedor', nombre: a.proveedor, url: a.panelProveedorUrl, empresa: filaEmpresa(a.proveedor, 'proveedor'),
     },
     a.astilladora && a.panelAstilladoraUrl && {
-      rol: 'astilladora', nombre: a.astilladora,
-      url: a.panelAstilladoraUrl,
-      tel: normalTel(astiEmpresa?.telefono || ''),
+      rol: 'astilladora', nombre: a.astilladora, url: a.panelAstilladoraUrl, empresa: filaEmpresa(a.astilladora, 'astilladora'),
     },
     a.instalacion && a.panelInstalacionUrl && {
-      rol: 'instalacion', nombre: a.instalacion,
-      url: a.panelInstalacionUrl,
-      tel: normalTel(instEmpresa?.telefono || ''),
+      rol: 'instalacion', nombre: a.instalacion, url: a.panelInstalacionUrl, empresa: filaEmpresa(a.instalacion, 'instalacion'),
     },
   ].filter(Boolean)
 
+  const DESC_PANEL = {
+    proveedor:   'tus suministros programados; desde ahí adjuntas tu albarán e indicas el origen de la biomasa',
+    astilladora: 'los albaranes que tienes asignados; desde ahí confirmas cada carga cuando sale el camión',
+    instalacion: 'los camiones que van de camino a tu instalación; desde ahí confirmas la recepción cuando llegan',
+  }
+
   const compartirPanel = (panel, medio) => {
     if (medio === 'whatsapp') {
-      const msg = encodeURIComponent(
-        `Hola ${panel.nombre},\n\n` +
-        `Este es tu enlace de acceso al panel diario de albaranes de Comsa Service.\n\n` +
-        `Accede aquí:\n${panel.url}`
-      )
-      window.open(`https://wa.me/${panel.tel}?text=${msg}`, '_blank')
+      setWaModal({
+        titulo: `Panel de ${FIRMA_LABELS[panel.rol].toLowerCase()}`,
+        empresa: panel.empresa, nombreEmpresa: panel.nombre,
+        mensaje: nombre =>
+          `Hola${nombre ? ' ' + nombre : ''},\n\n` +
+          `Este es el enlace a tu panel de albaranes de Comsa Service. En él tienes ${DESC_PANEL[panel.rol]}.\n\n` +
+          `Es siempre el mismo enlace: guárdalo para tenerlo a mano y no lo compartas fuera de tu empresa.\n${panel.url}`,
+      })
     }
     if (medio === 'copiar') copiar(panel.url, `panel-${panel.rol}`)
+  }
+
+  // Al guardar un contacto nuevo se actualizan todas las fichas de la empresa
+  const contactoGuardado = fila => {
+    if (!fila?.nombre) return
+    setTodasEmpresas(prev => prev.map(e => e.nombre.toLowerCase() === fila.nombre.toLowerCase()
+      ? { ...e, contactos: fila.contactos, contacto: fila.contacto, telefono: fila.telefono } : e))
+    mostrarToast('Contacto guardado en la ficha')
   }
 
   return (
@@ -722,6 +709,9 @@ export default function DetalleAlbaran({ albaranes, simularFirma, updateFirma, s
         </div>
       )}
 
+      {waModal && (
+        <CompartirWhatsApp {...waModal} onClose={() => setWaModal(null)} onContactoGuardado={contactoGuardado} />
+      )}
       {confirmModal && (
         <div style={{position:'fixed',inset:0,background:'rgba(0,0,0,0.4)',display:'flex',alignItems:'center',justifyContent:'center',zIndex:200,padding:20}}>
           <div style={{background:'#fff',borderRadius:'var(--radius-xl)',padding:28,maxWidth:400,width:'100%',boxShadow:'0 20px 60px rgba(0,0,0,0.15)'}}>
@@ -1353,19 +1343,10 @@ export default function DetalleAlbaran({ albaranes, simularFirma, updateFirma, s
                     Compartir por
                   </div>
                   <div style={{display:'flex',gap:5}}>
-                    {actorTelefono ? (
-                      <button onClick={() => compartirUrl(urlSiguientePaso, 'whatsapp')}
-                        style={{flex:1,display:'inline-flex',alignItems:'center',justifyContent:'center',gap:4,padding:'6px 8px',borderRadius:'var(--radius-sm)',border:'1px solid #d1fae5',background:'#ecfdf5',color:'#065f46',fontSize:11,fontWeight:500,cursor:'pointer'}}>
-                        <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/><path d="M11.99 2C6.477 2 2 6.477 2 11.99c0 1.762.476 3.411 1.305 4.83L2 22l5.335-1.391A9.953 9.953 0 0011.99 22C17.523 22 22 17.523 22 12.01 22 6.477 17.523 2 11.99 2zm0 18.002a7.966 7.966 0 01-4.073-1.113l-.29-.173-3.017.787.81-2.945-.19-.302A7.96 7.96 0 014.002 12c0-4.406 3.583-7.998 7.988-7.998 4.406 0 7.998 3.592 7.998 7.998 0 4.406-3.592 7.998-7.998 8.002z"/></svg>
-                        WhatsApp
-                      </button>
-                    ) : (
-                      <div title="Esta empresa no tiene teléfono registrado"
-                        style={{flex:1,display:'inline-flex',alignItems:'center',justifyContent:'center',gap:4,padding:'6px 8px',borderRadius:'var(--radius-sm)',border:'1px solid var(--gray-100)',background:'var(--gray-50)',color:'var(--gray-300)',fontSize:11,fontWeight:500,cursor:'not-allowed'}}>
-                        <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor" opacity="0.4"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/><path d="M11.99 2C6.477 2 2 6.477 2 11.99c0 1.762.476 3.411 1.305 4.83L2 22l5.335-1.391A9.953 9.953 0 0011.99 22C17.523 22 22 17.523 22 12.01 22 6.477 17.523 2 11.99 2zm0 18.002a7.966 7.966 0 01-4.073-1.113l-.29-.173-3.017.787.81-2.945-.19-.302A7.96 7.96 0 014.002 12c0-4.406 3.583-7.998 7.988-7.998 4.406 0 7.998 3.592 7.998 7.998 0 4.406-3.592 7.998-7.998 8.002z"/></svg>
-                        WhatsApp
-                      </div>
-                    )}
+                    <button onClick={() => compartirUrl(urlSiguientePaso, 'whatsapp')}
+                      style={{flex:1,display:'inline-flex',alignItems:'center',justifyContent:'center',gap:4,padding:'6px 8px',borderRadius:'var(--radius-sm)',border:'1px solid #d1fae5',background:'#ecfdf5',color:'#065f46',fontSize:11,fontWeight:500,cursor:'pointer'}}>
+                      <WaIcon size={12} /> WhatsApp
+                    </button>
                     {actorEmail ? (
                       <button onClick={() => compartirUrl(urlSiguientePaso, 'email')}
                         style={{flex:1,display:'inline-flex',alignItems:'center',justifyContent:'center',gap:4,padding:'6px 8px',borderRadius:'var(--radius-sm)',border:'var(--border)',background:'var(--gray-50)',color:'var(--gray-700)',fontSize:11,fontWeight:500,cursor:'pointer'}}>
@@ -1411,20 +1392,11 @@ export default function DetalleAlbaran({ albaranes, simularFirma, updateFirma, s
                             onClick={() => compartirPanel(panel, 'copiar')}>
                             {copiado === `panel-${panel.rol}` ? <><CheckCircle size={11} /> Copiado</> : <><Copy size={11} /> Copiar</>}
                           </button>
-                          {panel.tel ? (
-                            <button
-                              style={{flex:1,display:'inline-flex',alignItems:'center',justifyContent:'center',gap:4,padding:'4px 8px',borderRadius:'var(--radius-sm)',border:'1px solid #d1fae5',background:'#ecfdf5',color:'#065f46',fontSize:11,fontWeight:500,cursor:'pointer'}}
-                              onClick={() => compartirPanel(panel, 'whatsapp')}>
-                              <svg width="11" height="11" viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/><path d="M11.99 2C6.477 2 2 6.477 2 11.99c0 1.762.476 3.411 1.305 4.83L2 22l5.335-1.391A9.953 9.953 0 0011.99 22C17.523 22 22 17.523 22 12.01 22 6.477 17.523 2 11.99 2zm0 18.002a7.966 7.966 0 01-4.073-1.113l-.29-.173-3.017.787.81-2.945-.19-.302A7.96 7.96 0 014.002 12c0-4.406 3.583-7.998 7.988-7.998 4.406 0 7.998 3.592 7.998 7.998 0 4.406-3.592 7.998-7.998 8.002z"/></svg>
-                              WhatsApp
-                            </button>
-                          ) : (
-                            <div title="Sin teléfono registrado"
-                              style={{flex:1,display:'inline-flex',alignItems:'center',justifyContent:'center',gap:4,padding:'4px 8px',borderRadius:'var(--radius-sm)',border:'1px solid var(--gray-100)',background:'var(--gray-50)',color:'var(--gray-300)',fontSize:11,cursor:'not-allowed'}}>
-                              <svg width="11" height="11" viewBox="0 0 24 24" fill="currentColor" opacity="0.4"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/><path d="M11.99 2C6.477 2 2 6.477 2 11.99c0 1.762.476 3.411 1.305 4.83L2 22l5.335-1.391A9.953 9.953 0 0011.99 22C17.523 22 22 17.523 22 12.01 22 6.477 17.523 2 11.99 2zm0 18.002a7.966 7.966 0 01-4.073-1.113l-.29-.173-3.017.787.81-2.945-.19-.302A7.96 7.96 0 014.002 12c0-4.406 3.583-7.998 7.988-7.998 4.406 0 7.998 3.592 7.998 7.998 0 4.406-3.592 7.998-7.998 8.002z"/></svg>
-                              WhatsApp
-                            </div>
-                          )}
+                          <button
+                            style={{flex:1,display:'inline-flex',alignItems:'center',justifyContent:'center',gap:4,padding:'4px 8px',borderRadius:'var(--radius-sm)',border:'1px solid #d1fae5',background:'#ecfdf5',color:'#065f46',fontSize:11,fontWeight:500,cursor:'pointer'}}
+                            onClick={() => compartirPanel(panel, 'whatsapp')}>
+                            <WaIcon size={11} /> WhatsApp
+                          </button>
                           <button className="btn" style={{fontSize:11,padding:'4px 8px'}}
                             onClick={() => window.open(panel.url, '_blank')}>
                             <ExternalLink size={11} />
