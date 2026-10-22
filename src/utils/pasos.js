@@ -77,13 +77,13 @@ export const asuntoCliente = (rol, k) =>
 
 const MEDIO = { whatsapp: 'por WhatsApp', email: 'por email' }
 
-// "Notificado por WhatsApp · hace 2 h" (o "hoy 10:32", "el 21/10")
-export function textoNotificado(nt, { conQuien = false } = {}) {
+// "Compartido por WhatsApp · hace 2 h · por Marc" (o "el 21/10")
+export function textoCompartido(nt, { conQuien = false } = {}) {
   if (!nt) return ''
   const d = new Date(nt.fecha)
   const min = Math.round((Date.now() - d.getTime()) / 60000)
   const cuando = min < 1 ? 'ahora' : min < 60 ? `hace ${min} min` : min < 12 * 60 ? `hace ${Math.round(min / 60)} h`
     : `el ${d.toLocaleDateString('es-ES', { day: '2-digit', month: '2-digit' })}`
-  return [`Notificado${MEDIO[nt.medio] ? ' ' + MEDIO[nt.medio] : ''}`, cuando, conQuien && nt.por ? `por ${nt.por}` : null]
+  return [`Compartido${MEDIO[nt.medio] ? ' ' + MEDIO[nt.medio] : ''}`, cuando, conQuien && nt.por ? `por ${nt.por}` : null]
     .filter(Boolean).join(' · ')
 }

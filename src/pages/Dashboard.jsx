@@ -1,11 +1,11 @@
 import { useNavigate } from 'react-router-dom'
 import { useState } from 'react'
-import { Plus, CalendarClock, Truck, PenLine, Droplets, CheckCircle2, List, Users, Mail } from 'lucide-react'
+import { Plus, CalendarClock, Truck, PenLine, Droplets, CheckCircle2, List, Users, Mail, Check } from 'lucide-react'
 import { prepararVista } from '../hooks/useEstadoSesion'
 import { isoWeek, isoWeekYear } from '../utils/semana'
 import { api } from '../lib/api'
 import { contactosEmpresa } from '../utils/clientes'
-import { pendientesPorCliente, mensajeCliente, asuntoCliente, ROL_CLIENTE } from '../utils/pasos'
+import { pendientesPorCliente, mensajeCliente, asuntoCliente, textoCompartido, ROL_CLIENTE } from '../utils/pasos'
 import CompartirWhatsApp, { WaIcon } from '../components/CompartirWhatsApp'
 import '../components/shared.css'
 import './Dashboard.css'
@@ -196,10 +196,13 @@ function PendientesPorCliente({ albaranes, empresas, refetch, onEmpresaActualiza
               <div className="dash-cli-nombre">{g.nombre} <span className="dash-cli-rol">{ROL_CLIENTE[g.rol]}</span></div>
               <div className="dash-cli-meta">
                 {g.albaranes.length} {g.albaranes.length === 1 ? 'albarán' : 'albaranes'}
+                {g.ultimoAviso && <> · <span className="compartido"><Check size={11} /> {textoCompartido(g.ultimoAviso, { conQuien: true })}</span></>}
               </div>
               <div className="dash-cli-ids">
+                {/* Los que ya se le han compartido, en verde */}
                 {g.albaranes.map(a => (
-                  <button key={a.id} type="button" onClick={() => onAbrir(a)}>{a.id}</button>
+                  <button key={a.id} type="button" onClick={() => onAbrir(a)} className={a.paso.notificado ? 'compartido' : undefined}
+                    title={a.paso.notificado ? textoCompartido(a.paso.notificado, { conQuien: true }) : undefined}>{a.id}</button>
                 ))}
               </div>
             </div>

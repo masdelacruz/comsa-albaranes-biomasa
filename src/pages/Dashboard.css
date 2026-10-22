@@ -120,3 +120,6 @@
   .dash-cli { flex-direction:column; align-items:stretch; gap:10px; }
   .dash-cli-acc .btn { flex:1; justify-content:center; }
 }
+/* Constancia de lo ya compartido con el cliente (solo matiz en el texto) */
+.dash-cli-meta .compartido { display:inline-flex; align-items:center; gap:3px; color:var(--green-600); }
+.dash-cli-ids button.compartido { color:var(--green-600); }

@@ -705,15 +705,15 @@ router.post('/notificar', requireAuth, async (req, res) => {
     }
     const quien = paso.actor || 'Cliente'
     const texto = quitar
-      ? `Quitada la marca de notificado a ${quien}`
-      : `${quien} notificado${MEDIOS_NOTIFICACION[medio] ? ' ' + MEDIOS_NOTIFICACION[medio] : ''}`
+      ? `Quitada la marca de compartido con ${quien}`
+      : `Compartido con ${quien}${MEDIOS_NOTIFICACION[medio] ? ' ' + MEDIOS_NOTIFICACION[medio] : ''}`
     await pool.query('INSERT INTO actividad (albaran_id,ts,texto,actor) VALUES ($1,$2,$3,$4)', [id, fecha, texto, actor])
     marcados.push(id)
   }
   if (marcados.length) {
     registrarAuditoria({
       usuario: req.user, accion: 'editar', entidad: 'albaran', entidadId: marcados.join(',').slice(0, 200),
-      detalle: `${quitar ? 'Quitada marca de notificado' : `Cliente notificado (${medio})`}: ${marcados.length} albarán(es)`,
+      detalle: `${quitar ? 'Quitada marca de compartido' : `Compartido con el cliente (${medio})`}: ${marcados.length} albarán(es)`,
     })
   }
   res.json({ ok: true, marcados })
