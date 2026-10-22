@@ -108,8 +108,7 @@ export default function Dashboard({ albaranes, empresas = [], usuario, refetch, 
         <div className="dash-tablero">
           {fases.map(fase => (
             <Columna key={fase.key} fase={fase}
-              onAbrir={a => navigate(`/albaran/${a.id}`)}
-              onVerTodos={() => abrirListado(fase.vista)} />
+              onAbrir={a => navigate(`/albaran/${a.id}`)} />
           ))}
         </div>
         </div>
@@ -121,12 +120,15 @@ export default function Dashboard({ albaranes, empresas = [], usuario, refetch, 
   )
 }
 
-function Columna({ fase, onAbrir, onVerTodos }) {
+// "+N más" despliega la columna en el sitio; para ir al listado completo de
+// la fase está su cabecera en la tira de arriba.
+function Columna({ fase, onAbrir }) {
   const { items } = fase
+  const [abierta, setAbierta] = useState(false)
   if (items.length === 0) return <div className="dash-col vacia"><span className="dash-col-vacio">Sin albaranes</span></div>
   return (
     <div className="dash-col">
-      {items.slice(0, MAX_TARJETAS).map(a => (
+      {(abierta ? items : items.slice(0, MAX_TARJETAS)).map(a => (
         <button key={a.id} className="dash-tarjeta" onClick={() => onAbrir(a)}>
           <span className="dash-tarjeta-cab">
             <span className="dash-tarjeta-id">{a.id}</span>
@@ -138,7 +140,9 @@ function Columna({ fase, onAbrir, onVerTodos }) {
         </button>
       ))}
       {items.length > MAX_TARJETAS && (
-        <button className="dash-col-mas" onClick={onVerTodos}>+{items.length - MAX_TARJETAS} más</button>
+        <button className="dash-col-mas" onClick={() => setAbierta(v => !v)} aria-expanded={abierta}>
+          {abierta ? 'Ver menos' : `+${items.length - MAX_TARJETAS} más`}
+        </button>
       )}
     </div>
   )
