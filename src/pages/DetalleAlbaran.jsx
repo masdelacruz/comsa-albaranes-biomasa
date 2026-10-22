@@ -1,4 +1,4 @@
-import { useRef, useState, useEffect } from 'react'
+import { Fragment, useRef, useState, useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { ArrowLeft, ExternalLink, CheckCircle, Clock, FileDown, Upload, Eye, FileText, AlertTriangle, Copy, Pencil, X, Check, Trash2, MapPin, Share2, Truck, RotateCcw, RefreshCw } from 'lucide-react'
 import { Badge } from '../components/Badge'
@@ -613,6 +613,8 @@ export default function DetalleAlbaran({ albaranes, simularFirma, updateFirma, s
     if (medio === 'copiar') copiar(url, 'siguiente')
   }
 
+  const hayEnlaceSuelto = !!urlSiguientePaso && !esPanelPaso && a.estado !== 'programado'
+
   // Enlaces de panel permanente de cada empresa del albarán
   const paneles = [
     a.proveedor && a.panelProveedorUrl && {
@@ -632,7 +634,20 @@ export default function DetalleAlbaran({ albaranes, simularFirma, updateFirma, s
     instalacion: 'los camiones que van de camino a tu instalación; desde ahí confirmas la recepción cuando llegan',
   }
 
+  const esPanelPendiente = panel => esPanelPaso && a.estado === 'pendiente_campo' && panel.rol === siguientePaso
+
+  const textoPanel = (panel, nombre) =>
+    `Hola${nombre ? ' ' + nombre : ''},\n\n` +
+    `Este es el enlace a tu panel de albaranes de Comsa Service. En él tienes ${DESC_PANEL[panel.rol]}.\n\n` +
+    `Es siempre el mismo enlace: guárdalo para tenerlo a mano y no lo compartas fuera de tu empresa.\n${panel.url}`
+
+  // Si el panel es el del paso pendiente, el aviso habla de este albarán
   const compartirPanel = (panel, medio) => {
+    if (medio !== 'copiar' && esPanelPendiente(panel)) return compartirUrl(panel.url, medio)
+    if (medio === 'email') {
+      const body = `${textoPanel(panel, nombreDeContacto(panel.empresa))}\n\nComsa Service — Gestión de Albaranes de Biomasa`
+      window.open(`mailto:${panel.empresa?.email || ''}?subject=${encodeURIComponent('Tu panel de albaranes · Comsa Service')}&body=${encodeURIComponent(body)}`, '_blank')
+    }
     if (medio === 'whatsapp') {
       setWaModal({
         titulo: `Panel de ${FIRMA_LABELS[panel.rol].toLowerCase()}`,
@@ -1322,105 +1337,71 @@ export default function DetalleAlbaran({ albaranes, simularFirma, updateFirma, s
               })}
             </div>
 
+            {(paneles.length > 0 || hayEnlaceSuelto) && (
             <div className="card" style={{marginBottom:14}}>
               <div className="section-label" style={{display:'flex',alignItems:'center',gap:5}}>
-                <Share2 size={12} /> Enlace de campo
+                <Share2 size={12} /> Acceso de clientes
               </div>
-              {urlSiguientePaso && a.estado !== 'programado' ? (
-                <div style={{background:'var(--green-50)',border:'1px solid var(--green-100)',borderRadius:'var(--radius-md)',padding:'10px 12px'}}>
-                  <div style={{fontSize:11,fontWeight:600,color:'var(--green-600)',marginBottom:4}}>
-                    Siguiente paso — {getRolLabel(siguientePaso)}
-                  </div>
-                  <code style={{fontSize:11,color:'var(--green-600)',wordBreak:'break-all',display:'block',marginBottom:10}}>
-                    {urlSiguientePaso}
-                  </code>
-                  {/* Botones de copia/apertura */}
-                  <div style={{display:'flex',gap:5,marginBottom:8}}>
-                    <button className="btn btn-primary" style={{flex:1,fontSize:11,padding:'5px 8px'}}
-                      onClick={() => copiar(urlSiguientePaso, 'siguiente')}>
-                      {copiado === 'siguiente' ? <><CheckCircle size={11} /> Copiado</> : <><Copy size={11} /> Copiar</>}
-                    </button>
-                    <button className="btn" style={{fontSize:11,padding:'5px 8px'}}
-                      onClick={() => window.open(urlSiguientePaso, '_blank')}>
-                      <ExternalLink size={11} />
-                    </button>
-                    <button className="btn" style={{fontSize:11,padding:'5px 8px'}}
-                      disabled={regenerando}
-                      title="Invalida este enlace y genera uno nuevo"
-                      onClick={handleRegenerarEnlace}>
-                      <RefreshCw size={11} />
-                    </button>
-                  </div>
-                  {/* Compartir */}
-                  <div style={{fontSize:10,fontWeight:600,textTransform:'uppercase',letterSpacing:'0.5px',color:'var(--gray-400)',marginBottom:6}}>
-                    Compartir por
-                  </div>
-                  <div style={{display:'flex',gap:5}}>
-                    <button onClick={() => compartirUrl(urlSiguientePaso, 'whatsapp')}
-                      style={{flex:1,display:'inline-flex',alignItems:'center',justifyContent:'center',gap:4,padding:'6px 8px',borderRadius:'var(--radius-sm)',border:'1px solid #d1fae5',background:'#ecfdf5',color:'#065f46',fontSize:11,fontWeight:500,cursor:'pointer'}}>
-                      <WaIcon size={12} /> WhatsApp
-                    </button>
-                    {actorEmail ? (
-                      <button onClick={() => compartirUrl(urlSiguientePaso, 'email')}
-                        style={{flex:1,display:'inline-flex',alignItems:'center',justifyContent:'center',gap:4,padding:'6px 8px',borderRadius:'var(--radius-sm)',border:'var(--border)',background:'var(--gray-50)',color:'var(--gray-700)',fontSize:11,fontWeight:500,cursor:'pointer'}}>
-                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="m22 7-10 7L2 7"/></svg>
-                        Email
+              <div style={{display:'flex',flexDirection:'column',gap:8}}>
+                {/* Paso sin panel propio: enlace exclusivo de este albarán */}
+                {hayEnlaceSuelto && (
+                  <div style={{background:'var(--gray-50)',border:'var(--border)',borderRadius:'var(--radius-md)',padding:'8px 10px'}}>
+                    <div style={{fontSize:11,fontWeight:600,color:'var(--gray-600)',marginBottom:3}}>
+                      {getRolLabel(siguientePaso)} <span style={{color:'var(--green-600)'}}> · le toca ahora</span>
+                    </div>
+                    <code style={{fontSize:10,color:'var(--gray-500)',wordBreak:'break-all',display:'block',marginBottom:6}}>
+                      {urlSiguientePaso}
+                    </code>
+                    <div style={{display:'flex',gap:5}}>
+                      <button className="btn btn-primary" style={{flex:1,fontSize:11,padding:'4px 8px'}} onClick={() => copiar(urlSiguientePaso, 'siguiente')}>
+                        {copiado === 'siguiente' ? <><CheckCircle size={11} /> Copiado</> : <><Copy size={11} /> Copiar</>}
                       </button>
-                    ) : (
-                      <div title="Esta empresa no tiene email registrado"
-                        style={{flex:1,display:'inline-flex',alignItems:'center',justifyContent:'center',gap:4,padding:'6px 8px',borderRadius:'var(--radius-sm)',border:'1px solid var(--gray-100)',background:'var(--gray-50)',color:'var(--gray-300)',fontSize:11,fontWeight:500,cursor:'not-allowed'}}>
-                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" opacity="0.4"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="m22 7-10 7L2 7"/></svg>
-                        Email
-                      </div>
-                    )}
+                      <button style={{flex:1,display:'inline-flex',alignItems:'center',justifyContent:'center',gap:4,padding:'4px 8px',borderRadius:'var(--radius-sm)',border:'1px solid #d1fae5',background:'#ecfdf5',color:'#065f46',fontSize:11,fontWeight:500,cursor:'pointer'}} onClick={() => compartirUrl(urlSiguientePaso, 'whatsapp')}>
+                        <WaIcon size={11} /> WhatsApp
+                      </button>
+                      <button style={{...{flex:1,display:'inline-flex',alignItems:'center',justifyContent:'center',gap:4,padding:'4px 8px',borderRadius:'var(--radius-sm)',border:'var(--border)',background:'var(--gray-50)',color:'var(--gray-700)',fontSize:11,fontWeight:500,cursor:'pointer'}, ...(actorEmail ? {} : {color:'var(--gray-300)',cursor:'not-allowed'})}} disabled={!actorEmail}
+                        title={actorEmail ? '' : 'Esta empresa no tiene email registrado'} onClick={() => compartirUrl(urlSiguientePaso, 'email')}>
+                        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="m22 7-10 7L2 7"/></svg> Email
+                      </button>
+                      <button className="btn" style={{fontSize:11,padding:'4px 8px'}} disabled={regenerando}
+                        title="Invalida este enlace y genera uno nuevo" onClick={handleRegenerarEnlace}>
+                        <RefreshCw size={11} />
+                      </button>
+                    </div>
                   </div>
-                </div>
-              ) : (
-                <div style={{fontSize:12,color:'var(--gray-400)',fontStyle:'italic'}}>
-                  {a.estado === 'programado'
-                    ? 'Envía el albarán a campo para generar el enlace de firma'
-                    : a.estado === 'cerrado'
-                    ? 'Todas las firmas completadas'
-                    : 'Todas las firmas externas completadas — pendiente de firma oficina'}
-                </div>
-              )}
-
-              {paneles.length > 0 && (
-                <>
-                  <div style={{borderTop:'var(--border)',margin:'12px 0 10px'}} />
-                  <div style={{fontSize:10,fontWeight:700,textTransform:'uppercase',letterSpacing:'0.5px',color:'var(--gray-400)',marginBottom:8}}>
-                    Paneles diarios
+                )}
+                {paneles.map(panel => (
+                  <Fragment key={panel.rol}>
+                  <div style={{background:'var(--gray-50)',border:'var(--border)',borderRadius:'var(--radius-md)',padding:'8px 10px'}}>
+                    <div style={{fontSize:11,fontWeight:600,color:'var(--gray-600)',marginBottom:3}}>
+                      {{ astilladora: 'Astilladora', instalacion: 'Instalación', proveedor: 'Proveedor' }[panel.rol]} · {panel.nombre}
+                      {esPanelPendiente(panel) && <span style={{color:'var(--green-600)'}}> · le toca ahora</span>}
+                    </div>
+                    <code style={{fontSize:10,color:'var(--gray-500)',wordBreak:'break-all',display:'block',marginBottom:6}}>
+                      {panel.url}
+                    </code>
+                    <div style={{display:'flex',gap:5}}>
+                      <button className="btn btn-primary" style={{flex:1,fontSize:11,padding:'4px 8px'}} onClick={() => compartirPanel(panel, 'copiar')}>
+                        {copiado === `panel-${panel.rol}` ? <><CheckCircle size={11} /> Copiado</> : <><Copy size={11} /> Copiar</>}
+                      </button>
+                      <button style={{flex:1,display:'inline-flex',alignItems:'center',justifyContent:'center',gap:4,padding:'4px 8px',borderRadius:'var(--radius-sm)',border:'1px solid #d1fae5',background:'#ecfdf5',color:'#065f46',fontSize:11,fontWeight:500,cursor:'pointer'}} onClick={() => compartirPanel(panel, 'whatsapp')}>
+                        <WaIcon size={11} /> WhatsApp
+                      </button>
+                      <button style={{...{flex:1,display:'inline-flex',alignItems:'center',justifyContent:'center',gap:4,padding:'4px 8px',borderRadius:'var(--radius-sm)',border:'var(--border)',background:'var(--gray-50)',color:'var(--gray-700)',fontSize:11,fontWeight:500,cursor:'pointer'}, ...(panel.empresa?.email ? {} : {color:'var(--gray-300)',cursor:'not-allowed'})}} disabled={!panel.empresa?.email}
+                        title={panel.empresa?.email ? '' : 'Esta empresa no tiene email registrado'} onClick={() => compartirPanel(panel, 'email')}>
+                        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="m22 7-10 7L2 7"/></svg> Email
+                      </button>
+                      <button className="btn" style={{fontSize:11,padding:'4px 8px'}} title="Abrir panel"
+                        onClick={() => window.open(panel.url, '_blank')}>
+                        <ExternalLink size={11} />
+                      </button>
+                    </div>
                   </div>
-                  <div style={{display:'flex',flexDirection:'column',gap:8}}>
-                    {paneles.map(panel => (
-                      <div key={panel.rol} style={{background:'var(--gray-50)',border:'var(--border)',borderRadius:'var(--radius-md)',padding:'8px 10px'}}>
-                        <div style={{fontSize:11,fontWeight:600,color:'var(--gray-600)',marginBottom:3}}>
-                          {{ astilladora: 'Astilladora', instalacion: 'Instalación', proveedor: 'Proveedor' }[panel.rol]} · {panel.nombre}
-                        </div>
-                        <code style={{fontSize:10,color:'var(--gray-500)',wordBreak:'break-all',display:'block',marginBottom:6}}>
-                          {panel.url}
-                        </code>
-                        <div style={{display:'flex',gap:5}}>
-                          <button className="btn btn-primary" style={{flex:1,fontSize:11,padding:'4px 8px'}}
-                            onClick={() => compartirPanel(panel, 'copiar')}>
-                            {copiado === `panel-${panel.rol}` ? <><CheckCircle size={11} /> Copiado</> : <><Copy size={11} /> Copiar</>}
-                          </button>
-                          <button
-                            style={{flex:1,display:'inline-flex',alignItems:'center',justifyContent:'center',gap:4,padding:'4px 8px',borderRadius:'var(--radius-sm)',border:'1px solid #d1fae5',background:'#ecfdf5',color:'#065f46',fontSize:11,fontWeight:500,cursor:'pointer'}}
-                            onClick={() => compartirPanel(panel, 'whatsapp')}>
-                            <WaIcon size={11} /> WhatsApp
-                          </button>
-                          <button className="btn" style={{fontSize:11,padding:'4px 8px'}}
-                            onClick={() => window.open(panel.url, '_blank')}>
-                            <ExternalLink size={11} />
-                          </button>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </>
-              )}
+                  </Fragment>
+                ))}
+              </div>
             </div>
+            )}
 
             <div className="card">
               <div className="section-label">Actividad</div>
