@@ -43,7 +43,10 @@ export default function Login() {
     }
   }, [])
 
-  const loginMicrosoft = () => { window.location.href = '/api/auth/microsoft/login' }
+  const loginMicrosoft = () => {
+    api.guardarDestino()
+    window.location.href = '/api/auth/microsoft/login'
+  }
 
   const handleLogin = async (e) => {
     e.preventDefault()
@@ -52,6 +55,8 @@ export default function Login() {
     try {
       const { token } = await api.login(email, password)
       api.setToken(token, recordarme)
+      // Arriba del todo: si no, la recarga restaura el scroll del login
+      window.scrollTo(0, 0)
       window.location.reload()
     } catch (err) {
       const codigo = err.data?.error

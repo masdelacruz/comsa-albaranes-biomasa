@@ -35,8 +35,10 @@ export default function Header({ usuario, logout, nav = [] }) {
   const multiApp = tieneBiomasa && tieneTrabajo
 
   // El logo lleva al inicio de la app en la que se está: Trabajo → /trabajo,
-  // selector → se queda en /apps, y cualquier apartado de Biomasa → Panel
+  // selector → se queda en /apps, y cualquier apartado de Biomasa → Panel.
+  // Siempre arriba del todo, también si ya se está en el inicio.
   const irInicio = () => {
+    window.scrollTo({ top: 0, behavior: 'smooth' })
     const ruta = location.pathname
     if (ruta.startsWith('/trabajo')) navigate('/trabajo')
     else if (ruta.startsWith('/apps')) navigate('/apps')
