@@ -14,6 +14,8 @@ import './Clientes.css'
 // detectar una anomalía) y el enlace anterior deja de funcionar.
 const SECCION_POR_TIPO = Object.fromEntries(SECCIONES_CLIENTES.map(s => [s.tipo, s]))
 
+const ordenTipo = t => SECCIONES_CLIENTES.findIndex(s => s.tipo === t)
+
 const porNombre = (a, b) => a.nombre.localeCompare(b.nombre, 'es', { sensitivity: 'base' })
 
 // Criterios de orden; el nombre desempata siempre para que el orden sea estable.
@@ -23,6 +25,8 @@ const ORDENES = {
   'Más albaranes':      (a, b) => b.n - a.n || porNombre(a, b),
   'Menos albaranes':    (a, b) => a.n - b.n || porNombre(a, b),
   'Actividad reciente': (a, b) => (b.ultimo || '').localeCompare(a.ultimo || '') || porNombre(a, b),
+  // Por el tipo principal, en el orden de SECCIONES_CLIENTES
+  'Tipo de cliente':    (a, b) => ordenTipo(a.tipo) - ordenTipo(b.tipo) || porNombre(a, b),
 }
 const ORDEN_DEFECTO = 'Alfabético (A–Z)'
 const ORDEN_KEY = 'clientes.orden'
