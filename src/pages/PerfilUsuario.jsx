@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { X, Check, Eye, EyeOff, BellOff } from 'lucide-react'
+import { X, Check, Eye, EyeOff, Bell, ShieldCheck, UserRound, LayoutGrid } from 'lucide-react'
 import { api } from '../lib/api'
 import { useScrollLock } from '../hooks/useScrollLock'
 import '../components/shared.css'
@@ -17,7 +17,41 @@ const NOTIFS = [
   { key: 'humedad', color: '#60a5fa',           label: 'Humedad pendiente', desc: 'Cuando un albarán requiere análisis de humedad' },
 ]
 
+const APPS = [
+  { key: 'accesoBiomasa', label: 'Biomasa', desc: 'Gestión de albaranes de biomasa', color: 'var(--green-400)' },
+  { key: 'accesoTrabajo', label: 'Trabajo', desc: 'Próximamente',                    color: 'var(--blue-400)' },
+]
+
+const NIVELES = { basico: 'Básico', usuario: 'Usuario', superadmin: 'Superadmin' }
+
 const getN = (prefs, key) => prefs?.[key] !== false
+
+// Fila con interruptor: toda la fila es el botón, así un <fieldset disabled>
+// la bloquea igual que a los inputs.
+function FilaSwitch({ on, onToggle, titulo, desc, punto, icono, compacta }) {
+  return (
+    <button type="button" role="switch" aria-checked={on}
+      className={`pu-fila${compacta ? ' compacta' : ''}`} onClick={onToggle}>
+      {punto && <span className="pu-punto" style={{ background: punto }} />}
+      {icono}
+      <span className="pu-fila-texto">
+        <span className="pu-fila-titulo">{titulo}</span>
+        {desc && <span className="pu-fila-desc">{desc}</span>}
+      </span>
+      <span className={`pu-sw${on ? ' on' : ''}`}><span className="pu-sw-thumb" /></span>
+    </button>
+  )
+}
+
+const Seccion = ({ icono: Icono, titulo, children }) => (
+  <section className="pu-sec">
+    <div className="pu-sec-head">
+      <span className="pu-sec-icon"><Icono size={14} /></span>
+      <span className="pu-sec-lbl">{titulo}</span>
+    </div>
+    {children}
+  </section>
+)
 
 export default function PerfilUsuario({ usuario, viewer, onClose, onGuardado }) {
   useScrollLock(true)
@@ -41,6 +75,10 @@ export default function PerfilUsuario({ usuario, viewer, onClose, onGuardado }) 
   const [error,     setError]     = useState('')
 
   const set = (k, v) => setForm(f => ({ ...f, [k]: v }))
+
+  // Con la cuenta desactivada no tiene sentido tocar nada más: el resto del
+  // formulario se bloquea (se conserva tal cual) hasta que se vuelva a activar.
+  const bloqueado = puedeEditarActivo && !form.activo
 
   const silenciado = notifs.silenciado === true
     || ['nuevo', 'firma', 'cerrado', 'humedad'].every(k => notifs[k] === false)
@@ -67,7 +105,7 @@ export default function PerfilUsuario({ usuario, viewer, onClose, onGuardado }) 
       }
       if (puedeEditarActivo && form.activo !== usuario.activo)
         body.activo = form.activo
-      if (form.password.trim())
+      if (form.password.trim() && !bloqueado)
         body.password = form.password
       await api.patch(`/usuarios/${usuario.id}`, body)
       await onGuardado?.()
@@ -82,156 +120,114 @@ export default function PerfilUsuario({ usuario, viewer, onClose, onGuardado }) 
     <div className="pu-overlay" onClick={e => { if (e.target === e.currentTarget) onClose() }}>
       <div className="pu-modal">
 
-        {/* ── Header ───────────────────────────────────────── */}
+        {/* ── Cabecera ─────────────────────────────────────── */}
         <div className="pu-header">
-          <button className="pu-close" onClick={onClose}><X size={15} /></button>
-          <div className="pu-avatar">{iniciales}</div>
-          <div>
+          <button className="pu-close" onClick={onClose} aria-label="Cerrar"><X size={15} /></button>
+          <div className={`pu-avatar${bloqueado ? ' inactivo' : ''}`}>{iniciales}</div>
+          <div className="pu-quien">
             <div className="pu-nombre">{usuario.nombre}</div>
-            <div className="pu-rol">{usuario.email}</div>
-            {usuario.nivel === 'superadmin' && (
-              <span className="pu-super">★ Superadmin</span>
-            )}
+            <div className="pu-email">{usuario.email}</div>
+            <div className="pu-meta">
+              <span>{NIVELES[usuario.nivel] || usuario.nivel}</span>
+              {usuario.rol && <><span className="pu-meta-sep">·</span><span>{usuario.rol}</span></>}
+              <span className="pu-meta-sep">·</span>
+              <span className={form.activo ? 'pu-estado-on' : 'pu-estado-off'}>
+                {form.activo ? 'Activa' : 'Desactivada'}
+              </span>
+            </div>
           </div>
         </div>
 
-        {/* ── Body ─────────────────────────────────────────── */}
+        {/* ── Cuerpo ───────────────────────────────────────── */}
         <div className="pu-body">
 
-          {/* Datos */}
-          <section className="pu-sec">
-            <div className="pu-sec-lbl">Datos del usuario</div>
-            <div className="pu-fields">
-              <div className="pu-fg">
-                <label>Nombre completo</label>
-                <input value={form.nombre} onChange={e => set('nombre', e.target.value)} />
-              </div>
-              <div className="pu-fg">
-                <label>Rol</label>
-                <select value={form.rol} onChange={e => set('rol', e.target.value)}>
-                  {ROLES.map(r => <option key={r}>{r}</option>)}
-                </select>
-              </div>
-              <div style={{ display: 'flex', gap: 10 }}>
-                <div className="pu-fg" style={{ flex: 1 }}>
-                  <label>Nivel</label>
-                  <select value={form.nivel} onChange={e => set('nivel', e.target.value)}>
-                    <option value="basico">Básico</option>
-                    <option value="usuario">Usuario</option>
-                    <option value="superadmin">Superadmin</option>
+          {/* Estado de la cuenta — solo superadmin sobre otros usuarios; va
+              primero porque condiciona todo lo demás */}
+          {puedeEditarActivo && (
+            <Seccion icono={ShieldCheck} titulo="Estado de la cuenta">
+              <FilaSwitch on={form.activo} onToggle={() => set('activo', !form.activo)}
+                titulo="Cuenta activa"
+                desc={form.activo
+                  ? 'El usuario puede iniciar sesión y recibir notificaciones'
+                  : 'No puede iniciar sesión. Actívala para editar el resto de datos'} />
+            </Seccion>
+          )}
+
+          <fieldset className="pu-bloque" disabled={bloqueado}>
+
+            <Seccion icono={UserRound} titulo="Datos del usuario">
+              <div className="pu-grid">
+                <div className="pu-fg">
+                  <label htmlFor="pu-nombre">Nombre completo</label>
+                  <input id="pu-nombre" value={form.nombre} onChange={e => set('nombre', e.target.value)} />
+                </div>
+                <div className="pu-fg">
+                  <label htmlFor="pu-rol">Rol</label>
+                  <select id="pu-rol" value={form.rol} onChange={e => set('rol', e.target.value)}>
+                    {ROLES.map(r => <option key={r}>{r}</option>)}
                   </select>
                 </div>
-                <div className="pu-fg" style={{ flex: 2 }}>
-                  <label>Contraseña <span style={{ fontWeight: 400, color: 'var(--gray-400)' }}>(vacío = sin cambio)</span></label>
-                  <div style={{ position: 'relative' }}>
+                <div className="pu-fg">
+                  <label htmlFor="pu-nivel">Nivel</label>
+                  <select id="pu-nivel" value={form.nivel} onChange={e => set('nivel', e.target.value)}>
+                    {Object.entries(NIVELES).map(([v, t]) => <option key={v} value={v}>{t}</option>)}
+                  </select>
+                </div>
+                <div className="pu-fg">
+                  <label htmlFor="pu-pw">Contraseña <span className="pu-label-nota">(vacío = sin cambio)</span></label>
+                  <div className="pu-pw">
                     <input
+                      id="pu-pw"
                       type={showPw ? 'text' : 'password'}
                       minLength={12}
                       autoComplete="new-password"
                       placeholder="••••••••"
                       value={form.password}
                       onChange={e => set('password', e.target.value)}
-                      style={{ paddingRight: 34, width: '100%', boxSizing: 'border-box' }}
                     />
-                    <button type="button" onClick={() => setShowPw(v => !v)} className="pu-pw-eye">
+                    <button type="button" onClick={() => setShowPw(v => !v)} className="pu-pw-eye"
+                      aria-label={showPw ? 'Ocultar contraseña' : 'Mostrar contraseña'}>
                       {showPw ? <EyeOff size={14} /> : <Eye size={14} />}
                     </button>
                   </div>
                 </div>
               </div>
+            </Seccion>
 
-              {/* Estado de cuenta — solo superadmin sobre otros usuarios */}
-              {puedeEditarActivo && (
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 12px', background: 'var(--gray-50)', borderRadius: 'var(--radius-md)', border: 'var(--border)' }}>
-                  <div>
-                    <div style={{ fontSize: 13, fontWeight: 500, color: 'var(--gray-700)' }}>Cuenta activa</div>
-                    <div style={{ fontSize: 11, color: 'var(--gray-400)', marginTop: 2 }}>El usuario puede iniciar sesión</div>
-                  </div>
-                  <div
-                    onClick={() => set('activo', !form.activo)}
-                    style={{ width: 38, height: 21, background: form.activo ? 'var(--green-400)' : 'var(--gray-200)', borderRadius: 7, position: 'relative', cursor: 'pointer', transition: 'background 0.2s', flexShrink: 0 }}>
-                    <div style={{ position: 'absolute', top: 3, left: form.activo ? 18 : 3, width: 15, height: 15, background: '#fff', borderRadius: '50%', transition: 'left 0.2s', boxShadow: '0 1px 3px rgba(0,0,0,0.2)' }} />
-                  </div>
+            {/* Acceso a apps — solo superadmin lo configura */}
+            {esSuperadmin && (
+              <Seccion icono={LayoutGrid} titulo="Acceso a aplicaciones">
+                <div className="pu-lista">
+                  {APPS.map(({ key, label, desc, color }) => (
+                    <FilaSwitch key={key} on={form[key]} onToggle={() => set(key, !form[key])}
+                      titulo={label} desc={desc} punto={color} />
+                  ))}
                 </div>
-              )}
-            </div>
-          </section>
+              </Seccion>
+            )}
 
-          {/* Acceso a apps — solo superadmin lo configura */}
-          {esSuperadmin && (
-            <section className="pu-sec">
-              <div className="pu-sec-lbl">Acceso a aplicaciones</div>
-              <div className="pu-fields">
-                {[
-                  { key: 'accesoBiomasa', label: 'Biomasa',  desc: 'Gestión de albaranes de biomasa', color: 'var(--green-400)' },
-                  { key: 'accesoTrabajo', label: 'Trabajo',  desc: 'Próximamente',                     color: 'var(--blue-400)' },
-                ].map(({ key, label, desc, color }) => (
-                  <div key={key} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 12px', background: 'var(--gray-50)', borderRadius: 'var(--radius-md)', border: 'var(--border)' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                      <span style={{ width: 8, height: 8, borderRadius: '50%', background: color, flexShrink: 0 }} />
-                      <div>
-                        <div style={{ fontSize: 13, fontWeight: 500, color: 'var(--gray-700)' }}>{label}</div>
-                        <div style={{ fontSize: 11, color: 'var(--gray-400)', marginTop: 2 }}>{desc}</div>
-                      </div>
-                    </div>
-                    <div
-                      onClick={() => set(key, !form[key])}
-                      style={{ width: 38, height: 21, background: form[key] ? 'var(--green-400)' : 'var(--gray-200)', borderRadius: 7, position: 'relative', cursor: 'pointer', transition: 'background 0.2s', flexShrink: 0 }}>
-                      <div style={{ position: 'absolute', top: 3, left: form[key] ? 18 : 3, width: 15, height: 15, background: '#fff', borderRadius: '50%', transition: 'left 0.2s', boxShadow: '0 1px 3px rgba(0,0,0,0.2)' }} />
-                    </div>
-                  </div>
+            <Seccion icono={Bell} titulo="Notificaciones por email">
+              <FilaSwitch on={!silenciado} onToggle={toggleSilenciar}
+                titulo={silenciado ? 'Silenciado' : 'Notificaciones activas'}
+                desc={silenciado ? 'No recibirá ningún correo' : 'Recibe los tipos seleccionados abajo'} />
+
+              <div className={`pu-notifs${silenciado ? ' apagadas' : ''}`}>
+                <p className="pu-sec-desc">
+                  {silenciado ? 'Configura los tipos para cuando se active.' : 'Selecciona qué eventos generan un correo.'}
+                </p>
+                {NOTIFS.map(({ key, color, label, desc }) => (
+                  <FilaSwitch key={key} compacta on={getN(notifs, key)} onToggle={() => toggleN(key)}
+                    titulo={label} desc={desc} punto={color} />
                 ))}
               </div>
-            </section>
-          )}
+            </Seccion>
 
-          {/* Notificaciones */}
-          <section className="pu-sec">
-            <div className="pu-sec-lbl">Notificaciones por email</div>
-
-            {/* Toggle silenciar maestro */}
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 12px', marginBottom: 10, background: silenciado ? 'var(--gray-50)' : '#ecfdf5', borderRadius: 'var(--radius-md)', border: silenciado ? 'var(--border)' : '1px solid #bbf7d0', cursor: 'pointer' }}
-              onClick={toggleSilenciar}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                <BellOff size={14} style={{ color: silenciado ? 'var(--gray-400)' : 'var(--green-600)', flexShrink: 0 }} />
-                <div>
-                  <div style={{ fontSize: 13, fontWeight: 600, color: silenciado ? 'var(--gray-600)' : 'var(--green-700)' }}>
-                    {silenciado ? 'Silenciado — sin notificaciones' : 'Notificaciones activas'}
-                  </div>
-                  <div style={{ fontSize: 11, color: 'var(--gray-400)', marginTop: 1 }}>
-                    {silenciado ? 'No recibirá ningún correo' : 'Recibe los tipos seleccionados abajo'}
-                  </div>
-                </div>
-              </div>
-              <div style={{ width: 38, height: 21, background: silenciado ? 'var(--gray-200)' : 'var(--green-400)', borderRadius: 7, position: 'relative', transition: 'background 0.2s', flexShrink: 0 }}>
-                <div style={{ position: 'absolute', top: 3, left: silenciado ? 3 : 18, width: 15, height: 15, background: '#fff', borderRadius: '50%', transition: 'left 0.2s', boxShadow: '0 1px 3px rgba(0,0,0,0.2)' }} />
-              </div>
-            </div>
-
-            {/* Tipos individuales */}
-            <div className="pu-notifs" style={{ opacity: silenciado ? 0.45 : 1, transition: 'opacity 0.2s' }}>
-              <p className="pu-sec-desc" style={{ margin: '0 0 8px' }}>
-                {silenciado ? 'Configura los tipos para cuando se active.' : 'Selecciona qué eventos generan un correo.'}
-              </p>
-              {NOTIFS.map(({ key, color, label, desc }) => (
-                <div key={key} className="pu-notif-row" onClick={() => toggleN(key)}>
-                  <span className="pu-notif-dot" style={{ background: color }} />
-                  <div className="pu-notif-info">
-                    <span className="pu-notif-lbl">{label}</span>
-                    <span className="pu-notif-desc">{desc}</span>
-                  </div>
-                  <div className={`pu-sw${getN(notifs, key) ? ' on' : ''}`}>
-                    <div className="pu-sw-thumb" />
-                  </div>
-                </div>
-              ))}
-            </div>
-          </section>
+          </fieldset>
 
           {error && <div className="pu-error">{error}</div>}
         </div>
 
-        {/* ── Footer ───────────────────────────────────────── */}
+        {/* ── Pie ──────────────────────────────────────────── */}
         <div className="pu-footer">
           <button className="btn" onClick={onClose}>Cancelar</button>
           <button className="btn btn-primary" onClick={handleGuardar} disabled={guardando || !form.nombre.trim()}>
