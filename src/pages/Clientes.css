@@ -30,8 +30,8 @@
 }
 .cli-tile::before { content:''; position:absolute; left:0; right:0; top:0; height:3px; background:var(--tone); opacity:.9; z-index:1; }
 .cli-tile:hover {
-  border-color:#D6D6CF; transform:translateY(-2px);
-  box-shadow:inset 0 1px 0 #fff, 0 1px 2px rgba(20,20,15,0.06), 0 8px 16px -6px rgba(20,20,15,0.12), 0 24px 40px -18px rgba(20,20,15,0.20);
+  border-color:#D6D6CF; transform:translateY(-1px);
+  box-shadow:inset 0 1px 0 #fff, 0 1px 2px rgba(20,20,15,0.06), 0 6px 13px -5px rgba(20,20,15,0.10), 0 20px 36px -17px rgba(20,20,15,0.17);
 }
 .cli-tile.inactivo .cli-logo, .cli-tile.inactivo .cli-nombre { opacity:0.55; }
 
@@ -62,7 +62,7 @@
   box-shadow:0 1px 1px rgba(20,20,15,0.04); transition:color .15s, border-color .15s, box-shadow .15s, transform .15s;
 }
 /* Mismo "pop" que la tarjeta: se levanta al pasar y se hunde al pulsar */
-.cli-accion:hover:not(:disabled) { color:var(--gray-900); border-color:#CFCFC8; transform:translateY(-2px); box-shadow:0 2px 4px rgba(20,20,15,0.08), 0 6px 12px -4px rgba(20,20,15,0.20); }
+.cli-accion:hover:not(:disabled) { color:var(--gray-900); border-color:#CFCFC8; transform:translateY(-1px); box-shadow:0 1px 3px rgba(20,20,15,0.07), 0 4px 8px -3px rgba(20,20,15,0.14); }
 .cli-accion:active:not(:disabled) { transform:translateY(0); box-shadow:0 1px 1px rgba(20,20,15,0.06); }
 .cli-accion.hecho { color:var(--green-600); }
 .cli-accion:disabled { opacity:.5; cursor:default; }
