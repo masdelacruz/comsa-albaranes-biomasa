@@ -59,9 +59,11 @@
 .cli-accion {
   width:28px; height:28px; display:inline-flex; align-items:center; justify-content:center;
   border:1px solid #E2E2DC; border-radius:7px; background:#fff; color:var(--gray-500); cursor:pointer;
-  box-shadow:0 1px 1px rgba(20,20,15,0.04); transition:color .15s, border-color .15s, box-shadow .15s;
+  box-shadow:0 1px 1px rgba(20,20,15,0.04); transition:color .15s, border-color .15s, box-shadow .15s, transform .15s;
 }
-.cli-accion:hover { color:var(--gray-900); border-color:#CFCFC8; box-shadow:0 2px 5px -1px rgba(20,20,15,0.12); }
+/* Mismo "pop" que la tarjeta: se levanta al pasar y se hunde al pulsar */
+.cli-accion:hover:not(:disabled) { color:var(--gray-900); border-color:#CFCFC8; transform:translateY(-2px); box-shadow:0 2px 4px rgba(20,20,15,0.08), 0 6px 12px -4px rgba(20,20,15,0.20); }
+.cli-accion:active:not(:disabled) { transform:translateY(0); box-shadow:0 1px 1px rgba(20,20,15,0.06); }
 .cli-accion.hecho { color:var(--green-600); }
 .cli-accion:disabled { opacity:.5; cursor:default; }
 
