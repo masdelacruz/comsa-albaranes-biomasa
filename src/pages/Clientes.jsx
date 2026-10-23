@@ -108,38 +108,48 @@ export default function Clientes({ albaranes = [], usuario }) {
 
   const tarjeta = (p) => {
     const logoUrl = logos[`empresa_${slugify(p.nombre)}`]
-    const { icon: Icon } = SECCION_POR_TIPO[p.tipo]
+    const { icon: Icon, color } = SECCION_POR_TIPO[p.tipo]
+    // Tipos en el orden de SECCIONES_CLIENTES (el principal primero)
+    const tipos = SECCIONES_CLIENTES.filter(s => p.tipos.includes(s.tipo))
     return (
-      <div key={p.id} className={`cli-tile ${p.activo ? '' : 'inactivo'}`} onClick={() => navigate(`/clientes/${p.id}`)}>
-        <div className="cli-logo" style={{ background: '#fff', border: 'var(--border)' }}>
-          {logoUrl
-            ? <img src={logoUrl} alt="" />
-            : <Icon size={26} color="var(--gray-400)" strokeWidth={1.6} />}
+      <div key={p.id} className={`cli-tile ${p.activo ? '' : 'inactivo'}`} style={{ '--tone': color }}
+        onClick={() => navigate(`/clientes/${p.id}`)}>
+        <div className="cli-cabeza">
+          <div className="cli-logo">
+            {logoUrl
+              ? <img src={logoUrl} alt="" />
+              : <Icon size={28} color={color} strokeWidth={1.6} />}
+          </div>
         </div>
-        <div className="cli-nombre" title={p.nombre}>{p.nombre}</div>
-        <div className="cli-meta">
-          {!p.activo && <span className="cli-tag-inactivo">Inactivo</span>}
-          {orden === 'Actividad reciente'
-            ? <span>{p.ultimo ? `Último: ${fmtFecha(p.ultimo)}` : 'Sin albaranes'}</span>
-            : <span>{p.n} {p.n === 1 ? 'albarán' : 'albaranes'}</span>}
+        <div className="cli-cuerpo">
+          <div className="cli-nombre" title={p.nombre}>{p.nombre}</div>
+          <div className="cli-tipos-tile">
+            {tipos.map(s => <span key={s.tipo} style={{ color: s.color }}>{s.singular}</span>)}
+            {!p.activo && <span className="cli-inactivo">Inactivo</span>}
+          </div>
         </div>
-        <div className="cli-acciones" onClick={e => e.stopPropagation()}>
-          <a className="btn btn-ghost" style={{ padding: '6px 8px', fontSize: 11, color: 'var(--gray-500)' }}
-            href={panelUrl(p)} target="_blank" rel="noreferrer" title="Abrir panel">
-            <ExternalLink size={13} />
-          </a>
-          <button className="btn btn-ghost"
-            style={{ padding: '6px 8px', fontSize: 11, color: copiadoId === p.id ? 'var(--green-600)' : 'var(--gray-500)' }}
-            onClick={() => handleCopiar(p)} title="Copiar enlace">
-            {copiadoId === p.id ? <Check size={13} /> : <Copy size={13} />}
-          </button>
-          {puedeRegenerar && (
-            <button className="btn btn-ghost" style={{ padding: '6px 8px', fontSize: 11, color: 'var(--gray-500)' }}
-              disabled={regenerandoId === p.id}
-              onClick={() => handleRegenerar(p)} title="Regenerar código (revoca el enlace actual)">
-              <RefreshCw size={13} />
+        <div className="cli-pie">
+          <div className="cli-meta">
+            {orden === 'Actividad reciente'
+              ? (p.ultimo ? <>Último <strong>{fmtFecha(p.ultimo)}</strong></> : 'Sin albaranes')
+              : <><strong>{p.n}</strong> {p.n === 1 ? 'albarán' : 'albaranes'}</>}
+          </div>
+          <div className="cli-acciones" onClick={e => e.stopPropagation()}>
+            <a className="cli-accion" href={panelUrl(p)} target="_blank" rel="noreferrer" title="Abrir panel">
+              <ExternalLink size={13} />
+            </a>
+            <button type="button" className={`cli-accion${copiadoId === p.id ? ' hecho' : ''}`}
+              onClick={() => handleCopiar(p)} title="Copiar enlace">
+              {copiadoId === p.id ? <Check size={13} /> : <Copy size={13} />}
             </button>
-          )}
+            {puedeRegenerar && (
+              <button type="button" className="cli-accion"
+                disabled={regenerandoId === p.id}
+                onClick={() => handleRegenerar(p)} title="Regenerar código (revoca el enlace actual)">
+                <RefreshCw size={13} />
+              </button>
+            )}
+          </div>
         </div>
       </div>
     )
