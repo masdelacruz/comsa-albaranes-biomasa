@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react'
-import { api } from '../lib/api'
+import { api, inicioDeApp } from '../lib/api'
 
 export function useAuth() {
   const [session,    setSession]    = useState(null)
@@ -39,6 +39,9 @@ export function useAuth() {
     // El servidor decide si además se cierra la sesión de Microsoft
     // (AZURE_AD_SINGLE_LOGOUT); si no, vuelve directamente al login.
     if (eraSso) { window.location.href = '/api/auth/microsoft/logout'; return }
+    // Al volver a entrar se empieza en el inicio de la app (Panel), arriba
+    window.scrollTo(0, 0)
+    window.history.replaceState(null, '', inicioDeApp())
     setSession(null)
     setUsuario(null)
     setBloqueado(false)
