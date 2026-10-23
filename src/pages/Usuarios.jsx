@@ -154,6 +154,12 @@ export default function Usuarios({ usuario, embedded = false }) {
                 <tr><td colSpan={colSpan} style={{padding:32,textAlign:'center',color:'var(--gray-400)'}}>Cargando...</td></tr>
               ) : usuarios.map(u => {
                 const silenciado = esSilenciado(u.notificaciones)
+                // Cuenta desactivada: no tiene acceso a nada; se ve en gris pero se conserva lo configurado
+                const off = !u.activo
+                const titOff = off ? ' — sin efecto: cuenta desactivada' : ''
+                const biomasaOn = !off && u.acceso_biomasa !== false
+                const trabajoOn = !off && !!u.acceso_trabajo
+                const avisosOn  = !off && !silenciado
                 return (
                   <tr key={u.id} className="usuarios-tr-click" onClick={() => setPerfilUsuario(u)}>
                     <td>
@@ -175,14 +181,14 @@ export default function Usuarios({ usuario, embedded = false }) {
                     {/* Acceso a apps */}
                     <td>
                       <div style={{display:'flex',gap:5}}>
-                        <span title="Biomasa" style={{fontSize:10,fontWeight:600,padding:'2px 7px',borderRadius:5,
-                          background: u.acceso_biomasa !== false ? 'var(--green-50)' : 'var(--gray-100)',
-                          color:      u.acceso_biomasa !== false ? 'var(--green-600)' : 'var(--gray-300)'}}>
+                        <span title={`Biomasa${titOff}`} style={{fontSize:10,fontWeight:600,padding:'2px 7px',borderRadius:5,
+                          background: biomasaOn ? 'var(--green-50)' : 'var(--gray-100)',
+                          color:      biomasaOn ? 'var(--green-600)' : 'var(--gray-300)'}}>
                           Biomasa
                         </span>
-                        <span title="Trabajo" style={{fontSize:10,fontWeight:600,padding:'2px 7px',borderRadius:5,
-                          background: u.acceso_trabajo ? 'var(--blue-50)' : 'var(--gray-100)',
-                          color:      u.acceso_trabajo ? 'var(--blue-700)' : 'var(--gray-300)'}}>
+                        <span title={`Trabajo${titOff}`} style={{fontSize:10,fontWeight:600,padding:'2px 7px',borderRadius:5,
+                          background: trabajoOn ? 'var(--blue-50)' : 'var(--gray-100)',
+                          color:      trabajoOn ? 'var(--blue-700)' : 'var(--gray-300)'}}>
                           Trabajo
                         </span>
                       </div>
@@ -196,9 +202,10 @@ export default function Usuarios({ usuario, embedded = false }) {
                     </td>
                     {/* Badge informativo notificaciones */}
                     <td>
-                      <span style={{display:'inline-flex',alignItems:'center',gap:5,padding:'3px 8px',borderRadius:5,fontSize:11,fontWeight:600,
-                        background: silenciado ? 'var(--gray-100)' : '#ecfdf5',
-                        color:      silenciado ? 'var(--gray-400)' : 'var(--green-600)',
+                      <span title={off ? 'Sin avisos: cuenta desactivada' : undefined}
+                        style={{display:'inline-flex',alignItems:'center',gap:5,padding:'3px 8px',borderRadius:5,fontSize:11,fontWeight:600,
+                        background: avisosOn ? '#ecfdf5' : 'var(--gray-100)',
+                        color:      avisosOn ? 'var(--green-600)' : off ? 'var(--gray-300)' : 'var(--gray-400)',
                       }}>
                         {silenciado
                           ? <><BellOff size={11} /> Silenciado</>
