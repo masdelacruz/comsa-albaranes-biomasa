@@ -26,6 +26,14 @@ export function inicioDeApp(ruta = window.location.pathname) {
   return '/panel'
 }
 
+// A dónde ir al iniciar sesión: siempre al inicio de la app, salvo el enlace
+// "Ver albarán" de los emails (/albaran/:id), que se respeta. Desde "/" decide
+// InicioRedirect (selector o app única).
+export function destinoTrasLogin(ruta = window.location.pathname) {
+  if (ruta === '/' || ruta.startsWith('/albaran/')) return ruta
+  return inicioDeApp(ruta)
+}
+
 // Tras volver a entrar con Microsoft se aterriza aquí (ver AuthCallback)
 const CLAVE_DESTINO = 'destino_tras_login'
 
@@ -103,7 +111,6 @@ export const api = {
   marcarSso()      { localStorage.setItem('biomasa_sso', '1') },
   esSso()          { return localStorage.getItem('biomasa_sso') === '1' },
   hasToken()       { return !!getToken() },
-  // Desde "/" se deja que decida InicioRedirect (selector o app única)
-  guardarDestino() { sessionStorage.setItem(CLAVE_DESTINO, window.location.pathname === '/' ? '/' : inicioDeApp()) },
+  guardarDestino() { sessionStorage.setItem(CLAVE_DESTINO, destinoTrasLogin()) },
   tomarDestino()   { const d = sessionStorage.getItem(CLAVE_DESTINO) || '/'; sessionStorage.removeItem(CLAVE_DESTINO); return d },
 }

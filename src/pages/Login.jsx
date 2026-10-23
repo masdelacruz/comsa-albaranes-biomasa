@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { Mail, Lock, Eye, EyeOff, ArrowRight, ShieldCheck, MapPin } from 'lucide-react'
-import { api } from '../lib/api'
+import { api, destinoTrasLogin } from '../lib/api'
 import logoFull from '../assets/logo_biomasa_full.png'
 import './Login.css'
 
@@ -55,9 +55,9 @@ export default function Login() {
     try {
       const { token } = await api.login(email, password)
       api.setToken(token, recordarme)
-      // Arriba del todo: si no, la recarga restaura el scroll del login
+      // Se entra por el inicio de la app (Panel), arriba del todo
       window.scrollTo(0, 0)
-      window.location.reload()
+      window.location.replace(destinoTrasLogin())
     } catch (err) {
       const codigo = err.data?.error
       setError(codigo === 'cuenta_bloqueada' || codigo === 'usar_microsoft'
