@@ -82,7 +82,7 @@ const esGuid = s => /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{1
 function auditarFallo(req, motivo, email, user = null) {
   registrarAuditoria({
     usuario: user || { nombre: 'Anónimo' }, accion: 'login_fallido', entidad: 'sesion', entidadId: user?.id,
-    detalle: `Microsoft · ${motivo}${email ? ` · ${email}` : ''} · IP ${req.ip}`,
+    detalle: `${motivo}${email ? ` · ${email}` : ''} · IP ${req.ip}`,
   })
 }
 
@@ -216,7 +216,7 @@ router.get('/microsoft/callback', async (req, res) => {
 
     registrarAuditoria({
       usuario: user, accion: 'login', entidad: 'sesion', entidadId: user.id,
-      detalle: `Microsoft (Entra ID) · ${email} · IP ${req.ip}`,
+      detalle: `${email} · IP ${req.ip}`,
     })
 
     const token = jwt.sign(

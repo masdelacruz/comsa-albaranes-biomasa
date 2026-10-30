@@ -93,7 +93,7 @@ router.post('/login', loginRateLimit, async (req, res) => {
   const email = emailRaw.trim().toLowerCase()
   const fallo = (motivo, u = null) => registrarAuditoria({
     usuario: u || { nombre: 'Anónimo' }, accion: 'login_fallido', entidad: 'sesion', entidadId: u?.id,
-    detalle: `Contraseña · ${motivo} · ${email.slice(0, 120)} · IP ${req.ip}`,
+    detalle: `${motivo} · ${email.slice(0, 120)} · IP ${req.ip}`,
   })
 
   if (exigeSso(email)) {
@@ -114,7 +114,7 @@ router.post('/login', loginRateLimit, async (req, res) => {
   _loginAttempts.delete(req.ip || 'unknown')
   registrarAuditoria({
     usuario: user, accion: 'login', entidad: 'sesion', entidadId: user.id,
-    detalle: `Contraseña · ${email} · IP ${req.ip}`,
+    detalle: `${email} · IP ${req.ip}`,
   })
 
   const token = jwt.sign(
