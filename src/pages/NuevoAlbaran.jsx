@@ -99,12 +99,8 @@ export default function NuevoAlbaran({ addAlbaran }) {
   return (
     <div className="nuevo-page">
       <div className="page-header">
-        <button className="btn-volver" onClick={() => navigate('/albaranes')} aria-label="Volver">
-          <span className="btn-volver-icon"><ArrowLeft size={14} /></span>
-          <span className="btn-volver-label" aria-hidden="true">
-            <span className="text">{[...'Volver'].map((c, i) => <span key={i} style={{'--i': i}}>{c}</span>)}</span>
-            <span className="clone">{[...'Volver'].map((c, i) => <span key={i} style={{'--i': i}}>{c}</span>)}</span>
-          </span>
+        <button className="btn-volver" onClick={() => navigate('/albaranes')}>
+          <span className="btn-volver-icon"><ArrowLeft size={14} /></span> Volver
         </button>
         <div className="page-title">Nuevo albarán</div>
         <div className="page-sub">El enlace de campo se genera automáticamente al guardar</div>
