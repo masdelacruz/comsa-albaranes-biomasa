@@ -55,6 +55,26 @@
 .btn-primary:disabled:hover { background:var(--gray-200); border-color:var(--gray-200); }
 .btn-ghost { border-color:transparent; background:transparent; }
 .btn-ghost:hover { background:var(--gray-100); }
+
+/* ── Botón "Volver" (inspirado en Uiverse.io by satyamchaudharydev) ────
+   Al pasar el ratón las letras suben y las sustituye una copia que entra
+   desde abajo, la flecha se adelanta hacia la izquierda y se dibuja un
+   subrayado de izquierda a derecha. */
+.btn-volver { position:relative; display:inline-flex; align-items:center; gap:6px; padding:5px 2px; margin-bottom:12px; border:none; background:none; color:var(--gray-800); font:inherit; font-size:13px; font-weight:500; cursor:pointer; }
+.btn-volver::before { content:''; position:absolute; left:0; bottom:0; width:100%; height:1.5px; background:currentColor; transform:scaleX(0); transform-origin:bottom right; transition:transform 0.25s ease-out; }
+.btn-volver:hover::before { transform:scaleX(1); transform-origin:bottom left; }
+.btn-volver-icon { display:flex; transition:transform 0.25s cubic-bezier(0.215,0.61,0.355,1); }
+.btn-volver:hover .btn-volver-icon { transform:translateX(-3px); }
+.btn-volver-label { position:relative; display:inline-flex; overflow:hidden; line-height:1.4; }
+.btn-volver-label .clone { position:absolute; inset:0; display:flex; }
+.btn-volver-label .text > span,
+.btn-volver-label .clone > span { display:inline-block; transition:transform 0.2s cubic-bezier(0.215,0.61,0.355,1); }
+.btn-volver-label .clone > span { transform:translateY(110%); }
+.btn-volver:hover .text > span  { transform:translateY(-110%); transition-delay:calc(var(--i) * 20ms); }
+.btn-volver:hover .clone > span { transform:translateY(0); transition-delay:calc(80ms + var(--i) * 20ms); }
+@media (prefers-reduced-motion: reduce) {
+  .btn-volver *, .btn-volver::before { transition:none !important; }
+}
 .section-label { font-size:11px; font-weight:600; text-transform:uppercase; letter-spacing:0.6px; color:var(--gray-400); margin-bottom:10px; }
 .doc-chip { display:inline-flex; align-items:center; gap:5px; padding:4px 10px; border-radius:var(--radius-sm); font-size:11px; font-weight:500; border:var(--border); background:var(--gray-50); color:var(--gray-600); }
 .doc-chip.ok      { background:var(--green-50); border-color:var(--green-100); color:var(--green-600); }

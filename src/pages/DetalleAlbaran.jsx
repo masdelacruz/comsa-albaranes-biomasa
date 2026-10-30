@@ -110,18 +110,21 @@ function MenuPDF({ a, modo, generando, onGenerar }) {
         <Icon size={15} /> {generando ? 'Generando...' : `${label} ▾`}
       </button>
       {open && (
-        <div style={{position:'absolute',top:'calc(100% + 4px)',right:0,background:'#fff',border:'var(--border)',borderRadius:'var(--radius-md)',boxShadow:'0 4px 16px rgba(0,0,0,0.1)',zIndex:50,minWidth:220}}>
-          <button style={{display:'block',width:'100%',padding:'9px 14px',textAlign:'left',background:'none',border:'none',cursor:'pointer',fontSize:13}}
+        <div style={{position:'absolute',top:'calc(100% + 4px)',left:0,right:0,background:'#fff',border:'var(--border)',borderRadius:'var(--radius-md)',boxShadow:'0 4px 16px rgba(0,0,0,0.1)',zIndex:50,overflow:'hidden'}}>
+          <button style={{display:'flex',alignItems:'flex-start',gap:6,width:'100%',padding:'9px 12px',textAlign:'left',background:'none',border:'none',cursor:'pointer',fontSize:13,lineHeight:1.35}}
             onClick={() => disparar({})}>
-            <Icon size={13} style={{marginRight:6}} /> Solo albarán
+            <Icon size={13} style={{flexShrink:0,marginTop:2}} /> Solo albarán
           </button>
-          <button style={{display:'block',width:'100%',padding:'9px 14px',textAlign:'left',background:'none',border:'none',fontSize:13,
+          <button style={{display:'flex',alignItems:'flex-start',gap:6,width:'100%',padding:'9px 12px',textAlign:'left',background:'none',border:'none',fontSize:13,lineHeight:1.35,
             cursor: a.pesada?.ticketAdjunto ? 'pointer' : 'not-allowed',
             color: a.pesada?.ticketAdjunto ? 'inherit' : 'var(--gray-400)'}}
             disabled={!a.pesada?.ticketAdjunto}
             onClick={() => { if (a.pesada?.ticketAdjunto) disparar({ includeTicket: true }) }}>
-            <Icon size={13} style={{marginRight:6}} /> Albarán + ticket pesada
-            {!a.pesada?.ticketAdjunto && <span style={{fontSize:11,marginLeft:6}}>(sin ticket)</span>}
+            <Icon size={13} style={{flexShrink:0,marginTop:2}} />
+            <span>
+              Albarán + ticket
+              {!a.pesada?.ticketAdjunto && <span style={{display:'block',fontSize:11}}>Sin ticket adjunto</span>}
+            </span>
           </button>
         </div>
       )}
@@ -767,8 +770,12 @@ export default function DetalleAlbaran({ albaranes, simularFirma, updateFirma, s
       )}
 
       <div className="page-header">
-        <button className="btn btn-ghost" onClick={() => navigate(-1)} style={{marginBottom:12}}>
-          <ArrowLeft size={14} /> Volver
+        <button className="btn-volver" onClick={() => navigate(-1)} aria-label="Volver">
+          <span className="btn-volver-icon"><ArrowLeft size={14} /></span>
+          <span className="btn-volver-label" aria-hidden="true">
+            <span className="text">{[...'Volver'].map((c, i) => <span key={i} style={{'--i': i}}>{c}</span>)}</span>
+            <span className="clone">{[...'Volver'].map((c, i) => <span key={i} style={{'--i': i}}>{c}</span>)}</span>
+          </span>
         </button>
 <div style={{display:'flex',alignItems:'center',justifyContent:'space-between'}}>
           <div style={{display:'flex',alignItems:'center',gap:12,flexWrap:'wrap'}}>
