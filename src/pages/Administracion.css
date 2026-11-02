@@ -84,6 +84,7 @@
   .proveedor-table td:nth-child(4) { grid-area: tel; justify-self: end; }
   .proveedor-table td:nth-child(5) { grid-area: estado; justify-self: end; }
   .proveedor-table td:nth-child(6) { grid-area: acciones; width: auto; margin: 4px 0 0 -8px; }
+  .proveedor-table td.vacio { display: none; }
   .proveedor-table td.empty-row { display: block; padding: 28px 16px; white-space: normal; }
   .proveedor-table tbody tr:has(.empty-row) { display: block; padding: 0; }
 }

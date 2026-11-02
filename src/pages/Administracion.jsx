@@ -492,7 +492,7 @@ export default function Administracion({ usuario }) {
                           </span>
                         )}
                       </td>
-                      <td className="contacto-col" style={{ color: 'var(--gray-600)' }}>
+                      <td className={`contacto-col${p.contacto ? '' : ' vacio'}`} style={{ color: 'var(--gray-600)' }}>
                         {p.contacto || <span style={{ color: 'var(--gray-300)' }}>—</span>}
                         {(p.contactos?.length || 0) > 1 && (
                           <span title={p.contactos.slice(1).map(c => c.nombre).filter(Boolean).join(', ')}
@@ -501,12 +501,12 @@ export default function Administracion({ usuario }) {
                           </span>
                         )}
                       </td>
-                      <td style={{ color: 'var(--blue-700)' }}>
+                      <td className={p.email ? undefined : 'vacio'} style={{ color: 'var(--blue-700)' }}>
                         {p.email
                           ? <a href={`mailto:${p.email}`} onClick={e => e.stopPropagation()} style={{ color: 'var(--blue-700)' }}>{p.email}</a>
                           : <span style={{ color: 'var(--gray-300)' }}>—</span>}
                       </td>
-                      <td style={{ color: 'var(--gray-600)' }}>{normalizarTelefono(p.telefono) || <span style={{ color: 'var(--gray-300)' }}>—</span>}</td>
+                      <td className={normalizarTelefono(p.telefono) ? undefined : 'vacio'} style={{ color: 'var(--gray-600)' }}>{normalizarTelefono(p.telefono) || <span style={{ color: 'var(--gray-300)' }}>—</span>}</td>
                       <td>
                         <button
                           onClick={e => { e.stopPropagation(); handleToggleActivo(p) }}
