@@ -45,3 +45,45 @@
 @media (max-width: 1100px) {
   .admin-content { padding: 0 var(--gutter) 24px; }
 }
+/* ══ Móvil ═══════════════════════════════════════════════════════════
+   Pestañas en una sola línea que se desplaza en horizontal (antes se
+   salían por la derecha) y cada empresa como una tarjeta en vez de una
+   tabla con scroll lateral. */
+@media (max-width: 720px) {
+  .admin-tabs { width: auto; max-width: 100%; overflow-x: auto; scrollbar-width: none; margin-bottom: 16px; }
+  .admin-tabs::-webkit-scrollbar { display: none; }
+  .admin-tab { flex-shrink: 0; white-space: nowrap; padding: 7px 12px; }
+
+  .admin-toolbar { gap: 10px; }
+  .admin-toolbar > div:first-child { flex: 1 1 auto; min-width: 0; }
+  .admin-search { flex: 1 1 auto; min-width: 0; }
+  .admin-search input { width: 100%; }
+
+  .proveedor-table-wrap { overflow-x: visible; }
+  .proveedor-table, .proveedor-table tbody { display: block; min-width: 0; }
+  .proveedor-table thead { display: none; }
+  .proveedor-table tbody tr {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    grid-template-areas:
+      "nombre   estado"
+      "contacto tel"
+      "email    email"
+      "acciones acciones";
+    gap: 4px 12px;
+    padding: 12px 14px;
+    border-bottom: var(--border-light);
+    align-items: center;
+  }
+  .proveedor-table tbody tr:last-child { border-bottom: none; }
+  .proveedor-table tbody tr td { padding: 0; border: none; max-width: none; background: none !important; font-size: 12.5px; }
+  .proveedor-table tbody tr:hover { background: var(--gray-50); }
+  .proveedor-table td:nth-child(1) { grid-area: nombre; font-size: 13.5px !important; white-space: normal; }
+  .proveedor-table td:nth-child(2) { grid-area: contacto; overflow: hidden; text-overflow: ellipsis; }
+  .proveedor-table td:nth-child(3) { grid-area: email; overflow: hidden; text-overflow: ellipsis; }
+  .proveedor-table td:nth-child(4) { grid-area: tel; justify-self: end; }
+  .proveedor-table td:nth-child(5) { grid-area: estado; justify-self: end; }
+  .proveedor-table td:nth-child(6) { grid-area: acciones; width: auto; margin: 4px 0 0 -8px; }
+  .proveedor-table td.empty-row { display: block; padding: 28px 16px; white-space: normal; }
+  .proveedor-table tbody tr:has(.empty-row) { display: block; padding: 0; }
+}

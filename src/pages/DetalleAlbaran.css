@@ -223,3 +223,15 @@
 .doc-confirm { font-size:11.5px; color:var(--red-700); margin-right:2px; }
 .doc-btn-borrar { color:var(--red-700); border-color:var(--red-100); }
 .doc-btn-borrar:hover { background:var(--red-50); }
+
+/* ── Móvil: cabecera del detalle ──────────────────────────────────────
+   Nº, estado y camión en una línea; las acciones debajo, en una fila
+   propia que se reparte el ancho, con el texto de cada botón en una
+   sola línea (antes se partía en "Vista / previa"). */
+@media (max-width: 720px) {
+  .detalle-cabecera { flex-direction: column; align-items: stretch !important; gap: 12px; }
+  .detalle-titulo-fila { gap: 8px !important; }
+  .detalle-acciones { flex-wrap: wrap; gap: 6px !important; }
+  .detalle-acciones > * { flex: 1 1 auto; }
+  .detalle-acciones .btn { width: 100%; justify-content: center; white-space: nowrap; padding: 7px 10px; font-size: 12.5px; }
+}

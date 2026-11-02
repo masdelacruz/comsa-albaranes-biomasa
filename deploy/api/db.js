@@ -1,4 +1,10 @@
-const { Pool } = require('pg')
+const { Pool, types } = require('pg')
+
+// Las columnas DATE (OID 1082) se devuelven tal cual ('2026-11-02'). Por
+// defecto pg las convierte en un Date a medianoche de la zona del proceso
+// (TZ=Europe/Madrid), que en JSON sale como '2026-11-01T23:00:00Z': todas
+// las fechas se veían un día antes.
+types.setTypeParser(1082, v => v)
 
 const pool = new Pool({
   host:     process.env.POSTGRES_HOST || 'db',

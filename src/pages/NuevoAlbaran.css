@@ -27,3 +27,10 @@
   .form-field.full { grid-column: 1; }
   .tipo-btns { flex-direction: column; }
 }
+/* Móvil: "Guardar y enviar a campo" ocupa la fila de arriba y
+   Cancelar / Guardar se reparten la de abajo, sin partir el texto. */
+@media (max-width: 720px) {
+  .form-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  .form-actions .btn { justify-content: center; white-space: nowrap; padding: 10px 12px; }
+  .form-actions .btn-primary { grid-column: 1 / -1; order: -1; }
+}

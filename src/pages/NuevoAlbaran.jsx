@@ -45,7 +45,7 @@ export default function NuevoAlbaran({ addAlbaran }) {
     proveedor: '', astilladora: '', transportista: '', instalacion: '',
     especie: '', tipoBiomasa: '', estella: '',
     origen: '', mapsOrigen: '', mapsDestino: '', permiso: '', observaciones: '',
-    fecha: new Date().toISOString().split('T')[0],
+    fecha: new Date().toLocaleDateString('sv-SE'), // AAAA-MM-DD en hora local, no UTC
     hora: '08:00',
     certificacion: '',
   })

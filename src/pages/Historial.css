@@ -113,7 +113,8 @@
   .filters-bar.historial-filtros { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
   .filters-bar.historial-filtros > * { min-width: 0; }
   .filters-bar.historial-filtros .search-field,
-  .filters-bar.historial-filtros .date-range { grid-column: 1 / -1; }
+  .filters-bar.historial-filtros .date-range,
+  .filters-bar.historial-filtros > :nth-child(7) { grid-column: 1 / -1; } /* Estado */
   /* Seleccionar y Más filtros quedan juntos en la última fila */
   .filters-bar.historial-filtros .seleccionar-btn { order: 10; }
   .filters-bar.historial-filtros .mas-filtros-btn { order: 11; justify-content: center; }

@@ -773,8 +773,8 @@ export default function DetalleAlbaran({ albaranes, simularFirma, updateFirma, s
         <button className="btn-volver" onClick={() => navigate(-1)}>
           <span className="btn-volver-icon"><ArrowLeft size={14} /></span> Volver
         </button>
-<div style={{display:'flex',alignItems:'center',justifyContent:'space-between'}}>
-          <div style={{display:'flex',alignItems:'center',gap:12,flexWrap:'wrap'}}>
+<div className="detalle-cabecera" style={{display:'flex',alignItems:'center',justifyContent:'space-between'}}>
+          <div className="detalle-titulo-fila" style={{display:'flex',alignItems:'center',gap:12,flexWrap:'wrap'}}>
             <div className="page-title" style={{fontFamily:'var(--font-mono)',fontSize:18}}>{a.id}</div>
             <Badge estado={a.estado} />
             {esFlota && (
@@ -783,7 +783,7 @@ export default function DetalleAlbaran({ albaranes, simularFirma, updateFirma, s
               </div>
             )}
           </div>
-          <div style={{display:'flex',gap:8}}>
+          <div className="detalle-acciones" style={{display:'flex',gap:8}}>
             {esSuperadmin && a.estado === 'cerrado' && (
               <button className="btn" style={{color:'var(--blue-600)',borderColor:'var(--blue-100)'}} onClick={() => setConfirmReabrir(true)}>
                 <RotateCcw size={14} /> Reabrir
