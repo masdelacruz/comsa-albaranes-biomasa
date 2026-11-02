@@ -96,3 +96,81 @@
 @media (max-width: 700px) {
   .historial-acciones .btn:first-child { display:none; }
 }
+
+/* ══ Móvil ═══════════════════════════════════════════════════════════
+   Cabecera compacta, pestañas repartidas a lo ancho, filtros en rejilla
+   de dos columnas y cada albarán como una tarjeta en vez de una tabla
+   que obliga a desplazarse en horizontal. */
+@media (max-width: 720px) {
+  .historial-cabecera { gap: 12px !important; }
+  .historial-acciones .btn-primary { padding: 8px 12px; }
+
+  .historial-tabs { justify-content: space-between; gap: 12px; padding: 0 14px; scrollbar-width: none; }
+  .historial-tabs::-webkit-scrollbar { display: none; }
+  .historial-tab { font-size: 12.5px; gap: 5px; }
+
+  .historial-filtros { padding: 12px 14px; }
+  .filters-bar.historial-filtros { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+  .filters-bar.historial-filtros > * { min-width: 0; }
+  .filters-bar.historial-filtros .search-field,
+  .filters-bar.historial-filtros .date-range { grid-column: 1 / -1; }
+  /* Seleccionar y Más filtros quedan juntos en la última fila */
+  .filters-bar.historial-filtros .seleccionar-btn { order: 10; }
+  .filters-bar.historial-filtros .mas-filtros-btn { order: 11; justify-content: center; }
+  .historial-filtros-mas { grid-template-columns: repeat(2, minmax(0, 1fr)); padding-top: 0; }
+
+  /* Tabla → tarjetas */
+  .historial-tabla-wrap { overflow-x: visible !important; }
+  .data-table.historial-table { min-width: 0; display: block; }
+  .data-table.historial-table thead { display: none; }
+  .data-table.historial-table tbody { display: block; }
+  .data-table.historial-table tbody tr {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    grid-template-areas:
+      "id    estado"
+      "prov  peso"
+      "inst  inst"
+      "fecha firmas";
+    column-gap: 10px;
+    row-gap: 3px;
+    padding: 12px 14px;
+    border-bottom: 1px solid #F0F0EC;
+    align-items: center;
+  }
+  /* En modo selección, la casilla ocupa una columna a la izquierda */
+  .data-table.historial-table tbody tr:has(td.col-check) {
+    grid-template-columns: auto minmax(0, 1fr) auto;
+    grid-template-areas:
+      "check id    estado"
+      "check prov  peso"
+      "check inst  inst"
+      "check fecha firmas";
+  }
+  .data-table.historial-table tbody tr:last-child { border-bottom: none; }
+  .data-table.historial-table tbody tr td,
+  .data-table.historial-table tbody tr:nth-child(even) td { padding: 0; border: none; background: none; max-width: none; }
+  .data-table.historial-table tbody tr:nth-child(even) { background: var(--gray-50); }
+  .data-table.historial-table tbody tr:hover,
+  .data-table.historial-table tbody tr.fila-marcada { background: var(--green-50); }
+  .data-table.historial-table tbody tr:hover td,
+  .data-table.historial-table tbody tr.fila-marcada td { background: none; }
+
+  .data-table.historial-table td.col-check { grid-area: check; width: auto; padding: 0 2px 0 0; align-self: center; }
+  .data-table.historial-table td.col-id { grid-area: id; font-size: 13px !important; }
+  .data-table.historial-table td.col-estado { grid-area: estado; justify-self: end; }
+  .data-table.historial-table td.col-prov { grid-area: prov; font-size: 13px; font-weight: 600; color: var(--gray-900); }
+  .data-table.historial-table td.col-peso { grid-area: peso; font-size: 13px; font-weight: 600; color: var(--gray-900); }
+  .data-table.historial-table td.col-inst { grid-area: inst; font-size: 12px; color: var(--gray-500); overflow: hidden; text-overflow: ellipsis; }
+  .data-table.historial-table td.col-fecha { grid-area: fecha; font-size: 11.5px; color: var(--gray-400); }
+  .data-table.historial-table td.col-firmas { grid-area: firmas; justify-self: end; margin-top: 4px; }
+  .data-table.historial-table td.col-especie,
+  .data-table.historial-table td.col-estella,
+  .data-table.historial-table td.col-hum,
+  .data-table.historial-table td.col-borrar,
+  .data-table.historial-table td.col-opcional { display: none; }
+  .data-table.historial-table td.empty-state { display: block; padding: 32px 16px; white-space: normal; }
+  .data-table.historial-table tbody tr:has(.empty-state) { display: block; padding: 0; }
+
+  .list-pagination { justify-content: center; padding: 11px 14px; }
+}

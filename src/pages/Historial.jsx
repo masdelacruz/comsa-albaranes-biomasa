@@ -325,7 +325,7 @@ export default function Historial({ albaranes, empresas = [], usuario, refetch, 
     <div className="historial-page" ref={raizRef}>
       <PdfLoadingOverlay show={descargando} texto="Generando PDFs..." />
       <div className="page-header">
-        <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',gap:16}}>
+        <div className="historial-cabecera" style={{display:'flex',alignItems:'center',justifyContent:'space-between',gap:16}}>
           <div>
             <div className="page-title">Albaranes</div>
             <div className="page-sub historial-sub">
@@ -427,7 +427,7 @@ export default function Historial({ albaranes, empresas = [], usuario, refetch, 
             </div>
           )}
 
-          <div style={{overflowX:'auto'}}>
+          <div className="historial-tabla-wrap" style={{overflowX:'auto'}}>
           <table className="data-table historial-table">
             <thead>
               <tr>
@@ -466,22 +466,22 @@ export default function Historial({ albaranes, empresas = [], usuario, refetch, 
                       <input type="checkbox" checked={seleccionados.has(a.id)} readOnly tabIndex={-1} aria-label={`Seleccionar albarán ${a.id}`} />
                     </td>
                   )}
-                  <td className="row-id">{a.id}</td>
-                  <td>{a.fecha?.slice(0,10).split('-').reverse().join('/')}</td>
-                  <td className="col-texto">{a.proveedor}</td>
+                  <td className="row-id col-id">{a.id}</td>
+                  <td className="col-fecha">{a.fecha?.slice(0,10).split('-').reverse().join('/')}</td>
+                  <td className="col-texto col-prov">{a.proveedor}</td>
                   <td className="col-texto col-opcional">{a.astilladora}</td>
                   <td className="col-texto col-opcional">{a.transportista}</td>
-                  <td className="col-texto">{a.instalacion}</td>
-                  <td>{a.especie}</td>
-                  <td>{a.estella}</td>
-                  <td style={{textAlign:'right'}}>{a.pesada.entrada && a.pesada.salida ? ((a.pesada.entrada-a.pesada.salida)/1000).toFixed(1)+' t' : <span style={{color:'var(--gray-300)'}}>—</span>}</td>
-                  <td style={{textAlign:'right'}}>{a.pesada.humedad != null ? `${a.pesada.humedad}%` : <span style={{color:'var(--gray-300)'}}>—</span>}</td>
-                  <td style={{whiteSpace:'nowrap'}}>
+                  <td className="col-texto col-inst">{a.instalacion}</td>
+                  <td className="col-especie">{a.especie}</td>
+                  <td className="col-estella">{a.estella}</td>
+                  <td className="col-peso" style={{textAlign:'right'}}>{a.pesada.entrada && a.pesada.salida ? ((a.pesada.entrada-a.pesada.salida)/1000).toFixed(1)+' t' : <span style={{color:'var(--gray-300)'}}>—</span>}</td>
+                  <td className="col-hum" style={{textAlign:'right'}}>{a.pesada.humedad != null ? `${a.pesada.humedad}%` : <span style={{color:'var(--gray-300)'}}>—</span>}</td>
+                  <td className="col-estado" style={{whiteSpace:'nowrap'}}>
                     <Badge estado={a.estado} />
                     {a.solicitaRevision && <span title="Solicitud de revisión desde campo" style={{marginLeft:6,color:'#d97706',fontSize:13,verticalAlign:'middle'}}>⚠</span>}                  </td>
-                  <td><FirmaSteps firmas={a.firmas} estado={a.estado} /></td>
+                  <td className="col-firmas"><FirmaSteps firmas={a.firmas} estado={a.estado} /></td>
                   {esSuperadmin && (
-                    <td style={{width:36,padding:'4px',textAlign:'center'}} onClick={e => e.stopPropagation()}>
+                    <td className="col-borrar" style={{width:36,padding:'4px',textAlign:'center'}} onClick={e => e.stopPropagation()}>
                       <button
                         style={{background:'none',border:'none',cursor:'pointer',padding:4,color:'var(--gray-300)',display:'inline-flex',alignItems:'center'}}
                         onClick={() => setConfirmBorrarFila(a.id)}
