@@ -207,8 +207,11 @@ export default function Perfil({ usuario, actualizarUsuario, logout }) {
           </section>
 
           {/* ── Qué permite tu acceso ── */}
-          <aside className="card perfil-permisos">
-            <h3 className="perfil-h3">Qué puedes hacer</h3>
+          <aside className="perfil-permisos">
+            <div className="perfil-permisos-label">Tu nivel de acceso</div>
+            <p className="perfil-permisos-intro">
+              Como <strong>{NIVELES[nivel].label.toLowerCase()}</strong> puedes:
+            </p>
             <ul className="perfil-permisos-lista">
               {PERMISOS.map(p => {
                 const ok = p.niveles.includes(nivel)
