@@ -33,3 +33,9 @@ export function contactosEmpresa(e) {
 }
 
 export const telHref = tel => tel ? `tel:${tel.replace(/[^\d+]/g, '')}` : null
+
+// Teléfono a formato wa.me: solo dígitos y, si es un móvil/fijo español sin
+// prefijo, se le antepone el 34.
+export const telWhatsApp = raw => raw
+  ? raw.replace(/[\s\-().]/g, '').replace(/^\+/, '').replace(/^0034/, '34').replace(/^(?=[6789]\d{8}$)/, '34')
+  : ''

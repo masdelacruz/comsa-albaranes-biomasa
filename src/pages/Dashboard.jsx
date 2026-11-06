@@ -1,13 +1,11 @@
 import { useNavigate } from 'react-router-dom'
 import { useState } from 'react'
-import { Plus, CalendarClock, Truck, PenLine, Droplets, CheckCircle2, List, Users, Mail, Check, ChevronRight } from 'lucide-react'
+import { Plus, CalendarClock, Truck, PenLine, Droplets, CheckCircle2, List, Users, Check, ChevronRight, Send } from 'lucide-react'
 import { prepararVista } from '../hooks/useEstadoSesion'
 import { isoWeek, isoWeekYear } from '../utils/semana'
 import { api } from '../lib/api'
-import { contactosEmpresa } from '../utils/clientes'
 import { pendientesPorCliente, seguimientoPorCliente, etiquetaDia, pasoPendiente, mensajeCliente, asuntoCliente, textoCompartido, ROL_CLIENTE } from '../utils/pasos'
-import CompartirWhatsApp, { WaIcon } from '../components/CompartirWhatsApp'
-import VistaMensaje from '../components/VistaMensaje'
+import EnviarMensaje from '../components/EnviarMensaje'
 import '../components/shared.css'
 import './Dashboard.css'
 
@@ -162,8 +160,7 @@ function Columna({ fase, abierto, onAlternar, esLaMasLarga, onAbrir }) {
 // cada albarán (gestionado cuándo y por quién, pendiente o no gestionado).
 // Todo mensaje se puede ver y copiar antes de enviarlo.
 function PendientesPorCliente({ albaranes, empresas, refetch, onEmpresaActualizada, onAbrir }) {
-  const [waModal, setWaModal] = useState(null)
-  const [vista, setVista] = useState(null)        // props de VistaMensaje
+  const [envio, setEnvio] = useState(null)        // props de EnviarMensaje
   const [marcando, setMarcando] = useState(null)
   const [abiertos, setAbiertos] = useState(() => new Set())
   const grupos = pendientesPorCliente(albaranes)
@@ -186,33 +183,14 @@ function PendientesPorCliente({ albaranes, empresas, refetch, onEmpresaActualiza
   const titulo = (g, pendientes, dia) =>
     `${pendientes.length} pendiente${pendientes.length === 1 ? '' : 's'} · ${g.nombre}${dia ? ` · ${etiquetaDia(dia)}` : ''}`
 
-  const whatsapp = (g, pendientes, dia) => {
-    setVista(null)
-    setWaModal({
-      titulo: titulo(g, pendientes, dia),
-      empresa: filaEmpresa(g), nombreEmpresa: g.nombre,
-      mensaje: nombre => mensajeCliente({ rol: g.rol, nombre, albaranes: pendientes, panelUrl: g.panelUrl }),
-      onEnviado: () => marcar(pendientes.map(a => a.id), g.clave, 'whatsapp'),
-    })
-  }
-
-  // Email: primero se ve exactamente lo que saldrá (para, asunto, texto); se puede copiar
-  const email = (g, pendientes, dia) => {
-    const emp = filaEmpresa(g)
-    const nombre = (contactosEmpresa(emp)[0]?.nombre || '').trim().split(/\s+/)[0]
-    const asunto = asuntoCliente(g.rol, pendientes.length)
-    const texto = mensajeCliente({ rol: g.rol, nombre, albaranes: pendientes, panelUrl: g.panelUrl, fmt: 'email' })
-    setVista({
-      titulo: titulo(g, pendientes, dia), subtitulo: 'Email · lo que se enviará',
-      para: emp?.email || '', asunto, texto,
-      onEmail: () => {
-        window.open(`mailto:${emp?.email || ''}?subject=${encodeURIComponent(asunto)}&body=${encodeURIComponent(texto)}`, '_blank')
-        marcar(pendientes.map(a => a.id), g.clave, 'email')
-        setVista(null)
-      },
-      onWhatsApp: () => whatsapp(g, pendientes, dia),
-    })
-  }
+  // Un único "Enviar mensaje": en el pop-up se elige vía, persona y se ve/edita el texto
+  const enviar = (g, pendientes, dia) => setEnvio({
+    titulo: titulo(g, pendientes, dia),
+    empresa: filaEmpresa(g), nombreEmpresa: g.nombre,
+    asunto: asuntoCliente(g.rol, pendientes.length),
+    mensaje: (nombre, via) => mensajeCliente({ rol: g.rol, nombre, albaranes: pendientes, panelUrl: g.panelUrl, fmt: via === 'email' ? 'email' : 'wa' }),
+    onEnviado: via => marcar(pendientes.map(a => a.id), g.clave, via),
+  })
 
   return (
     <section className="dash-panel dash-clientes" aria-label="Pendientes por cliente">
@@ -223,7 +201,6 @@ function PendientesPorCliente({ albaranes, empresas, refetch, onEmpresaActualiza
         </span>
       </div>
       {grupos.map(g => {
-        const emp = filaEmpresa(g)
         const dias = seguimiento.get(g.clave) || []
         return (
           <div key={g.clave} className="dash-cli">
@@ -236,12 +213,9 @@ function PendientesPorCliente({ albaranes, empresas, refetch, onEmpresaActualiza
                 </div>
               </div>
               <div className="dash-cli-acc">
-                <button type="button" className="btn dash-cli-wa" onClick={() => whatsapp(g, g.albaranes)} disabled={marcando === g.clave}>
-                  <WaIcon size={13} /> WhatsApp
-                </button>
-                <button type="button" className="btn" onClick={() => email(g, g.albaranes)} disabled={marcando === g.clave}
-                  title={emp?.email ? `Email a ${emp.email}` : 'Sin email registrado: puedes ver y copiar el mensaje'}>
-                  <Mail size={13} /> Email
+                <button type="button" className="btn" onClick={() => enviar(g, g.albaranes)} disabled={marcando === g.clave}
+                  title="Elegir WhatsApp o email, contacto y revisar el mensaje">
+                  <Send size={13} /> Enviar mensaje
                 </button>
               </div>
             </div>
@@ -279,9 +253,7 @@ function PendientesPorCliente({ albaranes, empresas, refetch, onEmpresaActualiza
                         ))}
                         {pendientesDia.length > 0 && (
                           <div className="dash-dia-msg">
-                            Mensaje solo de este día:
-                            <button type="button" onClick={() => whatsapp(g, pendientesDia, d.dia)}><WaIcon size={12} /> WhatsApp</button>
-                            <button type="button" onClick={() => email(g, pendientesDia, d.dia)}><Mail size={12} /> Email</button>
+                            <button type="button" onClick={() => enviar(g, pendientesDia, d.dia)}><Send size={12} /> Enviar mensaje solo de este día</button>
                           </div>
                         )}
                       </div>
@@ -293,10 +265,7 @@ function PendientesPorCliente({ albaranes, empresas, refetch, onEmpresaActualiza
           </div>
         )
       })}
-      {waModal && (
-        <CompartirWhatsApp {...waModal} onClose={() => setWaModal(null)} onContactoGuardado={onEmpresaActualizada} />
-      )}
-      {vista && <VistaMensaje {...vista} onClose={() => setVista(null)} />}
+      {envio && <EnviarMensaje {...envio} onClose={() => setEnvio(null)} onContactoGuardado={onEmpresaActualizada} />}
     </section>
   )
 }

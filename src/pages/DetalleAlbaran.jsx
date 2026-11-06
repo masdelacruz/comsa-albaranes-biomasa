@@ -1,15 +1,13 @@
 import { Fragment, useRef, useState, useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
-import { ArrowLeft, ExternalLink, CheckCircle, Clock, FileDown, Upload, Eye, FileText, AlertTriangle, Copy, Pencil, X, Check, Trash2, MapPin, Share2, Truck, RotateCcw, RefreshCw } from 'lucide-react'
+import { ArrowLeft, ExternalLink, CheckCircle, Clock, FileDown, Upload, Eye, FileText, AlertTriangle, Copy, Pencil, X, Check, Trash2, MapPin, Share2, Truck, RotateCcw, RefreshCw, Send } from 'lucide-react'
 import { Badge } from '../components/Badge'
 import PdfLoadingOverlay from '../components/PdfLoadingOverlay'
 import { generarPDF, generarPDFA5, cargarLogos } from '../utils/generarPDF'
 import { api } from '../lib/api'
 import { ESPECIES, TIPOS_BIOMASA } from '../data/mockData'
 import SelectField from '../components/SelectField'
-import CompartirWhatsApp, { WaIcon } from '../components/CompartirWhatsApp'
-import VistaMensaje from '../components/VistaMensaje'
-import { contactosEmpresa } from '../utils/clientes'
+import EnviarMensaje from '../components/EnviarMensaje'
 import '../components/shared.css'
 import './DetalleAlbaran.css'
 
@@ -174,7 +172,7 @@ export default function DetalleAlbaran({ albaranes, simularFirma, updateFirma, s
   const [confirmModal, setConfirmModal]     = useState(null)
   const [copiado, setCopiado]               = useState('')
   const [regenerando, setRegenerando]       = useState(false)
-  const [waModal, setWaModal]               = useState(null)
+  const [envio, setEnvio]                   = useState(null)  // props de EnviarMensaje
   const [dragOverDoc, setDragOverDoc]       = useState(null)   // nombre del doc sobre el que se arrastra
   const [dragOverTicket, setDragOverTicket] = useState(false)
   // Un flag por botón (preview / descargar): antes era un único booleano
@@ -201,8 +199,7 @@ export default function DetalleAlbaran({ albaranes, simularFirma, updateFirma, s
   const [duplicarOpen,    setDuplicarOpen]        = useState(false)
   const [numCopias,       setNumCopias]           = useState(1)
   const [duplicando,      setDuplicando]          = useState(false)
-  const [confirmEmpresa,  setConfirmEmpresa]      = useState(null)
-  const [vistaMensaje,    setVistaMensaje]        = useState(null)  // props de VistaMensaje  // [{ k, de, a }] cambios de empresa pendientes de confirmar
+  const [confirmEmpresa,  setConfirmEmpresa]      = useState(null)  // [{ k, de, a }] cambios de empresa pendientes de confirmar
 
   const mostrarToast = (msg) => {
     setToast(msg)
@@ -562,7 +559,6 @@ export default function DetalleAlbaran({ albaranes, simularFirma, updateFirma, s
   const primerRol    = siguientePaso?.split(',')[0]
   const actorNombre  = primerRol ? (a.firmas[primerRol]?.actor || a[primerRol]) : null
   const actorEmpresa = filaEmpresa(actorNombre, primerRol)
-  const actorEmail   = actorEmpresa?.email || null
   const esPanelPaso  = !!{ astilladora: a.panelAstilladoraUrl, instalacion: a.panelInstalacionUrl, proveedor: a.panelProveedorUrl }[siguientePaso]
 
   const fechaAlb     = a.fecha?.slice(0,10).split('-').reverse().join('/') || '—'
@@ -599,8 +595,6 @@ export default function DetalleAlbaran({ albaranes, simularFirma, updateFirma, s
     return `Albarán ${a.id} pendiente de confirmar · Comsa Service`
   }
 
-  const nombreDeContacto = emp => (contactosEmpresa(emp)[0]?.nombre || '').trim().split(/\s+/)[0] || actorNombre || ''
-
   // Deja constancia en la actividad del albarán de que se ha avisado al cliente
   const marcarNotificado = async (medio) => {
     if (a.estado !== 'pendiente_campo') return
@@ -608,19 +602,6 @@ export default function DetalleAlbaran({ albaranes, simularFirma, updateFirma, s
       await api.post('/albaranes/notificar', { ids: [a.id], medio })
       await refetch?.()
     } catch { /* solo es un registro: el aviso ya se ha enviado */ }
-  }
-
-  const compartirUrl = (url, medio) => {
-    if (medio === 'whatsapp') {
-      setWaModal({
-        titulo: `${getRolLabel(siguientePaso)} · Albarán ${a.id}`,
-        empresa: actorEmpresa, nombreEmpresa: actorNombre || '—',
-        mensaje: nombre => textoSiguientePaso(nombre, 'wa'),
-        onEnviado: () => marcarNotificado('whatsapp'),
-      })
-    }
-    if (medio === 'email') verMensaje(null)
-    if (medio === 'copiar') copiar(url, 'siguiente')
   }
 
   const hayEnlaceSuelto = !!urlSiguientePaso && !esPanelPaso && a.estado !== 'programado'
@@ -651,45 +632,23 @@ export default function DetalleAlbaran({ albaranes, simularFirma, updateFirma, s
     `Este es el enlace a tu panel de albaranes de Comsa Service. En él tienes ${DESC_PANEL[panel.rol]}.\n\n` +
     `Es siempre el mismo enlace: guárdalo para tenerlo a mano y no lo compartas fuera de tu empresa.\n${panel.url}`
 
-  // Vista previa de lo que se enviará (para, asunto, texto), con Copiar.
-  // panel = null → enlace suelto del paso pendiente. Ver o copiar no registra nada;
-  // solo al abrir el correo o WhatsApp queda constancia en la actividad.
-  const verMensaje = (panel) => {
+  // Un único "Enviar mensaje": en el pop-up se elige vía (WhatsApp/email) y persona,
+  // y se ve, edita y copia lo que se enviará. panel = null → enlace suelto del paso
+  // pendiente. Si el panel es el del paso pendiente, el mensaje habla de este albarán
+  // y al enviarlo queda constancia en la actividad.
+  const PIE_EMAIL = '\n\nComsa Service — Gestión de Albaranes de Biomasa'
+  const enviarMensaje = (panel) => {
     const pendiente = !panel || esPanelPendiente(panel)
-    const url = panel ? panel.url : urlSiguientePaso
-    const emp = pendiente ? actorEmpresa : panel.empresa
-    const para = (pendiente ? actorEmail : panel.empresa?.email) || ''
-    const asunto = pendiente ? asuntoSiguientePaso() : 'Tu panel de albaranes · Comsa Service'
-    const texto = pendiente
-      ? `${textoSiguientePaso(nombreDeContacto(emp), 'email')}\n\nGracias por tu colaboración.\n\nComsa Service — Gestión de Albaranes de Biomasa`
-      : `${textoPanel(panel, nombreDeContacto(emp))}\n\nComsa Service — Gestión de Albaranes de Biomasa`
-    setVistaMensaje({
+    setEnvio({
       titulo: pendiente ? `${getRolLabel(siguientePaso)} · Albarán ${a.id}` : `Panel de ${FIRMA_LABELS[panel.rol].toLowerCase()}`,
-      para, asunto, texto,
-      onEmail: () => {
-        window.open(`mailto:${para}?subject=${encodeURIComponent(asunto)}&body=${encodeURIComponent(texto)}`, '_blank')
-        if (pendiente) marcarNotificado('email')
-        setVistaMensaje(null)
-      },
-      onWhatsApp: () => { setVistaMensaje(null); if (pendiente) compartirUrl(url, 'whatsapp'); else compartirPanel(panel, 'whatsapp') },
+      empresa: pendiente ? actorEmpresa : panel.empresa,
+      nombreEmpresa: pendiente ? (actorNombre || '—') : panel.nombre,
+      asunto: pendiente ? asuntoSiguientePaso() : 'Tu panel de albaranes · Comsa Service',
+      mensaje: (nombre, via) => pendiente
+        ? (via === 'email' ? `${textoSiguientePaso(nombre, 'email')}\n\nGracias por tu colaboración.${PIE_EMAIL}` : textoSiguientePaso(nombre, 'wa'))
+        : textoPanel(panel, nombre) + (via === 'email' ? PIE_EMAIL : ''),
+      onEnviado: pendiente ? via => marcarNotificado(via) : undefined,
     })
-  }
-
-  // Si el panel es el del paso pendiente, el aviso habla de este albarán
-  const compartirPanel = (panel, medio) => {
-    if (medio !== 'copiar' && esPanelPendiente(panel)) return compartirUrl(panel.url, medio)
-    if (medio === 'email') verMensaje(panel)
-    if (medio === 'whatsapp') {
-      setWaModal({
-        titulo: `Panel de ${FIRMA_LABELS[panel.rol].toLowerCase()}`,
-        empresa: panel.empresa, nombreEmpresa: panel.nombre,
-        mensaje: nombre =>
-          `Hola${nombre ? ' ' + nombre : ''},\n\n` +
-          `Este es el enlace a tu panel de albaranes de Comsa Service. En él tienes ${DESC_PANEL[panel.rol]}.\n\n` +
-          `Es siempre el mismo enlace: guárdalo para tenerlo a mano y no lo compartas fuera de tu empresa.\n${panel.url}`,
-      })
-    }
-    if (medio === 'copiar') copiar(panel.url, `panel-${panel.rol}`)
   }
 
   // Al guardar un contacto nuevo se actualizan todas las fichas de la empresa
@@ -768,10 +727,7 @@ export default function DetalleAlbaran({ albaranes, simularFirma, updateFirma, s
         </div>
       )}
 
-      {waModal && (
-        <CompartirWhatsApp {...waModal} onClose={() => setWaModal(null)} onContactoGuardado={contactoGuardado} />
-      )}
-      {vistaMensaje && <VistaMensaje {...vistaMensaje} onClose={() => setVistaMensaje(null)} />}
+      {envio && <EnviarMensaje {...envio} onClose={() => setEnvio(null)} onContactoGuardado={contactoGuardado} />}
       {confirmModal && (
         <div style={{position:'fixed',inset:0,background:'rgba(0,0,0,0.4)',display:'flex',alignItems:'center',justifyContent:'center',zIndex:200,padding:20}}>
           <div style={{background:'#fff',borderRadius:'var(--radius-xl)',padding:28,maxWidth:400,width:'100%',boxShadow:'0 20px 60px rgba(0,0,0,0.15)'}}>
@@ -1388,15 +1344,9 @@ export default function DetalleAlbaran({ albaranes, simularFirma, updateFirma, s
                       <button className="btn btn-primary" style={{flex:1,fontSize:11,padding:'4px 8px'}} onClick={() => copiar(urlSiguientePaso, 'siguiente')}>
                         {copiado === 'siguiente' ? <><CheckCircle size={11} /> Copiado</> : <><Copy size={11} /> Enlace</>}
                       </button>
-                      <button style={{flex:1,display:'inline-flex',alignItems:'center',justifyContent:'center',gap:4,padding:'4px 8px',borderRadius:'var(--radius-sm)',border:'1px solid #d1fae5',background:'#ecfdf5',color:'#065f46',fontSize:11,fontWeight:500,cursor:'pointer'}} onClick={() => compartirUrl(urlSiguientePaso, 'whatsapp')}>
-                        <WaIcon size={11} /> WhatsApp
-                      </button>
-                      <button style={{flex:1,display:'inline-flex',alignItems:'center',justifyContent:'center',gap:4,padding:'4px 8px',borderRadius:'var(--radius-sm)',border:'var(--border)',background:'var(--gray-50)',color:'var(--gray-700)',fontSize:11,fontWeight:500,cursor:'pointer'}}
-                        title={actorEmail ? `Ver el email a ${actorEmail} antes de enviarlo` : 'Sin email registrado: puedes ver y copiar el mensaje'} onClick={() => compartirUrl(urlSiguientePaso, 'email')}>
-                        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="m22 7-10 7L2 7"/></svg> Email
-                      </button>
-                      <button className="btn" style={{fontSize:11,padding:'4px 8px'}} title="Ver y copiar el mensaje que se enviará" onClick={() => verMensaje(null)}>
-                        <Eye size={11} />
+                      <button className="btn" style={{flex:1.4,fontSize:11,padding:'4px 8px'}} onClick={() => enviarMensaje(null)}
+                        title="Elegir WhatsApp o email, contacto y revisar el mensaje">
+                        <Send size={11} /> Enviar mensaje
                       </button>
                       <button className="btn" style={{fontSize:11,padding:'4px 8px'}} disabled={regenerando}
                         title="Invalida este enlace y genera uno nuevo" onClick={handleRegenerarEnlace}>
@@ -1416,18 +1366,12 @@ export default function DetalleAlbaran({ albaranes, simularFirma, updateFirma, s
                       {panel.url}
                     </code>
                     <div style={{display:'flex',gap:5}}>
-                      <button className="btn btn-primary" style={{flex:1,fontSize:11,padding:'4px 8px'}} onClick={() => compartirPanel(panel, 'copiar')}>
+                      <button className="btn btn-primary" style={{flex:1,fontSize:11,padding:'4px 8px'}} onClick={() => copiar(panel.url, `panel-${panel.rol}`)}>
                         {copiado === `panel-${panel.rol}` ? <><CheckCircle size={11} /> Copiado</> : <><Copy size={11} /> Enlace</>}
                       </button>
-                      <button style={{flex:1,display:'inline-flex',alignItems:'center',justifyContent:'center',gap:4,padding:'4px 8px',borderRadius:'var(--radius-sm)',border:'1px solid #d1fae5',background:'#ecfdf5',color:'#065f46',fontSize:11,fontWeight:500,cursor:'pointer'}} onClick={() => compartirPanel(panel, 'whatsapp')}>
-                        <WaIcon size={11} /> WhatsApp
-                      </button>
-                      <button style={{flex:1,display:'inline-flex',alignItems:'center',justifyContent:'center',gap:4,padding:'4px 8px',borderRadius:'var(--radius-sm)',border:'var(--border)',background:'var(--gray-50)',color:'var(--gray-700)',fontSize:11,fontWeight:500,cursor:'pointer'}}
-                        title={panel.empresa?.email ? `Ver el email a ${panel.empresa.email} antes de enviarlo` : 'Sin email registrado: puedes ver y copiar el mensaje'} onClick={() => compartirPanel(panel, 'email')}>
-                        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="m22 7-10 7L2 7"/></svg> Email
-                      </button>
-                      <button className="btn" style={{fontSize:11,padding:'4px 8px'}} title="Ver y copiar el mensaje que se enviará" onClick={() => verMensaje(panel)}>
-                        <Eye size={11} />
+                      <button className="btn" style={{flex:1.4,fontSize:11,padding:'4px 8px'}} onClick={() => enviarMensaje(panel)}
+                        title="Elegir WhatsApp o email, contacto y revisar el mensaje">
+                        <Send size={11} /> Enviar mensaje
                       </button>
                       <button className="btn" style={{fontSize:11,padding:'4px 8px'}} title="Abrir panel"
                         onClick={() => window.open(panel.url, '_blank')}>
