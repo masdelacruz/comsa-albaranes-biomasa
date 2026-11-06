@@ -1,10 +1,11 @@
 import { useState, useRef, useMemo, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Download, Search, FileSpreadsheet, Upload, Trash2, X, Send, SlidersHorizontal, ListChecks, Plus } from 'lucide-react'
+import { Download, Search, FileSpreadsheet, Upload, Trash2, X, Send, SlidersHorizontal, ListChecks, Plus, Pencil, Ban } from 'lucide-react'
 import ExcelJS from 'exceljs'
 import { Badge, FirmaSteps } from '../components/Badge'
 import PdfLoadingOverlay from '../components/PdfLoadingOverlay'
 import FilterSelect from '../components/FilterSelect'
+import SelectField from '../components/SelectField'
 import { useScrollEstable } from '../hooks/useScrollEstable'
 import { useEstadoSesion, useAlCambiar, useScrollSesion } from '../hooks/useEstadoSesion'
 import { generarPDF } from '../utils/generarPDF'
@@ -18,6 +19,20 @@ const pesoNeto = (a) => a.pesada?.entrada && a.pesada?.salida ? a.pesada.entrada
 const TIPOS_DOC = ['Autodeclaración','Acuerdo de cesión','Contrato prestación servicios','Permiso de corta','Certificado SURE','Permiso de obra']
 
 const RAIZ_SESION = 'historial'
+
+// Edición en bloque: columnas del listado de Fecha a Estella.
+// Un campo vacío significa "no tocar"; solo se envían los que se rellenan.
+const CAMPOS_MASIVOS = ['fecha', 'proveedor', 'astilladora', 'transportista', 'instalacion', 'especie', 'estella']
+const ETIQUETA_CAMPO = { fecha: 'Fecha', proveedor: 'Proveedor', astilladora: 'Astilladora', transportista: 'Transportista', instalacion: 'Instalación', especie: 'Especie', estella: 'Estella' }
+const SOLO_OP1 = new Set(['astilladora', 'transportista'])  // en Opción 2 no existen
+const esOp1 = (a) => !!a.tipo?.includes('1')
+const formMasivoVacio = () => Object.fromEntries(CAMPOS_MASIVOS.map(k => [k, '']))
+const ANULABLE = (a) => !!a && a.estado !== 'cerrado' && a.estado !== 'cancelado'
+
+// Lanza las peticiones de pocas en pocas para no saturar la API con selecciones grandes
+async function enTandas(items, fn, tam = 5) {
+  for (let i = 0; i < items.length; i += tam) await Promise.all(items.slice(i, i + tam).map(fn))
+}
 
 // Pestañas del listado: separan lo que está en marcha de lo ya terminado
 const ESTADOS_RECHAZADO = ['rechazado_campo_astilladora', 'rechazado_campo_instalacion', 'cancelado']
@@ -69,6 +84,15 @@ export default function Historial({ albaranes, empresas = [], usuario, refetch, 
   const [eliminando,        setEliminando]        = useState(false)
   const [enviandoACampo,    setEnviandoACampo]    = useState(false)
   const [confirmBorrarFila, setConfirmBorrarFila] = useState(null)  // id del albaran a borrar individualmente
+  const [modalEditar,       setModalEditar]       = useState(false)
+  const [formMasivo,        setFormMasivo]        = useState(formMasivoVacio)
+  const [guardandoMasivo,   setGuardandoMasivo]   = useState(false)
+  const [opcionesMaterial,  setOpcionesMaterial]  = useState(null)  // { especie, estella } de /elementos, se carga al abrir
+  const [modalAnular,       setModalAnular]       = useState(false)
+  const [conMotivo,         setConMotivo]         = useState(false)
+  const [motivoMasivo,      setMotivoMasivo]      = useState('')
+  const [anulandoMasivo,    setAnulandoMasivo]    = useState(false)
+  const [errorMasivo,       setErrorMasivo]       = useState('')
   const [pagina,          setPagina]          = useEstadoSesion('historial:pagina', 1)
   const POR_PAGINA = 25
 
@@ -143,7 +167,58 @@ export default function Historial({ albaranes, empresas = [], usuario, refetch, 
     } finally { setEnviandoACampo(false) }
   }
 
+  const albaranesSeleccionados = () => [...seleccionados].map(id => albaranes.find(x => x.id === id)).filter(Boolean)
+
+  const abrirEditarMasivo = () => {
+    setFormMasivo(formMasivoVacio()); setErrorMasivo(''); setModalEditar(true)
+    if (!opcionesMaterial) {
+      api.get('/elementos')
+        .then(d => setOpcionesMaterial({ especie: (d?.especie || []).map(e => e.valor), estella: (d?.estella || []).map(e => e.valor) }))
+        .catch(() => setOpcionesMaterial({ especie: [], estella: [] }))
+    }
+  }
+
+  // Un albarán cerrado solo lo puede editar un superadmin (la API también lo impide)
+  const editables = () => albaranesSeleccionados().filter(a => esSuperadmin || a.estado !== 'cerrado')
+
+  const handleEditarMasivo = async () => {
+    const cambios = CAMPOS_MASIVOS.filter(k => formMasivo[k])
+    if (!cambios.length) return
+    setGuardandoMasivo(true); setErrorMasivo('')
+    let fallos = 0
+    try {
+      await enTandas(editables(), async (a) => {
+        const campos = Object.fromEntries(cambios.filter(k => !SOLO_OP1.has(k) || esOp1(a)).map(k => [k, formMasivo[k]]))
+        if (!Object.keys(campos).length) return
+        const nombres = Object.keys(campos).map(k => ETIQUETA_CAMPO[k]).join(', ')
+        try { await api.patch(`/albaranes/${a.id}`, { campos, descripcion: `Edición múltiple: ${nombres}` }) }
+        catch { fallos++ }
+      })
+      if (refetch) await refetch()
+      if (fallos) { setErrorMasivo(`${fallos} no se pudieron actualizar. Revisa la selección e inténtalo de nuevo.`); return }
+      setModalEditar(false); cancelarSeleccion()
+    } finally { setGuardandoMasivo(false) }
+  }
+
+  const abrirAnularMasivo = () => { setConMotivo(false); setMotivoMasivo(''); setErrorMasivo(''); setModalAnular(true) }
+
+  const handleAnularMasivo = async () => {
+    setAnulandoMasivo(true); setErrorMasivo('')
+    let fallos = 0
+    try {
+      const motivo = conMotivo ? motivoMasivo : ''
+      await enTandas(albaranesSeleccionados().filter(ANULABLE), async (a) => {
+        try { await api.post(`/albaranes/${a.id}/cancelar`, { motivo }) }
+        catch { fallos++ }
+      })
+      if (refetch) await refetch()
+      if (fallos) { setErrorMasivo(`${fallos} no se pudieron anular.`); return }
+      setModalAnular(false); cancelarSeleccion()
+    } finally { setAnulandoMasivo(false) }
+  }
+
   const empresasByTipo = (tipo) => empresas.filter(e => e.tipo === tipo).map(e => e.nombre)
+  const empresasActivas = (tipo) => empresas.filter(e => e.tipo === tipo && e.activo !== false).map(e => e.nombre).sort()
   const instalaciones   = [...new Set([...empresasByTipo('instalacion'),   ...albaranes.map(a => a.instalacion)  ].filter(Boolean))].sort()
   const astilladoras    = [...new Set([...empresasByTipo('astilladora'),   ...albaranes.map(a => a.astilladora)  ].filter(Boolean))].sort()
   const proveedores     = [...new Set([...empresasByTipo('proveedor'),     ...albaranes.map(a => a.proveedor)    ].filter(Boolean))].sort()
@@ -540,6 +615,16 @@ export default function Historial({ albaranes, empresas = [], usuario, refetch, 
               <Send size={13}/> {enviandoACampo ? 'Enviando...' : 'Enviar a campo'}
             </button>
           )}
+          <button onClick={abrirEditarMasivo}
+            style={{display:'inline-flex',alignItems:'center',gap:5,padding:'6px 12px',borderRadius:5,border:'1px solid rgba(255,255,255,0.15)',background:'rgba(255,255,255,0.1)',color:'#fff',fontSize:12,fontWeight:500,cursor:'pointer'}}>
+            <Pencil size={13}/> Editar
+          </button>
+          {[...seleccionados].some(id => ANULABLE(albaranes.find(x => x.id === id))) && (
+            <button onClick={abrirAnularMasivo}
+              style={{display:'inline-flex',alignItems:'center',gap:5,padding:'6px 12px',borderRadius:5,border:'1px solid rgba(255,255,255,0.15)',background:'rgba(255,255,255,0.1)',color:'#fdba74',fontSize:12,fontWeight:500,cursor:'pointer'}}>
+              <Ban size={13}/> Anular
+            </button>
+          )}
           <button onClick={() => setModalAdjuntar(true)}
             style={{display:'inline-flex',alignItems:'center',gap:5,padding:'6px 12px',borderRadius:5,border:'1px solid rgba(255,255,255,0.15)',background:'rgba(255,255,255,0.1)',color:'#fff',fontSize:12,fontWeight:500,cursor:'pointer'}}>
             <Upload size={13}/> Adjuntar doc
@@ -587,6 +672,86 @@ export default function Historial({ albaranes, empresas = [], usuario, refetch, 
           </div>
         </div>
       )}
+
+      {/* Modal edición múltiple: Fecha → Estella. Vacío = sin cambios */}
+      {modalEditar && (() => {
+        const ed = editables()
+        const omitidos = seleccionados.size - ed.length
+        const sinOp1 = ed.filter(a => !esOp1(a)).length
+        const tocaOp1 = !!(formMasivo.astilladora || formMasivo.transportista)
+        const hayCambios = CAMPOS_MASIVOS.some(k => formMasivo[k])
+        const set = (k, v) => setFormMasivo(f => ({ ...f, [k]: v }))
+        const opciones = {
+          proveedor: empresasActivas('proveedor'), astilladora: empresasActivas('astilladora'),
+          transportista: empresasActivas('transportista'), instalacion: empresasActivas('instalacion'),
+          especie: opcionesMaterial?.especie?.length ? opcionesMaterial.especie : especies,
+          estella: opcionesMaterial?.estella?.length ? opcionesMaterial.estella : estellas,
+        }
+        return (
+        <div style={{position:'fixed',inset:0,background:'rgba(0,0,0,0.4)',display:'flex',alignItems:'center',justifyContent:'center',zIndex:200,padding:20}}>
+          <div style={{background:'#fff',borderRadius:'var(--radius-xl)',padding:28,width:'100%',maxWidth:440,boxShadow:'0 20px 60px rgba(0,0,0,0.15)',maxHeight:'calc(100vh - 40px)',overflowY:'auto'}}>
+            <div style={{fontSize:16,fontWeight:600,marginBottom:4}}>Editar {ed.length} {ed.length === 1 ? 'albarán' : 'albaranes'}</div>
+            <p style={{fontSize:13,color:'var(--gray-500)',margin:'0 0 16px'}}>Solo se cambian los campos que rellenes; el resto se mantiene como está.</p>
+            {CAMPOS_MASIVOS.map(k => (
+              <div key={k} className="masivo-campo">
+                <label className="masivo-label">{ETIQUETA_CAMPO[k]}</label>
+                {k === 'fecha'
+                  ? <input type="date" className="masivo-input" value={formMasivo.fecha} onChange={e => set('fecha', e.target.value)} />
+                  : <SelectField value={formMasivo[k]} onChange={v => set(k, v)} options={opciones[k]} placeholder="Sin cambios" clearable />}
+              </div>
+            ))}
+            {(omitidos > 0 || (sinOp1 > 0 && tocaOp1)) && (
+              <p className="masivo-nota">
+                {omitidos > 0 && <>{omitidos} {omitidos === 1 ? 'está cerrado y no se modificará' : 'están cerrados y no se modificarán'}. </>}
+                {sinOp1 > 0 && tocaOp1 && <>Astilladora y transportista no se aplican a {sinOp1 === 1 ? 'el de' : `los ${sinOp1} de`} Opción 2.</>}
+              </p>
+            )}
+            {errorMasivo && <p className="masivo-nota masivo-error">{errorMasivo}</p>}
+            <div style={{display:'flex',gap:8,justifyContent:'flex-end',marginTop:20}}>
+              <button className="btn" onClick={() => setModalEditar(false)} disabled={guardandoMasivo}>Cancelar</button>
+              <button className="btn btn-primary" disabled={!hayCambios || !ed.length || guardandoMasivo} onClick={handleEditarMasivo}>
+                {guardandoMasivo ? 'Guardando...' : 'Aplicar cambios'}
+              </button>
+            </div>
+          </div>
+        </div>
+        )
+      })()}
+
+      {/* Modal anulación múltiple: el motivo es opcional y queda plegado */}
+      {modalAnular && (() => {
+        const anulables = albaranesSeleccionados().filter(ANULABLE)
+        const omitidos  = seleccionados.size - anulables.length
+        return (
+        <div style={{position:'fixed',inset:0,background:'rgba(0,0,0,0.4)',display:'flex',alignItems:'center',justifyContent:'center',zIndex:200,padding:20}}>
+          <div style={{background:'#fff',borderRadius:'var(--radius-xl)',padding:28,width:'100%',maxWidth:400,boxShadow:'0 20px 60px rgba(0,0,0,0.15)'}}>
+            <div style={{display:'flex',alignItems:'center',gap:10,marginBottom:12}}>
+              <Ban size={20} color='var(--orange-700)' />
+              <span style={{fontSize:16,fontWeight:600}}>Anular {anulables.length} {anulables.length === 1 ? 'albarán' : 'albaranes'}</span>
+            </div>
+            <p style={{fontSize:14,color:'var(--gray-600)',margin:'0 0 12px'}}>
+              Quedarán marcados como <em>anulados</em>. Podrán consultarse en Albaranes pero no se podrán firmar.
+              {omitidos > 0 && <> {omitidos === 1 ? '1 ya estaba cerrado o anulado y no se toca.' : `${omitidos} ya estaban cerrados o anulados y no se tocan.`}</>}
+            </p>
+            {conMotivo ? (
+              <textarea autoFocus value={motivoMasivo} onChange={e => setMotivoMasivo(e.target.value)}
+                placeholder="Motivo común para todos (opcional)" rows={2} className="masivo-motivo" />
+            ) : (
+              <button type="button" className="masivo-enlace" onClick={() => setConMotivo(true)}>+ Añadir motivo</button>
+            )}
+            {errorMasivo && <p className="masivo-nota masivo-error">{errorMasivo}</p>}
+            <div style={{display:'flex',gap:8,justifyContent:'flex-end',marginTop:18}}>
+              <button className="btn" onClick={() => setModalAnular(false)} disabled={anulandoMasivo}>Cancelar</button>
+              <button className="btn" disabled={anulandoMasivo || !anulables.length}
+                style={{background:'var(--orange-400)',color:'#fff',borderColor:'var(--orange-400)',opacity:anulandoMasivo?0.6:1}}
+                onClick={handleAnularMasivo}>
+                <Ban size={14} /> {anulandoMasivo ? 'Anulando...' : 'Confirmar anulación'}
+              </button>
+            </div>
+          </div>
+        </div>
+        )
+      })()}
 
       {/* Modal borrar fila individual */}
       {confirmBorrarFila && (

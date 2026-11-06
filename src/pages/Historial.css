@@ -175,3 +175,16 @@
 
   .list-pagination { justify-content: center; padding: 11px 14px; }
 }
+
+/* Modales de edición / anulación múltiple */
+.masivo-campo { display:grid; grid-template-columns:110px 1fr; align-items:center; gap:12px; margin-bottom:8px; }
+.masivo-label { font-size:12.5px; font-weight:600; color:var(--gray-600); }
+.masivo-input { width:100%; height:38px; padding:0 10px; font-size:13px; border:1px solid var(--gray-200); border-radius:var(--radius-sm); font-family:inherit; box-sizing:border-box; }
+.masivo-nota { font-size:12.5px; color:var(--gray-500); margin:12px 0 0; }
+.masivo-error { color:var(--red-400); }
+.masivo-enlace { background:none; border:none; padding:0; font-size:12.5px; color:var(--gray-500); cursor:pointer; font-family:inherit; }
+.masivo-enlace:hover { color:var(--gray-700); text-decoration:underline; }
+.masivo-motivo { width:100%; font-size:13px; padding:8px 10px; border-radius:var(--radius-sm); border:1px solid var(--gray-200); resize:none; outline:none; font-family:inherit; box-sizing:border-box; }
+@media (max-width: 560px) {
+  .masivo-campo { grid-template-columns:1fr; gap:4px; margin-bottom:10px; }
+}
