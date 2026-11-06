@@ -58,3 +58,16 @@
   border-color:var(--gray-200); color:var(--gray-800);
 }
 .sf-edit .sf-trigger.sf-open { border-color:var(--green-400); }
+
+/* Lista hacia arriba cuando no cabe por debajo (lo decide SelectField.jsx) */
+.sf[data-arriba="1"] .sf-trigger.sf-open {
+  border-radius:0 0 var(--radius-sm) var(--radius-sm);
+  clip-path:inset(0 -3px -3px -3px);
+}
+.sf[data-arriba="1"] .sf-dropdown {
+  top:auto; bottom:calc(100% - 1px);
+  border-top:1px solid var(--green-400); border-bottom:none;
+  border-radius:var(--radius-sm) var(--radius-sm) 0 0;
+  box-shadow:0 0 0 3px rgba(29,158,117,0.1), 0 -10px 20px rgba(0,0,0,0.08);
+  clip-path:inset(-40px -3px 0 -3px);
+}

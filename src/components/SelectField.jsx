@@ -1,9 +1,28 @@
-import { useState, useRef, useEffect } from 'react'
+import { useState, useRef, useEffect, useLayoutEffect } from 'react'
 import './SelectField.css'
 
 export default function SelectField({ value, onChange, options, placeholder, clearable, variant }) {
   const [open, setOpen] = useState(false)
   const wrapRef = useRef(null)
+  const listaRef = useRef(null)
+
+  // Al abrir: medir el hueco dentro del contenedor (el más cercano con
+  // data-sf-limite, p. ej. un modal; si no, la ventana) y abrir hacia donde quepa
+  useLayoutEffect(() => {
+    if (!open || !listaRef.current) return
+    const lista = listaRef.current
+    lista.style.maxHeight = ''
+    const tope = parseFloat(getComputedStyle(lista).maxHeight) || 360
+    const alto = Math.min(lista.scrollHeight, tope)
+    const trig = wrapRef.current.querySelector('.sf-trigger').getBoundingClientRect()
+    const lim  = wrapRef.current.closest('[data-sf-limite]')?.getBoundingClientRect() ?? { top: 0, bottom: window.innerHeight }
+    const abajo  = lim.bottom - trig.bottom - 12
+    const encima = trig.top - lim.top - 12
+    const haciaArriba = alto > abajo && encima > abajo
+    // Directo al DOM (data-arriba y max-height): es solo colocación, no estado de React
+    wrapRef.current.dataset.arriba = haciaArriba ? '1' : ''
+    lista.style.maxHeight = `${Math.max(96, Math.min(tope, haciaArriba ? encima : abajo))}px`
+  }, [open])
 
   useEffect(() => {
     if (!open) return
@@ -30,7 +49,7 @@ export default function SelectField({ value, onChange, options, placeholder, cle
           </svg>
         </div>
         {open && (
-          <ul className="sf-dropdown">
+          <ul className="sf-dropdown" ref={listaRef}>
             {options.map(opt => (
               <li
                 key={opt}
