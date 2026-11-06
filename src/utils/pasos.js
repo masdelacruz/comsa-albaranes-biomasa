@@ -104,7 +104,6 @@ export function etiquetaDia(dia) {
   return dif === 0 ? `Hoy · ${corta}` : dif === 1 ? `Ayer · ${corta}` : dif === -1 ? `Mañana · ${corta}` : corta
 }
 
-const fechaCorta = f => f ? f.slice(0, 10).split('-').reverse().slice(0, 2).join('/') : '—'
 const n = (k, uno, varios) => `${k} ${k === 1 ? uno : varios}`
 
 const QUE_TIENE = {
@@ -114,35 +113,94 @@ const QUE_TIENE = {
   transportista: k => `${n(k, 'albarán pendiente', 'albaranes pendientes')} de confirmar`,
 }
 
-const lineaAlbaran = (rol, a, fmt, conFecha = true) => {
-  const id = fmt === 'wa' ? `*${a.id}*` : a.id
-  const hora = a.hora ? String(a.hora).slice(0, 5) : ''
-  const fecha = conFecha ? `${fechaCorta(a.fecha)}${hora ? ' ' + hora : ''}` : hora
-  const resto = rol === 'instalacion'
-    ? [a.transportista, [a.matriculaTractora, a.matriculaRemolque].filter(Boolean).join(' · ')]
-    : [[a.especie, a.tipoBiomasa].filter(Boolean).join(' '), a.instalacion && `destino ${a.instalacion}`]
-  return `• ${[id, fecha, ...resto].filter(Boolean).join(' · ')}`
+// ── Ficha de carga en los mensajes ──────────────────────────────────
+// Los albaranes que coinciden en todo lo que se escribe en el albarán (origen,
+// destino, proveedor, permiso, material, transportista, astilladora) van en un
+// mismo bloque; si algo cambia, bloque aparte. Cada bloque:
+//   LUNES 09/11/2026 · 20:00
+//   AP7 Hospitalet de l'Infant → Termosolar Borges
+//   (albaranes del bloque con hora y matrícula)
+//   Mapas de origen y destino
+//   Datos para el albarán (transportista, proveedor, material, permiso…)
+const CAMPOS_FICHA = [
+  ['transportista', 'Transportista'],
+  ['proveedor',     'Proveedor'],
+  ['tipoBiomasa',   'Tipo de biomasa'],
+  ['estella',       'Estella'],
+  ['especie',       'Especie'],
+  ['astilladora',   'Astilladora'],
+  ['permiso',       'Permiso'],
+  ['origen',        'Origen'],
+  ['instalacion',   'Destino'],
+]
+const CLAVE_GRUPO = [...CAMPOS_FICHA.map(([k]) => k), 'mapsOrigen', 'mapsDestino']
+
+const diaLargo = f => {
+  if (!f) return 'Sin fecha'
+  const [y, m, d] = f.slice(0, 10).split('-').map(Number)
+  const t = new Date(y, m - 1, d).toLocaleDateString('es-ES', { weekday: 'long', day: '2-digit', month: '2-digit', year: 'numeric' }).replace(',', '')
+  return t.toUpperCase()
+}
+const diaCorto = f => {
+  if (!f) return ''
+  const [y, m, d] = f.slice(0, 10).split('-').map(Number)
+  return new Date(y, m - 1, d).toLocaleDateString('es-ES', { weekday: 'short', day: '2-digit', month: '2-digit' }).replace(',', '')
+}
+const horaDe = a => (a.hora ? String(a.hora).slice(0, 5) : '')
+const limpio = v => String(v ?? '').trim()
+
+function agruparPorFicha(albaranes) {
+  const grupos = new Map()
+  const orden = [...albaranes].sort((x, y) => `${x.fecha || ''} ${horaDe(x)} ${x.id}`.localeCompare(`${y.fecha || ''} ${horaDe(y)} ${y.id}`))
+  for (const a of orden) {
+    const clave = CLAVE_GRUPO.map(k => limpio(a[k]).toLowerCase()).join('|')
+    if (!grupos.has(clave)) grupos.set(clave, [])
+    grupos.get(clave).push(a)
+  }
+  return [...grupos.values()]
 }
 
-// Lista de albaranes; si hay varios días, agrupada bajo el título de cada día
-function listaPorDias(rol, albaranes, fmt) {
-  const dias = [...new Set(albaranes.map(a => (a.fecha || '').slice(0, 10)))].sort()
-  if (dias.length <= 1) return albaranes.map(a => lineaAlbaran(rol, a, fmt)).join('\n')
-  return dias.map(dia => {
-    const [y, m, d] = dia.split('-').map(Number)
-    const titulo = dia
-      ? new Date(y, m - 1, d).toLocaleDateString('es-ES', { weekday: 'long', day: '2-digit', month: '2-digit' }).replace(',', '')
-      : 'Sin fecha'
-    const cab = titulo.charAt(0).toUpperCase() + titulo.slice(1)
-    const lineas = albaranes.filter(a => (a.fecha || '').slice(0, 10) === dia).map(a => lineaAlbaran(rol, a, fmt, false))
-    return `${fmt === 'wa' ? `_${cab}_` : cab}\n${lineas.join('\n')}`
-  }).join('\n\n')
+// fmt 'wa' usa negritas de WhatsApp; 'email' es texto plano
+export function fichaAlbaranes(albaranes, fmt = 'wa') {
+  const b = t => (fmt === 'wa' ? `*${t}*` : t)
+  const separador = fmt === 'wa' ? '\n\n——————————\n\n' : '\n\n----------------------------------------\n\n'
+  return agruparPorFicha(albaranes).map(grupo => {
+    const p = grupo[0]
+    const mismoDia = grupo.every(a => (a.fecha || '') === (p.fecha || ''))
+    const mismaHora = mismoDia && grupo.every(a => horaDe(a) === horaDe(p))
+    const ruta = [limpio(p.origen) || 'Origen por confirmar', limpio(p.instalacion) || 'destino por confirmar'].join(' → ')
+    const obsComun = grupo.every(a => limpio(a.observaciones) === limpio(p.observaciones)) ? limpio(p.observaciones) : null
+
+    const lineas = []
+    // Cabecera: fecha (y hora) si es común, y la ruta
+    if (mismoDia) lineas.push(b(`${diaLargo(p.fecha)}${mismaHora && horaDe(p) ? ' · ' + horaDe(p) : ''}`))
+    lineas.push(b(ruta))
+    // Albaranes del bloque: id, (día) hora, matrícula, conductor y observaciones propias
+    for (const a of grupo) {
+      const matricula = [a.matriculaTractora, a.matriculaRemolque].filter(Boolean).join(' / ')
+      const cuando = mismoDia ? (mismaHora ? '' : horaDe(a)) : [diaCorto(a.fecha), horaDe(a)].filter(Boolean).join(' ')
+      const partes = [`Albarán ${a.id}`, cuando, matricula, a.chofer && `conductor ${a.chofer}`,
+        !obsComun && limpio(a.observaciones) && `obs.: ${limpio(a.observaciones)}`]
+      lineas.push(`${grupo.length > 1 ? '• ' : ''}${partes.filter(Boolean).join(' · ')}`)
+    }
+    // Mapas
+    const mapas = [
+      limpio(p.mapsOrigen) && `${fmt === 'wa' ? '📍 ' : ''}${b('Origen:')} ${limpio(p.mapsOrigen)}`,
+      limpio(p.mapsDestino) && `${fmt === 'wa' ? '🏁 ' : ''}${b('Destino:')} ${limpio(p.mapsDestino)}`,
+    ].filter(Boolean)
+    if (mapas.length) lineas.push('', ...mapas)
+    // Datos que hay que poner en el albarán
+    const datos = CAMPOS_FICHA.map(([k, etiqueta]) => limpio(p[k]) && `- ${etiqueta}: ${limpio(p[k])}`).filter(Boolean)
+    if (obsComun) datos.push(`- Observaciones: ${obsComun}`)
+    if (datos.length) lineas.push('', b('Datos para el albarán'), ...datos)
+    return lineas.join('\n')
+  }).join(separador)
 }
 
 // Mensaje para avisar a un cliente de lo que tiene pendiente en su panel.
 // fmt 'wa' usa negritas de WhatsApp; 'email' es texto plano.
 export function mensajeCliente({ rol, nombre, albaranes, panelUrl, fmt = 'wa' }) {
-  const lista = listaPorDias(rol, albaranes, fmt)
+  const lista = fichaAlbaranes(albaranes, fmt)
   const acceso = panelUrl
     ? `Accede a tu panel de Comsa Service (es siempre el mismo enlace: guárdalo y no lo compartas fuera de tu empresa):\n${panelUrl}`
     : 'Puedes gestionarlos desde tu panel de Comsa Service.'

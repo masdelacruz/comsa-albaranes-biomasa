@@ -8,6 +8,7 @@ import { api } from '../lib/api'
 import { ESPECIES, TIPOS_BIOMASA } from '../data/mockData'
 import SelectField from '../components/SelectField'
 import EnviarMensaje from '../components/EnviarMensaje'
+import { fichaAlbaranes } from '../utils/pasos'
 import '../components/shared.css'
 import './DetalleAlbaran.css'
 
@@ -562,31 +563,26 @@ export default function DetalleAlbaran({ albaranes, simularFirma, updateFirma, s
   const esPanelPaso  = !!{ astilladora: a.panelAstilladoraUrl, instalacion: a.panelInstalacionUrl, proveedor: a.panelProveedorUrl }[siguientePaso]
 
   const fechaAlb     = a.fecha?.slice(0,10).split('-').reverse().join('/') || '—'
-  const lineaBiomasa = [a.especie, a.tipoBiomasa, a.estella].filter(Boolean).join(' · ') || '—'
-  const matricula    = [a.matriculaTractora, a.matriculaRemolque].filter(Boolean).join(' · ') || '—'
 
   // Texto del enlace del siguiente paso. fmt 'wa' usa negritas de WhatsApp;
   // 'email' alinea los datos en columnas para el cuerpo en texto plano.
+  // El bloque de datos (fecha, ruta, mapas y "Datos para el albarán") es el
+  // mismo que en los mensajes de Pendientes por cliente (utils/pasos.js)
   const textoSiguientePaso = (nombre, fmt) => {
-    const dato = fmt === 'wa' ? ([k, v]) => `*${k}:* ${v}` : ([k, v]) => `   ${k.padEnd(14)}: ${v}`
-    let intro, datos
+    let intro
     if (siguientePaso === 'proveedor' && esPanelPaso) {
       intro = `Tienes un suministro programado para el ${fechaAlb} (Albarán ${a.id}). Desde tu panel de Comsa Service puedes adjuntar tu albarán${a.origen ? '' : ' e indicar el origen de la biomasa'}.`
-      datos = [['Fecha', fechaAlb], ['Destino', a.instalacion || '—'], ['Biomasa', lineaBiomasa]]
     } else if (siguientePaso === 'astilladora' && esPanelPaso) {
       intro = `Tienes un nuevo albarán pendiente de confirmar en tu panel de Comsa Service: el Albarán ${a.id}.`
-      datos = [['Fecha', fechaAlb], ['Transportista', a.transportista || '—'], ['Biomasa', lineaBiomasa], ['Destino', a.instalacion || '—']]
     } else if (siguientePaso === 'instalacion' && esPanelPaso) {
       intro = `Va de camino un camión con destino a ${a.instalacion} (Albarán ${a.id}). Cuando llegue, confirma la recepción desde tu panel de Comsa Service.`
-      datos = [['Transportista', a.transportista || '—'], ...(a.chofer ? [['Conductor', a.chofer]] : []), ['Matrícula', matricula], ['Biomasa', lineaBiomasa]]
     } else {
       intro = `Te enviamos el Albarán ${a.id} para que lo confirmes como ${getRolLabel(siguientePaso).toLowerCase()}.`
-      datos = [['Fecha', fechaAlb], ['Transportista', a.transportista || '—'], ['Matrícula', matricula], ['Biomasa', lineaBiomasa], ['Destino', a.instalacion || '—']]
     }
     const cierre = esPanelPaso
       ? `Tu panel (es siempre el mismo enlace: guárdalo y no lo compartas fuera de tu empresa):`
       : 'Este enlace es exclusivo de este albarán; no lo reenvíes:'
-    return `Hola${nombre ? ' ' + nombre : ''},\n\n${intro}\n\n${datos.map(dato).join('\n')}\n\n${cierre}\n${urlSiguientePaso}`
+    return `Hola${nombre ? ' ' + nombre : ''},\n\n${intro}\n\n${fichaAlbaranes([a], fmt)}\n\n${cierre}\n${urlSiguientePaso}`
   }
 
   const asuntoSiguientePaso = () => {
