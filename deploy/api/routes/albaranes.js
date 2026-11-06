@@ -212,6 +212,10 @@ function notificarProveedor(albaran) {
 
 function notificarEnvioACampo(albaran) {
   notificarProveedor(albaran)
+  notificarAstilladora(albaran)
+}
+
+function notificarAstilladora(albaran) {
   if (!albaran?.astilladora) return
   crearNotificacion({
     empresaTipo: 'astilladora',
@@ -898,6 +902,86 @@ const ALLOWED_ALBARAN_COLS = new Set([
 ])
 const ALLOWED_PESADA_COLS = new Set(['entrada', 'salida', 'humedad', 'numero_pesada'])
 
+// ── Trazabilidad de ediciones ─────────────────────────────────────
+const ETIQUETA_COL = {
+  tipo: 'Tipo', certificacion: 'Certificación', proveedor: 'Proveedor', astilladora: 'Astilladora',
+  transportista: 'Transportista', instalacion: 'Instalación', especie: 'Especie', tipo_biomasa: 'Tipo biomasa',
+  estella: 'Estella', origen: 'Origen', permiso: 'Permiso', observaciones: 'Observaciones',
+  maps_origen: 'Mapa origen', maps_destino: 'Mapa destino', matricula_tractora: 'Matrícula tractora',
+  matricula_remolque: 'Matrícula remolque', chofer: 'Chófer', fecha: 'Fecha', hora: 'Hora',
+}
+const valorLegible = (k, v) => {
+  if (v == null || v === '' || (Array.isArray(v) && !v.length)) return '—'
+  if (Array.isArray(v)) return v.join(', ')
+  if (k === 'fecha') return String(v).slice(0, 10).split('-').reverse().join('/')
+  if (k === 'hora') return String(v).slice(0, 5)
+  const t = String(v)
+  return t.length > 60 ? t.slice(0, 57) + '…' : t
+}
+// Lista "Campo: antes → después" solo de lo que realmente cambia
+function describirCambios(prev, nuevoDe) {
+  return Object.keys(nuevoDe)
+    .map(k => [k, valorLegible(k, prev[k]), valorLegible(k, nuevoDe[k])])
+    .filter(([, a, b]) => a !== b)
+    .map(([k, a, b]) => `${ETIQUETA_COL[k] || k}: ${a} → ${b}`)
+}
+const textoEdicion = (descripcion, cambios) =>
+  (descripcion || 'Datos editados manualmente') + (cambios.length ? ` — ${cambios.join(' · ')}` : '')
+
+// ── Reasignación de empresa ───────────────────────────────────────
+// Cambiar proveedor/astilladora/transportista/instalación mueve el albarán por
+// completo: su paso de firma pendiente pasa a la nueva empresa, desaparece del
+// panel y de los avisos de la anterior, y el enlace de campo se regenera para
+// que quien tuviera el antiguo deje de tener acceso.
+const EMPRESA_COLS = ['proveedor', 'astilladora', 'transportista', 'instalacion']
+const ETIQUETA_EMPRESA = { proveedor: 'Proveedor', astilladora: 'Astilladora', transportista: 'Transportista', instalacion: 'Instalación' }
+// ¿Tiene esa empresa paso de firma (y panel) en este tipo de operación?
+const tienePaso = (rol, tipo) =>
+  rol === 'instalacion' || (rol === 'astilladora' && !!tipo?.includes('1')) || (rol === 'proveedor' && esOpcion2(tipo))
+
+async function aplicarReasignaciones(client, { id, prev, tipoFinal, reasignaciones, fecha }) {
+  const roles = []
+  for (const r of reasignaciones) {
+    if (r.anterior) {
+      await client.query(
+        'DELETE FROM notificaciones_cliente WHERE albaran_id=$1 AND empresa_tipo=$2 AND empresa_nombre=$3',
+        [id, r.rol, r.anterior]
+      )
+    }
+    if (!tienePaso(r.rol, tipoFinal)) continue
+    roles.push(r.rol)
+    if (r.nuevo) {
+      const { rowCount } = await client.query(
+        `UPDATE firmas SET actor=$1, nombre_persona=NULL, notificado_at=NULL, notificado_por=NULL, notificado_medio=NULL
+         WHERE albaran_id=$2 AND rol=$3 AND NOT firmado`,
+        [r.nuevo, id, r.rol]
+      )
+      if (!rowCount) {
+        await client.query(
+          // Sin duplicar si la firma se registró justo en este instante
+          `INSERT INTO firmas (albaran_id,rol,actor,firmado,fecha)
+           SELECT $1,$2,$3,false,null WHERE NOT EXISTS (SELECT 1 FROM firmas WHERE albaran_id=$1 AND rol=$2)`,
+          [id, r.rol, r.nuevo]
+        )
+      }
+    } else {
+      await client.query('DELETE FROM firmas WHERE albaran_id=$1 AND rol=$2 AND NOT firmado', [id, r.rol])
+    }
+    const texto = [r.anterior && `retirado del panel de ${r.anterior}`, r.nuevo && `añadido al panel de ${r.nuevo}`]
+      .filter(Boolean).join(' y ')
+    await client.query('INSERT INTO actividad (albaran_id,ts,texto,actor,created_at) VALUES ($1,$2,$3,$4,clock_timestamp())', [id, fecha, texto.charAt(0).toUpperCase() + texto.slice(1), 'Sistema'])
+  }
+  // Revocar el enlace de campo que pudiera tener la empresa anterior
+  let tokenRegenerado = false
+  if (roles.length && prev.campo_token && !['cerrado', 'cancelado'].includes(prev.estado)) {
+    await client.query('UPDATE albaranes SET campo_token=$1 WHERE id=$2', [crypto.randomBytes(24).toString('hex'), id])
+    await client.query('INSERT INTO actividad (albaran_id,ts,texto,actor,created_at) VALUES ($1,$2,$3,$4,clock_timestamp())',
+      [id, fecha, 'Enlace de campo regenerado por cambio de empresa — el enlace anterior ha dejado de funcionar', 'Sistema'])
+    tokenRegenerado = true
+  }
+  return { roles, tokenRegenerado }
+}
+
 // ── PATCH /albaranes/:id  (requiere auth) ─────────────────────────
 router.patch('/:id', requireAuth, async (req, res) => {
   const { campos, pesadaCampos, descripcion } = req.body
@@ -906,14 +990,17 @@ router.patch('/:id', requireAuth, async (req, res) => {
   const actorNombre = req.user.nombre || 'Oficina'
   const esSuperadmin = req.user.nivel === 'superadmin'
 
-  const { rows: estadoRows } = await pool.query('SELECT estado FROM albaranes WHERE id=$1', [id])
-  const estabaCerrado = estadoRows[0]?.estado === 'cerrado'
+  const { rows: [prev] } = await pool.query('SELECT * FROM albaranes WHERE id=$1', [id])
+  if (!prev) return res.status(404).json({ error: 'No encontrado' })
+  const estabaCerrado = prev.estado === 'cerrado'
 
   // Bloquear edición de albarán cerrado para usuarios no-superadmin
   if (!esSuperadmin && estabaCerrado) {
     return res.status(403).json({ error: 'El albarán está cerrado y no puede editarse.' })
   }
 
+  let cambiosTexto = []   // "Campo: antes → después", para la actividad
+  let actividadRegistrada = false
   if (campos && Object.keys(campos).length) {
     if ('certificacion' in campos) {
       const c = campos.certificacion
@@ -921,10 +1008,64 @@ router.patch('/:id', requireAuth, async (req, res) => {
         : (typeof c === 'string' && c ? c.split(',').filter(Boolean) : [])
     }
     const safeCols = Object.keys(campos).filter(k => ALLOWED_ALBARAN_COLS.has(k))
-    if (safeCols.length) {
-      const sets = safeCols.map((k, i) => `${k} = $${i+2}`).join(', ')
-      const vals = safeCols.map(k => MATRICULAS.includes(k) ? matricula(campos[k]) : campos[k])
-      await pool.query(`UPDATE albaranes SET ${sets} WHERE id = $1`, [id, ...vals])
+    const vals = safeCols.map(k => MATRICULAS.includes(k) ? matricula(campos[k]) : (campos[k] === '' ? null : campos[k]))
+    const nuevoDe = Object.fromEntries(safeCols.map((k, i) => [k, vals[i]]))
+    cambiosTexto = describirCambios(prev, nuevoDe)
+
+    // Cambio de empresa: la firma ya registrada es evidencia de quien firmó y no se traspasa
+    const reasignaciones = EMPRESA_COLS
+      .filter(rol => rol in nuevoDe && (nuevoDe[rol] || null) !== (prev[rol] || null))
+      .map(rol => ({ rol, anterior: prev[rol] || null, nuevo: nuevoDe[rol] || null }))
+    if (reasignaciones.length) {
+      const { rows: firmadas } = await pool.query(
+        'SELECT rol, actor FROM firmas WHERE albaran_id=$1 AND firmado AND rol = ANY($2)',
+        [id, reasignaciones.map(r => r.rol)]
+      )
+      if (firmadas.length) {
+        const f = firmadas[0]
+        return res.status(409).json({ error: `${ETIQUETA_EMPRESA[f.rol]} ${f.actor || ''} ya ha firmado este albarán; no se puede cambiar de empresa.`.replace(/\s+/g, ' ') })
+      }
+    }
+
+    // Datos + reasignación en una sola transacción: o se aplica todo o nada
+    const client = await pool.connect()
+    let reasignado = null
+    try {
+      await client.query('BEGIN')
+      if (safeCols.length) {
+        const sets = safeCols.map((k, i) => `${k} = $${i+2}`).join(', ')
+        await client.query(`UPDATE albaranes SET ${sets} WHERE id = $1`, [id, ...vals])
+      }
+      // Primero la línea de "qué cambió" y después sus consecuencias (paneles, enlace)
+      await client.query('INSERT INTO actividad (albaran_id,ts,texto,actor,created_at) VALUES ($1,$2,$3,$4,clock_timestamp())',
+        [id, fecha, textoEdicion(descripcion, cambiosTexto), actorNombre])
+      actividadRegistrada = true
+      if (reasignaciones.length) {
+        const tipoFinal = 'tipo' in nuevoDe ? nuevoDe.tipo : prev.tipo
+        reasignado = await aplicarReasignaciones(client, { id, prev, tipoFinal, reasignaciones, fecha, actorNombre })
+      }
+      await client.query('COMMIT')
+    } catch (e) {
+      await client.query('ROLLBACK')
+      console.error(e)
+      return res.status(500).json({ error: 'Error interno al guardar los cambios' })
+    } finally {
+      client.release()
+    }
+    if (reasignado) {
+      for (const r of reasignaciones) {
+        registrarAuditoria({
+          usuario: req.user, accion: 'reasignar_empresa', entidad: 'albaran', entidadId: id,
+          detalle: `${ETIQUETA_EMPRESA[r.rol]}: ${r.anterior || '—'} → ${r.nuevo || '—'}${reasignado.tokenRegenerado ? ' · enlace de campo regenerado' : ''}`,
+        })
+      }
+      // Si ya estaba en campo, la nueva empresa recibe el aviso que habría recibido al enviarlo
+      if (prev.estado === 'pendiente_campo') {
+        fetchOne(id).then(a => {
+          if (reasignado.roles.includes('proveedor'))   notificarProveedor(a)
+          if (reasignado.roles.includes('astilladora')) notificarAstilladora(a)
+        }).catch(() => {})
+      }
     }
     // Cambiar de proveedor o de tipo de operación cambia la referencia SURE heredada
     // (un albarán cerrado conserva la que tenía al cerrarse)
@@ -959,10 +1100,12 @@ router.patch('/:id', requireAuth, async (req, res) => {
     }
   }
 
-  await pool.query(
-    'INSERT INTO actividad (albaran_id,ts,texto,actor) VALUES ($1,$2,$3,$4)',
-    [id, fecha, descripcion || 'Datos editados manualmente', actorNombre]
-  )
+  if (!actividadRegistrada) {
+    await pool.query(
+      'INSERT INTO actividad (albaran_id,ts,texto,actor) VALUES ($1,$2,$3,$4)',
+      [id, fecha, descripcion || 'Datos editados manualmente', actorNombre]
+    )
+  }
 
   // Si oficina completa el origen por el proveedor, su paso puede quedar cerrado
   if (campos && 'origen' in campos) {
@@ -973,7 +1116,7 @@ router.patch('/:id', requireAuth, async (req, res) => {
   if (estabaCerrado) {
     registrarAuditoria({
       usuario: req.user, accion: 'editar_cerrado', entidad: 'albaran', entidadId: id,
-      detalle: descripcion || 'Edición de albarán ya cerrado (override superadmin)',
+      detalle: textoEdicion(descripcion || 'Edición de albarán ya cerrado (override superadmin)', cambiosTexto),
     })
   }
 

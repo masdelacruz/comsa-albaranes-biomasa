@@ -25,6 +25,7 @@ const RAIZ_SESION = 'historial'
 const CAMPOS_MASIVOS = ['fecha', 'proveedor', 'astilladora', 'transportista', 'instalacion', 'especie', 'estella']
 const ETIQUETA_CAMPO = { fecha: 'Fecha', proveedor: 'Proveedor', astilladora: 'Astilladora', transportista: 'Transportista', instalacion: 'Instalación', especie: 'Especie', estella: 'Estella' }
 const SOLO_OP1 = new Set(['astilladora', 'transportista'])  // en Opción 2 no existen
+const EMPRESAS = new Set(['proveedor', 'astilladora', 'transportista', 'instalacion'])
 const esOp1 = (a) => !!a.tipo?.includes('1')
 const formMasivoVacio = () => Object.fromEntries(CAMPOS_MASIVOS.map(k => [k, '']))
 const ANULABLE = (a) => !!a && a.estado !== 'cerrado' && a.estado !== 'cancelado'
@@ -85,6 +86,7 @@ export default function Historial({ albaranes, empresas = [], usuario, refetch, 
   const [enviandoACampo,    setEnviandoACampo]    = useState(false)
   const [confirmBorrarFila, setConfirmBorrarFila] = useState(null)  // id del albaran a borrar individualmente
   const [modalEditar,       setModalEditar]       = useState(false)
+  const [pasoEditar,        setPasoEditar]        = useState('form')  // 'form' | 'confirmar' (cambio de empresa)
   const [formMasivo,        setFormMasivo]        = useState(formMasivoVacio)
   const [guardandoMasivo,   setGuardandoMasivo]   = useState(false)
   const [opcionesMaterial,  setOpcionesMaterial]  = useState(null)  // { especie, estella } de /elementos, se carga al abrir
@@ -170,7 +172,7 @@ export default function Historial({ albaranes, empresas = [], usuario, refetch, 
   const albaranesSeleccionados = () => [...seleccionados].map(id => albaranes.find(x => x.id === id)).filter(Boolean)
 
   const abrirEditarMasivo = () => {
-    setFormMasivo(formMasivoVacio()); setErrorMasivo(''); setModalEditar(true)
+    setFormMasivo(formMasivoVacio()); setErrorMasivo(''); setPasoEditar('form'); setModalEditar(true)
     if (!opcionesMaterial) {
       api.get('/elementos')
         .then(d => setOpcionesMaterial({ especie: (d?.especie || []).map(e => e.valor), estella: (d?.estella || []).map(e => e.valor) }))
@@ -181,23 +183,53 @@ export default function Historial({ albaranes, empresas = [], usuario, refetch, 
   // Un albarán cerrado solo lo puede editar un superadmin (la API también lo impide)
   const editables = () => albaranesSeleccionados().filter(a => esSuperadmin || a.estado !== 'cerrado')
 
-  const handleEditarMasivo = async () => {
+  // Qué se enviará a cada albarán: sin campos que no aplican a su tipo, sin los que
+  // ya tienen ese valor y sin cambiar una empresa que ya ha firmado (su firma no se traspasa)
+  const planEdicion = () => {
     const cambios = CAMPOS_MASIVOS.filter(k => formMasivo[k])
-    if (!cambios.length) return
+    const plan = []
+    const bloqueados = []  // { a, k } empresa ya firmada
+    for (const a of editables()) {
+      const campos = {}
+      for (const k of cambios) {
+        if (SOLO_OP1.has(k) && !esOp1(a)) continue
+        const actual = k === 'fecha' ? a.fecha?.slice(0, 10) : a[k]
+        if ((actual || '') === formMasivo[k]) continue
+        if (EMPRESAS.has(k) && a.firmas?.[k]?.firmado) { bloqueados.push({ a, k }); continue }
+        campos[k] = formMasivo[k]
+      }
+      if (Object.keys(campos).length) plan.push({ a, campos })
+    }
+    // Por cada empresa que cambia: de qué empresas salen los albaranes y a cuál van
+    const movimientos = cambios.filter(k => EMPRESAS.has(k)).map(k => {
+      const origen = {}
+      for (const { a, campos } of plan) if (k in campos) { const o = a[k] || ''; origen[o] = (origen[o] || 0) + 1 }
+      return { k, destino: formMasivo[k], origen: Object.entries(origen) }
+    }).filter(m => m.origen.length)
+    return { plan, bloqueados, movimientos }
+  }
+
+  const ejecutarEdicionMasiva = async () => {
+    const { plan } = planEdicion()
     setGuardandoMasivo(true); setErrorMasivo('')
-    let fallos = 0
+    const errores = []
     try {
-      await enTandas(editables(), async (a) => {
-        const campos = Object.fromEntries(cambios.filter(k => !SOLO_OP1.has(k) || esOp1(a)).map(k => [k, formMasivo[k]]))
-        if (!Object.keys(campos).length) return
-        const nombres = Object.keys(campos).map(k => ETIQUETA_CAMPO[k]).join(', ')
-        try { await api.patch(`/albaranes/${a.id}`, { campos, descripcion: `Edición múltiple: ${nombres}` }) }
-        catch { fallos++ }
+      await enTandas(plan, async ({ a, campos }) => {
+        try { await api.patch(`/albaranes/${a.id}`, { campos, descripcion: 'Edición múltiple' }) }
+        catch (e) { errores.push(`${a.id}: ${e.message}`) }
       })
       if (refetch) await refetch()
-      if (fallos) { setErrorMasivo(`${fallos} no se pudieron actualizar. Revisa la selección e inténtalo de nuevo.`); return }
+      if (errores.length) { setPasoEditar('form'); setErrorMasivo(`No se pudieron actualizar ${errores.length}: ${errores.slice(0, 3).join(' · ')}${errores.length > 3 ? '…' : ''}`); return }
       setModalEditar(false); cancelarSeleccion()
     } finally { setGuardandoMasivo(false) }
+  }
+
+  // Si se cambia alguna empresa, antes de aplicar se pide confirmación explícita
+  const handleEditarMasivo = () => {
+    const { plan, movimientos } = planEdicion()
+    if (!plan.length) return
+    if (movimientos.length) { setPasoEditar('confirmar'); return }
+    ejecutarEdicionMasiva()
   }
 
   const abrirAnularMasivo = () => { setConMotivo(false); setMotivoMasivo(''); setErrorMasivo(''); setModalAnular(true) }
@@ -679,8 +711,10 @@ export default function Historial({ albaranes, empresas = [], usuario, refetch, 
         const omitidos = seleccionados.size - ed.length
         const sinOp1 = ed.filter(a => !esOp1(a)).length
         const tocaOp1 = !!(formMasivo.astilladora || formMasivo.transportista)
-        const hayCambios = CAMPOS_MASIVOS.some(k => formMasivo[k])
+        const { plan, bloqueados, movimientos } = planEdicion()
         const set = (k, v) => setFormMasivo(f => ({ ...f, [k]: v }))
+        const confirmando = pasoEditar === 'confirmar'
+        const nAlb = (n) => `${n} ${n === 1 ? 'albarán' : 'albaranes'}`
         const opciones = {
           proveedor: empresasActivas('proveedor'), astilladora: empresasActivas('astilladora'),
           transportista: empresasActivas('transportista'), instalacion: empresasActivas('instalacion'),
@@ -690,7 +724,35 @@ export default function Historial({ albaranes, empresas = [], usuario, refetch, 
         return (
         <div style={{position:'fixed',inset:0,background:'rgba(0,0,0,0.4)',display:'flex',alignItems:'center',justifyContent:'center',zIndex:200,padding:20}}>
           <div style={{background:'#fff',borderRadius:'var(--radius-xl)',padding:28,width:'100%',maxWidth:440,boxShadow:'0 20px 60px rgba(0,0,0,0.15)',maxHeight:'calc(100vh - 40px)',overflowY:'auto'}}>
-            <div style={{fontSize:16,fontWeight:600,marginBottom:4}}>Editar {ed.length} {ed.length === 1 ? 'albarán' : 'albaranes'}</div>
+            {confirmando ? (<>
+            {/* Confirmación del cambio de empresa: de X a Y */}
+            <div style={{fontSize:16,fontWeight:600,marginBottom:12}}>¿Seguro que quieres cambiar de empresa {plan.length === 1 ? 'este albarán' : `estos ${plan.length} albaranes`}?</div>
+            {movimientos.map(m => (
+              <div key={m.k} className="masivo-movimiento">
+                <div className="masivo-label">{ETIQUETA_CAMPO[m.k]}</div>
+                {m.origen.map(([o, n]) => (
+                  <div key={o}>Quitar {nAlb(n)} de <strong>{o || `sin ${ETIQUETA_CAMPO[m.k].toLowerCase()}`}</strong> y {n === 1 ? 'pasarlo' : 'pasarlos'} a <strong>{m.destino}</strong></div>
+                ))}
+              </div>
+            ))}
+            <ul className="masivo-consecuencias">
+              <li>Dejarán de verse en el panel y en los avisos de la empresa anterior.</li>
+              <li>Su firma pendiente pasa a la nueva empresa.</li>
+              <li>El enlace de campo actual dejará de funcionar; se genera uno nuevo.</li>
+              <li>Cada cambio queda registrado en la actividad del albarán y en auditoría.</li>
+            </ul>
+            {bloqueados.length > 0 && (
+              <p className="masivo-nota">{nAlb(bloqueados.length)} no cambia{bloqueados.length === 1 ? '' : 'n'} de empresa porque esa empresa ya ha firmado: {bloqueados.slice(0, 5).map(b => b.a.id).join(', ')}{bloqueados.length > 5 ? '…' : ''}.</p>
+            )}
+            {errorMasivo && <p className="masivo-nota masivo-error">{errorMasivo}</p>}
+            <div style={{display:'flex',gap:8,justifyContent:'flex-end',marginTop:20}}>
+              <button className="btn" onClick={() => setPasoEditar('form')} disabled={guardandoMasivo}>Volver</button>
+              <button className="btn btn-primary" disabled={guardandoMasivo} onClick={ejecutarEdicionMasiva}>
+                {guardandoMasivo ? 'Guardando...' : 'Sí, cambiar'}
+              </button>
+            </div>
+            </>) : (<>
+            <div style={{fontSize:16,fontWeight:600,marginBottom:4}}>Editar {nAlb(ed.length)}</div>
             <p style={{fontSize:13,color:'var(--gray-500)',margin:'0 0 16px'}}>Solo se cambian los campos que rellenes; el resto se mantiene como está.</p>
             {CAMPOS_MASIVOS.map(k => (
               <div key={k} className="masivo-campo">
@@ -700,19 +762,24 @@ export default function Historial({ albaranes, empresas = [], usuario, refetch, 
                   : <SelectField value={formMasivo[k]} onChange={v => set(k, v)} options={opciones[k]} placeholder="Sin cambios" clearable />}
               </div>
             ))}
-            {(omitidos > 0 || (sinOp1 > 0 && tocaOp1)) && (
+            {(omitidos > 0 || (sinOp1 > 0 && tocaOp1) || bloqueados.length > 0) && (
               <p className="masivo-nota">
                 {omitidos > 0 && <>{omitidos} {omitidos === 1 ? 'está cerrado y no se modificará' : 'están cerrados y no se modificarán'}. </>}
-                {sinOp1 > 0 && tocaOp1 && <>Astilladora y transportista no se aplican a {sinOp1 === 1 ? 'el de' : `los ${sinOp1} de`} Opción 2.</>}
+                {sinOp1 > 0 && tocaOp1 && <>Astilladora y transportista no se aplican a {sinOp1 === 1 ? 'el de' : `los ${sinOp1} de`} Opción 2. </>}
+                {bloqueados.length > 0 && <>{nAlb(bloqueados.length)} no cambia{bloqueados.length === 1 ? '' : 'n'} de empresa porque ya está firmado por la actual.</>}
               </p>
+            )}
+            {CAMPOS_MASIVOS.some(k => formMasivo[k]) && !plan.length && (
+              <p className="masivo-nota">Los albaranes seleccionados ya tienen esos valores.</p>
             )}
             {errorMasivo && <p className="masivo-nota masivo-error">{errorMasivo}</p>}
             <div style={{display:'flex',gap:8,justifyContent:'flex-end',marginTop:20}}>
               <button className="btn" onClick={() => setModalEditar(false)} disabled={guardandoMasivo}>Cancelar</button>
-              <button className="btn btn-primary" disabled={!hayCambios || !ed.length || guardandoMasivo} onClick={handleEditarMasivo}>
-                {guardandoMasivo ? 'Guardando...' : 'Aplicar cambios'}
+              <button className="btn btn-primary" disabled={!plan.length || guardandoMasivo} onClick={handleEditarMasivo}>
+                {guardandoMasivo ? 'Guardando...' : movimientos.length ? 'Continuar' : 'Aplicar cambios'}
               </button>
             </div>
+            </>)}
           </div>
         </div>
         )

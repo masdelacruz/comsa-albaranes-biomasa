@@ -200,6 +200,7 @@ export default function DetalleAlbaran({ albaranes, simularFirma, updateFirma, s
   const [duplicarOpen,    setDuplicarOpen]        = useState(false)
   const [numCopias,       setNumCopias]           = useState(1)
   const [duplicando,      setDuplicando]          = useState(false)
+  const [confirmEmpresa,  setConfirmEmpresa]      = useState(null)  // [{ k, de, a }] cambios de empresa pendientes de confirmar
 
   const mostrarToast = (msg) => {
     setToast(msg)
@@ -480,7 +481,15 @@ export default function DetalleAlbaran({ albaranes, simularFirma, updateFirma, s
     setEditandoDatos(true)
   }
 
-  const guardarDatos = async () => {
+  const guardarDatos = async (confirmado = false) => {
+    // Cambiar una empresa mueve el albarán por completo (panel, firma pendiente,
+    // enlace de campo): se pide confirmación explícita antes de hacerlo
+    const ETQ = { proveedor: 'Proveedor', astilladora: 'Astilladora', transportista: 'Transportista', instalacion: 'Instalación' }
+    const movimientos = Object.keys(ETQ)
+      .filter(k => (formDatos[k] || '') !== (a[k] || ''))
+      .map(k => ({ k, etiqueta: ETQ[k], de: a[k] || '', a: formDatos[k] || '' }))
+    if (movimientos.length && !confirmado) { setConfirmEmpresa(movimientos); return }
+    setConfirmEmpresa(null)
     setGuardando(true)
     try {
       await actualizarAlbaran(a.id, {
@@ -505,6 +514,8 @@ export default function DetalleAlbaran({ albaranes, simularFirma, updateFirma, s
       }, null, 'Datos del albarán editados')
       setEditandoDatos(false)
       mostrarToast('Datos del albarán actualizados')
+    } catch (e) {
+      mostrarToast(e.message || 'No se pudieron guardar los cambios')
     } finally {
       setGuardando(false)
     }
@@ -898,7 +909,7 @@ export default function DetalleAlbaran({ albaranes, simularFirma, updateFirma, s
                 )}
                 {editandoDatos && (
                   <div style={{display:'flex',gap:4}}>
-                    <button className="btn btn-primary" style={{fontSize:11,padding:'3px 8px'}} onClick={guardarDatos} disabled={guardando}>
+                    <button className="btn btn-primary" style={{fontSize:11,padding:'3px 8px'}} onClick={() => guardarDatos()} disabled={guardando}>
                       <Check size={11} /> Guardar
                     </button>
                     <button className="btn" style={{fontSize:11,padding:'3px 8px'}} onClick={() => setEditandoDatos(false)} disabled={guardando}>
@@ -1459,6 +1470,32 @@ export default function DetalleAlbaran({ albaranes, simularFirma, updateFirma, s
                 : <><CheckCircle size={14} /> Confirmar y cerrar</>
               }
             </button>
+          </div>
+        </div>
+      </div>
+    )}
+
+    {confirmEmpresa && (
+      <div style={{position:'fixed',inset:0,background:'rgba(0,0,0,0.4)',display:'flex',alignItems:'center',justifyContent:'center',zIndex:200,padding:20}}>
+        <div style={{background:'#fff',borderRadius:'var(--radius-xl)',padding:28,width:'100%',maxWidth:420,boxShadow:'0 20px 60px rgba(0,0,0,0.15)'}}>
+          <div style={{fontSize:16,fontWeight:600,marginBottom:12}}>¿Seguro que quieres cambiar de empresa este albarán?</div>
+          {confirmEmpresa.map(m => (
+            <div key={m.k} style={{fontSize:13.5,color:'var(--gray-700)',lineHeight:1.6,marginBottom:8}}>
+              <div style={{fontSize:12.5,fontWeight:600,color:'var(--gray-600)'}}>{m.etiqueta}</div>
+              {m.a
+                ? <>Quitarlo de <strong>{m.de || `sin ${m.etiqueta.toLowerCase()}`}</strong> y pasarlo a <strong>{m.a}</strong></>
+                : <>Quitarlo de <strong>{m.de}</strong> y dejarlo sin {m.etiqueta.toLowerCase()}</>}
+            </div>
+          ))}
+          <ul style={{margin:'6px 0 0',paddingLeft:18,fontSize:12.5,color:'var(--gray-500)',lineHeight:1.6}}>
+            <li>Dejará de verse en el panel y en los avisos de la empresa anterior.</li>
+            <li>Su firma pendiente pasa a la nueva empresa.</li>
+            <li>El enlace de campo actual dejará de funcionar; se genera uno nuevo.</li>
+            <li>El cambio queda registrado en la actividad y en auditoría.</li>
+          </ul>
+          <div style={{display:'flex',gap:8,justifyContent:'flex-end',marginTop:20}}>
+            <button className="btn" onClick={() => setConfirmEmpresa(null)}>Volver</button>
+            <button className="btn btn-primary" onClick={() => guardarDatos(true)} disabled={guardando}>Sí, cambiar</button>
           </div>
         </div>
       </div>
