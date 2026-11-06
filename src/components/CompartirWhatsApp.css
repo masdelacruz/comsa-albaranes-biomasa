@@ -56,3 +56,10 @@
 .cw-opcion:disabled { opacity:0.5; cursor:not-allowed; }
 .cw-nuevo .modal-field + .modal-field { margin-top:8px; }
 .em-modal .cw-nuevo .modal-field input[type=email], .em-modal .cw-nuevo > .modal-field input { padding:8px 11px; border-radius:5px; }
+
+/* Enviar mensaje: misma altura en WhatsApp y Email. Cabecera y pie fijos;
+   el mensaje ocupa el hueco que queda (y el cuerpo hace scroll si no cabe). */
+.modal.em-modal.cw-modal { height:min(680px, calc(100vh - 48px)); overflow:hidden; }
+.cw-modal .em-body { flex:1; min-height:0; display:flex; flex-direction:column; overscroll-behavior:contain; }
+.cw-modal .em-body > .em-section:last-child { flex:1; display:flex; flex-direction:column; min-height:220px; }
+.cw-modal .cw-texto { flex:1; min-height:140px; resize:none; }
