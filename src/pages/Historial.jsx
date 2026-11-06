@@ -100,6 +100,18 @@ export default function Historial({ albaranes, empresas = [], usuario, refetch, 
 
   const esSuperadmin = usuario?.nivel === 'superadmin'
 
+  // Con una ventana abierta, la rueda solo mueve la ventana: el listado de detrás queda quieto
+  const hayModal = modalEditar || modalAnular || modalAdjuntar || confirmEliminar || !!confirmBorrarFila
+  useEffect(() => {
+    if (!hayModal) return
+    const html = document.documentElement
+    const barra = window.innerWidth - html.clientWidth   // evita el salto al desaparecer la barra
+    const antes = { overflow: html.style.overflow, paddingRight: html.style.paddingRight }
+    html.style.overflow = 'hidden'
+    if (barra > 0) html.style.paddingRight = `${barra}px`
+    return () => { html.style.overflow = antes.overflow; html.style.paddingRight = antes.paddingRight }
+  }, [hayModal])
+
   const toggleSeleccion   = (id) => setSeleccionados(prev => { const n = new Set(prev); n.has(id) ? n.delete(id) : n.add(id); return n })
   const seleccionarTodos  = () => setSeleccionados(new Set(filtrados.map(a => a.id)))
   const cancelarSeleccion = () => { setSeleccionando(false); setSeleccionados(new Set()) }
@@ -722,7 +734,7 @@ export default function Historial({ albaranes, empresas = [], usuario, refetch, 
           estella: opcionesMaterial?.estella?.length ? opcionesMaterial.estella : estellas,
         }
         return (
-        <div style={{position:'fixed',inset:0,background:'rgba(0,0,0,0.4)',display:'flex',justifyContent:'center',zIndex:200,padding:20,overflowY:'auto'}}>
+        <div style={{position:'fixed',inset:0,background:'rgba(0,0,0,0.4)',display:'flex',justifyContent:'center',zIndex:200,padding:20,overflowY:'auto',overscrollBehavior:'contain'}}>
           {/* Sin overflow propio: si no, recorta los desplegables. El scroll, si hace falta, lo hace el fondo */}
           <div className="masivo-modal" data-sf-limite style={{background:'#fff',borderRadius:'var(--radius-xl)',padding:28,width:'100%',maxWidth:440,boxShadow:'0 20px 60px rgba(0,0,0,0.15)',margin:'auto 0',height:'fit-content'}}>
             {confirmando ? (<>

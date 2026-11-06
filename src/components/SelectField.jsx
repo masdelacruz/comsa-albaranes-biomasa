@@ -19,9 +19,18 @@ export default function SelectField({ value, onChange, options, placeholder, cle
     const abajo  = lim.bottom - trig.bottom - 12
     const encima = trig.top - lim.top - 12
     const haciaArriba = alto > abajo && encima > abajo
+    // Altura en opciones enteras: que la última visible no quede cortada a medias
+    let max = Math.max(96, Math.min(tope, haciaArriba ? encima : abajo))
+    const opcion = lista.querySelector('.sf-option')
+    if (opcion && lista.scrollHeight > max) {
+      const cs = getComputedStyle(lista)
+      const extra = parseFloat(cs.paddingTop) + parseFloat(cs.paddingBottom) + parseFloat(cs.borderTopWidth) + parseFloat(cs.borderBottomWidth)
+      const h = opcion.getBoundingClientRect().height
+      max = Math.max(2, Math.floor((max - extra) / h)) * h + extra
+    }
     // Directo al DOM (data-arriba y max-height): es solo colocación, no estado de React
     wrapRef.current.dataset.arriba = haciaArriba ? '1' : ''
-    lista.style.maxHeight = `${Math.max(96, Math.min(tope, haciaArriba ? encima : abajo))}px`
+    lista.style.maxHeight = `${max}px`
   }, [open])
 
   useEffect(() => {
