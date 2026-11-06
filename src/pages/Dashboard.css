@@ -100,26 +100,56 @@
 .dash-sec-titulo svg { color:var(--gray-400); }
 .dash-sec-sub { font-size:12px; color:var(--gray-400); }
 
-.dash-cli { display:flex; align-items:center; gap:16px; padding:12px 18px; }
+.dash-cli { padding:12px 18px; }
+.dash-cli-top { display:flex; align-items:center; gap:16px; }
 .dash-cli + .dash-cli { border-top:1px solid #F2F2EF; }
 .dash-cli-info { flex:1; min-width:0; display:flex; flex-direction:column; gap:2px; }
 .dash-cli-nombre { font-size:13.5px; font-weight:600; color:var(--gray-900); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
 .dash-cli-rol { margin-left:6px; font-size:11.5px; font-weight:500; color:var(--gray-400); }
 .dash-cli-meta { font-size:12px; color:var(--gray-500); }
-.dash-cli-ids { display:flex; flex-wrap:wrap; gap:2px 10px; margin-top:2px; }
-.dash-cli-ids button {
-  background:none; border:none; padding:0; cursor:pointer;
-  font-family:var(--font-mono); font-size:11.5px; color:var(--gray-500);
-}
-.dash-cli-ids button:hover { color:var(--blue-700); text-decoration:underline; }
 .dash-cli-acc { display:flex; gap:6px; flex-shrink:0; }
 .dash-cli-acc .btn { font-size:12px; padding:6px 10px; }
 .dash-cli-wa { color:#065f46; }
 
 @media (max-width: 760px) {
-  .dash-cli { flex-direction:column; align-items:stretch; gap:10px; }
+  .dash-cli-top { flex-direction:column; align-items:stretch; gap:10px; }
+  .dash-dia-fila { flex-wrap:wrap; }
+  .dash-dia-barra { order:5; flex-basis:100%; margin-left:22px; }
   .dash-cli-acc .btn { flex:1; justify-content:center; }
 }
 /* Constancia de lo ya compartido con el cliente (solo matiz en el texto) */
 .dash-cli-meta .compartido { display:inline-flex; align-items:center; gap:3px; color:var(--green-600); }
-.dash-cli-ids button.compartido { color:var(--green-600); }
+
+/* Seguimiento por día: "7 de 8 gestionados"; al abrir, cada albarán */
+.dash-dias { margin-top:8px; display:flex; flex-direction:column; }
+.dash-dia-fila {
+  width:100%; display:flex; align-items:center; gap:10px; padding:6px 0;
+  background:none; border:none; cursor:pointer; text-align:left; font-family:inherit;
+  font-size:12.5px; color:var(--gray-700);
+}
+.dash-dia-fila:hover .dash-dia-nombre { color:var(--gray-900); }
+.dash-dia-chevron { color:var(--gray-400); flex-shrink:0; transition:transform 0.15s; }
+.dash-dia.abierto .dash-dia-chevron { transform:rotate(90deg); }
+.dash-dia-nombre { width:130px; flex-shrink:0; font-weight:500; text-transform:capitalize; }
+.dash-dia-barra { flex:0 1 160px; height:4px; border-radius:2px; background:var(--gray-100); overflow:hidden; }
+.dash-dia-barra span { display:block; height:100%; background:var(--green-400); border-radius:2px; }
+.dash-dia-cuenta { color:var(--gray-600); }
+.dash-dia-cuenta strong { font-weight:600; color:var(--gray-900); }
+.dash-dia-cuenta.completo strong { color:var(--green-600); }
+.dash-dia-resto { color:var(--gray-500); }
+
+.dash-dia-detalle { margin:2px 0 8px 24px; padding-left:12px; border-left:1px solid var(--gray-200); display:flex; flex-direction:column; gap:3px; }
+.dash-dia-alb { display:flex; align-items:baseline; gap:10px; font-size:12.5px; }
+.dash-dia-id { background:none; border:none; padding:0; cursor:pointer; font-family:var(--font-mono); font-size:12px; color:var(--gray-700); }
+.dash-dia-id:hover { color:var(--blue-700); text-decoration:underline; }
+.dash-dia-hora { width:38px; flex-shrink:0; font-family:var(--font-mono); font-size:11.5px; color:var(--gray-400); }
+.dash-dia-estado { display:inline-flex; align-items:center; gap:4px; color:var(--gray-500); min-width:0; }
+.dash-dia-estado.gestionado { color:var(--green-600); }
+.dash-dia-estado.rechazado { color:var(--orange-700); }
+.dash-dia-estado .compartido { color:var(--green-600); }
+.dash-dia-msg { margin-top:6px; display:flex; align-items:center; flex-wrap:wrap; gap:4px 12px; font-size:12px; color:var(--gray-500); }
+.dash-dia-msg button {
+  display:inline-flex; align-items:center; gap:4px; background:none; border:none; padding:0; cursor:pointer;
+  font-family:inherit; font-size:12px; color:var(--gray-700);
+}
+.dash-dia-msg button:hover { color:var(--gray-900); text-decoration:underline; }

@@ -41,6 +41,69 @@ export function pendientesPorCliente(albaranes) {
   }).sort((x, y) => (x.albaranes[0]?.fecha || '').localeCompare(y.albaranes[0]?.fecha || ''))
 }
 
+// ── Seguimiento por día ─────────────────────────────────────────────
+// Para cada cliente con algo pendiente: por cada día con trabajo suyo, cuántos
+// albaranes le han llegado y cuántos ha gestionado ya ("7 de 8"). Solo cuentan
+// los que ya le han llegado (no los que siguen en un paso anterior).
+const ROLES_CON_PASO = ['proveedor', 'astilladora', 'instalacion']
+
+export function estadoPasoCliente(a, rol) {
+  const f = a.firmas?.[rol]
+  if (!f) return null
+  if (f.firmado) return 'gestionado'
+  if (a.estado === `rechazado_campo_${rol}`) return 'rechazado'
+  if (pasoPendiente(a)?.rol === rol) return 'pendiente'
+  return null   // aún no le toca, planificado, anulado o cerrado sin su firma
+}
+
+const hoyISO = () => {
+  const d = new Date()
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
+}
+
+export function seguimientoPorCliente(albaranes) {
+  const hoy = hoyISO()
+  const clientes = new Map()
+  for (const a of albaranes) {
+    for (const rol of ROLES_CON_PASO) {
+      const estado = estadoPasoCliente(a, rol)
+      if (!estado) continue
+      const actor = a.firmas[rol].actor || a[rol]
+      if (!actor) continue
+      const clave = `${rol}|${actor.toLowerCase()}`
+      if (!clientes.has(clave)) clientes.set(clave, { clave, rol, nombre: actor, dias: new Map() })
+      const dia = (a.fecha || '').slice(0, 10) || 'sin-fecha'
+      const c = clientes.get(clave)
+      if (!c.dias.has(dia)) c.dias.set(dia, [])
+      c.dias.get(dia).push({ a, estado, firma: a.firmas[rol] })
+    }
+  }
+  const resultado = new Map()
+  for (const c of clientes.values()) {
+    // Se muestran los días con algo pendiente y, para que quede constancia, el de hoy
+    const dias = [...c.dias.entries()]
+      .filter(([dia, items]) => dia === hoy || items.some(i => i.estado === 'pendiente'))
+      .sort(([x], [y]) => x.localeCompare(y))
+      .map(([dia, items]) => {
+        items.sort((x, y) => `${x.a.hora || ''}${x.a.id}`.localeCompare(`${y.a.hora || ''}${y.a.id}`))
+        const cuenta = e => items.filter(i => i.estado === e).length
+        return { dia, items, total: items.length, gestionados: cuenta('gestionado'), pendientes: cuenta('pendiente'), rechazados: cuenta('rechazado') }
+      })
+    if (dias.some(d => d.pendientes)) resultado.set(c.clave, dias)
+  }
+  return resultado
+}
+
+// "Hoy · jue 06/11", "Ayer · mié 05/11", "lun 03/11"
+export function etiquetaDia(dia) {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(dia)) return 'Sin fecha'
+  const [y, m, d] = dia.split('-').map(Number)
+  const fecha = new Date(y, m - 1, d)
+  const corta = fecha.toLocaleDateString('es-ES', { weekday: 'short', day: '2-digit', month: '2-digit' }).replace(',', '')
+  const dif = Math.round((new Date(new Date().toDateString()) - fecha) / 86400000)
+  return dif === 0 ? `Hoy · ${corta}` : dif === 1 ? `Ayer · ${corta}` : dif === -1 ? `Mañana · ${corta}` : corta
+}
+
 const fechaCorta = f => f ? f.slice(0, 10).split('-').reverse().slice(0, 2).join('/') : '—'
 const n = (k, uno, varios) => `${k} ${k === 1 ? uno : varios}`
 
@@ -51,19 +114,35 @@ const QUE_TIENE = {
   transportista: k => `${n(k, 'albarán pendiente', 'albaranes pendientes')} de confirmar`,
 }
 
-const lineaAlbaran = (rol, a, fmt) => {
+const lineaAlbaran = (rol, a, fmt, conFecha = true) => {
   const id = fmt === 'wa' ? `*${a.id}*` : a.id
-  const fecha = `${fechaCorta(a.fecha)}${a.hora ? ' ' + String(a.hora).slice(0, 5) : ''}`
+  const hora = a.hora ? String(a.hora).slice(0, 5) : ''
+  const fecha = conFecha ? `${fechaCorta(a.fecha)}${hora ? ' ' + hora : ''}` : hora
   const resto = rol === 'instalacion'
     ? [a.transportista, [a.matriculaTractora, a.matriculaRemolque].filter(Boolean).join(' · ')]
     : [[a.especie, a.tipoBiomasa].filter(Boolean).join(' '), a.instalacion && `destino ${a.instalacion}`]
   return `• ${[id, fecha, ...resto].filter(Boolean).join(' · ')}`
 }
 
+// Lista de albaranes; si hay varios días, agrupada bajo el título de cada día
+function listaPorDias(rol, albaranes, fmt) {
+  const dias = [...new Set(albaranes.map(a => (a.fecha || '').slice(0, 10)))].sort()
+  if (dias.length <= 1) return albaranes.map(a => lineaAlbaran(rol, a, fmt)).join('\n')
+  return dias.map(dia => {
+    const [y, m, d] = dia.split('-').map(Number)
+    const titulo = dia
+      ? new Date(y, m - 1, d).toLocaleDateString('es-ES', { weekday: 'long', day: '2-digit', month: '2-digit' }).replace(',', '')
+      : 'Sin fecha'
+    const cab = titulo.charAt(0).toUpperCase() + titulo.slice(1)
+    const lineas = albaranes.filter(a => (a.fecha || '').slice(0, 10) === dia).map(a => lineaAlbaran(rol, a, fmt, false))
+    return `${fmt === 'wa' ? `_${cab}_` : cab}\n${lineas.join('\n')}`
+  }).join('\n\n')
+}
+
 // Mensaje para avisar a un cliente de lo que tiene pendiente en su panel.
 // fmt 'wa' usa negritas de WhatsApp; 'email' es texto plano.
 export function mensajeCliente({ rol, nombre, albaranes, panelUrl, fmt = 'wa' }) {
-  const lista = albaranes.map(a => lineaAlbaran(rol, a, fmt)).join('\n')
+  const lista = listaPorDias(rol, albaranes, fmt)
   const acceso = panelUrl
     ? `Accede a tu panel de Comsa Service (es siempre el mismo enlace: guárdalo y no lo compartas fuera de tu empresa):\n${panelUrl}`
     : 'Puedes gestionarlos desde tu panel de Comsa Service.'

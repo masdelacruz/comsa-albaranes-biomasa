@@ -1,12 +1,13 @@
 import { useNavigate } from 'react-router-dom'
 import { useState } from 'react'
-import { Plus, CalendarClock, Truck, PenLine, Droplets, CheckCircle2, List, Users, Mail, Check } from 'lucide-react'
+import { Plus, CalendarClock, Truck, PenLine, Droplets, CheckCircle2, List, Users, Mail, Check, ChevronRight } from 'lucide-react'
 import { prepararVista } from '../hooks/useEstadoSesion'
 import { isoWeek, isoWeekYear } from '../utils/semana'
 import { api } from '../lib/api'
 import { contactosEmpresa } from '../utils/clientes'
-import { pendientesPorCliente, mensajeCliente, asuntoCliente, textoCompartido, ROL_CLIENTE } from '../utils/pasos'
+import { pendientesPorCliente, seguimientoPorCliente, etiquetaDia, pasoPendiente, mensajeCliente, asuntoCliente, textoCompartido, ROL_CLIENTE } from '../utils/pasos'
 import CompartirWhatsApp, { WaIcon } from '../components/CompartirWhatsApp'
+import VistaMensaje from '../components/VistaMensaje'
 import '../components/shared.css'
 import './Dashboard.css'
 
@@ -157,36 +158,60 @@ function Columna({ fase, abierto, onAlternar, esLaMasLarga, onAbrir }) {
 // avisa solo (email y aviso en su panel) al enviar a campo; desde aquí se
 // puede mandar un recordatorio con todo lo pendiente y el enlace a su panel
 // (queda registrado en la actividad de cada albarán).
+// Por cliente, una fila por día: "7 de 8 gestionados". Al abrir el día se ve
+// cada albarán (gestionado cuándo y por quién, pendiente o no gestionado).
+// Todo mensaje se puede ver y copiar antes de enviarlo.
 function PendientesPorCliente({ albaranes, empresas, refetch, onEmpresaActualizada, onAbrir }) {
   const [waModal, setWaModal] = useState(null)
+  const [vista, setVista] = useState(null)        // props de VistaMensaje
   const [marcando, setMarcando] = useState(null)
+  const [abiertos, setAbiertos] = useState(() => new Set())
   const grupos = pendientesPorCliente(albaranes)
+  const seguimiento = seguimientoPorCliente(albaranes)
   if (!grupos.length) return null
 
   const filaEmpresa = g => empresas.find(e => e.nombre === g.nombre && e.tipo === g.rol) || empresas.find(e => e.nombre === g.nombre)
+  const alternar = k => setAbiertos(s => { const n = new Set(s); n.has(k) ? n.delete(k) : n.add(k); return n })
 
-  const marcar = async (g, medio) => {
-    setMarcando(g.clave)
+  const marcar = async (ids, clave, medio) => {
+    setMarcando(clave)
     try {
-      await api.post('/albaranes/notificar', { ids: g.albaranes.map(a => a.id), medio })
+      await api.post('/albaranes/notificar', { ids, medio })
       await refetch?.()
     } catch { /* la marca es informativa: si falla, el aviso ya se ha enviado */ }
     setMarcando(null)
   }
 
-  const whatsapp = g => setWaModal({
-    titulo: `${g.albaranes.length} pendiente${g.albaranes.length === 1 ? '' : 's'} · ${ROL_CLIENTE[g.rol]}`,
-    empresa: filaEmpresa(g), nombreEmpresa: g.nombre,
-    mensaje: nombre => mensajeCliente({ rol: g.rol, nombre, albaranes: g.albaranes, panelUrl: g.panelUrl }),
-    onEnviado: () => marcar(g, 'whatsapp'),
-  })
+  // pendientes: albaranes a incluir en el mensaje (todos los del cliente o los de un día)
+  const titulo = (g, pendientes, dia) =>
+    `${pendientes.length} pendiente${pendientes.length === 1 ? '' : 's'} · ${g.nombre}${dia ? ` · ${etiquetaDia(dia)}` : ''}`
 
-  const email = g => {
+  const whatsapp = (g, pendientes, dia) => {
+    setVista(null)
+    setWaModal({
+      titulo: titulo(g, pendientes, dia),
+      empresa: filaEmpresa(g), nombreEmpresa: g.nombre,
+      mensaje: nombre => mensajeCliente({ rol: g.rol, nombre, albaranes: pendientes, panelUrl: g.panelUrl }),
+      onEnviado: () => marcar(pendientes.map(a => a.id), g.clave, 'whatsapp'),
+    })
+  }
+
+  // Email: primero se ve exactamente lo que saldrá (para, asunto, texto); se puede copiar
+  const email = (g, pendientes, dia) => {
     const emp = filaEmpresa(g)
     const nombre = (contactosEmpresa(emp)[0]?.nombre || '').trim().split(/\s+/)[0]
-    const body = mensajeCliente({ rol: g.rol, nombre, albaranes: g.albaranes, panelUrl: g.panelUrl, fmt: 'email' })
-    window.open(`mailto:${emp?.email || ''}?subject=${encodeURIComponent(asuntoCliente(g.rol, g.albaranes.length))}&body=${encodeURIComponent(body)}`, '_blank')
-    marcar(g, 'email')
+    const asunto = asuntoCliente(g.rol, pendientes.length)
+    const texto = mensajeCliente({ rol: g.rol, nombre, albaranes: pendientes, panelUrl: g.panelUrl, fmt: 'email' })
+    setVista({
+      titulo: titulo(g, pendientes, dia), subtitulo: 'Email · lo que se enviará',
+      para: emp?.email || '', asunto, texto,
+      onEmail: () => {
+        window.open(`mailto:${emp?.email || ''}?subject=${encodeURIComponent(asunto)}&body=${encodeURIComponent(texto)}`, '_blank')
+        marcar(pendientes.map(a => a.id), g.clave, 'email')
+        setVista(null)
+      },
+      onWhatsApp: () => whatsapp(g, pendientes, dia),
+    })
   }
 
   return (
@@ -194,35 +219,76 @@ function PendientesPorCliente({ albaranes, empresas, refetch, onEmpresaActualiza
       <div className="dash-sec-cab">
         <span className="dash-sec-titulo"><Users size={15} strokeWidth={1.8} /> Pendientes por cliente</span>
         <span className="dash-sec-sub">
-          {grupos.length} {grupos.length === 1 ? 'cliente' : 'clientes'}
+          {grupos.length} {grupos.length === 1 ? 'cliente' : 'clientes'} · pulsa un día para ver el detalle
         </span>
       </div>
       {grupos.map(g => {
         const emp = filaEmpresa(g)
+        const dias = seguimiento.get(g.clave) || []
         return (
           <div key={g.clave} className="dash-cli">
-            <div className="dash-cli-info">
-              <div className="dash-cli-nombre">{g.nombre} <span className="dash-cli-rol">{ROL_CLIENTE[g.rol]}</span></div>
-              <div className="dash-cli-meta">
-                {g.albaranes.length} {g.albaranes.length === 1 ? 'albarán' : 'albaranes'}
-                {g.ultimoAviso && <> · <span className="compartido"><Check size={11} /> {textoCompartido(g.ultimoAviso, { conQuien: true })}</span></>}
+            <div className="dash-cli-top">
+              <div className="dash-cli-info">
+                <div className="dash-cli-nombre">{g.nombre} <span className="dash-cli-rol">{ROL_CLIENTE[g.rol]}</span></div>
+                <div className="dash-cli-meta">
+                  {g.albaranes.length} {g.albaranes.length === 1 ? 'pendiente' : 'pendientes'}
+                  {g.ultimoAviso && <> · <span className="compartido"><Check size={11} /> {textoCompartido(g.ultimoAviso, { conQuien: true })}</span></>}
+                </div>
               </div>
-              <div className="dash-cli-ids">
-                {/* Los que ya se le han compartido, en verde */}
-                {g.albaranes.map(a => (
-                  <button key={a.id} type="button" onClick={() => onAbrir(a)} className={a.paso.notificado ? 'compartido' : undefined}
-                    title={a.paso.notificado ? textoCompartido(a.paso.notificado, { conQuien: true }) : undefined}>{a.id}</button>
-                ))}
+              <div className="dash-cli-acc">
+                <button type="button" className="btn dash-cli-wa" onClick={() => whatsapp(g, g.albaranes)} disabled={marcando === g.clave}>
+                  <WaIcon size={13} /> WhatsApp
+                </button>
+                <button type="button" className="btn" onClick={() => email(g, g.albaranes)} disabled={marcando === g.clave}
+                  title={emp?.email ? `Email a ${emp.email}` : 'Sin email registrado: puedes ver y copiar el mensaje'}>
+                  <Mail size={13} /> Email
+                </button>
               </div>
             </div>
-            <div className="dash-cli-acc">
-              <button type="button" className="btn dash-cli-wa" onClick={() => whatsapp(g)} disabled={marcando === g.clave}>
-                <WaIcon size={13} /> WhatsApp
-              </button>
-              <button type="button" className="btn" onClick={() => email(g)} disabled={!emp?.email || marcando === g.clave}
-                title={emp?.email ? `Email a ${emp.email}` : 'Sin email registrado'}>
-                <Mail size={13} /> Email
-              </button>
+
+            <div className="dash-dias">
+              {dias.map(d => {
+                const k = `${g.clave}|${d.dia}`
+                const abierto = abiertos.has(k)
+                const pendientesDia = d.items.filter(i => i.estado === 'pendiente').map(i => ({ ...i.a, paso: pasoPendiente(i.a) }))
+                const completo = d.gestionados === d.total
+                return (
+                  <div key={d.dia} className={`dash-dia${abierto ? ' abierto' : ''}`}>
+                    <button type="button" className="dash-dia-fila" onClick={() => alternar(k)} aria-expanded={abierto}>
+                      <ChevronRight size={14} className="dash-dia-chevron" />
+                      <span className="dash-dia-nombre">{etiquetaDia(d.dia)}</span>
+                      <span className="dash-dia-barra" aria-hidden="true"><span style={{ width: `${(d.gestionados / d.total) * 100}%` }} /></span>
+                      <span className={`dash-dia-cuenta${completo ? ' completo' : ''}`}>
+                        <strong>{d.gestionados} de {d.total}</strong> gestionados
+                        {d.pendientes > 0 && <span className="dash-dia-resto"> · {d.pendientes} {d.pendientes === 1 ? 'pendiente' : 'pendientes'}</span>}
+                        {d.rechazados > 0 && <span className="dash-dia-resto"> · {d.rechazados} no {d.rechazados === 1 ? 'gestionado' : 'gestionados'}</span>}
+                      </span>
+                    </button>
+                    {abierto && (
+                      <div className="dash-dia-detalle">
+                        {d.items.map(({ a, estado, firma }) => (
+                          <div key={a.id} className="dash-dia-alb">
+                            <button type="button" className="dash-dia-id" onClick={() => onAbrir(a)} title="Abrir albarán">{a.id}</button>
+                            <span className="dash-dia-hora">{a.hora ? String(a.hora).slice(0, 5) : ''}</span>
+                            <span className={`dash-dia-estado ${estado}`}>
+                              {estado === 'gestionado' && <><Check size={11} /> Gestionado{firma.fecha ? ` · ${fechaFirma(firma.fecha)}` : ''}{firma.nombrePersona ? ` · ${firma.nombrePersona}` : ''}</>}
+                              {estado === 'pendiente' && <>Pendiente{firma.notificado && <span className="compartido"> · {textoCompartido(firma.notificado)}</span>}</>}
+                              {estado === 'rechazado' && <>No gestionado{a.motivoRechazoCampo ? ` · ${a.motivoRechazoCampo}` : ''}</>}
+                            </span>
+                          </div>
+                        ))}
+                        {pendientesDia.length > 0 && (
+                          <div className="dash-dia-msg">
+                            Mensaje solo de este día:
+                            <button type="button" onClick={() => whatsapp(g, pendientesDia, d.dia)}><WaIcon size={12} /> WhatsApp</button>
+                            <button type="button" onClick={() => email(g, pendientesDia, d.dia)}><Mail size={12} /> Email</button>
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                )
+              })}
             </div>
           </div>
         )
@@ -230,6 +296,15 @@ function PendientesPorCliente({ albaranes, empresas, refetch, onEmpresaActualiza
       {waModal && (
         <CompartirWhatsApp {...waModal} onClose={() => setWaModal(null)} onContactoGuardado={onEmpresaActualizada} />
       )}
+      {vista && <VistaMensaje {...vista} onClose={() => setVista(null)} />}
     </section>
   )
+}
+
+// Firma "6/11/2026, 10:32:15" → "06/11 10:32"
+function fechaFirma(f) {
+  const [fecha, hora] = String(f).split(', ')
+  const [d, m] = (fecha || '').split('/')
+  if (!m) return String(f)
+  return `${d.padStart(2, '0')}/${m.padStart(2, '0')}${hora ? ' ' + hora.slice(0, 5) : ''}`
 }

@@ -1,7 +1,8 @@
 import { useState, useEffect, useMemo } from 'react'
-import { X, Plus, Check, User } from 'lucide-react'
+import { X, Plus, Check, User, Copy } from 'lucide-react'
 import { api } from '../lib/api'
 import { contactosEmpresa } from '../utils/clientes'
+import { useCopiar } from '../utils/copiar'
 import { normalizarTelefono, toTitleCase } from './EmpresaModal'
 import '../pages/Administracion.css'
 import './EmpresaModal.css'
@@ -37,6 +38,7 @@ export default function CompartirWhatsApp({ titulo, empresa, nombreEmpresa, mens
   const [editado, setEditado]   = useState(null)
   const [enviando, setEnviando] = useState(false)
   const [error, setError]       = useState('')
+  const [copiado, copiar]       = useCopiar()
 
   const destino = sel === 'nuevo' ? nuevo : contactos[sel]
   const tel     = telWhatsApp(destino?.telefono || '')
@@ -131,7 +133,12 @@ export default function CompartirWhatsApp({ titulo, empresa, nombreEmpresa, mens
           </div>
 
           <div className="em-section">
-            <div className="em-section-title">Mensaje</div>
+            <div className="em-section-title cw-titulo-mensaje">
+              Mensaje · lo que se enviará
+              <button type="button" className="cw-copiar" onClick={() => copiar(texto)}>
+                {copiado === 'ok' ? <><Check size={12} /> Copiado</> : copiado === 'error' ? 'No se pudo copiar' : <><Copy size={12} /> Copiar</>}
+              </button>
+            </div>
             <textarea className="cw-texto" rows={9} value={texto}
               onChange={e => setEditado(e.target.value)} />
             {editado !== null && (
