@@ -722,8 +722,9 @@ export default function Historial({ albaranes, empresas = [], usuario, refetch, 
           estella: opcionesMaterial?.estella?.length ? opcionesMaterial.estella : estellas,
         }
         return (
-        <div style={{position:'fixed',inset:0,background:'rgba(0,0,0,0.4)',display:'flex',alignItems:'center',justifyContent:'center',zIndex:200,padding:20}}>
-          <div style={{background:'#fff',borderRadius:'var(--radius-xl)',padding:28,width:'100%',maxWidth:440,boxShadow:'0 20px 60px rgba(0,0,0,0.15)',maxHeight:'calc(100vh - 40px)',overflowY:'auto'}}>
+        <div style={{position:'fixed',inset:0,background:'rgba(0,0,0,0.4)',display:'flex',justifyContent:'center',zIndex:200,padding:20,overflowY:'auto'}}>
+          {/* Sin overflow propio: si no, recorta los desplegables. El scroll, si hace falta, lo hace el fondo */}
+          <div className="masivo-modal" style={{background:'#fff',borderRadius:'var(--radius-xl)',padding:28,width:'100%',maxWidth:440,boxShadow:'0 20px 60px rgba(0,0,0,0.15)',margin:'auto 0',height:'fit-content'}}>
             {confirmando ? (<>
             {/* Confirmación del cambio de empresa: de X a Y */}
             <div style={{fontSize:16,fontWeight:600,marginBottom:12}}>¿Seguro que quieres cambiar de empresa {plan.length === 1 ? 'este albarán' : `estos ${plan.length} albaranes`}?</div>
