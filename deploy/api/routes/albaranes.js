@@ -281,7 +281,8 @@ function buildAlbaran(a, firmas, pesada, docs, actividad, observacionesPost, emp
       ticketUrl: signPath(p.ticket_url) || null,
     },
     docs: docsObj,
-    actividad: actividad.map(ev => ({ ts: ev.ts, texto: ev.texto, actor: ev.actor })),
+    // `at`: instante real (ISO) para ordenar y situar el evento en el flujo del Panel
+    actividad: actividad.map(ev => ({ ts: ev.ts, at: ev.created_at || null, texto: ev.texto, actor: ev.actor })),
     solicitaRevision: a.solicita_revision || false,
     motivoRechazoCampo: a.motivo_rechazo_campo || null,
     // Enlace fijo del panel externo de cada empresa (uno solo, con su

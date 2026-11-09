@@ -6,6 +6,7 @@ import { isoWeek, isoWeekYear } from '../utils/semana'
 import { api } from '../lib/api'
 import { pendientesPorCliente, seguimientoPorCliente, etiquetaDia, pasoPendiente, mensajeCliente, asuntoCliente, textoCompartido, ROL_CLIENTE } from '../utils/pasos'
 import EnviarMensaje from '../components/EnviarMensaje'
+import ActividadReciente from '../components/ActividadReciente'
 import '../components/shared.css'
 import './Dashboard.css'
 
@@ -118,6 +119,8 @@ export default function Dashboard({ albaranes, empresas = [], usuario, refetch, 
 
         <PendientesPorCliente albaranes={albaranes} empresas={empresas} refetch={refetch} onEmpresaActualizada={onEmpresaActualizada}
           onAbrir={a => navigate(`/albaran/${a.id}`)} />
+
+        <ActividadReciente albaranes={albaranes} onAbrir={a => navigate(`/albaran/${a.id}`)} />
       </div>
     </div>
   )
