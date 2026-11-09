@@ -153,8 +153,8 @@ function ResumenRecepcion({ a }) {
         <div className="rec-dato">
           <span className="rec-et"><Factory size={13} /> Procedencia</span>
           <span className="rec-val">{nombreOrigen || '—'}</span>
-          {(a.origen || (a.astilladora && a.proveedor)) && (
-            <span className="rec-sub">{[a.astilladora && a.proveedor ? `Proveedor: ${a.proveedor}` : null, a.origen].filter(Boolean).join(' · ')}</span>
+          {(a.origen || (a.astilladora && a.proveedor && a.proveedor !== a.astilladora)) && (
+            <span className="rec-sub">{[a.astilladora && a.proveedor && a.proveedor !== a.astilladora ? `Proveedor: ${a.proveedor}` : null, a.origen].filter(Boolean).join(' · ')}</span>
           )}
         </div>
         <div className="rec-dato">
@@ -493,7 +493,7 @@ function PasoFirma({ rol, a, updateFirma, subirTicketPesada, onCompletado, total
           {config.icon}
         </div>
         <div>
-          <div style={{fontSize:14,fontWeight:600,color:config.color}}>{config.label}</div>
+          <div style={{fontSize:14,fontWeight:600,color:config.color}}>{rol === 'instalacion' ? 'Recepción y pesada' : config.label}</div>
           {totalPasos > 1 && <div style={{fontSize:11,color:'var(--gray-400)'}}>Paso {pasoActual} de {totalPasos}</div>}
         </div>
       </div>
