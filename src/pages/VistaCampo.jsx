@@ -49,6 +49,165 @@ function Placa({ texto }) {
   )
 }
 
+// Firma "9/11/2026, 11:04:15" → Date
+function parseFirma(f) {
+  const m = String(f || '').match(/^(\d{1,2})\/(\d{1,2})\/(\d{4}),?\s+(\d{1,2}):(\d{2})/)
+  return m ? new Date(+m[3], +m[2] - 1, +m[1], +m[4], +m[5]) : null
+}
+const hhmm = d => d.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' })
+function diaRelativo(d) {
+  const hoy = new Date(); hoy.setHours(0, 0, 0, 0)
+  const dd = new Date(d); dd.setHours(0, 0, 0, 0)
+  const dif = Math.round((hoy - dd) / 86400000)
+  return dif === 0 ? 'hoy' : dif === 1 ? 'ayer' : d.toLocaleDateString('es-ES', { weekday: 'long', day: 'numeric', month: 'long' })
+}
+function transcurrido(d) {
+  const min = Math.round((Date.now() - d) / 60000)
+  if (min < 1) return 'ahora mismo'
+  if (min < 60) return `hace ${min} min`
+  const h = Math.floor(min / 60), r = min % 60
+  return h >= 24 ? null : `hace ${h} h${r ? ` ${r} min` : ''}`
+}
+
+function PlacaGrande({ texto, tipo }) {
+  return (
+    <div className="rec-placa-wrap">
+      <span className="rec-placa-tipo">{tipo}</span>
+      {texto
+        ? <span className="rec-placa"><span className="rec-placa-ue" aria-hidden="true">E</span><span className="rec-placa-txt">{texto}</span></span>
+        : <span className="rec-placa vacia">Sin indicar</span>}
+    </div>
+  )
+}
+
+// Recepción en la instalación: lo que necesita quien recibe el camión de un
+// vistazo — qué camión llega (matrículas grandes), quién lo conduce, cuándo
+// salió de origen (firma de la astilladora) y qué trae. Sin horarios: el de
+// la propia instalación no le aporta nada.
+function ResumenRecepcion({ a }) {
+  const f = a.firmas || {}
+  // Salida de origen: firma de la astilladora; si no hay astilladora en el
+  // circuito, la del proveedor.
+  const rolSalida = f.astilladora ? 'astilladora' : f.proveedor ? 'proveedor' : null
+  const firmaSalida = rolSalida ? f[rolSalida] : null
+  const salida = firmaSalida?.firmado ? parseFirma(firmaSalida.fecha) : null
+  const hace = salida && transcurrido(salida)
+  const nombreOrigen = a.astilladora || a.proveedor
+
+  const pasos = ROLES_ORDEN.filter(r => f[r]).map(r => {
+    const d = f[r].firmado ? parseFirma(f[r].fecha) : null
+    return { r, firmado: f[r].firmado, d, persona: f[r].nombrePersona }
+  })
+  const notas = [
+    a.observaciones && { quien: 'Oficina', texto: a.observaciones },
+    ...['proveedor', 'astilladora', 'transportista'].flatMap(r => [
+      f[r]?.observacionesFirma && { quien: ROLES_CONFIG[r].label, texto: f[r].observacionesFirma },
+      ...(f[r]?.observacionesExtra || []).map(o => ({ quien: ROLES_CONFIG[r].label, texto: o.texto })),
+    ]),
+  ].filter(Boolean)
+
+  const biomasa = [a.especie, a.tipoBiomasa, a.estella].filter(Boolean)
+
+  return (
+    <div className="rec-resumen">
+      {/* Camión que llega */}
+      <section className="campo-card rec-hero">
+        <div className="rec-salida">
+          <div className="rec-et"><Clock size={13} /> Salida de origen</div>
+          {salida ? (
+            <>
+              <div className="rec-hora">{hhmm(salida)}</div>
+              <div className="rec-hora-sub">
+                {diaRelativo(salida)}{hace ? ` · ${hace}` : ''}
+              </div>
+              <div className="rec-hora-quien">
+                Firmado por {firmaSalida.nombrePersona ? `${firmaSalida.nombrePersona} · ` : ''}{nombreOrigen}
+              </div>
+            </>
+          ) : (
+            <>
+              <div className="rec-hora pendiente">Pendiente</div>
+              <div className="rec-hora-sub">{ROLES_CONFIG[rolSalida]?.label || 'Origen'} aún no ha confirmado la carga</div>
+            </>
+          )}
+        </div>
+        <div className="rec-camion">
+          <div className="rec-et"><Truck size={13} /> Camión</div>
+          <div className="rec-placas">
+            <PlacaGrande tipo="Tractora" texto={a.matriculaTractora} />
+            <PlacaGrande tipo="Remolque" texto={a.matriculaRemolque} />
+          </div>
+        </div>
+      </section>
+
+      {/* Datos clave */}
+      <section className="campo-card rec-datos">
+        <div className="rec-dato">
+          <span className="rec-et"><User size={13} /> Conductor</span>
+          <span className={`rec-val${a.chofer ? '' : ' vacio'}`}>{a.chofer || 'Sin indicar'}</span>
+        </div>
+        <div className="rec-dato">
+          <span className="rec-et"><Truck size={13} /> Transportista</span>
+          <span className={`rec-val${a.transportista ? '' : ' vacio'}`}>{a.transportista || 'Sin indicar'}</span>
+        </div>
+        <div className="rec-dato">
+          <span className="rec-et"><Factory size={13} /> Procedencia</span>
+          <span className="rec-val">{nombreOrigen || '—'}</span>
+          {(a.origen || (a.astilladora && a.proveedor)) && (
+            <span className="rec-sub">{[a.astilladora && a.proveedor ? `Proveedor: ${a.proveedor}` : null, a.origen].filter(Boolean).join(' · ')}</span>
+          )}
+        </div>
+        <div className="rec-dato">
+          <span className="rec-et"><Leaf size={13} /> Biomasa</span>
+          <span className={`rec-val${biomasa.length ? '' : ' vacio'}`}>{biomasa[0] || 'Sin indicar'}</span>
+          {biomasa.length > 1 && <span className="rec-sub">{biomasa.slice(1).join(' · ')}</span>}
+        </div>
+        {a.certificacion?.length > 0 && (
+          <div className="rec-dato">
+            <span className="rec-et"><CheckCircle size={13} /> Certificación</span>
+            <span className="rec-val">{a.certificacion.join(' · ')}</span>
+            {a.referenciaSure && <span className="rec-sub">Ref. SURE {a.referenciaSure}</span>}
+          </div>
+        )}
+        <div className="rec-dato">
+          <span className="rec-et"><Clock size={13} /> Programado</span>
+          <span className="rec-val">
+            {a.fecha ? diaRelativo(new Date(a.fecha + 'T00:00:00')).replace(/^./, c => c.toUpperCase()) : '—'}
+            {a.hora ? ` · ${String(a.hora).slice(0, 5)} h` : ''}
+          </span>
+        </div>
+      </section>
+
+      {/* Recorrido del albarán */}
+      <section className="campo-card">
+        <div className="campo-card-title">Recorrido</div>
+        <ol className="rec-pasos">
+          {pasos.map(p => (
+            <li key={p.r} className={`rec-paso${p.firmado ? ' hecho' : ''}${p.r === 'instalacion' ? ' tu' : ''}`}>
+              <span className="rec-paso-punto">{p.firmado && <CheckCircle size={14} />}</span>
+              <span className="rec-paso-nombre">{p.r === 'instalacion' ? 'Recepción (tú)' : ROLES_CONFIG[p.r].label}</span>
+              <span className="rec-paso-info">
+                {p.firmado
+                  ? <>{p.d ? `${hhmm(p.d)}${diaRelativo(p.d) !== 'hoy' ? ` · ${diaRelativo(p.d)}` : ''}` : 'Confirmado'}{p.persona ? ` · ${p.persona}` : ''}</>
+                  : 'Pendiente'}
+              </span>
+            </li>
+          ))}
+        </ol>
+      </section>
+
+      {notas.length > 0 && (
+        <section className="campo-card">
+          <div className="campo-card-title">Notas</div>
+          {notas.map((n, i) => (
+            <div key={i} className="rec-nota"><span className="rec-nota-quien">{n.quien}</span>{n.texto}</div>
+          ))}
+        </section>
+      )}
+    </div>
+  )
+}
+
 function ListaObservaciones({ obs }) {
   if (!obs.length) return (
     <div style={{fontSize:12,color:'var(--gray-400)',fontStyle:'italic',marginBottom:12}}>Sin observaciones</div>
@@ -413,7 +572,7 @@ function PasoFirma({ rol, a, updateFirma, subirTicketPesada, onCompletado, total
       {/* ── INSTALACIÓN (RECEPCIÓN) ────────────────────── */}
       {rol === 'instalacion' && (
         <>
-          <div style={{background:'var(--blue-50)',border:'1px solid var(--blue-100)',borderRadius:'var(--radius-md)',padding:'10px 12px',fontSize:13,color:'var(--blue-700)',marginBottom:14}}>
+          <div style={{fontSize:13,color:'var(--gray-500)',marginBottom:14}}>
             Introduce los datos de pesada en recepción y confirma.
           </div>
           <div style={{fontSize:12,fontWeight:600,color:'var(--gray-500)',textTransform:'uppercase',letterSpacing:'0.5px',marginBottom:10}}>
@@ -792,6 +951,28 @@ export default function VistaCampo({ albaranes, updateFirma, subirTicketPesada, 
     )
   }
 
+  // Recepción en la instalación: en escritorio, datos del camión a la
+  // izquierda y la pesada a la derecha; en móvil, uno debajo del otro.
+  const recepcion = (onBack, onCompletado) => (
+    <div className="campo-page recepcion">
+      <Topbar onBack={onBack} />
+      <div className="rec-layout">
+        <ResumenRecepcion a={a} />
+        <div className="rec-accion">
+          <PasoFirma rol="instalacion" a={a}
+            updateFirma={updateFirma} subirTicketPesada={subirTicketPesada}
+            onCompletado={onCompletado} totalPasos={1} pasoActual={1}
+            panelUrl={panelUrl} token={token}
+          />
+        </div>
+      </div>
+    </div>
+  )
+
+  if (esInstalacionSola) {
+    return recepcion(panelUrl ? () => navigate(panelUrl) : undefined, () => handleCompletadoPaso('instalacion'))
+  }
+
   // Flujo directo con roles en la URL
   if (rolesDirectos && rolesDirectos.length > 0) {
     return (
@@ -873,6 +1054,10 @@ export default function VistaCampo({ albaranes, updateFirma, subirTicketPesada, 
       </div>
     </div>
   )
+
+  if (rolSeleccionado === 'instalacion') {
+    return recepcion(() => setRolSeleccionado(null), () => {})
+  }
 
   // Flujo genérico — formulario de rol seleccionado
   return (

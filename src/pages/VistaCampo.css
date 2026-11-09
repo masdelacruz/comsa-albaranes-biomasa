@@ -45,3 +45,82 @@
 .paso-dot { width:6px; height:6px; border-radius:50%; background:var(--gray-200); }
 .paso-dot.active { background:var(--green-400); width:18px; border-radius:2px; }
 .info-banner { background:var(--blue-50); border:1px solid var(--blue-100); border-radius:var(--radius-md); padding:10px 12px; font-size:12px; color:var(--blue-700); margin-bottom:12px; }
+/* ── Recepción en instalación ── */
+.campo-page.recepcion { max-width:1120px; padding:20px 20px 60px; }
+.rec-layout { display:grid; grid-template-columns:minmax(0, 1.5fr) minmax(340px, 1fr); gap:16px; align-items:start; }
+.rec-accion { position:sticky; top:16px; }
+.rec-resumen { min-width:0; }
+
+.rec-et {
+  display:inline-flex; align-items:center; gap:5px;
+  font-size:11px; font-weight:600; text-transform:uppercase; letter-spacing:0.5px; color:var(--gray-400);
+}
+.rec-et svg { color:var(--gray-400); }
+
+.rec-hero { display:grid; grid-template-columns:minmax(0, 0.8fr) minmax(0, 1.2fr); gap:0; padding:0; overflow:hidden; }
+.rec-salida, .rec-camion { padding:18px 20px; min-width:0; }
+.rec-camion { border-left:var(--border); }
+.rec-hora { margin-top:8px; font-size:44px; font-weight:700; letter-spacing:-1.5px; line-height:1; color:var(--gray-900); font-variant-numeric:tabular-nums; }
+.rec-hora.pendiente { font-size:28px; letter-spacing:-0.5px; color:var(--amber-700); }
+.rec-hora-sub { margin-top:6px; font-size:13px; font-weight:500; color:var(--gray-600); }
+.rec-hora-sub::first-letter { text-transform:uppercase; }
+.rec-hora-quien { margin-top:4px; font-size:12px; color:var(--gray-400); }
+
+.rec-placas { margin-top:10px; display:flex; flex-wrap:wrap; gap:14px 18px; }
+.rec-placa-wrap { display:flex; flex-direction:column; gap:5px; }
+.rec-placa-tipo { font-size:11px; color:var(--gray-500); }
+.rec-placa {
+  display:inline-flex; align-items:stretch; overflow:hidden;
+  border:2px solid var(--gray-800); border-radius:6px; background:#fff;
+}
+.rec-placa-ue {
+  display:flex; align-items:flex-end; justify-content:center; width:18px; padding-bottom:3px;
+  background:#1f4fb4; color:#fff; font-size:10px; font-weight:700;
+}
+.rec-placa-txt {
+  padding:6px 14px 6px 12px; font-family:var(--font-mono); font-size:26px; font-weight:700;
+  letter-spacing:1.5px; color:var(--gray-900); line-height:1.1;
+}
+.rec-placa.vacia { padding:10px 14px; border-style:dashed; border-color:var(--gray-300); font-size:13px; color:var(--gray-400); }
+
+.rec-datos { display:grid; grid-template-columns:repeat(3, minmax(0, 1fr)); gap:0; padding:0; }
+.rec-dato { display:flex; flex-direction:column; gap:4px; padding:14px 18px; min-width:0; border-top:var(--border); }
+.rec-dato:nth-child(-n+3) { border-top:none; }
+.rec-dato:not(:nth-child(3n+1)) { border-left:var(--border); }
+.rec-val { font-size:15px; font-weight:600; color:var(--gray-900); overflow-wrap:anywhere; }
+.rec-val.vacio { font-weight:400; color:var(--gray-400); }
+.rec-sub { font-size:12px; color:var(--gray-500); }
+
+.rec-pasos { list-style:none; margin:0; padding:0; }
+.rec-paso { position:relative; display:grid; grid-template-columns:18px 130px minmax(0, 1fr); align-items:center; gap:10px; padding:6px 0; font-size:13px; }
+.rec-paso + .rec-paso::before { content:''; position:absolute; left:8px; top:-8px; height:16px; width:2px; background:var(--gray-200); }
+.rec-paso.hecho + .rec-paso::before { background:var(--green-400); }
+.rec-paso-punto {
+  width:18px; height:18px; border-radius:50%; border:2px solid var(--gray-300); background:#fff;
+  display:flex; align-items:center; justify-content:center; color:var(--green-600); box-sizing:border-box;
+}
+.rec-paso.hecho .rec-paso-punto { border:none; }
+.rec-paso.tu:not(.hecho) .rec-paso-punto { border-color:var(--gray-800); }
+.rec-paso-nombre { font-weight:600; color:var(--gray-800); }
+.rec-paso-info { color:var(--gray-500); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.rec-paso.hecho .rec-paso-info { color:var(--green-600); }
+
+.rec-nota { font-size:13px; color:var(--gray-800); line-height:1.45; padding:6px 0; }
+.rec-nota + .rec-nota { border-top:var(--border-light); }
+.rec-nota-quien { display:block; font-size:11px; color:var(--gray-400); margin-bottom:1px; }
+
+@media (max-width: 900px) {
+  .campo-page.recepcion { max-width:560px; padding:16px 14px 60px; }
+  .rec-layout { grid-template-columns:1fr; }
+  .rec-accion { position:static; }
+  .rec-datos { grid-template-columns:repeat(2, minmax(0, 1fr)); }
+  .rec-dato:nth-child(n) { border-top:var(--border); border-left:none; }
+  .rec-dato:nth-child(-n+2) { border-top:none; }
+  .rec-dato:nth-child(even) { border-left:var(--border); }
+}
+@media (max-width: 520px) {
+  .rec-hero { grid-template-columns:1fr; }
+  .rec-camion { border-left:none; border-top:var(--border); }
+  .rec-hora { font-size:38px; }
+  .rec-placa-txt { font-size:22px; }
+}
