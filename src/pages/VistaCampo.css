@@ -124,3 +124,27 @@
   .rec-hora { font-size:38px; }
   .rec-placa-txt { font-size:22px; }
 }
+
+/* Llegada estimada y trayecto */
+.rec-aprox { font-size:28px; font-weight:500; color:var(--gray-400); margin-right:4px; vertical-align:top; position:relative; top:4px; }
+.rec-trayecto {
+  grid-column:1 / -1; border-top:var(--border); padding:16px 20px 14px;
+  display:grid; grid-template-columns:auto minmax(0, 1fr) auto; align-items:center; gap:6px 16px;
+}
+.rec-tr-extremo { display:flex; flex-direction:column; min-width:0; max-width:180px; }
+.rec-tr-extremo.fin { text-align:right; align-items:flex-end; }
+.rec-tr-hora { font-size:15px; font-weight:700; color:var(--gray-900); font-variant-numeric:tabular-nums; }
+.rec-tr-lugar { font-size:11.5px; color:var(--gray-500); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; max-width:100%; }
+.rec-tr-via { position:relative; height:4px; border-radius:2px; background:var(--gray-200); margin:0 10px; }
+.rec-tr-hecho { position:absolute; left:0; top:0; bottom:0; border-radius:2px; background:var(--green-400); }
+.rec-tr-camion {
+  position:absolute; top:50%; transform:translate(-50%, -50%);
+  width:30px; height:30px; border-radius:50%; background:#fff; border:2px solid var(--green-400);
+  display:flex; align-items:center; justify-content:center; color:var(--green-600);
+  transition:left .6s ease;
+}
+.rec-tr-nota { grid-column:1 / -1; font-size:11px; color:var(--gray-400); }
+@media (max-width: 520px) {
+  .rec-trayecto { padding:14px 16px 12px; gap:6px 10px; }
+  .rec-tr-extremo { max-width:90px; }
+}

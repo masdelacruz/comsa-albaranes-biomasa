@@ -6,6 +6,7 @@ const { requireAuthOrCampoToken, requireAuthOrEmpresaCodigo } = require('../lib/
 const { signPath } = require('../lib/signedUrl')
 const { rutaDeNombre, nombreDeRuta } = require('../lib/nombreRuta')
 const { registrarAuditoria } = require('../lib/auditoria')
+const { trayectoEstimado } = require('../lib/ruta')
 const { enviarNotificacion, enviarNotificacionAlbaranACampo, enviarNotificacionAlbaranAProveedor, enviarNotificacionCamionEnviado } = require('../emailSender')
 const { crearNotificacion } = require('../notificacionesCliente')
 
@@ -575,6 +576,18 @@ router.post('/:id/solicitar-revision', requireAuthOrCampoToken(), async (req, re
     [id, fecha, '⚠ Solicitud de revisión enviada desde campo', 'Campo']
   )
   res.json({ ok: true })
+})
+
+// ── GET /albaranes/:id/trayecto  (oficina o token de campo) ──
+// Distancia y duración estimadas entre los mapas de origen y destino; la
+// instalación lo suma a la hora de salida para ver la llegada estimada.
+router.get('/:id/trayecto', requireAuthOrCampoToken(), async (req, res) => {
+  const { rows } = await pool.query('SELECT maps_origen, maps_destino FROM albaranes WHERE id=$1', [req.params.id])
+  if (!rows.length) return res.status(404).json({ error: 'No encontrado' })
+  const { maps_origen, maps_destino } = rows[0]
+  if (!maps_origen || !maps_destino) return res.json({ disponible: false, motivo: 'sin_mapas' })
+  const t = await trayectoEstimado(maps_origen, maps_destino)
+  res.json(t ? { disponible: true, ...t } : { disponible: false, motivo: 'sin_coordenadas' })
 })
 
 // ── DELETE /albaranes/:id/solicitar-revision  (requiere auth — oficina) ──

@@ -84,7 +84,22 @@ function PlacaGrande({ texto, tipo }) {
 // vistazo — qué camión llega (matrículas grandes), quién lo conduce, cuándo
 // salió de origen (firma de la astilladora) y qué trae. Sin horarios: el de
 // la propia instalación no le aporta nada.
-function ResumenRecepcion({ a }) {
+function ResumenRecepcion({ a, token }) {
+  // Trayecto estimado (servidor: ruta entre los enlaces de mapa de origen y destino)
+  const [trayecto, setTrayecto] = useState(null)
+  const [ahora, setAhora] = useState(() => Date.now())
+  useEffect(() => {
+    if (!a.mapsOrigen || !a.mapsDestino) return
+    let vivo = true
+    fetch(`/api/albaranes/${a.id}/trayecto?t=${encodeURIComponent(token || '')}`)
+      .then(r => r.ok ? r.json() : null)
+      .then(j => { if (vivo) setTrayecto(j?.disponible ? j : null) })
+      .catch(() => {})
+    return () => { vivo = false }
+  }, [a.id, a.mapsOrigen, a.mapsDestino, token])
+  // Cada minuto se repinta para que avance el camión y la cuenta atrás
+  useEffect(() => { const t = setInterval(() => setAhora(Date.now()), 60000); return () => clearInterval(t) }, [])
+
   const f = a.firmas || {}
   // Salida de origen: firma de la astilladora; si no hay astilladora en el
   // circuito, la del proveedor.
@@ -93,6 +108,11 @@ function ResumenRecepcion({ a }) {
   const salida = firmaSalida?.firmado ? parseFirma(firmaSalida.fecha) : null
   const hace = salida && transcurrido(salida)
   const nombreOrigen = a.astilladora || a.proveedor
+  const recibido = !!f.instalacion?.firmado
+  const llegada = salida && trayecto ? new Date(salida.getTime() + trayecto.minutos * 60000) : null
+  const progreso = llegada ? Math.max(0, Math.min(1, (ahora - salida) / (llegada - salida))) : 0
+  const faltan = llegada ? Math.round((llegada - ahora) / 60000) : null
+  const duracion = m => m < 60 ? `${m} min` : `${Math.floor(m / 60)} h${m % 60 ? ` ${m % 60} min` : ''}`
 
   const pasos = ROLES_ORDEN.filter(r => f[r]).map(r => {
     const d = f[r].firmado ? parseFirma(f[r].fecha) : null
@@ -113,6 +133,18 @@ function ResumenRecepcion({ a }) {
       {/* Camión que llega */}
       <section className="campo-card rec-hero">
         <div className="rec-salida">
+          {llegada && !recibido ? (
+            <>
+              <div className="rec-et"><Clock size={13} /> Llegada estimada</div>
+              <div className="rec-hora"><span className="rec-aprox">≈</span>{hhmm(llegada)}</div>
+              <div className="rec-hora-sub">
+                {faltan > 0 ? `Faltan unos ${duracion(faltan)}` : faltan > -15 ? 'Llegando' : `Estimada hace ${duracion(-faltan)}`}
+              </div>
+              <div className="rec-hora-quien">
+                Salió a las {hhmm(salida)}{diaRelativo(salida) !== 'hoy' ? ` (${diaRelativo(salida)})` : ''} · firmado por {firmaSalida.nombrePersona ? `${firmaSalida.nombrePersona} · ` : ''}{nombreOrigen}
+              </div>
+            </>
+          ) : (<>
           <div className="rec-et"><Clock size={13} /> Salida de origen</div>
           {salida ? (
             <>
@@ -128,8 +160,10 @@ function ResumenRecepcion({ a }) {
             <>
               <div className="rec-hora pendiente">Pendiente</div>
               <div className="rec-hora-sub">{ROLES_CONFIG[rolSalida]?.label || 'Origen'} aún no ha confirmado la carga</div>
+              {trayecto && <div className="rec-hora-quien">Trayecto estimado: {duracion(trayecto.minutos)} · {trayecto.distanciaKm} km</div>}
             </>
           )}
+          </>)}
         </div>
         <div className="rec-camion">
           <div className="rec-et"><Truck size={13} /> Camión</div>
@@ -138,6 +172,25 @@ function ResumenRecepcion({ a }) {
             <PlacaGrande tipo="Remolque" texto={a.matriculaRemolque} />
           </div>
         </div>
+        {llegada && !recibido && (
+          <div className="rec-trayecto">
+            <div className="rec-tr-extremo">
+              <span className="rec-tr-hora">{hhmm(salida)}</span>
+              <span className="rec-tr-lugar">{nombreOrigen}</span>
+            </div>
+            <div className="rec-tr-via" role="img" aria-label={`Trayecto completado al ${Math.round(progreso * 100)} % (estimado)`}>
+              <span className="rec-tr-hecho" style={{ width: `${progreso * 100}%` }} />
+              <span className="rec-tr-camion" style={{ left: `${progreso * 100}%` }}><Truck size={16} /></span>
+            </div>
+            <div className="rec-tr-extremo fin">
+              <span className="rec-tr-hora">≈ {hhmm(llegada)}</span>
+              <span className="rec-tr-lugar">{a.instalacion}</span>
+            </div>
+            <div className="rec-tr-nota">
+              {trayecto.distanciaKm} km · {duracion(trayecto.minutos)} en camión{trayecto.aproximada ? ' (aproximado, sin ruta exacta)' : ''} · estimación calculada con los mapas de origen y destino
+            </div>
+          </div>
+        )}
       </section>
 
       {/* Datos clave */}
@@ -957,7 +1010,7 @@ export default function VistaCampo({ albaranes, updateFirma, subirTicketPesada, 
     <div className="campo-page recepcion">
       <Topbar onBack={onBack} />
       <div className="rec-layout">
-        <ResumenRecepcion a={a} />
+        <ResumenRecepcion a={a} token={token} />
         <div className="rec-accion">
           <PasoFirma rol="instalacion" a={a}
             updateFirma={updateFirma} subirTicketPesada={subirTicketPesada}
