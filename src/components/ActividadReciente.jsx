@@ -81,15 +81,14 @@ export default function ActividadReciente({ albaranes, onAbrir }) {
   ), [albaranes])
 
   const ahora = new Date()
-  const desde = rango === 'hoy' ? inicioDia(ahora)
+  const desdeRango = rango === 'hoy' ? inicioDia(ahora)
     : rango === '48h' ? new Date(ahora - 48 * 3600000)
     : new Date(inicioDia(ahora) - 6 * 86400000)
-  const span = ahora - desde
 
   const opcionesCliente = useMemo(() => [...new Set(todos.map(e => e.cliente))].sort((x, y) => x.localeCompare(y, 'es')), [todos])
 
   const eventos = todos
-    .filter(e => e.t >= desde && e.t <= ahora && (!clientes.length || clientes.includes(e.cliente)))
+    .filter(e => e.t >= desdeRango && e.t <= ahora && (!clientes.length || clientes.includes(e.cliente)))
     .sort((x, y) => y.t - x.t)
 
   // Pistas: un albarán por fila, agrupados por cliente; primero el cliente con
@@ -108,20 +107,25 @@ export default function ActividadReciente({ albaranes, onAbrir }) {
     g.pistas.push(p)
   }
 
+  // Zoom automático: el eje empieza en la hora del primer suceso del periodo
+  // (no en el inicio del rango) para que los puntos no se amontonen a la derecha.
+  const primero = eventos.length ? eventos[eventos.length - 1].t : desdeRango
+  const desde = new Date(Math.max(desdeRango, new Date(primero).setMinutes(0, 0, 0) - 3600000))
+  const span = Math.max(ahora - desde, 3600000)
+
   const pos = t => `${Math.max(0, Math.min(100, ((t - desde) / span) * 100))}%`
 
-  // Marcas del eje: inicio de cada día del rango; hoy, además, cada 3 horas
+  // Marcas del eje según la amplitud visible: horas si cabe en día y medio,
+  // días si no. Se omiten las que chocarían con la etiqueta "ahora".
   const marcas = []
-  if (rango === 'hoy') {
-    for (let h = 0; h <= ahora.getHours(); h += 3) marcas.push({ t: new Date(desde.getTime() + h * 3600000), label: `${String(h).padStart(2, '0')}:00`, dia: h === 0 })
-  } else {
-    for (let d = inicioDia(new Date(desde.getTime() + 86400000 - 1)); d <= ahora; d = new Date(d.getTime() + 86400000)) {
-      marcas.push({ t: d, label: d.toLocaleDateString('es-ES', { weekday: 'short', day: 'numeric' }), dia: true })
-      if (rango === '48h') {
-        const mediodia = new Date(d.getTime() + 12 * 3600000)
-        if (mediodia > desde && mediodia < ahora) marcas.push({ t: mediodia, label: '12:00' })
-      }
-    }
+  const horasSpan = span / 3600000
+  const paso = horasSpan <= 6 ? 1 : horasSpan <= 14 ? 2 : horasSpan <= 30 ? 3 : horasSpan <= 60 ? 6 : 24
+  for (let t = new Date(desde).setMinutes(0, 0, 0); t <= ahora; t += 3600000) {
+    const d = new Date(t)
+    if (d < desde || d.getHours() % paso) continue
+    if ((ahora - d) / span < 0.07) continue
+    const dia = d.getHours() === 0
+    marcas.push({ t: d, dia, label: dia ? d.toLocaleDateString('es-ES', { weekday: 'short', day: 'numeric' }) : `${String(d.getHours()).padStart(2, '0')}:00` })
   }
 
   // Feed agrupado por día

@@ -276,3 +276,6 @@
   .act-fila .act-estado, .act-inst { display:none; }
   .act-tip { width:220px; }
 }
+.act-filtros .filter-select { flex:0 0 190px; }
+.act-filtros .filter-select-trigger { height:30px; }
+@media (min-width: 900px) { .act-filtros { flex-wrap:nowrap; } }
