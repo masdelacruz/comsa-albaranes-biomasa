@@ -228,24 +228,41 @@ function TarjetaCamion({ a, esUltimo, esDesde, ahora }) {
   )
 }
 
-// Orden de llegada: primero lo que viene de camino (por hora estimada de
-// llegada; sin estimación, por hora de salida), luego lo que aún no ha
-// salido (por hora programada) y al final lo ya recibido.
-function ordenLlegada(a, b) {
+// Orden de salida, agrupado por quien envía (astilladora o proveedor): de
+// un mismo origen, el que sale antes llega antes. Dentro de cada origen,
+// primero lo que ya ha salido (por hora de salida), luego lo que aún no ha
+// salido (por hora programada) y al final lo recibido.
+const origenDe = a => a.astilladora || a.proveedor || 'Sin origen'
+function ordenSalida(a, b) {
   const rango = x => x.instalacionFirmada ? 2 : x.salidaFecha ? 0 : 1
   const ra = rango(a), rb = rango(b)
   if (ra !== rb) return ra - rb
-  if (ra === 0) {
-    const ta = llegadaDe(a).llegada || parseFirma(a.salidaFecha)
-    const tb = llegadaDe(b).llegada || parseFirma(b.salidaFecha)
-    return (ta || 0) - (tb || 0)
-  }
+  if (ra === 0) return (parseFirma(a.salidaFecha) || 0) - (parseFirma(b.salidaFecha) || 0)
   if (ra === 1) return String(a.hora || '99').localeCompare(String(b.hora || '99')) || String(a.id).localeCompare(String(b.id))
   return (parseFirma(a.instalacionFecha) || 0) - (parseFirma(b.instalacionFecha) || 0)
 }
+// Orígenes: primero los que tienen camiones en camino (el que salió antes
+// arriba), después los que aún no han enviado y al final los ya completados.
+function gruposPorOrigen(activos) {
+  const m = new Map()
+  for (const a of activos) {
+    const k = origenDe(a)
+    if (!m.has(k)) m.set(k, [])
+    m.get(k).push(a)
+  }
+  const grupos = [...m.entries()].map(([origen, items]) => {
+    items.sort(ordenSalida)
+    const salidas = items.filter(a => a.salidaFecha && !a.instalacionFirmada).map(a => parseFirma(a.salidaFecha) || 0)
+    const pendientes = items.filter(a => !a.instalacionFirmada).length
+    return { origen, items, primeraSalida: salidas.length ? Math.min(...salidas) : null, pendientes, enCamino: salidas.length }
+  })
+  const rango = g => g.primeraSalida != null ? 0 : g.pendientes ? 1 : 2
+  return grupos.sort((x, y) => rango(x) - rango(y) || (x.primeraSalida || 0) - (y.primeraSalida || 0) || x.origen.localeCompare(y.origen, 'es'))
+}
 
 function GrupoDia({ titulo, albaranes, desdeId, ahora }) {
-  const activos  = albaranes.filter(a => !a.planificado).sort(ordenLlegada)
+  const activos  = albaranes.filter(a => !a.planificado)
+  const grupos   = gruposPorOrigen(activos)
   const planifs  = albaranes.filter(a => a.planificado)
     .sort((a, b) => (a.fecha || '').localeCompare(b.fecha || '') || 0)
   const firmados = activos.filter(a => a.instalacionFirmada).length
@@ -260,7 +277,7 @@ function GrupoDia({ titulo, albaranes, desdeId, ahora }) {
         <div style={{ flex: 1, minWidth: 0 }}>
           <div className="pi-flota-title" style={{ overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{titulo}</div>
           <div className="pi-flota-sub">
-            {total} {total !== 1 ? 'albaranes' : 'albarán'}{enCamino ? ` · ${enCamino} en camino` : ''} · por orden de llegada
+            {total} {total !== 1 ? 'albaranes' : 'albarán'}{enCamino ? ` · ${enCamino} en camino` : ''} · por orden de salida
             {planifs.length > 0 ? ` · ${planifs.length} planificado${planifs.length !== 1 ? 's' : ''}` : ''}
           </div>
         </div>
@@ -270,8 +287,19 @@ function GrupoDia({ titulo, albaranes, desdeId, ahora }) {
         <div className="pi-progress-fill" style={{ width: `${pct}%` }} />
       </div>
       <div className="pi-camiones-list">
-        {activos.map((a, i) => (
-          <TarjetaCamion key={a.id} a={a} ahora={ahora} esUltimo={i === activos.length - 1 && planifs.length === 0} esDesde={String(a.id) === desdeId} />
+        {grupos.map(g => (
+          <div key={g.origen} className="pi-origen">
+            <div className="pi-origen-cab">
+              <span className="pi-origen-nombre">{g.origen}</span>
+              <span className="pi-origen-sub">
+                {g.enCamino ? `${g.enCamino} en camino` : g.pendientes ? 'sin salir' : 'completado'}
+                {g.pendientes - g.enCamino > 0 && g.enCamino ? ` · ${g.pendientes - g.enCamino} sin salir` : ''}
+              </span>
+            </div>
+            {g.items.map(a => (
+              <TarjetaCamion key={a.id} a={a} ahora={ahora} esUltimo={false} esDesde={String(a.id) === desdeId} />
+            ))}
+          </div>
         ))}
         {planifs.length > 0 && <div className="pi-planif-sep">Planificado</div>}
         {planifs.map((a, i) => (

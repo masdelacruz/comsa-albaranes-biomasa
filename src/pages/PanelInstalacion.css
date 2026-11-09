@@ -747,3 +747,13 @@
   .pi-camion--rec .pi-camion-meta.principal { color: var(--gray-800); font-weight: 500; }
   .pi-solo-ancho { display: block; }
 }
+
+/* Grupo por origen (astilladora/proveedor que envía) */
+.pi-origen + .pi-origen { border-top: 1px solid var(--gray-200); }
+.pi-origen-cab {
+  display: flex; align-items: baseline; justify-content: space-between; gap: 10px;
+  padding: 12px 14px 6px; background: #fff;
+}
+.pi-origen-nombre { font-size: 12.5px; font-weight: 700; color: var(--gray-800); }
+.pi-origen-sub { font-size: 11px; color: var(--gray-500); white-space: nowrap; }
+@media (min-width: 1000px) { .pi-origen-cab { padding: 14px 20px 6px; } }
