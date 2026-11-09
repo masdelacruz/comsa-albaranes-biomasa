@@ -87,6 +87,8 @@ async function coordsDeEnlace(enlace) {
   const c = deCache(k); if (c !== undefined) return c
 
   let url = String(enlace).trim()
+  // Sin enlace, solo un nombre de lugar (p. ej. la población de origen)
+  if (!/^https?:\/\//i.test(url)) return aCache(k, await geocodificar(url))
   for (let salto = 0; salto < 4; salto++) {
     let u
     try { u = new URL(url) } catch { return aCache(k, null) }

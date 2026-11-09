@@ -336,6 +336,45 @@ router.get('/', requireAuth, async (_req, res) => {
   res.json(result)
 })
 
+// ── Trayecto estimado (llegada a la instalación) ─────────────────────────
+// Mapas a usar: los del propio albarán; si faltan, los de otro albarán con
+// el mismo origen (origen) o a la misma instalación (destino); y si aun así
+// no hay mapa de origen, la población de origen geocodificada.
+async function mapasDeReferencia(instalaciones) {
+  const [o, d] = await Promise.all([
+    pool.query(
+      `SELECT DISTINCT ON (lower(trim(origen))) lower(trim(origen)) AS k, maps_origen
+         FROM albaranes WHERE COALESCE(maps_origen,'') <> '' AND COALESCE(origen,'') <> ''
+        ORDER BY lower(trim(origen)), created_at DESC`),
+    pool.query(
+      `SELECT DISTINCT ON (instalacion) instalacion, maps_destino
+         FROM albaranes WHERE instalacion = ANY($1) AND COALESCE(maps_destino,'') <> ''
+        ORDER BY instalacion, created_at DESC`, [instalaciones]),
+  ])
+  return {
+    porOrigen: new Map(o.rows.map(r => [r.k, r.maps_origen])),
+    porInstalacion: new Map(d.rows.map(r => [r.instalacion, r.maps_destino])),
+  }
+}
+function mapasDe(a, ref) {
+  const clave = (a.origen || '').trim().toLowerCase()
+  const delOrigen = a.maps_origen || ref.porOrigen.get(clave) || null
+  return {
+    origen:  delOrigen || (a.origen ? a.origen.trim() : null),
+    destino: a.maps_destino || ref.porInstalacion.get(a.instalacion) || null,
+    fuente:  a.maps_origen && a.maps_destino ? 'albaran' : delOrigen ? 'referencia' : 'poblacion',
+  }
+}
+async function trayectoDeAlbaran(a, ref) {
+  const m = mapasDe(a, ref)
+  if (!m.origen || !m.destino) return null
+  const t = await trayectoEstimado(m.origen, m.destino)
+  return t ? { ...t, fuente: m.fuente } : null
+}
+// Espera como mucho `ms`: si el servicio de rutas tarda, se responde sin
+// trayecto y la caché ya estará lista en la siguiente consulta.
+const conLimite = (p, ms) => Promise.race([p, new Promise(r => setTimeout(() => r(null), ms))])
+
 // ── GET /albaranes/instalacion/:nombre  (oficina o código de la empresa) ──
 router.get('/instalacion/:nombre', requireAuthOrEmpresaCodigo('instalacion'), async (req, res) => {
   const nombre = nombreDeRuta(req.params.nombre)
@@ -344,7 +383,7 @@ router.get('/instalacion/:nombre', requireAuthOrEmpresaCodigo('instalacion'), as
        a.id, a.fecha, a.hora, a.grupo_id, a.camion_orden, a.num_camiones,
        a.astilladora, a.proveedor, a.transportista, a.especie, a.tipo_biomasa, a.estella,
        a.matricula_tractora, a.matricula_remolque, a.chofer, a.estado, a.origen,
-       a.motivo_rechazo_campo, a.campo_token,
+       a.motivo_rechazo_campo, a.campo_token, a.instalacion, a.maps_origen, a.maps_destino,
        (a.estado = 'programado') AS planificado
      FROM albaranes a
      WHERE a.instalacion = $1
@@ -362,14 +401,26 @@ router.get('/instalacion/:nombre', requireAuthOrEmpresaCodigo('instalacion'), as
   const ids = rows.map(a => a.id)
   const { rows: firmas } = await pool.query(
     `SELECT albaran_id, rol, firmado, fecha FROM firmas
-     WHERE albaran_id = ANY($1) AND rol IN ('astilladora','instalacion')`,
+     WHERE albaran_id = ANY($1) AND rol IN ('proveedor','astilladora','instalacion')`,
     [ids]
   )
+
+  // Trayecto de lo que aún no ha llegado (con caché; tope de espera)
+  const porLlegar = rows.filter(a => !a.planificado && a.estado !== 'cerrado'
+    && !firmas.some(f => f.albaran_id === a.id && f.rol === 'instalacion' && f.firmado))
+  const trayectos = new Map()
+  if (porLlegar.length) {
+    const ref = await mapasDeReferencia([nombre])
+    const res = await conLimite(Promise.all(porLlegar.map(a => trayectoDeAlbaran(a, ref).catch(() => null))), 4000)
+    if (res) porLlegar.forEach((a, i) => res[i] && trayectos.set(a.id, res[i]))
+  }
 
   const result = rows.map(a => {
     const af   = firmas.filter(f => f.albaran_id === a.id)
     const fInst = af.find(f => f.rol === 'instalacion')
     const fAsti = af.find(f => f.rol === 'astilladora')
+    // Salida de origen: firma de la astilladora; sin astilladora, la del proveedor
+    const fSalida = fAsti || af.find(f => f.rol === 'proveedor')
     return {
       id: a.id,
       fecha: a.fecha ? new Date(a.fecha).toISOString().slice(0,10) : null,
@@ -390,6 +441,8 @@ router.get('/instalacion/:nombre', requireAuthOrEmpresaCodigo('instalacion'), as
       instalacionFecha:   fInst?.fecha   || null,
       astilladoraFirmada: a.planificado ? false : (fAsti?.firmado || false),
       astilladoraFecha:   fAsti?.fecha   || null,
+      salidaFecha:        !a.planificado && fSalida?.firmado ? fSalida.fecha : null,
+      trayecto:           trayectos.get(a.id) || null,
     }
   })
 
@@ -582,12 +635,11 @@ router.post('/:id/solicitar-revision', requireAuthOrCampoToken(), async (req, re
 // Distancia y duración estimadas entre los mapas de origen y destino; la
 // instalación lo suma a la hora de salida para ver la llegada estimada.
 router.get('/:id/trayecto', requireAuthOrCampoToken(), async (req, res) => {
-  const { rows } = await pool.query('SELECT maps_origen, maps_destino FROM albaranes WHERE id=$1', [req.params.id])
+  const { rows } = await pool.query('SELECT origen, instalacion, maps_origen, maps_destino FROM albaranes WHERE id=$1', [req.params.id])
   if (!rows.length) return res.status(404).json({ error: 'No encontrado' })
-  const { maps_origen, maps_destino } = rows[0]
-  if (!maps_origen || !maps_destino) return res.json({ disponible: false, motivo: 'sin_mapas' })
-  const t = await trayectoEstimado(maps_origen, maps_destino)
-  res.json(t ? { disponible: true, ...t } : { disponible: false, motivo: 'sin_coordenadas' })
+  const ref = await mapasDeReferencia([rows[0].instalacion])
+  const t = await trayectoDeAlbaran(rows[0], ref)
+  res.json(t ? { disponible: true, ...t } : { disponible: false, motivo: 'sin_ubicacion' })
 })
 
 // ── DELETE /albaranes/:id/solicitar-revision  (requiere auth — oficina) ──

@@ -709,3 +709,41 @@
     border-radius: 0 5px 5px 0;
   }
 }
+
+/* ── Recepción: fila con llegada estimada ───────────────────────────── */
+.pi-camion--rec { align-items: center; gap: 14px; }
+.pi-eta { width: 84px; flex-shrink: 0; display: flex; flex-direction: column; gap: 1px; }
+.pi-eta-et { font-size: 9.5px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; color: var(--gray-400); }
+.pi-eta-hora {
+  display: inline-flex; align-items: center; gap: 3px;
+  font-size: 20px; font-weight: 700; letter-spacing: -0.4px; line-height: 1.15;
+  color: var(--gray-900); font-variant-numeric: tabular-nums;
+}
+.pi-eta-hora.tenue { color: var(--gray-400); font-weight: 600; }
+.pi-eta-aprox { font-size: 14px; font-weight: 500; color: var(--gray-400); margin-right: 1px; }
+.pi-eta-sub { font-size: 11px; color: var(--gray-500); }
+.pi-eta.encamino .pi-eta-et { color: var(--green-600); }
+.pi-eta.recibido .pi-eta-hora { font-size: 15px; color: var(--green-600); }
+.pi-eta-barra { margin-top: 5px; height: 3px; border-radius: 2px; background: var(--gray-200); overflow: hidden; }
+.pi-eta-barra span { display: block; height: 100%; background: var(--green-400); border-radius: 2px; }
+.pi-camion-matricula.vacia { font-family: inherit; font-weight: 400; color: var(--gray-400); }
+.pi-btn-ver {
+  display: inline-flex; align-items: center; gap: 3px; font-size: 11px; font-weight: 600;
+  color: var(--gray-500); padding: 5px 4px;
+}
+.pi-solo-ancho { display: none; }
+
+@media (min-width: 1000px) {
+  .pi-camion--rec { padding: 14px 20px; gap: 24px; }
+  .pi-camion--rec .pi-eta { width: 116px; }
+  .pi-camion--rec .pi-eta-hora { font-size: 26px; }
+  .pi-camion--rec .pi-camion-info {
+    display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.25fr);
+    grid-auto-flow: row dense; column-gap: 24px; row-gap: 2px; align-items: start;
+  }
+  .pi-camion--rec .pi-camion-id { grid-column: 1; grid-row: 1; font-size: 14px; }
+  .pi-camion--rec .pi-camion-matricula { grid-column: 1; grid-row: 2 / span 2; font-size: 15px; margin-top: 3px; }
+  .pi-camion--rec .pi-camion-meta { grid-column: 2; margin-top: 0; font-size: 12px; color: var(--gray-500); }
+  .pi-camion--rec .pi-camion-meta.principal { color: var(--gray-800); font-weight: 500; }
+  .pi-solo-ancho { display: block; }
+}

@@ -10,15 +10,6 @@ import './PanelInstalacion.css'
 
 const fmtFecha = (f) => f ? String(f).slice(0,10).split('-').reverse().join('/') : null
 
-function fmtFirmaTs(ts) {
-  if (!ts) return ''
-  const [datePart, timePart] = String(ts).split(', ')
-  if (!datePart) return ts
-  const [d, m] = datePart.split('/')
-  const time = timePart ? timePart.slice(0, 5) : ''
-  return `${d.padStart(2,'0')}/${m.padStart(2,'0')} · ${time}`
-}
-
 const MESES_C   = ['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic']
 const DIAS_ABR  = ['L','M','X','J','V','S','D']
 const DIAS_FULL = ['domingo','lunes','martes','miércoles','jueves','viernes','sábado']
@@ -119,37 +110,95 @@ function CalendarioSemana({ albaranes, diaSeleccionado, onDiaClick }) {
   )
 }
 
-function InfoCamion({ a }) {
-  const firmado    = a.instalacionFirmada
-  const origen     = a.astilladora || a.proveedor
-  const meta       = [origen, fmtFecha(a.fecha)].filter(Boolean).join(' · ')
-  const esAtrasado = !a.planificado && !firmado && a.fecha && a.fecha < isoLocal(new Date())
+// ── Llegada estimada ────────────────────────────────────────────────────
+// Salida de origen (firma de la astilladora o, si no hay, del proveedor) +
+// duración del trayecto que calcula el servidor con los mapas.
+function parseFirma(f) {
+  const m = String(f || '').match(/^(\d{1,2})\/(\d{1,2})\/(\d{4}),?\s+(\d{1,2}):(\d{2})/)
+  return m ? new Date(+m[3], +m[2] - 1, +m[1], +m[4], +m[5]) : null
+}
+const hhmm = d => d.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' })
+const duracion = m => m < 60 ? `${m} min` : `${Math.floor(m / 60)} h${m % 60 ? ` ${m % 60} min` : ''}`
 
-  return (
-    <div>
-      <div className="pi-camion-id">
-        Albarán {a.id}
-        {esAtrasado && <span className="pi-camion-atrasado-tag">Atrasado</span>}
+function llegadaDe(a) {
+  const salida = parseFirma(a.salidaFecha)
+  const llegada = salida && a.trayecto ? new Date(salida.getTime() + a.trayecto.minutos * 60000) : null
+  return { salida, llegada }
+}
+
+function EstadoLlegada({ a, ahora }) {
+  if (a.planificado) return <div className="pi-eta"><span className="pi-eta-sub">Planificado</span></div>
+  if (a.instalacionFirmada) {
+    const d = parseFirma(a.instalacionFecha)
+    return (
+      <div className="pi-eta recibido">
+        <span className="pi-eta-et">Recibido</span>
+        <span className="pi-eta-hora"><CheckCircle size={15} /> {d ? hhmm(d) : ''}</span>
       </div>
-      {a.matriculaTractora && (
-        <div className="pi-camion-matricula">
-          {a.matriculaTractora}
-          {a.matriculaRemolque && <span> · {a.matriculaRemolque}</span>}
-        </div>
-      )}
-      {meta && <div className="pi-camion-meta">{meta}</div>}
-      {firmado && a.instalacionFecha && (
-        <div className="pi-camion-meta verde">✓ Completado · {fmtFirmaTs(a.instalacionFecha)}</div>
-      )}
+    )
+  }
+  const { salida, llegada } = llegadaDe(a)
+  if (llegada) {
+    const faltan = Math.round((llegada - ahora) / 60000)
+    const progreso = Math.max(0, Math.min(1, (ahora - salida) / (llegada - salida)))
+    return (
+      <div className="pi-eta encamino" title={`Salió a las ${hhmm(salida)} · ${a.trayecto.distanciaKm} km`}>
+        <span className="pi-eta-et">Llegada</span>
+        <span className="pi-eta-hora"><span className="pi-eta-aprox">≈</span>{hhmm(llegada)}</span>
+        <span className="pi-eta-sub">{faltan > 0 ? `en ${duracion(faltan)}` : faltan > -15 ? 'llegando' : `estimada hace ${duracion(-faltan)}`}</span>
+        <span className="pi-eta-barra" aria-hidden="true"><span style={{ width: `${progreso * 100}%` }} /></span>
+      </div>
+    )
+  }
+  if (salida) {
+    return (
+      <div className="pi-eta encamino">
+        <span className="pi-eta-et">En camino</span>
+        <span className="pi-eta-hora">{hhmm(salida)}</span>
+        <span className="pi-eta-sub">hora de salida</span>
+      </div>
+    )
+  }
+  return (
+    <div className="pi-eta">
+      <span className="pi-eta-et">Sin salir</span>
+      {a.hora && <span className="pi-eta-hora tenue">{String(a.hora).slice(0, 5)}</span>}
+      <span className="pi-eta-sub">{a.trayecto ? `trayecto ${duracion(a.trayecto.minutos)}` : a.hora ? 'programado' : ''}</span>
     </div>
   )
 }
 
-function TarjetaCamion({ a, esUltimo, esDesde }) {
+function InfoCamion({ a }) {
+  const firmado    = a.instalacionFirmada
+  const origen     = a.astilladora || a.proveedor
+  const esAtrasado = !a.planificado && !firmado && a.fecha && a.fecha < isoLocal(new Date())
+  const biomasa    = [a.especie, a.tipoBiomasa].filter(Boolean).join(' · ')
+  const conductor  = [a.chofer, a.transportista].filter(Boolean).join(' · ')
+
+  return (
+    <div className="pi-camion-info">
+      <div className="pi-camion-id">
+        Albarán {a.id}
+        {esAtrasado && <span className="pi-camion-atrasado-tag">Atrasado · {fmtFecha(a.fecha)}</span>}
+      </div>
+      {a.matriculaTractora ? (
+        <div className="pi-camion-matricula">
+          {a.matriculaTractora}
+          {a.matriculaRemolque && <span> · {a.matriculaRemolque}</span>}
+        </div>
+      ) : <div className="pi-camion-matricula vacia">Camión sin confirmar</div>}
+      <div className="pi-camion-meta principal">{[origen, a.origen].filter(Boolean).join(' · ')}</div>
+      {conductor && <div className="pi-camion-meta">{conductor}</div>}
+      {biomasa && <div className="pi-camion-meta pi-solo-ancho">{biomasa}</div>}
+    </div>
+  )
+}
+
+function TarjetaCamion({ a, esUltimo, esDesde, ahora }) {
   const navigate    = useNavigate()
   const firmado     = a.instalacionFirmada
   const planificado = a.planificado
-  const enCamino    = !planificado && a.astilladoraFirmada && !firmado
+  const enCamino    = !planificado && !!a.salidaFecha && !firmado
   const ref         = useRef(null)
 
   useEffect(() => {
@@ -159,10 +208,11 @@ function TarjetaCamion({ a, esUltimo, esDesde }) {
   return (
     <div
       ref={ref}
-      className={`pi-camion ${planificado ? 'planificado' : firmado ? 'firmado' : 'pendiente'}${enCamino ? ' encamino' : ''}${esDesde ? ' pi-desde-active' : ''}`}
+      className={`pi-camion pi-camion--rec ${planificado ? 'planificado' : firmado ? 'firmado' : 'pendiente'}${enCamino ? ' encamino' : ''}${esDesde ? ' pi-desde-active' : ''}`}
       onClick={planificado ? undefined : () => navigate(`/campo/${a.id}/instalacion?t=${encodeURIComponent(a.campoToken || '')}`)}
       style={{ cursor: planificado ? 'default' : 'pointer', borderBottom: esUltimo ? 'none' : undefined }}
     >
+      <EstadoLlegada a={a} ahora={ahora} />
       <div className="pi-camion-left">
         <InfoCamion a={a} />
       </div>
@@ -170,58 +220,62 @@ function TarjetaCamion({ a, esUltimo, esDesde }) {
         {planificado
           ? <span className="pi-camion-plan-tag">Planificado</span>
           : firmado
-          ? <CheckCircle size={20} color="var(--green-400)" />
-          : <div style={{ display:'flex', flexDirection:'column', alignItems:'flex-end', gap:4 }}>
-              {enCamino && <span className="pi-camion-encamino-tag">En camino</span>}
-              <div className="pi-btn-firmar">Firmar <ChevronRight size={14} /></div>
-            </div>
+          ? <span className="pi-btn-ver">Ver <ChevronRight size={14} /></span>
+          : <div className="pi-btn-firmar">Firmar <ChevronRight size={14} /></div>
         }
       </div>
     </div>
   )
 }
 
-function GrupoHora({ hora, albaranes, desdeId }) {
-  const activos  = albaranes.filter(a => !a.planificado)
+// Orden de llegada: primero lo que viene de camino (por hora estimada de
+// llegada; sin estimación, por hora de salida), luego lo que aún no ha
+// salido (por hora programada) y al final lo ya recibido.
+function ordenLlegada(a, b) {
+  const rango = x => x.instalacionFirmada ? 2 : x.salidaFecha ? 0 : 1
+  const ra = rango(a), rb = rango(b)
+  if (ra !== rb) return ra - rb
+  if (ra === 0) {
+    const ta = llegadaDe(a).llegada || parseFirma(a.salidaFecha)
+    const tb = llegadaDe(b).llegada || parseFirma(b.salidaFecha)
+    return (ta || 0) - (tb || 0)
+  }
+  if (ra === 1) return String(a.hora || '99').localeCompare(String(b.hora || '99')) || String(a.id).localeCompare(String(b.id))
+  return (parseFirma(a.instalacionFecha) || 0) - (parseFirma(b.instalacionFecha) || 0)
+}
+
+function GrupoDia({ titulo, albaranes, desdeId, ahora }) {
+  const activos  = albaranes.filter(a => !a.planificado).sort(ordenLlegada)
   const planifs  = albaranes.filter(a => a.planificado)
     .sort((a, b) => (a.fecha || '').localeCompare(b.fecha || '') || 0)
   const firmados = activos.filter(a => a.instalacionFirmada).length
+  const enCamino = activos.filter(a => a.salidaFecha && !a.instalacionFirmada).length
   const total    = activos.length
   const pct      = total > 0 ? Math.round((firmados / total) * 100) : 0
-
-  const sorted = [...activos].sort((a, b) => {
-    const aEC = a.astilladoraFirmada && !a.instalacionFirmada
-    const bEC = b.astilladoraFirmada && !b.instalacionFirmada
-    if (aEC && !bEC) return -1
-    if (!aEC && bEC) return 1
-    if (!a.instalacionFirmada && b.instalacionFirmada)  return -1
-    if (a.instalacionFirmada  && !b.instalacionFirmada) return 1
-    return new Date(a.instalacionFecha || 0) - new Date(b.instalacionFecha || 0)
-  })
 
   return (
     <div className="pi-flota">
       <div className="pi-flota-header">
         <div className="pi-flota-icon"><Clock size={15} color="var(--green-600)" /></div>
         <div style={{ flex: 1, minWidth: 0 }}>
-          <div className="pi-flota-title" style={{ overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{hora}</div>
+          <div className="pi-flota-title" style={{ overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{titulo}</div>
           <div className="pi-flota-sub">
-            {total} {total !== 1 ? 'albaranes' : 'albarán'}
+            {total} {total !== 1 ? 'albaranes' : 'albarán'}{enCamino ? ` · ${enCamino} en camino` : ''} · por orden de llegada
             {planifs.length > 0 ? ` · ${planifs.length} planificado${planifs.length !== 1 ? 's' : ''}` : ''}
           </div>
         </div>
-        <div className="pi-flota-badge">{firmados}/{total}</div>
+        <div className="pi-flota-badge">{firmados}/{total} recibidos</div>
       </div>
       <div className="pi-progress-bar">
         <div className="pi-progress-fill" style={{ width: `${pct}%` }} />
       </div>
       <div className="pi-camiones-list">
-        {sorted.map((a, i) => (
-          <TarjetaCamion key={a.id} a={a} esUltimo={i === sorted.length - 1 && planifs.length === 0} esDesde={String(a.id) === desdeId} />
+        {activos.map((a, i) => (
+          <TarjetaCamion key={a.id} a={a} ahora={ahora} esUltimo={i === activos.length - 1 && planifs.length === 0} esDesde={String(a.id) === desdeId} />
         ))}
         {planifs.length > 0 && <div className="pi-planif-sep">Planificado</div>}
         {planifs.map((a, i) => (
-          <TarjetaCamion key={a.id} a={a} esUltimo={i === planifs.length - 1} esDesde={false} />
+          <TarjetaCamion key={a.id} a={a} ahora={ahora} esUltimo={i === planifs.length - 1} esDesde={false} />
         ))}
       </div>
     </div>
@@ -250,6 +304,7 @@ export default function PanelInstalacion() {
   const [showOk,         setShowOk]        = useState(false)
   const [hayCambios,     setHayCambios]    = useState(false)
   const [diaSeleccionado, setDiaSeleccionado] = useState('hoy')
+  const [ahora, setAhora] = useState(() => Date.now())
   const showOkTimer     = useRef(null)
   const hayCambiosTimer = useRef(null)
   const signaturaRef    = useRef(null)
@@ -272,6 +327,7 @@ export default function PanelInstalacion() {
       signaturaRef.current = sig
       setAlbaranes(arr)
       setLastUpdate(new Date())
+      setAhora(Date.now())
       if (manual) {
         setHayCambios(false)
         clearTimeout(showOkTimer.current)
@@ -299,36 +355,16 @@ export default function PanelInstalacion() {
     ? albaranes.filter(esTrabajableHoy)
     : albaranes.filter(a => a.fecha === diaSeleccionado)
 
-  // Agrupar por fecha → hora
-  const gruposPorFecha = {}
-  albaranesFiltrados.forEach(a => {
-    const fk = a.fecha || 'Sin fecha'
-    const hk = a.hora ? String(a.hora).slice(0, 5) : 'Sin hora'
-    if (!gruposPorFecha[fk]) gruposPorFecha[fk] = {}
-    if (!gruposPorFecha[fk][hk]) gruposPorFecha[fk][hk] = []
-    gruposPorFecha[fk][hk].push(a)
-  })
-  // Lo más reciente arriba: hoy, ayer y después los días anteriores
-  const fechasOrdenadas = Object.keys(gruposPorFecha).sort().reverse()
-  const multiplesFechas = fechasOrdenadas.length > 1
-
-  function sortHoras(entries) {
-    return entries.sort(([ka, a], [kb, b]) => {
-      const ap = a.some(x => !x.planificado && !x.instalacionFirmada)
-      const bp = b.some(x => !x.planificado && !x.instalacionFirmada)
-      if (ap && !bp) return -1
-      if (!ap && bp) return 1
-      if (ka === 'Sin hora') return 1
-      if (kb === 'Sin hora') return -1
-      return ka.localeCompare(kb)
-    })
-  }
+  // En "Hoy" todo lo trabajable va en una sola lista por orden de llegada
+  // (lo atrasado de días anteriores también puede estar llegando); otro día,
+  // la lista de ese día.
+  const tituloDia = labelFechaSec(diaSeleccionado === 'hoy' ? hoyStr : diaSeleccionado)
 
   const completados = completadosFuera(albaranes, albaranesFiltrados, a => a.instalacionFirmada || a.cerrado)
 
   const activosFiltrados = albaranesFiltrados.filter(a => !a.planificado)
   const pendientes       = activosFiltrados.filter(a => !a.instalacionFirmada).length
-  const enCaminoCount    = activosFiltrados.filter(a => a.astilladoraFirmada && !a.instalacionFirmada).length
+  const enCaminoCount    = activosFiltrados.filter(a => a.salidaFecha && !a.instalacionFirmada).length
   const planificadosCount = albaranesFiltrados.filter(a => a.planificado).length
   const total            = activosFiltrados.length
 
@@ -431,20 +467,13 @@ export default function PanelInstalacion() {
                     <button className="pi-empty-dia-btn" onClick={() => setDiaSeleccionado('hoy')}>Volver a hoy</button>
                   )}
                 </div>
-              ) : fechasOrdenadas.map(fecha => (
-                <div key={fecha}>
-                  {multiplesFechas && (
-                    <div className="pi-fecha-sep">{labelFechaSec(fecha)}</div>
-                  )}
-                  {sortHoras(Object.entries(gruposPorFecha[fecha])).map(([hora, albs]) => (
-                    <GrupoHora key={`${fecha}-${hora}`} hora={hora} albaranes={albs} desdeId={desdeId} />
-                  ))}
-                </div>
-              ))}
+              ) : (
+                <GrupoDia titulo={tituloDia} albaranes={albaranesFiltrados} desdeId={desdeId} ahora={ahora} />
+              )}
             </div>
             <PanelCompletados
               albaranes={completados}
-              renderFila={(a, esUltimo) => <TarjetaCamion key={a.id} a={a} esUltimo={esUltimo} esDesde={false} />}
+              renderFila={(a, esUltimo) => <TarjetaCamion key={a.id} a={a} ahora={ahora} esUltimo={esUltimo} esDesde={false} />}
             />
             {lastUpdate && (
               <div className="pi-last-update-bar">

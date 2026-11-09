@@ -89,7 +89,6 @@ function ResumenRecepcion({ a, token }) {
   const [trayecto, setTrayecto] = useState(null)
   const [ahora, setAhora] = useState(() => Date.now())
   useEffect(() => {
-    if (!a.mapsOrigen || !a.mapsDestino) return
     let vivo = true
     fetch(`/api/albaranes/${a.id}/trayecto?t=${encodeURIComponent(token || '')}`)
       .then(r => r.ok ? r.json() : null)
@@ -187,7 +186,10 @@ function ResumenRecepcion({ a, token }) {
               <span className="rec-tr-lugar">{a.instalacion}</span>
             </div>
             <div className="rec-tr-nota">
-              {trayecto.distanciaKm} km · {duracion(trayecto.minutos)} en camión{trayecto.aproximada ? ' (aproximado, sin ruta exacta)' : ''} · estimación calculada con los mapas de origen y destino
+              {trayecto.distanciaKm} km · {duracion(trayecto.minutos)} en camión · {
+                trayecto.fuente === 'poblacion' ? `estimación aproximada desde la población de origen (${a.origen})`
+                : trayecto.fuente === 'referencia' ? 'estimación con la ubicación habitual de este origen'
+                : 'estimación con los mapas de origen y destino'}{trayecto.aproximada ? ', sin ruta exacta' : ''}
             </div>
           </div>
         )}
