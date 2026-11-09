@@ -344,5 +344,10 @@ export async function dibujarAlbaranPDF(a, options, logos) {
 
   const nombre = includeTicket ? `${a.id}_albaran_ticket_comsa.pdf` : `${a.id}_albaran_comsa.pdf`
 
+  // El visor de PDF del navegador muestra el título de los metadatos; sin él
+  // enseña el id aleatorio de la blob URL de la vista previa.
+  doc.setProperties({ title: nombre.replace(/\.pdf$/, ''), author: 'COMSA Service Bioenergía' })
+  doc.viewerPreferences({ DisplayDocTitle: true })
+
   return { buffer: doc.output('arraybuffer'), nombre }
 }
