@@ -459,6 +459,8 @@ export default function DetalleAlbaran({ albaranes, simularFirma, updateFirma, s
 
   const iniciarEditDatos = () => {
     setFormDatos({
+      fecha:             a.fecha?.slice(0,10) || '',
+      hora:              a.hora?.slice(0,5)   || '',
       tipo:              a.tipo              || '',
       certificacion:     Array.isArray(a.certificacion) ? a.certificacion.join(',') : (a.certificacion || ''),
       proveedor:         a.proveedor         || '',
@@ -488,12 +490,15 @@ export default function DetalleAlbaran({ albaranes, simularFirma, updateFirma, s
     const movimientos = Object.keys(ETQ)
       .filter(k => (formDatos[k] || '') !== (a[k] || ''))
       .map(k => ({ k, etiqueta: ETQ[k], de: a[k] || '', a: formDatos[k] || '' }))
+    if (!formDatos.fecha) { mostrarToast('La fecha del albarán es obligatoria'); return }
     if (movimientos.length && !confirmado) { setConfirmEmpresa(movimientos); return }
     setConfirmEmpresa(null)
     setGuardando(true)
     try {
       await actualizarAlbaran(a.id, {
-        tipo:               formDatos.tipo              || null,
+        fecha:              formDatos.fecha,
+        hora:               formDatos.hora              || null,
+        tipo:              formDatos.tipo              || null,
         certificacion:      formDatos.certificacion     || null,
         proveedor:          formDatos.proveedor         || null,
         astilladora:        formDatos.astilladora       || null,
@@ -891,6 +896,15 @@ export default function DetalleAlbaran({ albaranes, simularFirma, updateFirma, s
 
               {editandoDatos ? (
                 <div className="edit-grid">
+                  <Grupo>Programación</Grupo>
+                  <div className="edit-field">
+                    <label className="edit-label">Fecha</label>
+                    <input className="edit-input" type="date" required value={formDatos.fecha} onChange={e => setD('fecha', e.target.value)} />
+                  </div>
+                  <div className="edit-field">
+                    <label className="edit-label">Hora</label>
+                    <input className="edit-input" type="time" value={formDatos.hora} onChange={e => setD('hora', e.target.value)} />
+                  </div>
                   <Grupo>Operación</Grupo>
                   <div className="edit-field">
                     <label className="edit-label">Tipo operación</label>
@@ -1001,6 +1015,10 @@ export default function DetalleAlbaran({ albaranes, simularFirma, updateFirma, s
                 </div>
               ) : (
                 <div className="ver-grupos">
+                  <Fila titulo="Programación">
+                    <Campo label="Fecha" valor={a.fecha ? a.fecha.slice(0,10).split('-').reverse().join('/') : null} />
+                    <Campo label="Hora" valor={a.hora ? `${a.hora.slice(0,5)} h` : null} />
+                  </Fila>
                   <Fila titulo="Operación">
                     <Campo label="Tipo operación" valor={a.tipo} ancho={3} />
                     <Campo label="Certificación">
