@@ -767,9 +767,9 @@ export default function DetalleAlbaran({ albaranes, simularFirma, updateFirma, s
             <div className="page-title" style={{fontFamily:'var(--font-mono)',fontSize:18}}>{a.id}</div>
             <Badge estado={a.estado} />
             {esFlota && (
-              <div style={{display:'inline-flex',alignItems:'center',gap:5,padding:'3px 10px',borderRadius:5,background:'var(--blue-50)',border:'1px solid var(--blue-100)',fontSize:12,fontWeight:600,color:'var(--blue-700)'}}>
+              <span style={{display:'inline-flex',alignItems:'center',gap:5,fontSize:12,color:'var(--gray-500)'}}>
                 <Truck size={12} /> Camión {a.camionOrden || 1} de {flotaAlbaranes.length}
-              </div>
+              </span>
             )}
           </div>
           <div className="detalle-acciones" style={{display:'flex',gap:8}}>
