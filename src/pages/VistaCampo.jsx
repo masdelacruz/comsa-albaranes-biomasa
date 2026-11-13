@@ -454,7 +454,7 @@ function PasoFirma({ rol, a, updateFirma, subirTicketPesada, onCompletado, total
   const [chofer,               setChofer]              = useState(a.chofer || '')
   const [pesoBruto,         setPesoBruto]        = useState(a.pesada?.entrada ? String(a.pesada.entrada) : '')
   const [tara,              setTara]             = useState(a.pesada?.salida  ? String(a.pesada.salida)  : '')
-  const [humedad,           setHumedad]          = useState(a.pesada?.humedad ? String(a.pesada.humedad) : '')
+  const [humedad,           setHumedad]          = useState(a.pesada?.humedad != null ? String(a.pesada.humedad) : '')
   const [numeroPesada,      setNumeroPesada]     = useState(a.pesada?.numeroPesada || '')
   const [ticketNombre,      setTicketNombre]     = useState('')
   const [firmando,          setFirmando]         = useState(false)
@@ -466,7 +466,7 @@ function PasoFirma({ rol, a, updateFirma, subirTicketPesada, onCompletado, total
   const [enviandoRechazo,   setEnviandoRechazo]  = useState(false)
 
   const pesoNeto = pesoBruto && tara
-    ? (parseFloat(pesoBruto) - parseFloat(tara)).toLocaleString('es-ES') + ' kg' : null
+    ? (parseFloat(pesoBruto.replace(',', '.')) - parseFloat(tara.replace(',', '.'))).toLocaleString('es-ES') + ' kg' : null
 
   // Firma válida: tiene sello registrado, o no se requiere (se confirma con IP)
   const firmaOk = !requiereFirma || !!empresaFirmaUrl
@@ -485,10 +485,12 @@ function PasoFirma({ rol, a, updateFirma, subirTicketPesada, onCompletado, total
     setFirmando(true)
     setErrorFirma('')
     const firmaImagen = empresaFirmaUrl || null
+    // Se envía tal cual (admite "12,5"); la API convierte y valida. 0 es un valor válido.
+    const num = v => { const t = String(v ?? '').trim().replace(',', '.'); return t === '' ? null : t }
     const pesadaData  = (rol === 'transportista' || rol === 'instalacion') && (pesoBruto || tara) ? {
-      entrada: parseFloat(pesoBruto) || null,
-      salida:  parseFloat(tara)      || null,
-      humedad: parseFloat(humedad)   || null,
+      entrada: num(pesoBruto),
+      salida:  num(tara),
+      humedad: num(humedad),
       numeroPesada: numeroPesada.trim() || null,
     } : null
     const campoData = (rol === 'astilladora' || rol === 'transportista') ? {

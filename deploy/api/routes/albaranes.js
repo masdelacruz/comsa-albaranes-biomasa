@@ -19,11 +19,32 @@ function toTitleCase(str) {
 }
 
 // ── Helper: matrículas siempre en mayúsculas y sin espacios sobrantes ──
-const MATRICULAS = ['matricula_tractora', 'matricula_remolque']
+const MATRICULAS = ['matricula_tractora', 'matricula_remolque', 'matricula_astilladora']
 function matricula(v) {
   if (typeof v !== 'string') return v ?? null
   return v.trim().replace(/\s+/g, ' ').toUpperCase() || null
 }
+
+// ── Helpers: normalización de lo que llega del cliente ────────────
+// Texto: '' / espacios / undefined → null
+const limpio = v => (typeof v === 'string' ? (v.trim() || null) : (v ?? null))
+// Número de pesada (kg / %): '' → null, "12,5" → 12.5; 0 es un valor válido.
+// Devuelve undefined si no es un número, para poder rechazarlo.
+function numero(v) {
+  if (v == null || v === '') return null
+  const n = typeof v === 'number' ? v : Number(String(v).trim().replace(',', '.'))
+  return Number.isFinite(n) && n >= 0 ? n : undefined
+}
+const FECHA_RE = /^\d{4}-\d{2}-\d{2}$/
+const HORA_RE  = /^([01]\d|2[0-3]):[0-5]\d$/
+// Fecha real del calendario (rechaza 2026-02-30, que Date "corregiría" a marzo)
+const fechaValida = v => {
+  if (typeof v !== 'string' || !FECHA_RE.test(v)) return false
+  const d = new Date(v + 'T00:00:00Z')
+  return !isNaN(d) && d.toISOString().slice(0, 10) === v
+}
+// NUMERIC llega de pg como texto: al cliente se le da como número (o null)
+const aNumero = v => (v == null || v === '' ? null : Number(v))
 
 // ── Helper: ¿la firma se hizo hoy? (fecha formato "d/m/yyyy, hh:mm:ss") ──
 function esFirmaHoy(fechaStr) {
@@ -237,6 +258,7 @@ function buildAlbaran(a, firmas, pesada, docs, actividad, observacionesPost, emp
     firmasObj[f.rol] = {
       firmado: f.firmado, fecha: f.fecha, actor: f.actor,
       nombrePersona: f.nombre_persona || null,
+      telefonoPersona: f.telefono_persona || null,
       firmaImagen: signPath(f.firma_imagen) || null,
       ipOrigen: f.ip_origen || null,
       observacionesFirma: f.observaciones_firma || null,
@@ -270,13 +292,14 @@ function buildAlbaran(a, firmas, pesada, docs, actividad, observacionesPost, emp
     referenciaSure: a.referencia_sure || null,
     estado: a.estado, mapsOrigen: a.maps_origen, mapsDestino: a.maps_destino,
     matriculaTractora: a.matricula_tractora, matriculaRemolque: a.matricula_remolque,
+    matriculaAstilladora: a.matricula_astilladora || null,
     chofer: a.chofer, certificacion: a.certificacion || [],
     firmas: firmasObj,
     empresaFirmaMap: empresaFirmaMapFirmada,
     empresaDataMap,
     pesada: {
-      entrada: p.entrada || null, salida: p.salida || null,
-      humedad: p.humedad || null,
+      entrada: aNumero(p.entrada), salida: aNumero(p.salida),
+      humedad: aNumero(p.humedad),
       numeroPesada: p.numero_pesada || null,
       ticketAdjunto: p.ticket_adjunto || false,
       ticketUrl: signPath(p.ticket_url) || null,
@@ -868,6 +891,9 @@ router.post('/:id/regenerar-enlace-campo', requireAuth, async (req, res) => {
 // ── POST /albaranes  (requiere auth) ─────────────────────────────
 router.post('/', requireAuth, async (req, res) => {
   const f = req.body
+  if (!fechaValida(f.fecha)) return res.status(400).json({ error: 'La fecha del albarán no es válida (obligatoria, AAAA-MM-DD).' })
+  const hora = limpio(f.hora)
+  if (hora != null && !HORA_RE.test(String(hora).slice(0, 5))) return res.status(400).json({ error: 'La hora no es válida (HH:MM).' })
   const { rows } = await pool.query('SELECT next_albaran_id() AS id')
   const id   = rows[0].id
   const fecha = new Date().toLocaleString('es-ES')
@@ -892,15 +918,15 @@ router.post('/', requireAuth, async (req, res) => {
       `INSERT INTO albaranes (id,fecha,hora,num_camiones,tipo,proveedor,astilladora,
        transportista,instalacion,especie,tipo_biomasa,estella,origen,permiso,observaciones,
        estado,maps_origen,maps_destino,matricula_tractora,matricula_remolque,
-       chofer,certificacion,grupo_id,camion_orden,referencia_sure)
-       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22,$23,$24,$25)`,
-      [id, f.fecha, f.hora, f.numCamiones, f.tipo, f.proveedor, f.astilladora,
-       f.transportista, f.instalacion, f.especie, f.tipoBiomasa, f.estella || null, f.origen,
-       f.permiso, f.observaciones,
+       chofer,certificacion,grupo_id,camion_orden,referencia_sure,matricula_astilladora)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22,$23,$24,$25,$26)`,
+      [id, f.fecha, hora ? String(hora).slice(0, 5) : null, f.numCamiones, limpio(f.tipo), limpio(f.proveedor), limpio(f.astilladora),
+       limpio(f.transportista), limpio(f.instalacion), limpio(f.especie), limpio(f.tipoBiomasa), limpio(f.estella), limpio(f.origen),
+       limpio(f.permiso), limpio(f.observaciones),
        f.enviarACampo ? 'pendiente_campo' : 'programado',
-       f.mapsOrigen, f.mapsDestino,
-       matricula(f.matriculaTractora), matricula(f.matriculaRemolque), f.chofer,
-       certArray, f.grupoId || null, f.camionOrden || 1, referenciaSure]
+       limpio(f.mapsOrigen), limpio(f.mapsDestino),
+       matricula(f.matriculaTractora), matricula(f.matriculaRemolque), limpio(f.chofer),
+       certArray, f.grupoId || null, f.camionOrden || 1, referenciaSure, matricula(f.matriculaAstilladora)]
     )
 
     const firmasBase = []
@@ -964,7 +990,7 @@ const ALLOWED_ALBARAN_COLS = new Set([
   'tipo', 'certificacion', 'proveedor', 'astilladora', 'transportista', 'instalacion',
   'especie', 'tipo_biomasa', 'estella', 'origen', 'permiso', 'observaciones',
   'maps_origen', 'maps_destino', 'matricula_tractora', 'matricula_remolque', 'chofer',
-  'fecha', 'hora',
+  'fecha', 'hora', 'matricula_astilladora',
 ])
 const ALLOWED_PESADA_COLS = new Set(['entrada', 'salida', 'humedad', 'numero_pesada'])
 
@@ -975,6 +1001,7 @@ const ETIQUETA_COL = {
   estella: 'Estella', origen: 'Origen', permiso: 'Permiso', observaciones: 'Observaciones',
   maps_origen: 'Mapa origen', maps_destino: 'Mapa destino', matricula_tractora: 'Matrícula tractora',
   matricula_remolque: 'Matrícula remolque', chofer: 'Chófer', fecha: 'Fecha', hora: 'Hora',
+  matricula_astilladora: 'Matrícula astilladora',
 }
 const valorLegible = (k, v) => {
   if (v == null || v === '' || (Array.isArray(v) && !v.length)) return '—'
@@ -1065,6 +1092,30 @@ router.patch('/:id', requireAuth, async (req, res) => {
     return res.status(403).json({ error: 'El albarán está cerrado y no puede editarse.' })
   }
 
+  // Validación previa: nada se escribe si algún dato llega mal
+  if (campos && 'fecha' in campos && !fechaValida(campos.fecha)) {
+    return res.status(400).json({ error: 'La fecha del albarán no es válida (obligatoria, AAAA-MM-DD).' })
+  }
+  if (campos && 'hora' in campos) {
+    campos.hora = limpio(campos.hora)
+    if (campos.hora != null && !HORA_RE.test(String(campos.hora).slice(0, 5))) {
+      return res.status(400).json({ error: 'La hora no es válida (HH:MM).' })
+    }
+    if (campos.hora != null) campos.hora = String(campos.hora).slice(0, 5)
+  }
+  if (pesadaCampos) {
+    for (const k of ['entrada', 'salida', 'humedad']) {
+      if (!(k in pesadaCampos)) continue
+      const n = numero(pesadaCampos[k])
+      if (n === undefined) return res.status(400).json({ error: `Valor de pesada no válido: ${k}` })
+      pesadaCampos[k] = n
+    }
+    if (pesadaCampos.humedad != null && pesadaCampos.humedad > 100) {
+      return res.status(400).json({ error: 'La humedad debe estar entre 0 y 100 %.' })
+    }
+    if ('numero_pesada' in pesadaCampos) pesadaCampos.numero_pesada = limpio(pesadaCampos.numero_pesada)
+  }
+
   let cambiosTexto = []   // "Campo: antes → después", para la actividad
   let actividadRegistrada = false
   if (campos && Object.keys(campos).length) {
@@ -1074,7 +1125,7 @@ router.patch('/:id', requireAuth, async (req, res) => {
         : (typeof c === 'string' && c ? c.split(',').filter(Boolean) : [])
     }
     const safeCols = Object.keys(campos).filter(k => ALLOWED_ALBARAN_COLS.has(k))
-    const vals = safeCols.map(k => MATRICULAS.includes(k) ? matricula(campos[k]) : (campos[k] === '' ? null : campos[k]))
+    const vals = safeCols.map(k => MATRICULAS.includes(k) ? matricula(campos[k]) : limpio(campos[k]))
     const nuevoDe = Object.fromEntries(safeCols.map((k, i) => [k, vals[i]]))
     cambiosTexto = describirCambios(prev, nuevoDe)
 
@@ -1149,6 +1200,7 @@ router.patch('/:id', requireAuth, async (req, res) => {
     if (safeCols.length) {
       const sets = safeCols.map((k, i) => `${k} = $${i+2}`).join(', ')
       const vals = safeCols.map(k => pesadaCampos[k])
+      await pool.query('INSERT INTO pesada (albaran_id) VALUES ($1) ON CONFLICT (albaran_id) DO NOTHING', [id])
       await pool.query(`UPDATE pesada SET ${sets} WHERE albaran_id = $1`, [id, ...vals])
     }
     // Si se registra humedad y el albarán estaba esperando análisis → pasa a pendiente_oficina
@@ -1235,11 +1287,24 @@ router.post('/:id/firmas/:rol', requireAuthOrCampoToken(), async (req, res) => {
   const { id, rol } = req.params
   const { actor, firmaImagen, pesadaData, campoData } = req.body
   const nombrePersona = toTitleCase(req.body.nombrePersona)
-  const observacionesFirma = req.body.observacionesFirma || null
+  const observacionesFirma = limpio(req.body.observacionesFirma)
+  const telefonoPersona = typeof req.body.telefonoPersona === 'string' ? limpio(req.body.telefonoPersona.slice(0, 30)) : null
   const fecha = new Date().toLocaleString('es-ES')
   const ROL_LABEL = { oficina:'Oficina', proveedor:'Proveedor', astilladora:'Astilladora', transportista:'Transportista', instalacion:'Instalación' }
 
   if (!ROLES_VALIDOS.has(rol)) return res.status(400).json({ error: 'Rol inválido' })
+  // Pesada: se valida antes de escribir nada (0 es válido; texto no numérico no)
+  let pesada = null
+  if (pesadaData) {
+    pesada = {
+      entrada: numero(pesadaData.entrada), salida: numero(pesadaData.salida),
+      humedad: numero(pesadaData.humedad), numero_pesada: limpio(pesadaData.numeroPesada),
+    }
+    if ([pesada.entrada, pesada.salida, pesada.humedad].includes(undefined)
+        || (pesada.humedad != null && pesada.humedad > 100)) {
+      return res.status(400).json({ error: 'Datos de pesada no válidos' })
+    }
+  }
   // La firma de oficina solo puede registrarla una sesión de oficina autenticada,
   // nunca un enlace de campo (aunque sea válido para este albarán).
   if (rol === 'oficina' && !req.user) return res.status(403).json({ error: 'No autorizado' })
@@ -1269,9 +1334,9 @@ router.post('/:id/firmas/:rol', requireAuthOrCampoToken(), async (req, res) => {
 
   await pool.query(
     `UPDATE firmas SET firmado=true, fecha=$1, actor=$2, nombre_persona=$3,
-     firma_imagen=$4, ip_origen=$5, observaciones_firma=$6
+     firma_imagen=$4, ip_origen=$5, observaciones_firma=$6, telefono_persona=$9
      WHERE albaran_id=$7 AND rol=$8`,
-    [fecha, actor, nombrePersona || null, firmaImagen || null, ip, observacionesFirma, id, rol]
+    [fecha, actor, limpio(nombrePersona), firmaImagen || null, ip, observacionesFirma, id, rol, telefonoPersona]
   )
 
   const obsTexto = observacionesFirma ? ` · Obs: "${observacionesFirma}"` : ''
@@ -1282,10 +1347,11 @@ router.post('/:id/firmas/:rol', requireAuthOrCampoToken(), async (req, res) => {
      actor]
   )
 
-  if (pesadaData) {
+  if (pesada) {
     await pool.query(
-      'UPDATE pesada SET entrada=$1, salida=$2, humedad=$3, numero_pesada=$4 WHERE albaran_id=$5',
-      [pesadaData.entrada||null, pesadaData.salida||null, pesadaData.humedad||null, pesadaData.numeroPesada||null, id]
+      `INSERT INTO pesada (albaran_id, entrada, salida, humedad, numero_pesada) VALUES ($5,$1,$2,$3,$4)
+       ON CONFLICT (albaran_id) DO UPDATE SET entrada=$1, salida=$2, humedad=$3, numero_pesada=$4`,
+      [pesada.entrada, pesada.salida, pesada.humedad, pesada.numero_pesada, id]
     )
   }
 
@@ -1293,12 +1359,14 @@ router.post('/:id/firmas/:rol', requireAuthOrCampoToken(), async (req, res) => {
     const map = {
       matriculaTractora: 'matricula_tractora',
       matriculaRemolque: 'matricula_remolque',
+      matriculaAstilladora: 'matricula_astilladora',
       chofer: 'chofer',
       origen: 'origen',
     }
     const cols = Object.entries(campoData)
-      .filter(([k]) => map[k])
-      .map(([k, v]) => [map[k], MATRICULAS.includes(map[k]) ? matricula(v) : v])
+      // null = "este rol no informa el campo": no se pisa lo que ya hubiera
+      .filter(([k, v]) => map[k] && v !== null && v !== undefined)
+      .map(([k, v]) => [map[k], MATRICULAS.includes(map[k]) ? matricula(v) : limpio(v)])
     if (cols.length) {
       const sets = cols.map(([c], i) => `${c} = $${i+2}`).join(', ')
       await pool.query(`UPDATE albaranes SET ${sets} WHERE id = $1`,
@@ -1395,13 +1463,13 @@ router.post('/:id/duplicar', requireAuth, async (req, res) => {
         `INSERT INTO albaranes (id,fecha,hora,num_camiones,tipo,proveedor,astilladora,
          transportista,instalacion,especie,tipo_biomasa,estella,origen,permiso,observaciones,
          estado,maps_origen,maps_destino,matricula_tractora,matricula_remolque,
-         chofer,certificacion,grupo_id,camion_orden,referencia_sure)
-         VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,'programado',$16,$17,$18,$19,$20,$21,$22,$23,$24)`,
+         chofer,certificacion,grupo_id,camion_orden,referencia_sure,matricula_astilladora)
+         VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,'programado',$16,$17,$18,$19,$20,$21,$22,$23,$24,$25)`,
         [newId, orig.fecha, orig.hora, orig.num_camiones, orig.tipo,
          orig.proveedor, orig.astilladora, orig.transportista, orig.instalacion,
          orig.especie, orig.tipo_biomasa, orig.estella, orig.origen, orig.permiso, orig.observaciones,
          orig.maps_origen, orig.maps_destino, orig.matricula_tractora, orig.matricula_remolque,
-         orig.chofer, orig.certificacion, orig.grupo_id, orden, referenciaSure]
+         orig.chofer, orig.certificacion, orig.grupo_id, orden, referenciaSure, orig.matricula_astilladora]
       )
       for (const fr of firmasOrig) {
         await client.query(

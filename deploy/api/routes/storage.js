@@ -160,7 +160,8 @@ router.post('/upload/:albaranId/ticket', requireAuthOrCampoToken(), upload.singl
   })
 
   await pool.query(
-    'UPDATE pesada SET ticket_adjunto=true, ticket_url=$1 WHERE albaran_id=$2',
+    `INSERT INTO pesada (albaran_id, ticket_adjunto, ticket_url) VALUES ($2, true, $1)
+     ON CONFLICT (albaran_id) DO UPDATE SET ticket_adjunto=true, ticket_url=$1`,
     [path, albaranId]
   )
   const fecha = new Date().toLocaleString('es-ES')

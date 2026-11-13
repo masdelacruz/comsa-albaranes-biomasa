@@ -540,13 +540,16 @@ export default function DetalleAlbaran({ albaranes, simularFirma, updateFirma, s
     setGuardando(true)
     try {
       await actualizarAlbaran(a.id, {}, {
-        entrada: formPesada.entrada !== '' ? Number(formPesada.entrada) : null,
-        salida:  formPesada.salida  !== '' ? Number(formPesada.salida)  : null,
-        humedad: formPesada.humedad !== '' ? Number(formPesada.humedad) : null,
-        numero_pesada: formPesada.numeroPesada !== '' ? formPesada.numeroPesada : null,
+        // Tal cual (admite "12,5"); la API convierte, valida y rechaza lo que no sea número
+        entrada: String(formPesada.entrada ?? '').trim() || null,
+        salida:  String(formPesada.salida  ?? '').trim() || null,
+        humedad: String(formPesada.humedad ?? '').trim() || null,
+        numero_pesada: String(formPesada.numeroPesada ?? '').trim() || null,
       }, 'Datos de pesada editados')
       setEditandoPesada(false)
       mostrarToast('Datos de pesada actualizados')
+    } catch (e) {
+      mostrarToast(e.message || 'No se pudieron guardar los datos de pesada')
     } finally {
       setGuardando(false)
     }
@@ -987,7 +990,7 @@ export default function DetalleAlbaran({ albaranes, simularFirma, updateFirma, s
                   {formDatos.tipo?.includes('1') && (
                   <div className="edit-field">
                     <label className="edit-label">Matrícula astilladora</label>
-                    <input className="edit-input" value={formDatos.matriculaAstilladora || ''} onChange={e => setD('matriculaAstilladora', e.target.value)} placeholder="Ej: CS-1234-B" />
+                    <input className="edit-input" value={formDatos.matriculaAstilladora || ''} onChange={e => setD('matriculaAstilladora', e.target.value.toUpperCase())} autoCapitalize="characters" placeholder="Ej: CS-1234-B" />
                   </div>
                   )}
                   {formDatos.tipo?.includes('1') && (
