@@ -53,8 +53,9 @@ export function useAlbaranActions(refetch, usuario, campoToken = null) {
     const fd = new FormData()
     fd.append('file', fichero)
     if (actorExterno) fd.append('actor', actorExterno)
-    await api.upload(conToken(`/storage/upload/${albaranId}/ticket`), fd)
+    const res = await api.upload(conToken(`/storage/upload/${albaranId}/ticket`), fd)
     await refetch()
+    return res   // { url, leido: {numeroPesada,bruto,tara,neto}|null, rellenado: [...] }
   }
 
   const actualizarAlbaran = async (albaranId, campos, pesadaCampos = null, descripcion = 'Datos editados manualmente') => {

@@ -457,6 +457,7 @@ function PasoFirma({ rol, a, updateFirma, subirTicketPesada, onCompletado, total
   const [humedad,           setHumedad]          = useState(a.pesada?.humedad != null ? String(a.pesada.humedad) : '')
   const [numeroPesada,      setNumeroPesada]     = useState(a.pesada?.numeroPesada || '')
   const [ticketNombre,      setTicketNombre]     = useState('')
+  const [ticketLeido,       setTicketLeido]      = useState('')   // '' | leyendo | ok | no
   const [firmando,          setFirmando]         = useState(false)
   const [firmado,           setFirmado]          = useState(false)
   const [errorFirma,        setErrorFirma]       = useState('')
@@ -667,10 +668,32 @@ function PasoFirma({ rol, a, updateFirma, subirTicketPesada, onCompletado, total
                 const f = e.target.files[0]
                 if (!f) return
                 setTicketNombre(f.name)
-                await subirTicketPesada(a.id, f, empresaNombre)
+                setTicketLeido('leyendo')
+                try {
+                  const r = await subirTicketPesada(a.id, f, empresaNombre)
+                  const l = r?.leido
+                  // Solo se rellenan los campos aún vacíos: lo que ya se haya
+                  // escrito a mano se respeta.
+                  if (l) {
+                    if (l.bruto != null) setPesoBruto(v => v || String(l.bruto))
+                    if (l.tara  != null) setTara(v => v || String(l.tara))
+                    if (l.numeroPesada)  setNumeroPesada(v => v || l.numeroPesada)
+                  }
+                  setTicketLeido(l ? 'ok' : 'no')
+                } catch (err) {
+                  setTicketLeido('')
+                  setErrorFirma(err.message || 'No se pudo subir el ticket')
+                }
               }}
             />
           </label>
+          {ticketLeido && (
+            <div style={{fontSize:12,color: ticketLeido === 'ok' ? 'var(--green-600)' : 'var(--gray-500)',marginTop:-8,marginBottom:14}}>
+              {ticketLeido === 'leyendo' && 'Leyendo ticket…'}
+              {ticketLeido === 'ok' && 'Datos leídos del ticket. Revísalos antes de confirmar.'}
+              {ticketLeido === 'no' && 'No se han podido leer datos del ticket; rellénalos a mano.'}
+            </div>
+          )}
         </>
       )}
 

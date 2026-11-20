@@ -435,8 +435,14 @@ export default function DetalleAlbaran({ albaranes, simularFirma, updateFirma, s
   const subirTicket = async (fichero) => {
     if (!fichero) return
     setSubiendoTicket(true)
-    try { await subirTicketPesada(a.id, fichero) }
-    finally { setSubiendoTicket(false) }
+    try {
+      const r = await subirTicketPesada(a.id, fichero)
+      if (r?.rellenado?.length) mostrarToast('Ticket adjuntado · datos de pesada leídos del ticket')
+      else if (r?.leido) mostrarToast('Ticket adjuntado · los datos de pesada ya estaban rellenos')
+      else mostrarToast('Ticket adjuntado')
+    } catch (e) {
+      mostrarToast(e.message || 'No se pudo subir el ticket')
+    } finally { setSubiendoTicket(false) }
   }
 
   const handleSubirTicket = async (e) => {

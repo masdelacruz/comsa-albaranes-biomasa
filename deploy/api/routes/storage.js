@@ -7,6 +7,7 @@ const { signPath, verifySignedPath, toPath } = require('../lib/signedUrl')
 const { contentMatchesAllowlist } = require('../lib/sniffMime')
 const { nombreDeRuta } = require('../lib/nombreRuta')
 const { registrarAuditoria } = require('../lib/auditoria')
+const { leerTicketPesada } = require('../lib/leerTicket')
 
 // El navegador envía el nombre del fichero en UTF-8 pero multer lo decodifica
 // como latin1 ("Guía" llegaba como "GuÃ­a"). Se recodifica aquí, una vez para
@@ -169,7 +170,36 @@ router.post('/upload/:albaranId/ticket', requireAuthOrCampoToken(), upload.singl
     'INSERT INTO actividad (albaran_id,ts,texto,actor) VALUES ($1,$2,$3,$4)',
     [albaranId, fecha, 'Ticket de pesada adjuntado', actor]
   )
-  res.json({ url: signPath(path) })
+
+  // Lectura automática: nº de tiquet, bruto y neto (tara = bruto − neto).
+  // Solo rellena lo que está vacío; nunca pisa un dato ya guardado o firmado.
+  const leido = await leerTicketPesada(fichero.buffer, ext)
+  let rellenado = []
+  if (leido) {
+    const { rows: [actual] } = await pool.query(
+      'SELECT entrada, salida, numero_pesada FROM pesada WHERE albaran_id=$1', [albaranId]
+    )
+    const cambios = {}
+    if (leido.numeroPesada && !actual?.numero_pesada) cambios.numero_pesada = leido.numeroPesada
+    if (leido.bruto != null && actual?.entrada == null) cambios.entrada = leido.bruto
+    if (leido.tara  != null && actual?.salida  == null) cambios.salida  = leido.tara
+    const cols = Object.keys(cambios)
+    if (cols.length) {
+      await pool.query(
+        `UPDATE pesada SET ${cols.map((c, i) => `${c}=$${i + 2}`).join(', ')} WHERE albaran_id=$1`,
+        [albaranId, ...cols.map(c => cambios[c])]
+      )
+      const ETQ = { numero_pesada: 'Nº tiquet', entrada: 'Bruto', salida: 'Tara' }
+      rellenado = cols
+      await pool.query(
+        'INSERT INTO actividad (albaran_id,ts,texto,actor) VALUES ($1,$2,$3,$4)',
+        [albaranId, fecha,
+         `Datos leídos del ticket: ${cols.map(c => `${ETQ[c]} ${cambios[c]}${c === 'numero_pesada' ? '' : ' kg'}`).join(' · ')}`,
+         'Sistema']
+      )
+    }
+  }
+  res.json({ url: signPath(path), leido, rellenado })
 })
 
 // ── POST /storage/upload-proveedor/:nombre/:albaranId  (oficina o código) ──
