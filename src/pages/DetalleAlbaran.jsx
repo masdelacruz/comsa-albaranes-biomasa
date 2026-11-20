@@ -1,6 +1,7 @@
 import { Fragment, useRef, useState, useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { ArrowLeft, ExternalLink, CheckCircle, Clock, FileDown, Upload, Eye, FileText, AlertTriangle, Copy, Pencil, X, Check, Trash2, MapPin, Share2, Truck, RotateCcw, RefreshCw, Send } from 'lucide-react'
+import OrigenTicket from '../components/OrigenTicket'
 import { Badge } from '../components/Badge'
 import PdfLoadingOverlay from '../components/PdfLoadingOverlay'
 import { generarPDF, generarPDFA5, cargarLogos } from '../utils/generarPDF'
@@ -256,6 +257,7 @@ export default function DetalleAlbaran({ albaranes, simularFirma, updateFirma, s
     : []
   const esFlota = flotaAlbaranes.length > 1
 
+  const tl = a.pesada?.ticketLeido   // lo leído del ticket de pesada, si se pudo leer
   const pesoNeto = a.pesada?.entrada && a.pesada?.salida
     ? (a.pesada.entrada - a.pesada.salida).toLocaleString('es-ES') + ' kg' : '—'
 
@@ -1142,16 +1144,19 @@ export default function DetalleAlbaran({ albaranes, simularFirma, updateFirma, s
                     <div className="pesada-stat">
                       <span className="ver-label">Peso bruto</span>
                       <span className="pesada-num">{a.pesada?.entrada ? <>{a.pesada.entrada.toLocaleString('es-ES')}<small> kg</small></> : '—'}</span>
+                      <OrigenTicket valor={a.pesada?.entrada} leido={tl?.bruto} kg />
                     </div>
                     <span className="pesada-op">−</span>
                     <div className="pesada-stat">
                       <span className="ver-label">Tara</span>
                       <span className="pesada-num">{a.pesada?.salida ? <>{a.pesada.salida.toLocaleString('es-ES')}<small> kg</small></> : '—'}</span>
+                      <OrigenTicket valor={a.pesada?.salida} leido={tl?.tara} kg />
                     </div>
                     <span className="pesada-op">=</span>
                     <div className="pesada-stat neto">
                       <span className="ver-label">Peso neto</span>
                       <span className="pesada-num">{pesoNeto === '—' ? '—' : <>{pesoNeto.replace(' kg', '')}<small> kg</small></>}</span>
+                      <OrigenTicket valor={a.pesada?.entrada && a.pesada?.salida ? a.pesada.entrada - a.pesada.salida : null} leido={tl?.neto} kg />
                     </div>
                   </div>
                   <div className="edit-grid ver-grid">
@@ -1160,7 +1165,14 @@ export default function DetalleAlbaran({ albaranes, simularFirma, updateFirma, s
                         ? `${a.pesada.humedad}%`
                         : <span className="ver-pend">Pendiente de análisis</span>}
                     </Campo>
-                    <Campo label="Nº de pesada" valor={a.pesada?.numeroPesada} />
+                    <Campo label="Nº de pesada">
+                      {a.pesada?.numeroPesada
+                        ? <span style={{display:'inline-flex',alignItems:'center',gap:8,flexWrap:'wrap'}}>
+                            {a.pesada.numeroPesada}
+                            <OrigenTicket valor={a.pesada.numeroPesada} leido={tl?.numeroPesada} />
+                          </span>
+                        : null}
+                    </Campo>
                   </div>
                 </>
               )}

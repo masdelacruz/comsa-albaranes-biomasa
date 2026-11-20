@@ -174,6 +174,10 @@ router.post('/upload/:albaranId/ticket', requireAuthOrCampoToken(), upload.singl
   // Lectura automática: nº de tiquet, bruto y neto (tara = bruto − neto).
   // Solo rellena lo que está vacío; nunca pisa un dato ya guardado o firmado.
   const leido = await leerTicketPesada(fichero.buffer, ext)
+  // Se guarda lo leído (o NULL si el ticket nuevo no se pudo leer: la lectura
+  // del anterior ya no aplica) para marcar en la UI qué datos vienen del ticket.
+  await pool.query('UPDATE pesada SET ticket_leido=$2 WHERE albaran_id=$1',
+    [albaranId, leido ? JSON.stringify(leido) : null])
   let rellenado = []
   if (leido) {
     const { rows: [actual] } = await pool.query(

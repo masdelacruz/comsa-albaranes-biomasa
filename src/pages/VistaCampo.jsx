@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { CheckCircle, Upload, Leaf, ArrowLeft, Truck, Building2, Factory, User, Clock } from 'lucide-react'
+import OrigenTicket from '../components/OrigenTicket'
 import '../components/shared.css'
 import './VistaCampo.css'
 
@@ -376,19 +377,19 @@ function VistaFirmadaInstalacion({ a, token }) {
           {a.pesada.entrada && (
             <div className="campo-row">
               <span className="campo-row-key">Peso bruto</span>
-              <span className="campo-row-val">{a.pesada.entrada.toLocaleString('es-ES')} kg</span>
+              <span className="campo-row-val">{a.pesada.entrada.toLocaleString('es-ES')} kg<OrigenTicket valor={a.pesada.entrada} leido={a.pesada.ticketLeido?.bruto} kg style={{display:'flex',justifyContent:'flex-end',marginTop:2}} /></span>
             </div>
           )}
           {a.pesada.salida && (
             <div className="campo-row">
               <span className="campo-row-key">Tara</span>
-              <span className="campo-row-val">{a.pesada.salida.toLocaleString('es-ES')} kg</span>
+              <span className="campo-row-val">{a.pesada.salida.toLocaleString('es-ES')} kg<OrigenTicket valor={a.pesada.salida} leido={a.pesada.ticketLeido?.tara} kg style={{display:'flex',justifyContent:'flex-end',marginTop:2}} /></span>
             </div>
           )}
           {pesoNeto && (
             <div className="campo-row">
               <span className="campo-row-key">Peso neto</span>
-              <span className="campo-row-val" style={{color:'var(--green-600)',fontWeight:700}}>{pesoNeto} kg</span>
+              <span className="campo-row-val" style={{color:'var(--green-600)',fontWeight:700}}>{pesoNeto} kg<OrigenTicket valor={a.pesada.entrada - a.pesada.salida} leido={a.pesada.ticketLeido?.neto} kg style={{display:'flex',justifyContent:'flex-end',marginTop:2}} /></span>
             </div>
           )}
           {a.pesada.humedad != null && (
@@ -400,7 +401,7 @@ function VistaFirmadaInstalacion({ a, token }) {
           {a.pesada.numeroPesada && (
             <div className="campo-row">
               <span className="campo-row-key">Nº de pesada</span>
-              <span className="campo-row-val">{a.pesada.numeroPesada}</span>
+              <span className="campo-row-val">{a.pesada.numeroPesada}<OrigenTicket valor={a.pesada.numeroPesada} leido={a.pesada.ticketLeido?.numeroPesada} style={{display:'flex',justifyContent:'flex-end',marginTop:2}} /></span>
             </div>
           )}
         </div>
@@ -458,6 +459,7 @@ function PasoFirma({ rol, a, updateFirma, subirTicketPesada, onCompletado, total
   const [numeroPesada,      setNumeroPesada]     = useState(a.pesada?.numeroPesada || '')
   const [ticketNombre,      setTicketNombre]     = useState('')
   const [ticketLeido,       setTicketLeido]      = useState('')   // '' | leyendo | ok | no
+  const [leidoTicket,       setLeidoTicket]      = useState(a.pesada?.ticketLeido || null)
   const [firmando,          setFirmando]         = useState(false)
   const [firmado,           setFirmado]          = useState(false)
   const [errorFirma,        setErrorFirma]       = useState('')
@@ -640,10 +642,12 @@ function PasoFirma({ rol, a, updateFirma, subirTicketPesada, onCompletado, total
             <div className="campo-field">
               <label>Peso bruto (kg) *</label>
               <input type="number" placeholder="Ej: 28400" value={pesoBruto} onChange={e => setPesoBruto(e.target.value)} />
+              <OrigenTicket valor={pesoBruto} leido={leidoTicket?.bruto} kg style={{marginTop:4}} />
             </div>
             <div className="campo-field">
               <label>Tara (kg) *</label>
               <input type="number" placeholder="Ej: 14200" value={tara} onChange={e => setTara(e.target.value)} />
+              <OrigenTicket valor={tara} leido={leidoTicket?.tara} kg style={{marginTop:4}} />
             </div>
           </div>
           {pesoNeto && (
@@ -659,6 +663,7 @@ function PasoFirma({ rol, a, updateFirma, subirTicketPesada, onCompletado, total
           <div className="campo-field">
             <label>Nº de pesada <span style={{fontWeight:400,color:'var(--gray-400)'}}>(opcional)</span></label>
             <input type="text" placeholder="Ej: 12345" value={numeroPesada} onChange={e => setNumeroPesada(e.target.value)} />
+            <OrigenTicket valor={numeroPesada} leido={leidoTicket?.numeroPesada} style={{marginTop:4}} />
           </div>
           <label className="upload-zona" style={{cursor:'pointer',marginBottom:14}}>
             <Upload size={16} />
@@ -674,6 +679,7 @@ function PasoFirma({ rol, a, updateFirma, subirTicketPesada, onCompletado, total
                   const l = r?.leido
                   // Solo se rellenan los campos aún vacíos: lo que ya se haya
                   // escrito a mano se respeta.
+                  setLeidoTicket(l || null)
                   if (l) {
                     if (l.bruto != null) setPesoBruto(v => v || String(l.bruto))
                     if (l.tara  != null) setTara(v => v || String(l.tara))

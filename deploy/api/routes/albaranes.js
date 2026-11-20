@@ -303,6 +303,7 @@ function buildAlbaran(a, firmas, pesada, docs, actividad, observacionesPost, emp
       numeroPesada: p.numero_pesada || null,
       ticketAdjunto: p.ticket_adjunto || false,
       ticketUrl: signPath(p.ticket_url) || null,
+      ticketLeido: p.ticket_leido || null,
     },
     docs: docsObj,
     // `at`: instante real (ISO) para ordenar y situar el evento en el flujo del Panel

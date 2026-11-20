@@ -66,6 +66,7 @@ CREATE TABLE IF NOT EXISTS pesada (
   numero_pesada   TEXT,
   ticket_adjunto  BOOLEAN NOT NULL DEFAULT FALSE,
   ticket_url      TEXT,
+  ticket_leido    JSONB,
   created_at      TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
