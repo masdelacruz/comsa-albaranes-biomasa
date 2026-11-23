@@ -13,7 +13,7 @@ services:
   db:
     image: postgres:16-alpine
     container_name: biomasa_db
-    restart: unless-stopped
+    restart: always
     environment:
       POSTGRES_DB:       ${POSTGRES_DB}
       POSTGRES_USER:     ${POSTGRES_USER}
@@ -32,7 +32,7 @@ services:
   minio:
     image: minio/minio:latest
     container_name: biomasa_minio
-    restart: unless-stopped
+    restart: always
     command: server /data --console-address ":9001"
     environment:
       MINIO_ROOT_USER:     ${MINIO_ROOT_USER}
@@ -45,7 +45,7 @@ services:
   api:
     image: ghcr.io/masdelacruz/comsa-albaranes-biomasa:latest
     container_name: biomasa_api
-    restart: unless-stopped
+    restart: always
     ports:
       - "127.0.0.1:3001:3001"
     environment:
