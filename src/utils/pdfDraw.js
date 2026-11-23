@@ -330,15 +330,29 @@ export async function dibujarAlbaranPDF(a, options, logos) {
   )
 
   // ── TICKET DE PESADA (página adicional si se solicita) ─────────────────────
+  // Un ticket en PDF (el que genera la báscula) no se puede pintar como
+  // imagen: jsPDF fallaba en silencio y la página salía en blanco. Sus
+  // páginas se añaden al final con pdf-lib (ver más abajo); las fotos siguen
+  // como imagen.
+  let ticketPdf = null
   if (includeTicket && a.pesada?.ticketUrl) {
-    doc.addPage()
+    let ticketB64 = null
     try {
-      const ticketB64 = await toBase64(a.pesada.ticketUrl)
-      addImgFit(ticketB64, margen, margen, contentW, 297 - margen * 2)
-    } catch {
-      doc.setFontSize(12)
-      doc.setTextColor(150, 150, 150)
-      doc.text('Ticket de pesada no disponible', W / 2, 148, { align: 'center' })
+      ticketB64 = await toBase64(a.pesada.ticketUrl)
+    } catch { /* se avisa en la página */ }
+    if (ticketB64?.startsWith('data:application/pdf')) {
+      ticketPdf = ticketB64
+    } else {
+      doc.addPage()
+      let pintado = false
+      if (ticketB64) {
+        try { doc.getImageProperties(ticketB64); addImgFit(ticketB64, margen, margen, contentW, 297 - margen * 2); pintado = true } catch { /* aviso abajo */ }
+      }
+      if (!pintado) {
+        doc.setFontSize(12)
+        doc.setTextColor(150, 150, 150)
+        doc.text('Ticket de pesada no disponible', W / 2, 148, { align: 'center' })
+      }
     }
   }
 
@@ -349,5 +363,36 @@ export async function dibujarAlbaranPDF(a, options, logos) {
   doc.setProperties({ title: nombre.replace(/\.pdf$/, ''), author: 'COMSA Service Bioenergía' })
   doc.viewerPreferences({ DisplayDocTitle: true })
 
-  return { buffer: doc.output('arraybuffer'), nombre }
+  const buffer = doc.output('arraybuffer')
+  if (!ticketPdf) return { buffer, nombre }
+  return { buffer: await anexarTicketPdf(buffer, ticketPdf), nombre }
+}
+
+// Añade cada página del ticket en PDF como una página A4 del albarán,
+// escalada para caber con 10 mm de margen y centrada (sin rasterizar: el
+// texto del ticket sigue siendo texto). Si el PDF del ticket está dañado,
+// se añade una página con el aviso en lugar de una en blanco.
+async function anexarTicketPdf(albaranBuffer, ticketDataUrl) {
+  const { PDFDocument, StandardFonts, rgb } = await import('pdf-lib')
+  const out = await PDFDocument.load(albaranBuffer)
+  const A4 = [595.28, 841.89]          // puntos
+  const M  = 28.35                     // 10 mm
+  try {
+    const bytes = Uint8Array.from(atob(ticketDataUrl.split(',')[1]), c => c.charCodeAt(0))
+    const ticket = await PDFDocument.load(bytes, { ignoreEncryption: true })
+    const paginas = await out.embedPdf(ticket, ticket.getPageIndices())
+    for (const pg of paginas) {
+      const page  = out.addPage(A4)
+      const escala = Math.min((A4[0] - 2 * M) / pg.width, (A4[1] - 2 * M) / pg.height)
+      const w = pg.width * escala, h = pg.height * escala
+      page.drawPage(pg, { x: (A4[0] - w) / 2, y: A4[1] - M - h, width: w, height: h })
+    }
+  } catch {
+    const page = out.addPage(A4)
+    const font = await out.embedFont(StandardFonts.Helvetica)
+    const txt  = 'Ticket de pesada no disponible'
+    page.drawText(txt, { x: (A4[0] - font.widthOfTextAtSize(txt, 12)) / 2, y: A4[1] / 2, size: 12, font, color: rgb(0.6, 0.6, 0.6) })
+  }
+  const bytes = await out.save()
+  return bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength)
 }
