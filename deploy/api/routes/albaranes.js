@@ -1348,6 +1348,35 @@ router.post('/:id/firmas/:rol', requireAuthOrCampoToken(), async (req, res) => {
      actor]
   )
 
+  // Fecha real de salida: los camiones de un grupo se programan para un día,
+  // pero los que no salen ese día siguen pendientes los siguientes. Cuando
+  // la astilladora (o el proveedor, si no hay astilladora) confirma la salida,
+  // la fecha y hora del albarán pasan a ser las de esa confirmación. Solo en
+  // la primera firma: una corrección posterior de oficina no la mueve.
+  if (!firmaRows[0].firmado && (rol === 'astilladora' || rol === 'proveedor')) {
+    const { rows: [alb] } = await pool.query(
+      `SELECT to_char(a.fecha, 'YYYY-MM-DD') AS fecha, a.hora,
+              EXISTS (SELECT 1 FROM firmas f WHERE f.albaran_id=a.id AND f.rol='astilladora') AS tiene_astilladora
+         FROM albaranes a WHERE a.id=$1`, [id]
+    )
+    const esSalida = rol === 'astilladora' || (rol === 'proveedor' && !alb.tiene_astilladora)
+    if (esSalida) {
+      const ahora  = new Date()
+      const madrid = new Intl.DateTimeFormat('sv-SE', { timeZone: 'Europe/Madrid', year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', hourCycle: 'h23' })
+        .format(ahora)                       // "2026-11-23 08:40"
+      const [nuevaFecha, nuevaHora] = madrid.split(' ')
+      const horaAnt = alb.hora ? String(alb.hora).slice(0, 5) : null
+      if (alb.fecha !== nuevaFecha || horaAnt !== nuevaHora) {
+        await pool.query('UPDATE albaranes SET fecha=$2, hora=$3 WHERE id=$1', [id, nuevaFecha, nuevaHora])
+        const fmt = (f, h) => f ? `${f.split('-').reverse().join('/')}${h ? ' ' + h : ''}` : '—'
+        await pool.query(
+          'INSERT INTO actividad (albaran_id,ts,texto,actor) VALUES ($1,$2,$3,$4)',
+          [id, fecha, `Fecha del albarán actualizada a la de salida: ${fmt(alb.fecha, horaAnt)} → ${fmt(nuevaFecha, nuevaHora)}`, 'Sistema']
+        )
+      }
+    }
+  }
+
   if (pesada) {
     await pool.query(
       `INSERT INTO pesada (albaran_id, entrada, salida, humedad, numero_pesada) VALUES ($5,$1,$2,$3,$4)
