@@ -15,6 +15,8 @@ import './Historial.css'
 
 const DOCS_COMPLETA   = '__completa'
 const DOCS_INCOMPLETA = '__incompleta'
+const DOCS_TICKET_SI  = '__ticket_si'
+const DOCS_TICKET_NO  = '__ticket_no'
 const pesoNeto = (a) => a.pesada?.entrada && a.pesada?.salida ? a.pesada.entrada - a.pesada.salida : null
 const TIPOS_DOC = ['Autodeclaración','Acuerdo de cesión','Contrato prestación servicios','Permiso de corta','Certificado SURE','Permiso de obra']
 
@@ -279,6 +281,8 @@ export default function Historial({ albaranes, empresas = [], usuario, refetch, 
   const opcionesDocs = [
     { value: DOCS_COMPLETA,   label: 'Documentación completa' },
     { value: DOCS_INCOMPLETA, label: 'Falta documentación' },
+    { value: DOCS_TICKET_SI,  label: 'Con ticket de pesada' },
+    { value: DOCS_TICKET_NO,  label: 'Sin ticket de pesada' },
     ...nombresDocs.map(n => ({ value: n, label: `Con ${n}` })),
   ]
 
@@ -316,9 +320,12 @@ export default function Historial({ albaranes, empresas = [], usuario, refetch, 
       const docs = Object.entries(a.docs || {})
       const completa = docs.length > 0 && docs.every(([, d]) => d.adjunto)
       for (const f of filtroDocs) {
-        if (f === DOCS_COMPLETA   && !completa) return false
-        if (f === DOCS_INCOMPLETA &&  completa) return false
-        if (f !== DOCS_COMPLETA && f !== DOCS_INCOMPLETA && !a.docs?.[f]?.adjunto) return false
+        const ticket = !!a.pesada?.ticketAdjunto
+        if      (f === DOCS_COMPLETA)   { if (!completa) return false }
+        else if (f === DOCS_INCOMPLETA) { if (completa)  return false }
+        else if (f === DOCS_TICKET_SI)  { if (!ticket)   return false }
+        else if (f === DOCS_TICKET_NO)  { if (ticket)    return false }
+        else if (!a.docs?.[f]?.adjunto) return false
       }
     }
     return true
