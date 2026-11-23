@@ -40,17 +40,76 @@ export default function SelectField({ value, onChange, options, placeholder, cle
     return () => document.removeEventListener('mousedown', close)
   }, [open])
 
+  // Opción resaltada: una sola, compartida por ratón y teclado (antes el
+  // fondo gris de :hover se quedaba en la fila del ratón al usar el teclado).
+  const [activo, setActivo] = useState(-1)
+  const busqueda = useRef({ texto: '', t: 0 })
+
+  const abrir = (indice) => {
+    setActivo(indice ?? options.indexOf(value))
+    setOpen(true)
+  }
+  const cerrar = () => { setOpen(false); setActivo(-1) }
+  const elegir = (opt) => { onChange(opt); cerrar() }
+
+  useEffect(() => {
+    if (!open || activo < 0) return
+    listaRef.current?.children[activo]?.scrollIntoView({ block: 'nearest' })
+  }, [open, activo])
+
+  // Búsqueda por teclado como un <select> nativo: varias letras seguidas
+  // buscan por prefijo ("fu" → Fustes…); repetir la misma letra recorre en
+  // bucle las opciones que empiezan por ella (f → Forest, f → Fustes, …).
+  const normal = s => String(s).normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase()
+  const buscar = (tecla) => {
+    const ahora = Date.now()
+    const b = busqueda.current
+    b.texto = ahora - b.t > 800 ? tecla : b.texto + tecla
+    b.t = ahora
+    const q = normal(b.texto)
+    const mismaLetra = [...q].every(c => c === q[0])
+    const desde = open ? activo : options.indexOf(value)
+    const n = options.length
+    // Misma letra: siguiente coincidencia tras la actual; prefijo: desde la actual
+    const inicio = mismaLetra ? desde + 1 : Math.max(desde, 0)
+    const patron = mismaLetra ? q[0] : q
+    for (let k = 0; k < n; k++) {
+      const i = (inicio + k + n) % n
+      if (normal(options[i]).startsWith(patron)) { open ? setActivo(i) : abrir(i); return }
+    }
+  }
+
+  const onKeyDown = (e) => {
+    const n = options.length
+    if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+      e.preventDefault()
+      if (!open) return abrir()
+      const d = e.key === 'ArrowDown' ? 1 : -1
+      setActivo(a => (a < 0 ? (d > 0 ? 0 : n - 1) : (a + d + n) % n))
+    } else if (e.key === 'Enter' || (e.key === ' ' && Date.now() - busqueda.current.t > 800)) {
+      // El espacio abre/elige, salvo en mitad de una búsqueda ("serveis m…")
+      e.preventDefault()
+      if (open && activo >= 0) elegir(options[activo])
+      else open ? cerrar() : abrir()
+    } else if (e.key === 'Escape') {
+      if (open) { e.preventDefault(); cerrar() }
+    } else if (e.key === 'Tab') {
+      cerrar()
+    } else if (e.key.length === 1 && !e.ctrlKey && !e.metaKey && !e.altKey) {
+      e.preventDefault()
+      buscar(e.key)
+    }
+  }
   return (
     <div className={`sf${variant ? ` sf-${variant}` : ''}`} ref={wrapRef}>
       <div className="sf-inner">
         <div
           className={`sf-trigger${!value ? ' sf-empty' : ''}${open ? ' sf-open' : ''}`}
-          onClick={() => setOpen(o => !o)}
+          onClick={() => (open ? cerrar() : abrir())}
           tabIndex={0}
-          onKeyDown={e => {
-            if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setOpen(o => !o) }
-            if (e.key === 'Escape') setOpen(false)
-          }}
+          role="combobox"
+          aria-expanded={open}
+          onKeyDown={onKeyDown}
         >
           <span className="sf-label">{value || placeholder}</span>
           <svg className="sf-chevron" viewBox="0 0 12 12" width="11" height="11">
@@ -59,12 +118,15 @@ export default function SelectField({ value, onChange, options, placeholder, cle
         </div>
         {open && (
           <ul className="sf-dropdown" ref={listaRef}>
-            {options.map(opt => (
+            {options.map((opt, i) => (
               <li
                 key={opt}
-                className={`sf-option${opt === value ? ' sf-selected' : ''}`}
+                role="option"
+                aria-selected={opt === value}
+                className={`sf-option${opt === value ? ' sf-selected' : ''}${i === activo ? ' sf-activa' : ''}`}
                 onMouseDown={e => e.preventDefault()}
-                onClick={() => { onChange(opt); setOpen(false) }}
+                onMouseMove={() => { if (i !== activo) setActivo(i) }}
+                onClick={() => elegir(opt)}
               >
                 {opt}
               </li>

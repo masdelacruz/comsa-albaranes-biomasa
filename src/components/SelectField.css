@@ -49,7 +49,8 @@
   font-size:13px; color:var(--gray-900); font-family:var(--font-main);
   transition:background 0.15s;
 }
-.sf-option:hover { background:var(--gray-100); }
+.sf-option.sf-activa { background:var(--gray-100); }
+.sf-option.sf-selected.sf-activa { background:var(--green-100); }
 .sf-option.sf-selected { background:var(--green-50); color:var(--green-600); font-weight:500; }
 
 /* Variante edit (DetalleAlbaran modo edición) */
