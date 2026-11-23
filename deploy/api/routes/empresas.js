@@ -99,7 +99,9 @@ function aplicarContactos(body) {
 
 function toTitleCase(str) {
   if (!str || typeof str !== 'string') return str
-  return str.toLowerCase().replace(/\b\w/g, c => c.toUpperCase())
+  // Mayúscula en cada letra no precedida de otra letra. \b\w no vale: \w no
+  // reconoce letras acentuadas y salía "MaríN", "ViñUelas", "álvaro".
+  return str.toLowerCase().replace(/(?<![\p{L}\p{M}\p{N}])\p{L}/gu, c => c.toUpperCase())
 }
 
 // ── GET /empresas?tipo=astilladora ────────────────────────────────
