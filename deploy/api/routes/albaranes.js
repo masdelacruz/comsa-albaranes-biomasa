@@ -579,7 +579,7 @@ router.get('/proveedor/:nombre', requireAuthOrEmpresaCodigo('proveedor'), async 
   const { rows } = await pool.query(
     `SELECT a.id, a.fecha, a.hora, a.grupo_id, a.camion_orden, a.num_camiones,
             a.instalacion, a.transportista, a.especie, a.tipo_biomasa, a.estella,
-            a.origen, a.estado, a.matricula_tractora, a.matricula_remolque,
+            a.origen, a.estado, a.matricula_tractora, a.matricula_remolque, a.campo_token,
             (a.estado = 'programado') AS planificado,
             f.firmado AS paso_firmado, f.fecha AS paso_fecha,
             d.adjunto AS doc_adjunto, d.url AS doc_url, d.nombre_fichero AS doc_nombre
@@ -614,6 +614,8 @@ router.get('/proveedor/:nombre', requireAuthOrEmpresaCodigo('proveedor'), async 
         : null,
       completado: !!a.paso_firmado || (!!origen && !!a.doc_adjunto),
       completadoFecha: a.paso_fecha || null,
+      // Abre el formulario de campo del proveedor (igual que la astilladora)
+      campoToken: a.campo_token,
     }
   }))
 })

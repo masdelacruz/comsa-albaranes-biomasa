@@ -458,6 +458,10 @@ function PasoFirma({ rol, a, updateFirma, subirTicketPesada, onCompletado, total
   const [humedad,           setHumedad]          = useState(a.pesada?.humedad != null ? String(a.pesada.humedad) : '')
   const [numeroPesada,      setNumeroPesada]     = useState(a.pesada?.numeroPesada || '')
   const [ticketNombre,      setTicketNombre]     = useState('')
+  // Proveedor (Opción 2): origen y su albarán, que antes iban en el panel
+  const [origen,            setOrigen]           = useState(a.origen || '')
+  const [albaranProv,       setAlbaranProv]      = useState(a.docs?.['Albarán proveedor']?.adjunto ? (a.docs['Albarán proveedor'].nombreFichero || 'Albarán adjunto') : '')
+  const [subiendoAlbaran,   setSubiendoAlbaran]  = useState(false)
   const [ticketLeido,       setTicketLeido]      = useState('')   // '' | leyendo | ok | no
   const [leidoTicket,       setLeidoTicket]      = useState(a.pesada?.ticketLeido || null)
   const [firmando,          setFirmando]         = useState(false)
@@ -477,7 +481,8 @@ function PasoFirma({ rol, a, updateFirma, subirTicketPesada, onCompletado, total
   // Validación por rol
   const puedeConfirmar = (() => {
     if (!firmaOk) return false
-    if (rol === 'proveedor')     return nombrePersona.trim().length > 0
+    if (rol === 'proveedor')     return nombrePersona.trim().length > 0 && matriculaTractora.trim().length > 0
+                                   && origen.trim().length > 0 && !!albaranProv && !subiendoAlbaran
     if (rol === 'astilladora')   return nombrePersona.trim().length > 0 && matriculaTractora.trim().length > 0
     if (rol === 'transportista') return chofer.trim().length > 0
     if (rol === 'instalacion')   return pesoBruto.trim().length > 0 && tara.trim().length > 0
@@ -496,10 +501,11 @@ function PasoFirma({ rol, a, updateFirma, subirTicketPesada, onCompletado, total
       humedad: num(humedad),
       numeroPesada: numeroPesada.trim() || null,
     } : null
-    const campoData = (rol === 'astilladora' || rol === 'transportista') ? {
+    const campoData = (rol === 'astilladora' || rol === 'transportista' || rol === 'proveedor') ? {
       matriculaTractora, matriculaRemolque,
       matriculaAstilladora: rol === 'astilladora' ? matriculaAstilladora : null,
       chofer: chofer || null,
+      ...(rol === 'proveedor' ? { origen: origen.trim() } : {}),
     } : null
 
     try {
@@ -558,12 +564,60 @@ function PasoFirma({ rol, a, updateFirma, subirTicketPesada, onCompletado, total
         </div>
       </div>
 
-      {/* ── PROVEEDOR ─────────────────────────────────── */}
+      {/* ── PROVEEDOR (Opción 2: hace la salida de la carga) ─────────── */}
       {rol === 'proveedor' && (
-        <div className="campo-field">
-          <label>Nombre y apellidos *</label>
-          <input type="text" placeholder="Persona que confirma la carga" value={nombrePersona} onChange={e => setNombrePersona(e.target.value)} />
-        </div>
+        <>
+          <div className="campo-field">
+            <label>Nombre y apellidos *</label>
+            <input type="text" placeholder="Persona que confirma la carga" value={nombrePersona} onChange={e => setNombrePersona(e.target.value)} />
+          </div>
+          <div className="campo-field">
+            <label>Origen *</label>
+            <input type="text" placeholder="Paraje / término municipal" value={origen} onChange={e => setOrigen(e.target.value)} />
+          </div>
+          <div style={{fontSize:12,fontWeight:600,color:'var(--gray-500)',textTransform:'uppercase',letterSpacing:'0.5px',margin:'14px 0 10px'}}>
+            Datos camión
+          </div>
+          <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:10}}>
+            <div className="campo-field">
+              <label>Matrícula tractora *</label>
+              <input type="text" placeholder="Ej: 1234 ABC" value={matriculaTractora} onChange={e => setMatriculaTractora(e.target.value.toUpperCase())} autoCapitalize="characters" />
+            </div>
+            <div className="campo-field">
+              <label>Matrícula remolque</label>
+              <input type="text" placeholder="Ej: R-1234-ABC" value={matriculaRemolque} onChange={e => setMatriculaRemolque(e.target.value.toUpperCase())} autoCapitalize="characters" />
+            </div>
+          </div>
+          <div className="campo-field" style={{marginTop:4}}>
+            <label>Conductor <span style={{fontWeight:400,color:'var(--gray-400)'}}>(opcional)</span></label>
+            <input type="text" placeholder="Nombre completo del conductor" value={chofer} onChange={e => setChofer(e.target.value)} />
+          </div>
+          <div style={{fontSize:12,fontWeight:600,color:'var(--gray-500)',textTransform:'uppercase',letterSpacing:'0.5px',margin:'14px 0 10px'}}>
+            Albarán del proveedor *
+          </div>
+          <label className="upload-zona" style={{cursor: subiendoAlbaran ? 'default' : 'pointer',marginBottom:6}}>
+            {albaranProv ? <CheckCircle size={16} color="var(--green-400)" /> : <Upload size={16} />}
+            <span>{subiendoAlbaran ? 'Subiendo…' : albaranProv ? `${albaranProv} · cambiar` : 'Adjuntar albarán (PDF o foto)'}</span>
+            <input type="file" accept="application/pdf,image/jpeg,image/png,image/webp" style={{display:'none'}} disabled={subiendoAlbaran}
+              onChange={async (e) => {
+                const f = e.target.files?.[0]
+                e.target.value = ''
+                if (!f) return
+                setSubiendoAlbaran(true); setErrorFirma('')
+                try {
+                  const fd = new FormData()
+                  fd.append('file', f)
+                  const res = await fetch(`/api/storage/upload/${a.id}/albaran-proveedor?t=${encodeURIComponent(token || '')}`, { method: 'POST', body: fd })
+                  if (!res.ok) throw new Error((await res.json().catch(() => ({}))).error || 'No se pudo subir el albarán')
+                  setAlbaranProv(f.name)
+                } catch (err) {
+                  setErrorFirma(err.message)
+                } finally { setSubiendoAlbaran(false) }
+              }}
+            />
+          </label>
+          <div style={{marginBottom:14}} />
+        </>
       )}
 
       {/* ── ASTILLADORA ───────────────────────────────── */}
@@ -818,7 +872,10 @@ export default function VistaCampo({ albaranes, updateFirma, subirTicketPesada, 
   const rolesDirectos = rolesParam ? rolesParam.split(',').filter(r => ROLES_CONFIG[r]) : null
   const esInstalacionSola = rolesDirectos?.length === 1 && rolesDirectos[0] === 'instalacion'
   const esAstilladoraSola = rolesDirectos?.length === 1 && rolesDirectos[0] === 'astilladora'
+  const esProveedorSolo   = rolesDirectos?.length === 1 && rolesDirectos[0] === 'proveedor'
   const panelUrl = (() => {
+    if ((esProveedorSolo || rolSeleccionado === 'proveedor') && a?.panelProveedorUrl)
+      return `${relativizar(a.panelProveedorUrl)}&desde=${id}`
     if ((esInstalacionSola || rolSeleccionado === 'instalacion') && a?.panelInstalacionUrl)
       return `${relativizar(a.panelInstalacionUrl)}&desde=${id}`
     if ((esAstilladoraSola || rolSeleccionado === 'astilladora') && a?.panelAstilladoraUrl)

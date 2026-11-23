@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { useParams, useNavigate, useLocation } from 'react-router-dom'
-import { CheckCircle, ChevronRight, ChevronDown, Leaf, RefreshCw, MapPin, FileText, Upload } from 'lucide-react'
+import { CheckCircle, ChevronRight, Leaf, RefreshCw, MapPin } from 'lucide-react'
 import NotificacionesBell from '../components/NotificacionesBell'
 import PanelCompletados from '../components/PanelCompletados'
 import { completadosFuera } from '../utils/panelCompletados'
@@ -13,8 +13,8 @@ import './PanelInstalacion.css'
 // todos sus albaranes juntos; cada uno lleva lo que se le pide según el papel
 // de la empresa en él:
 //   - astilladora → firmar la carga (abre la vista de campo del albarán)
-//   - proveedor   → (Opción 2, proveedor directo) adjuntar su albarán y
-//                   completar el origen si oficina no lo indicó
+//   - proveedor   → (Opción 2, proveedor directo) confirmar la salida en el
+//                   formulario de campo: persona, camión, origen y su albarán
 
 const fmtFecha = (f) => f ? String(f).slice(0,10).split('-').reverse().join('/') : null
 
@@ -138,105 +138,6 @@ function CalendarioSemana({ albaranes, diaSeleccionado, onDiaClick }) {
   )
 }
 
-// Origen + albarán del proveedor: lo único que se le pide.
-function CompletarAlbaran({ a, nombre, codigo, onCambio }) {
-  const [origen,    setOrigen]    = useState('')
-  const [guardando, setGuardando] = useState(false)
-  const [subiendo,  setSubiendo]  = useState(false)
-  const [error,     setError]     = useState('')
-  const fileRef = useRef(null)
-
-  const qs   = `?c=${encodeURIComponent(codigo)}`
-  const base = rutaNombre(nombre)
-
-  const guardarOrigen = async () => {
-    if (!origen.trim()) return
-    setGuardando(true); setError('')
-    try {
-      const res = await fetch(`/api/albaranes/proveedor/${base}/${a.id}/origen${qs}`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ origen: origen.trim() }),
-      })
-      if (!res.ok) throw new Error((await res.json().catch(() => ({}))).error || 'No se pudo guardar el origen')
-      await onCambio()
-    } catch (e) { setError(e.message) } finally { setGuardando(false) }
-  }
-
-  const subir = async (file) => {
-    if (!file) return
-    setSubiendo(true); setError('')
-    try {
-      const fd = new FormData()
-      fd.append('file', file)
-      const res = await fetch(`/api/storage/upload-proveedor/${base}/${a.id}${qs}`, { method: 'POST', body: fd })
-      if (!res.ok) throw new Error((await res.json().catch(() => ({}))).error || 'No se pudo subir el fichero')
-      await onCambio()
-    } catch (e) { setError(e.message) } finally {
-      setSubiendo(false)
-      if (fileRef.current) fileRef.current.value = ''
-    }
-  }
-
-  const etiqueta = { fontSize: 11, fontWeight: 600, color: 'var(--gray-500)', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 6 }
-  const input    = { flex: 1, minWidth: 0, padding: '9px 11px', fontSize: 14, border: '1px solid var(--gray-200)', borderRadius: 5, background: '#fff' }
-  const boton    = (activo) => ({ padding: '9px 14px', borderRadius: 5, border: 'none', fontSize: 13, fontWeight: 600, background: activo ? 'var(--green-400)' : 'var(--gray-200)', color: activo ? '#fff' : 'var(--gray-400)', cursor: activo ? 'pointer' : 'default', display: 'inline-flex', alignItems: 'center', gap: 6, flexShrink: 0 })
-
-  return (
-    <div style={{ padding: '4px 14px 14px', background: 'var(--gray-50)', borderBottom: '1px solid var(--gray-100)', display: 'flex', flexDirection: 'column', gap: 14 }} onClick={e => e.stopPropagation()}>
-      <div>
-        <div style={etiqueta}>Origen</div>
-        {a.origen ? (
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 14, color: 'var(--gray-800)' }}>
-            <CheckCircle size={16} color="var(--green-400)" /> {a.origen}
-          </div>
-        ) : a.cerrado ? (
-          <div style={{ fontSize: 14, color: 'var(--gray-400)' }}>—</div>
-        ) : (
-          <div style={{ display: 'flex', gap: 8 }}>
-            <input type="text" value={origen} onChange={e => setOrigen(e.target.value)} placeholder="Paraje / término municipal"
-              onKeyDown={e => { if (e.key === 'Enter') guardarOrigen() }} style={input} />
-            <button onClick={guardarOrigen} disabled={!origen.trim() || guardando} style={boton(origen.trim() && !guardando)}>
-              {guardando ? '…' : 'Guardar'}
-            </button>
-          </div>
-        )}
-      </div>
-
-      <div>
-        <div style={etiqueta}>Albarán</div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-          {a.albaranProveedor ? (
-            <a href={a.albaranProveedor.url} target="_blank" rel="noreferrer"
-              style={{ flex: 1, minWidth: 0, display: 'flex', alignItems: 'center', gap: 8, fontSize: 14, color: 'var(--gray-800)', textDecoration: 'none' }}>
-              <CheckCircle size={16} color="var(--green-400)" style={{ flexShrink: 0 }} />
-              <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', textDecoration: 'underline', textDecorationColor: 'var(--gray-300)' }}>
-                {a.albaranProveedor.nombreFichero || 'Ver albarán'}
-              </span>
-            </a>
-          ) : (
-            <span style={{ flex: 1, display: 'flex', alignItems: 'center', gap: 8, fontSize: 13, color: 'var(--gray-400)' }}>
-              <FileText size={16} /> PDF o foto
-            </span>
-          )}
-          {!a.cerrado && (
-            <>
-              <button onClick={() => fileRef.current?.click()} disabled={subiendo}
-                style={a.albaranProveedor ? { ...boton(!subiendo), background: '#fff', color: 'var(--gray-600)', border: '1px solid var(--gray-200)' } : boton(!subiendo)}>
-                <Upload size={14} /> {subiendo ? 'Subiendo…' : a.albaranProveedor ? 'Cambiar' : 'Adjuntar'}
-              </button>
-              <input ref={fileRef} type="file" accept="application/pdf,image/jpeg,image/png,image/webp" style={{ display: 'none' }}
-                onChange={e => subir(e.target.files?.[0])} />
-            </>
-          )}
-        </div>
-      </div>
-
-      {error && <div style={{ fontSize: 12, color: 'var(--red-700)' }}>{error}</div>}
-    </div>
-  )
-}
-
 function InfoCamion({ a, conDestino, conRol }) {
   const especie    = [a.especie, a.estella].filter(Boolean).join(' · ')
   const fechaHora  = [fmtFecha(a.fecha), a.hora ? String(a.hora).slice(0,5) : null].filter(Boolean).join(' · ')
@@ -273,7 +174,7 @@ function InfoCamion({ a, conDestino, conRol }) {
   )
 }
 
-function TarjetaCamion({ a, esUltimo, esDesde, conDestino, conRol, abierto, onToggle, nombre, codigo, onCambio }) {
+function TarjetaCamion({ a, esUltimo, esDesde, conDestino, conRol }) {
   const navigate    = useNavigate()
   const planificado = a.planificado
   const esProveedor = a.rol === 'proveedor'
@@ -284,9 +185,10 @@ function TarjetaCamion({ a, esUltimo, esDesde, conDestino, conRol, abierto, onTo
   }, [esDesde])
 
   const estadoClass = planificado ? 'planificado' : (a.completado ? 'firmado' : 'pendiente')
+  // Proveedor de Opción 2: hace la salida de la carga, así que abre el mismo
+  // formulario de campo que la astilladora (persona, camión, origen y albarán).
   const onClick = planificado ? undefined
-    : esProveedor ? onToggle
-    : () => navigate(`/campo/${a.id}/astilladora?t=${encodeURIComponent(a.campoToken || '')}`)
+    : () => navigate(`/campo/${a.id}/${esProveedor ? 'proveedor' : 'astilladora'}?t=${encodeURIComponent(a.campoToken || '')}`)
 
   return (
     <>
@@ -294,7 +196,7 @@ function TarjetaCamion({ a, esUltimo, esDesde, conDestino, conRol, abierto, onTo
         ref={ref}
         className={`pi-camion ${estadoClass}${esDesde ? ' pi-desde-active' : ''}`}
         onClick={onClick}
-        style={{ cursor: planificado ? 'default' : 'pointer', borderBottom: esUltimo && !abierto ? 'none' : undefined }}
+        style={{ cursor: planificado ? 'default' : 'pointer', borderBottom: esUltimo ? 'none' : undefined }}
       >
         <div className="pi-camion-left">
           <InfoCamion a={a} conDestino={conDestino} conRol={conRol} />
@@ -302,15 +204,12 @@ function TarjetaCamion({ a, esUltimo, esDesde, conDestino, conRol, abierto, onTo
         <div className="pi-camion-right">
           {planificado
             ? <span className="pi-camion-plan-tag">Planificado</span>
-            : a.completado && !abierto
+            : a.completado
             ? <CheckCircle size={20} color="var(--green-400)" />
-            : esProveedor
-            ? <div className="pi-btn-firmar">{abierto ? <>Cerrar <ChevronDown size={14} /></> : <>Completar <ChevronRight size={14} /></>}</div>
             : <div className="pi-btn-firmar">Firmar <ChevronRight size={14} /></div>
           }
         </div>
       </div>
-      {esProveedor && abierto && <CompletarAlbaran a={a} nombre={nombre} codigo={codigo} onCambio={onCambio} />}
     </>
   )
 }
@@ -376,7 +275,6 @@ export default function PanelEmpresa({ tipo }) {
   const [showOk,          setShowOk]         = useState(false)
   const [hayCambios,      setHayCambios]     = useState(false)
   const [diaSeleccionado, setDiaSeleccionado] = useState('hoy')
-  const [abiertoClave,    setAbiertoClave]   = useState(null)
   const showOkTimer     = useRef(null)
   const hayCambiosTimer = useRef(null)
   const signaturaRef    = useRef(null)
@@ -475,10 +373,7 @@ export default function PanelEmpresa({ tipo }) {
 
   const tarjeta = (a, esUltimo, conDestino = false) => (
     <TarjetaCamion key={a.clave} a={a} esUltimo={esUltimo} conDestino={conDestino} conRol={mixto}
-      esDesde={!conDestino && a.rol === 'astilladora' && String(a.id) === desdeId}
-      abierto={abiertoClave === a.clave}
-      onToggle={() => setAbiertoClave(abiertoClave === a.clave ? null : a.clave)}
-      nombre={nombreEmpresa} codigo={codigo} onCambio={fetchData} />
+      esDesde={!conDestino && String(a.id) === desdeId} />
   )
 
   return (

@@ -210,19 +210,35 @@ router.post('/upload/:albaranId/ticket', requireAuthOrCampoToken(), upload.singl
 // El proveedor adjunta su propio albarán desde su panel (Opción 2). Solo
 // para albaranes suyos, de Opción 2 y aún abiertos; puede reemplazarlo.
 router.post('/upload-proveedor/:nombre/:albaranId', requireAuthOrEmpresaCodigo('proveedor'), upload.single('file'), async (req, res) => {
-  const minio  = req.app.get('minio')
-  const bucket = req.app.get('minio_bucket')
   const nombre = nombreDeRuta(req.params.nombre)
-  const { albaranId } = req.params
-  const fichero = req.file
-  if (!fichero) return res.status(400).json({ error: 'Falta el fichero' })
-
   const { rows } = await pool.query(
     `SELECT id FROM albaranes WHERE id=$1 AND proveedor=$2 AND tipo LIKE 'Opción 2%'
        AND estado NOT IN ('cerrado','cancelado')`,
-    [albaranId, nombre]
+    [req.params.albaranId, nombre]
   )
   if (!rows.length) return res.status(404).json({ error: 'Albarán no encontrado o ya cerrado' })
+  return guardarAlbaranProveedor(req, res, nombre, 'desde su panel')
+})
+
+// ── POST /storage/upload/:albaranId/albaran-proveedor  (oficina o token de campo) ──
+// El mismo albarán del proveedor, pero desde el formulario de campo que abre
+// el proveedor de Opción 2 para confirmar la carga.
+router.post('/upload/:albaranId/albaran-proveedor', requireAuthOrCampoToken(), upload.single('file'), async (req, res) => {
+  const { rows } = await pool.query(
+    `SELECT proveedor FROM albaranes WHERE id=$1 AND tipo LIKE 'Opción 2%'
+       AND estado NOT IN ('cerrado','cancelado')`,
+    [req.params.albaranId]
+  )
+  if (!rows.length) return res.status(404).json({ error: 'Albarán no encontrado o ya cerrado' })
+  return guardarAlbaranProveedor(req, res, rows[0].proveedor, 'desde el formulario de campo')
+})
+
+async function guardarAlbaranProveedor(req, res, nombre, desde) {
+  const minio  = req.app.get('minio')
+  const bucket = req.app.get('minio_bucket')
+  const { albaranId } = req.params
+  const fichero = req.file
+  if (!fichero) return res.status(400).json({ error: 'Falta el fichero' })
 
   const ext = (fichero.originalname.split('.').pop() || '').toLowerCase()
   if (!ALLOWED_TICKET_EXTS.has(ext)) return res.status(400).json({ error: 'Formato no permitido (PDF, JPG, PNG o WEBP)' })
@@ -251,11 +267,11 @@ router.post('/upload-proveedor/:nombre/:albaranId', requireAuthOrEmpresaCodigo('
   const fecha = new Date().toLocaleString('es-ES')
   await pool.query(
     'INSERT INTO actividad (albaran_id,ts,texto,actor) VALUES ($1,$2,$3,$4)',
-    [albaranId, fecha, `Albarán del proveedor adjuntado desde su panel`, nombre]
+    [albaranId, fecha, `Albarán del proveedor adjuntado ${desde}`, nombre]
   )
   const completado = await require('./albaranes').completarPasoProveedor(albaranId, nombre)
   res.json({ url: signPath(path), nombreFichero: fichero.originalname, completado })
-})
+}
 
 const ALLOWED_IMG_EXTS = new Set(['png', 'jpg', 'jpeg', 'webp'])
 
