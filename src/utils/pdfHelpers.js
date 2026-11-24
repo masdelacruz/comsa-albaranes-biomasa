@@ -18,3 +18,14 @@ export const fmt = (b64) => {
   if (b64.startsWith('data:image/webp')) return 'WEBP'
   return 'PNG'
 }
+
+// Imágenes de la casilla "Firma y/o sello Proveedor": el sello de quien firmó
+// la salida (astilladora o proveedor) y, si el proveedor tiene logo propio y
+// es distinto, también el del proveedor. Solo una vez firmada la salida.
+export const imagenesOrigen = (a, firmaOrigen) => {
+  if (!firmaOrigen) return []
+  const logoProveedor = a.empresaFirmaMap?.[a.proveedor] || null
+  const sinFirma = u => u?.split('?')[0]
+  const imgs = [logoProveedor, firmaOrigen.firmaImagen].filter(Boolean)
+  return imgs.filter((u, i) => imgs.findIndex(v => sinFirma(v) === sinFirma(u)) === i)
+}

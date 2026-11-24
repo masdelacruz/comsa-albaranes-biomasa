@@ -95,7 +95,8 @@ async function referenciaSureDe(db, tipo, proveedor) {
 
 // ── Helper: datos de empresas (astilladora/instalacion/proveedor/transportista)
 // implicadas en un conjunto de albaranes. El logo de astilladoras e
-// instalaciones hace también de firma/sello — no hay imagen de firma aparte.
+// instalaciones (y de proveedores, en su casilla del PDF) hace también de
+// firma/sello — no hay imagen de firma aparte.
 async function buildEmpresaMaps(nombres) {
   const empresaFirmaMap  = {}
   const empresaDataMap   = {}
@@ -114,7 +115,7 @@ async function buildEmpresaMaps(nombres) {
       horario:      e.horario      || null,
     }
     empresaCodigoMap[e.nombre] = e.acceso_codigo
-    if (e.tipo === 'astilladora' || e.tipo === 'instalacion') {
+    if (e.tipo === 'astilladora' || e.tipo === 'instalacion' || e.tipo === 'proveedor') {
       logoIdToNombre[`empresa_${slugify(e.nombre)}`] = e.nombre
     }
   })

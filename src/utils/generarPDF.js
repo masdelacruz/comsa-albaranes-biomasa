@@ -1,7 +1,7 @@
 import jsPDF from 'jspdf'
 import autoTable from 'jspdf-autotable'
 import { api } from '../lib/api'
-import { toBase64, fmt } from './pdfHelpers'
+import { toBase64, fmt, imagenesOrigen } from './pdfHelpers'
 import { dibujarAlbaranPDF } from './pdfDraw'
 
 // ── caché de logos ──────────────────────────────────────────────────────────
@@ -277,11 +277,14 @@ export async function generarPDFA5(a) {
   const sigW    = contentW / 2 - 2
   const footerH = 7
 
-  const drawSigBox = (bx, by, label, firmaData) => {
+  const drawSigBox = (bx, by, label, imagenes) => {
     doc.setDrawColor(200, 200, 200); doc.setLineWidth(0.3); doc.setFillColor(255, 255, 255)
     doc.rect(bx, by, sigW, sigH, 'FD')
     const imgAreaH = sigH - footerH
-    if (firmaData?.firmaImagen) addImgFit(firmaData.firmaImagen, bx + 3, by + 3, sigW - 6, imgAreaH - 6)
+    // Una o dos imágenes (sello de quien firma + logo del proveedor), en columnas
+    const n = imagenes.length
+    const colW = (sigW - 6) / Math.max(n, 1)
+    imagenes.forEach((img, i) => addImgFit(img, bx + 3 + i * colW + (n > 1 ? 2 : 0), by + 3, colW - (n > 1 ? 4 : 0), imgAreaH - 6))
     doc.setFillColor(...grisClaro); doc.setDrawColor(200, 200, 200)
     doc.rect(bx, by + imgAreaH, sigW, footerH, 'FD')
     doc.setFont('helvetica', 'bold'); doc.setFontSize(6); doc.setTextColor(...grisOsc)
@@ -292,8 +295,8 @@ export async function generarPDFA5(a) {
                      : a.firmas?.astilladora?.firmado ? a.firmas.astilladora : null
   const firmaDestino = a.firmas?.instalacion?.firmado ? a.firmas.instalacion : null
 
-  drawSigBox(margen,            y, 'Firma y/o sello Proveedor',   firmaOrigen)
-  drawSigBox(margen + sigW + 4, y, 'Firma y/o sello Instalación', firmaDestino)
+  drawSigBox(margen,            y, 'Firma y/o sello Proveedor',   imagenesOrigen(a, firmaOrigen))
+  drawSigBox(margen + sigW + 4, y, 'Firma y/o sello Instalación', [firmaDestino?.firmaImagen].filter(Boolean))
 
   y += sigH + 3
 
