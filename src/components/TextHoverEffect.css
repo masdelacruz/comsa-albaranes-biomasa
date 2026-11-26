@@ -5,8 +5,8 @@
   user-select: none;
   overflow: visible;
   /* Colores de la línea; se cambian desde fuera según el fondo */
-  --the-contorno: rgba(255, 255, 255, 0.18);
-  --the-linea:    rgba(255, 255, 255, 0.85);
+  --the-contorno: rgba(255, 255, 255, 0.16);
+  --the-linea:    rgba(255, 255, 255, 0.92);
 }
 
 .the-text {
@@ -17,11 +17,14 @@
 }
 
 /* En la máscara el trazo es el doble de grueso: la mitad interior la tapa la
-   letra rellena en negro y queda solo el perímetro exterior */
-.the-mask-trazo { fill: none; stroke-width: 0.9; }
+   letra rellena en negro y queda solo el perímetro exterior (~0.8 de grosor) */
+.the-mask-trazo { fill: none; stroke-width: 1.6; stroke-linejoin: round; }
 
 .the-contorno { fill: var(--the-contorno); }
 .the-linea    { fill: var(--the-linea); }
+
+/* Vetas de la textura: claras y oscuras muy suaves sobre el verde */
+.the-fibra { mix-blend-mode: soft-light; opacity: 0.55; }
 
 .the-dibujo {
   stroke-dasharray: 1000;
