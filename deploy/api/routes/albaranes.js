@@ -460,6 +460,7 @@ router.get('/instalacion/:nombre', requireAuthOrEmpresaCodigo('instalacion'), as
       matriculaTractora: a.matricula_tractora,
       matriculaRemolque: a.matricula_remolque,
       chofer: a.chofer, estado: a.estado, origen: a.origen,
+      permiso: a.permiso || null,
       cerrado: a.estado === 'cerrado',
       motivoRechazoCampo: a.motivo_rechazo_campo || null,
       planificado:        a.planificado || false,
@@ -511,7 +512,7 @@ router.get('/astilladora/:nombre', requireAuthOrEmpresaCodigo('astilladora'), as
        a.astilladora, a.proveedor, a.instalacion, a.transportista,
        a.especie, a.tipo_biomasa, a.estella,
        a.matricula_tractora, a.matricula_remolque, a.chofer, a.estado, a.origen,
-       a.campo_token,
+       a.permiso, a.campo_token,
        (a.estado = 'programado') AS planificado
      FROM albaranes a
      WHERE a.astilladora = $1
@@ -580,7 +581,7 @@ router.get('/proveedor/:nombre', requireAuthOrEmpresaCodigo('proveedor'), async 
   const { rows } = await pool.query(
     `SELECT a.id, a.fecha, a.hora, a.grupo_id, a.camion_orden, a.num_camiones,
             a.instalacion, a.transportista, a.especie, a.tipo_biomasa, a.estella,
-            a.origen, a.estado, a.matricula_tractora, a.matricula_remolque, a.campo_token,
+            a.origen, a.permiso, a.estado, a.matricula_tractora, a.matricula_remolque, a.campo_token,
             (a.estado = 'programado') AS planificado,
             f.firmado AS paso_firmado, f.fecha AS paso_fecha,
             d.adjunto AS doc_adjunto, d.url AS doc_url, d.nombre_fichero AS doc_nombre
@@ -610,6 +611,7 @@ router.get('/proveedor/:nombre', requireAuthOrEmpresaCodigo('proveedor'), async 
       estado: a.estado,
       cerrado: a.estado === 'cerrado',
       origen,
+      permiso: a.permiso || null,
       albaranProveedor: a.doc_adjunto
         ? { url: signPath(a.doc_url), nombreFichero: a.doc_nombre }
         : null,

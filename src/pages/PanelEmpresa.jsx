@@ -153,6 +153,12 @@ function InfoCamion({ a, conDestino, conRol }) {
         {conRol && <span className="pi-camion-rol-tag">{ROL_TITULO[a.rol]}</span>}
         {esAtrasado && <span className="pi-camion-atrasado-tag">Atrasado</span>}
       </div>
+      {/* Origen y permiso: con varias ubicaciones el mismo día, indican qué albarán usar en cada carga */}
+      {(a.origen || a.permiso) && (
+        <div className="pi-camion-matricula" style={{ fontFamily: 'inherit' }}>
+          {[a.origen, a.permiso && `Permiso ${a.permiso}`].filter(Boolean).join(' · ')}
+        </div>
+      )}
       {conDestino && a.instalacion && <div className="pi-camion-matricula" style={{ fontFamily: 'inherit' }}>{a.instalacion}</div>}
       {a.transportista && <div className="pi-camion-matricula" style={{ fontFamily: 'inherit' }}>{a.transportista}</div>}
       {a.rol === 'astilladora' && a.matriculaTractora && (

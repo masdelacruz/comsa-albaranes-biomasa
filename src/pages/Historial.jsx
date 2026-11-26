@@ -592,7 +592,10 @@ export default function Historial({ albaranes, empresas = [], usuario, refetch, 
                       <input type="checkbox" checked={seleccionados.has(a.id)} readOnly tabIndex={-1} aria-label={`Seleccionar albarán ${a.id}`} />
                     </td>
                   )}
-                  <td className="row-id col-id">{a.id}</td>
+                  <td className="row-id col-id">
+                    {a.id}
+                    {a.permiso && <div className="row-permiso" title={`Permiso: ${a.permiso}`}>{a.permiso}</div>}
+                  </td>
                   <td className="col-fecha">{a.fecha?.slice(0,10).split('-').reverse().join('/')}</td>
                   <td className="col-texto col-prov">{a.proveedor}</td>
                   <td className="col-texto col-opcional">{a.astilladora}</td>

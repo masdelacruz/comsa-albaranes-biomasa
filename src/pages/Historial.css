@@ -193,3 +193,9 @@
 .masivo-consecuencias { margin:6px 0 0; padding-left:18px; font-size:12.5px; color:var(--gray-500); line-height:1.6; }
 /* Dentro del modal la lista no debe salirse de la pantalla */
 .masivo-modal .sf-dropdown { max-height:240px; }
+
+/* Permiso bajo el nº de albarán: identifica el camión de un vistazo */
+.data-table.historial-table .row-permiso {
+  font-family: inherit; font-size: 11px; font-weight: 400; color: var(--gray-500);
+  max-width: 140px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; margin-top: 1px;
+}
