@@ -7,6 +7,8 @@
   /* Colores de la línea; se cambian desde fuera según el fondo */
   --the-contorno: rgba(255, 255, 255, 0.16);
   --the-linea:    rgba(255, 255, 255, 0.92);
+  /* Al rellenarse, la línea pasa a un verde más oscuro que el relleno */
+  --the-linea-final: #0b4d3a;
 }
 
 .the-text {
@@ -21,10 +23,13 @@
 .the-mask-trazo { fill: none; stroke-width: 1.6; stroke-linejoin: round; }
 
 .the-contorno { fill: var(--the-contorno); }
-.the-linea    { fill: var(--the-linea); }
+.the-linea {
+  fill: var(--the-linea);
+  animation: the-oscurecer 1.1s ease-out var(--the-duracion, 3s) forwards;
+}
 
-/* Vetas de la textura: claras y oscuras muy suaves sobre el verde */
-.the-fibra { mix-blend-mode: soft-light; opacity: 0.55; }
+/* Vetas de la textura: claras y oscuras sobre el verde */
+.the-fibra { mix-blend-mode: soft-light; opacity: 0.75; }
 
 .the-dibujo {
   stroke-dasharray: 1000;
@@ -42,8 +47,10 @@
 
 @keyframes the-dibujar  { to { stroke-dashoffset: 0; } }
 @keyframes the-rellenar { to { opacity: 1; } }
+@keyframes the-oscurecer { to { fill: var(--the-linea-final); } }
 
 @media (prefers-reduced-motion: reduce) {
+  .the-linea   { animation: none; fill: var(--the-linea-final); }
   .the-dibujo  { animation: none; stroke-dashoffset: 0; }
   .the-relleno { animation: none; opacity: 1; }
 }

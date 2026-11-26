@@ -2,8 +2,8 @@ import { useEffect, useId, useLayoutEffect, useRef, useState } from 'react'
 import './TextHoverEffect.css'
 
 // Marca en trazo: la palabra se "dibuja" con una línea y, al acabar, se
-// rellena con los verdes de la app sobre una textura de fibra de madera, con
-// un brillo suave que la recorre. Al pasar el ratón, un halo claro sigue al
+// rellena de verde sólido con textura de fibra de madera, y la línea pasa a
+// un verde más oscuro que el relleno. Al pasar el ratón, un halo claro sigue al
 // cursor. Inspirado en el TextHoverEffect de Aceternity UI, sin Tailwind ni
 // framer-motion.
 //
@@ -73,7 +73,7 @@ export default function TextHoverEffect({ text, className = '', duracion = 3 }) 
     </text>
   )
   const area = vb
-  const x0 = vb.x, x1 = vb.x + vb.width
+  const x0 = vb.x
 
   return (
     <svg
@@ -89,12 +89,11 @@ export default function TextHoverEffect({ text, className = '', duracion = 3 }) 
       style={{ '--the-duracion': `${duracion}s` }}
     >
       <defs>
-        {/* Relleno: verdes de la app, de oscuro a menta */}
-        <linearGradient id={`${id}-relleno`} gradientUnits="userSpaceOnUse" x1={x0} y1={vb.y} x2={x1} y2={vb.y + vb.height}>
-          <stop offset="0%"   stopColor="#0b5a46" />
-          <stop offset="45%"  stopColor="#1d9e75" />
-          <stop offset="80%"  stopColor="#3fbf93" />
-          <stop offset="100%" stopColor="#8fdcbf" />
+        {/* Relleno: verde sólido de la app, solo un leve volumen de arriba
+            abajo (sin degradado lateral, que parecía una transición) */}
+        <linearGradient id={`${id}-relleno`} gradientUnits="userSpaceOnUse" x1={x0} y1={vb.y} x2={x0} y2={vb.y + vb.height}>
+          <stop offset="0%"   stopColor="#21a67b" />
+          <stop offset="100%" stopColor="#14805f" />
         </linearGradient>
 
         {/* Textura: fibra de madera, vetas horizontales finas */}
@@ -104,20 +103,8 @@ export default function TextHoverEffect({ text, className = '', duracion = 3 }) 
             values="0 0 0 0 1
                     0 0 0 0 1
                     0 0 0 0 1
-                    0 0 0 -1.6 1.15" />
+                    0 0 0 -2.4 1.6" />
         </filter>
-
-        {/* Brillo que cruza la palabra de vez en cuando */}
-        <linearGradient id={`${id}-brillo`} gradientUnits="userSpaceOnUse" x1={x0 - 70} y1="0" x2={x0} y2="0">
-          <stop offset="0%"   stopColor="#ffffff" stopOpacity="0" />
-          <stop offset="50%"  stopColor="#ffffff" stopOpacity="0.4" />
-          <stop offset="100%" stopColor="#ffffff" stopOpacity="0" />
-          <animateTransform
-            attributeName="gradientTransform" type="translate"
-            values={`0 0; ${vb.width + 140} 0; ${vb.width + 140} 0`} keyTimes="0; 0.4; 1"
-            dur="6s" begin={`${duracion + 0.8}s`} repeatCount="indefinite"
-          />
-        </linearGradient>
 
         {/* Halo del cursor */}
         <radialGradient ref={gradRef} id={`${id}-halo`} gradientUnits="userSpaceOnUse" r={vb.width * 0.16} cx="150" cy="50">
@@ -135,7 +122,7 @@ export default function TextHoverEffect({ text, className = '', duracion = 3 }) 
           {texto({ className: 'the-text the-mask-trazo', stroke: 'white' })}
           {texto({ fill: 'black' })}
         </mask>
-        {/* La palabra rellena, para limitar textura, halo y brillo */}
+        {/* La palabra rellena, para limitar textura y halo */}
         <mask id={`${id}-letras`} maskUnits="userSpaceOnUse" {...area}>
           {texto({ fill: 'white' })}
         </mask>
@@ -148,7 +135,6 @@ export default function TextHoverEffect({ text, className = '', duracion = 3 }) 
       <g className="the-relleno" mask={`url(#${id}-letras)`}>
         <rect {...area} fill={`url(#${id}-relleno)`} />
         <rect {...area} filter={`url(#${id}-fibra)`} className="the-fibra" />
-        <rect {...area} fill={`url(#${id}-brillo)`} />
         <rect {...area} fill={`url(#${id}-halo)`} className="the-halo" style={{ opacity: hover ? 1 : 0 }} />
       </g>
       <rect {...area} className="the-linea" mask={`url(#${id}-trazo)`} />
