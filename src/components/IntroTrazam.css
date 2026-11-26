@@ -28,7 +28,7 @@
   font-size: 13px;
   letter-spacing: 0.4px;
   opacity: 0;
-  animation: intro-firma 0.8s ease-out 1.6s forwards;
+  animation: intro-firma 0.8s ease-out 2.6s forwards;
 }
 .intro-trazam-firma img { height: 18px; width: auto; }
 

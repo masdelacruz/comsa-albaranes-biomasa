@@ -86,9 +86,8 @@ export default function Login() {
         <div className="login-brand-content">
           <TextHoverEffect text="TRAZAM" className="login-brand-trazam" />
           <p className="login-brand-sub">Trazabilidad de biomasa · del origen a la planta</p>
-          <div className="login-brand-divider" />
           <div className="login-brand-by">
-            <span>by</span>
+            <span className="login-brand-by-label">Una solución de</span>
             <img src={logoFull} alt="Comsa Service Bioenergia" className="login-brand-logo" />
           </div>
         </div>
@@ -104,7 +103,7 @@ export default function Login() {
       <div className="login-form-panel">
         <div className="login-card">
           <div className="login-card-logo-mobile">
-            <TextHoverEffect text="TRAZAM" autoBarrido className="login-trazam-claro" />
+            <TextHoverEffect text="TRAZAM" className="login-trazam-claro" />
             <img src={logoFull} alt="Comsa Service Bioenergia" />
           </div>
 

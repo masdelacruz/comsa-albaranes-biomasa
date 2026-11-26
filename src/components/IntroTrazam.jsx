@@ -25,8 +25,8 @@ export default function IntroTrazam() {
     if (!visible) return
     // Se marca como vista al terminar, no al montar: si el componente se
     // vuelve a montar (StrictMode, recarga de rutas) la intro no se pierde
-    const salir = setTimeout(() => setSaliendo(true), 3600)
-    const fin   = setTimeout(() => { marcarVista(); setVisible(false) }, 4200)
+    const salir = setTimeout(() => setSaliendo(true), 4600)
+    const fin   = setTimeout(() => { marcarVista(); setVisible(false) }, 5200)
     const saltar = () => { marcarVista(); setSaliendo(true); setTimeout(() => setVisible(false), 500) }
     window.addEventListener('keydown', saltar, { once: true })
     return () => { clearTimeout(salir); clearTimeout(fin); window.removeEventListener('keydown', saltar) }
@@ -41,7 +41,7 @@ export default function IntroTrazam() {
       role="presentation"
     >
       <div className="intro-trazam-contenido">
-        <TextHoverEffect text="TRAZAM" autoBarrido duracion={2.6} className="intro-trazam-texto" />
+        <TextHoverEffect text="TRAZAM" duracion={2.4} className="intro-trazam-texto" />
         <div className="intro-trazam-firma">
           <img src={logoIcon} alt="" />
           <span>by COMSA Service</span>

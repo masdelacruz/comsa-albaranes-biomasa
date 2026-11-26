@@ -57,14 +57,24 @@
   margin-bottom: -6px;
 }
 
-/* "by COMSA Service": el logo corporativo queda como firma, más pequeño */
+/* Firma corporativa: rótulo pequeño en versalitas sobre el logo, separados
+   del bloque de la marca por una línea fina */
 .login-brand-by {
   display: flex;
+  flex-direction: column;
   align-items: center;
   gap: 12px;
-  color: var(--gray-400);
-  font-size: 12px;
-  letter-spacing: 0.4px;
+  margin-top: 34px;
+  padding-top: 22px;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  min-width: 220px;
+}
+.login-brand-by-label {
+  font-size: 10px;
+  font-weight: 500;
+  letter-spacing: 2.2px;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.38);
 }
 .login-brand-logo {
   width: clamp(120px, 9vw, 160px);
@@ -133,8 +143,8 @@
 .login-trazam-claro {
   width: 240px;
   max-width: 100%;
-  --the-base:   rgba(0, 0, 0, 0.18);
-  --the-dibujo: var(--gray-800);
+  --the-contorno: rgba(0, 0, 0, 0.12);
+  --the-linea:    var(--gray-800);
 }
 
 .login-title {
