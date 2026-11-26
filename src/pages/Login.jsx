@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { Mail, Lock, Eye, EyeOff, ArrowRight, ShieldCheck, MapPin } from 'lucide-react'
 import { api, destinoTrasLogin } from '../lib/api'
 import logoFull from '../assets/logo_biomasa_full.png'
+import TextHoverEffect from '../components/TextHoverEffect'
 import './Login.css'
 
 const EMAIL_ADMIN = 'albaranes.bio@comsa.com'
@@ -83,9 +84,13 @@ export default function Login() {
     <div className="login-page">
       <div className="login-brand">
         <div className="login-brand-content">
-          <img src={logoFull} alt="Comsa Service Bioenergia" className="login-brand-logo" />
+          <TextHoverEffect text="TRAZAM" className="login-brand-trazam" />
+          <p className="login-brand-sub">Trazabilidad de biomasa · del origen a la planta</p>
           <div className="login-brand-divider" />
-          <p className="login-brand-sub">Gestión de albaranes · Biomasa</p>
+          <div className="login-brand-by">
+            <span>by</span>
+            <img src={logoFull} alt="Comsa Service Bioenergia" className="login-brand-logo" />
+          </div>
         </div>
         <div className="login-brand-footer">
           <MapPin size={15} />
@@ -98,7 +103,10 @@ export default function Login() {
 
       <div className="login-form-panel">
         <div className="login-card">
-          <img src={logoFull} alt="Comsa Service Bioenergia" className="login-card-logo-mobile" />
+          <div className="login-card-logo-mobile">
+            <TextHoverEffect text="TRAZAM" autoBarrido className="login-trazam-claro" />
+            <img src={logoFull} alt="Comsa Service Bioenergia" />
+          </div>
 
           <h1 className="login-title">Bienvenido</h1>
           <p className="login-sub">Inicia sesión en tu cuenta para continuar</p>

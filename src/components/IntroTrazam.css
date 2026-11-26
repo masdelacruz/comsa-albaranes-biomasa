@@ -1,0 +1,47 @@
+.intro-trazam {
+  position: fixed;
+  inset: 0;
+  z-index: 10000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: radial-gradient(ellipse 70% 55% at 50% 45%, #15161a 0%, #070708 70%);
+  cursor: pointer;
+  animation: intro-entrar 0.4s ease-out;
+  transition: opacity 0.5s ease, transform 0.5s ease;
+}
+.intro-trazam.saliendo { opacity: 0; transform: scale(1.03); pointer-events: none; }
+
+.intro-trazam-contenido {
+  width: min(760px, calc(100vw - 32px));
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.intro-trazam-firma {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 4px;
+  color: rgba(255, 255, 255, 0.55);
+  font-size: 13px;
+  letter-spacing: 0.4px;
+  opacity: 0;
+  animation: intro-firma 0.8s ease-out 1.6s forwards;
+}
+.intro-trazam-firma img { height: 18px; width: auto; }
+
+.intro-trazam-saltar {
+  position: absolute;
+  bottom: 28px;
+  left: 0;
+  right: 0;
+  text-align: center;
+  font-size: 11.5px;
+  color: rgba(255, 255, 255, 0.3);
+  letter-spacing: 0.3px;
+}
+
+@keyframes intro-entrar { from { opacity: 0; } }
+@keyframes intro-firma  { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }

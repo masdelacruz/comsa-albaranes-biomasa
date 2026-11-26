@@ -13,6 +13,7 @@ import Administracion from './pages/Administracion'
 import Clientes from './pages/Clientes'
 import ClienteDetalle from './pages/ClienteDetalle'
 import Login from './pages/Login'
+import IntroTrazam from './components/IntroTrazam'
 import AuthCallback from './pages/AuthCallback'
 import SelectorApp from './pages/SelectorApp'
 import Trabajo from './pages/Trabajo'
@@ -219,7 +220,7 @@ export default function App() {
         <Route path="/campo/proveedor/:nombre" element={<PanelEmpresa key="proveedor" tipo="proveedor" />} />
         <Route path="/campo/:id" element={<VistaCampoPublica />} />
         <Route path="/campo/:id/:roles" element={<VistaCampoPublica />} />
-        <Route path="/*" element={<AppInner />} />
+        <Route path="/*" element={<><IntroTrazam /><AppInner /></>} />
       </Routes>
     </BrowserRouter>
   )

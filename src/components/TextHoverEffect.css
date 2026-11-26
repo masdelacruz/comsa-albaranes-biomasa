@@ -1,0 +1,42 @@
+.the-svg {
+  display: block;
+  width: 100%;
+  height: auto;
+  user-select: none;
+  overflow: visible;
+  /* Colores del trazo; se pueden cambiar desde fuera (fondo claro/oscuro) */
+  --the-base:   rgba(255, 255, 255, 0.28);
+  --the-dibujo: rgba(255, 255, 255, 0.6);
+}
+
+.the-text {
+  font-family: var(--font-main);
+  font-size: 72px;
+  font-weight: 700;
+  letter-spacing: 2px;
+  fill: transparent;
+  stroke-width: 0.35;
+}
+
+.the-base {
+  stroke: var(--the-base);
+  transition: opacity 0.4s;
+}
+
+.the-dibujo {
+  stroke: var(--the-dibujo);
+  stroke-dasharray: 1000;
+  stroke-dashoffset: 1000;
+  animation: the-dibujar var(--the-duracion, 3s) ease-in-out forwards;
+}
+
+/* Capa de color: más gruesa que el contorno para que el brillo destaque */
+.the-color { stroke-width: 1.2; }
+
+@keyframes the-dibujar {
+  to { stroke-dashoffset: 0; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .the-dibujo { animation: none; stroke-dashoffset: 0; }
+}

@@ -50,10 +50,26 @@
   text-align: center;
 }
 
+/* Marca Trazam: palabra en trazo con brillo al pasar el ratón */
+.login-brand-trazam {
+  width: clamp(280px, 30vw, 520px);
+  max-width: 100%;
+  margin-bottom: -6px;
+}
+
+/* "by COMSA Service": el logo corporativo queda como firma, más pequeño */
+.login-brand-by {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  color: var(--gray-400);
+  font-size: 12px;
+  letter-spacing: 0.4px;
+}
 .login-brand-logo {
-  width: clamp(200px, 16vw, 300px);
-  max-width: 70%;
+  width: clamp(120px, 9vw, 160px);
   height: auto;
+  opacity: 0.9;
 }
 
 .login-brand-divider {
@@ -108,10 +124,17 @@
 
 .login-card-logo-mobile {
   display: none;
-  width: 160px;
-  max-width: 60%;
-  height: auto;
-  margin: 0 auto 28px;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  margin: -12px auto 24px;
+}
+.login-card-logo-mobile img { width: 110px; height: auto; }
+.login-trazam-claro {
+  width: 240px;
+  max-width: 100%;
+  --the-base:   rgba(0, 0, 0, 0.18);
+  --the-dibujo: var(--gray-800);
 }
 
 .login-title {
@@ -344,5 +367,5 @@
    el logo se muestra compacto encima del formulario ─────────────────── */
 @media (max-width: 860px) {
   .login-brand { display: none; }
-  .login-card-logo-mobile { display: block; }
+  .login-card-logo-mobile { display: flex; }
 }
