@@ -133,9 +133,9 @@ export default function Clientes({ albaranes = [], usuario }) {
             {/* Papeles del cliente: el icono de cada tipo con su color y el
                 nombre en texto normal, sin cajas ni etiquetas */}
             <div className="cli-roles">
-              {tipos.map(({ tipo, singular, icon: I, color: c }) => (
-                <span key={tipo} className="cli-rol">
-                  <I size={14} color={c} strokeWidth={1.8} aria-hidden="true" />{singular}
+              {tipos.map(t => (
+                <span key={t.tipo} className="cli-rol">
+                  <t.icon size={14} color={t.color} strokeWidth={1.8} aria-hidden="true" />{t.singular}
                 </span>
               ))}
               {!p.activo && <span className="cli-rol cli-inactivo">Inactivo</span>}
