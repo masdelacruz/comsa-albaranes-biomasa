@@ -116,11 +116,23 @@ export default function Clientes({ albaranes = [], usuario }) {
     // Tipos en el orden de SECCIONES_CLIENTES (el principal primero)
     const tipos = SECCIONES_CLIENTES.filter(s => p.tipos.includes(s.tipo))
     return (
-      <div key={p.id} className={`cli-tile ${p.activo ? '' : 'inactivo'}`} style={{ '--tone': color }}
+      <div key={p.id} className={`cli-tile ${p.activo ? '' : 'inactivo'}`}
         onClick={() => navigate(`/clientes/${p.id}`)}>
-        {/* Ola: el color del tipo se extiende desde la franja superior */}
-        <svg className="cli-ola" viewBox="0 0 200 40" preserveAspectRatio="none" aria-hidden="true">
-          <path d="M0 0H200V36C178 39 160 30 138 22C112 13 86 7 58 4C36 2 16 1 0 0Z" />
+        {/* Franja superior y ola con los colores de todos los tipos del
+            cliente: el degradado ocupa la mitad derecha, así la ola
+            contiene la combinación completa y la franja sigue sus colores
+            (a su izquierda, el color del primer tipo) */}
+        <svg className="cli-ola" viewBox="0 0 500 14" preserveAspectRatio="none" aria-hidden="true">
+          <defs>
+            <linearGradient id={`ola-${p.id}`} gradientUnits="userSpaceOnUse" x1="200" y1="0" x2="500" y2="0">
+              {tipos.map((t, i) => (
+                <stop key={t.tipo} offset={tipos.length > 1 ? i / (tipos.length - 1) : 0} stopColor={t.color} />
+              ))}
+            </linearGradient>
+          </defs>
+          <path className="cli-ola-forma" fill={`url(#ola-${p.id})`}
+            d="M300 0H500V12.6C478 13.65 460 10.5 438 7.7C412 4.55 386 2.45 358 1.4C336 0.7 316 0.35 300 0Z" />
+          <rect width="500" height="3" fill={`url(#ola-${p.id})`} />
         </svg>
         <div className="cli-cuerpo">
           <div className="cli-logo">

@@ -17,10 +17,9 @@
 .cli-grid { display:grid; grid-template-columns:repeat(auto-fill, minmax(270px, 1fr)); gap:16px; }
 .cli-vacio { grid-column:1/-1; padding:20px; text-align:center; color:var(--gray-400); font-size:13px; background:#fff; border:var(--border); border-radius:var(--radius-md); }
 
-/* Tarjeta horizontal: franja superior con el color del tipo principal
-   (--tone) que se extiende en una ola suave hacia la esquina derecha */
+/* Tarjeta horizontal: franja superior con los colores de los tipos del
+   cliente, que se extiende en una ola suave hacia la esquina derecha */
 .cli-tile {
-  --tone:var(--gray-400);
   position:relative; overflow:hidden; min-width:0;
   display:flex; flex-direction:column; cursor:pointer;
   background:#fff;
@@ -28,9 +27,8 @@
   box-shadow:0 1px 2px rgba(20,20,15,0.05), 0 4px 10px -4px rgba(20,20,15,0.08), 0 16px 32px -16px rgba(20,20,15,0.12);
   transition:box-shadow .18s ease, transform .18s ease, border-color .18s ease;
 }
-.cli-tile::before { content:''; position:absolute; left:0; right:0; top:0; height:3px; background:var(--tone); z-index:1; }
-.cli-ola { position:absolute; top:0; right:0; width:40%; height:14px; pointer-events:none; }
-.cli-ola path { fill:var(--tone); opacity:.16; }
+.cli-ola { position:absolute; top:0; left:0; width:100%; height:14px; pointer-events:none; z-index:1; }
+.cli-ola-forma { opacity:.18; }
 .cli-tile:hover {
   border-color:#D6D6CF; transform:translateY(-1px);
   box-shadow:0 1px 2px rgba(20,20,15,0.06), 0 6px 13px -5px rgba(20,20,15,0.10), 0 20px 36px -17px rgba(20,20,15,0.16);
