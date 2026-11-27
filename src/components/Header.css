@@ -59,12 +59,35 @@
   width: auto;
 }
 
+/* Marca: separador fino tras el logo COMSA y la palabra TRAZAM espaciada,
+   con la empresa en pequeño debajo, nunca más ancha que la palabra */
+.ah-brand-sep {
+  width: 1px;
+  height: 22px;
+  background: var(--gray-200);
+  flex-shrink: 0;
+}
 .ah-brand-text {
-  font-size: 14px;
-  font-weight: 700;
-  letter-spacing: 0.2px;
-  color: var(--gray-800);
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  line-height: 1;
   white-space: nowrap;
+}
+.ah-brand-nombre {
+  font-size: 16px;
+  font-weight: 700;
+  letter-spacing: 3px;
+  margin-right: -3px;
+  color: #0f5f48;
+}
+.ah-brand-sub {
+  margin-top: 3px;
+  font-size: 8.5px;
+  font-weight: 600;
+  letter-spacing: 1.1px;
+  text-transform: uppercase;
+  color: var(--gray-500);
 }
 
 /* ── Apartados ─────────────────────────────────────────────────────── */
@@ -267,7 +290,7 @@
      el mismo ancho y los apartados centrados en la pantalla. */
   .ah-inner { height: 52px; gap: 6px; }
   .ah-inner.con-nav { grid-template-columns: minmax(44px, 1fr) minmax(0, auto) minmax(44px, 1fr); }
-  .ah-brand-text, .ah-user-info { display: none; }
+  .ah-brand-text, .ah-brand-sep, .ah-user-info { display: none; }
   /* Si no caben los iconos, el menú se desplaza en horizontal en vez de
      empujar el perfil fuera de la pantalla */
   .ah-nav { gap: 2px; max-width: 100%; overflow-x: auto; scrollbar-width: none; }
