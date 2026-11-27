@@ -119,12 +119,10 @@ export default function Clientes({ albaranes = [], usuario }) {
       <div key={p.id} className={`cli-tile ${p.activo ? '' : 'inactivo'}`}
         onClick={() => navigate(`/clientes/${p.id}`)}>
         {/* Franja superior y ola con los colores de todos los tipos del
-            cliente: el degradado ocupa la mitad derecha, así la ola
-            contiene la combinación completa y la franja sigue sus colores
-            (a su izquierda, el color del primer tipo) */}
+            cliente, en degradado a lo ancho de toda la tarjeta */}
         <svg className="cli-ola" viewBox="0 0 500 14" preserveAspectRatio="none" aria-hidden="true">
           <defs>
-            <linearGradient id={`ola-${p.id}`} gradientUnits="userSpaceOnUse" x1="200" y1="0" x2="500" y2="0">
+            <linearGradient id={`ola-${p.id}`} gradientUnits="userSpaceOnUse" x1="0" y1="0" x2="500" y2="0">
               {tipos.map((t, i) => (
                 <stop key={t.tipo} offset={tipos.length > 1 ? i / (tipos.length - 1) : 0} stopColor={t.color} />
               ))}
