@@ -11,16 +11,10 @@
   --the-linea-final: #0b4d3a;
 }
 
-.the-text {
-  font-family: var(--font-main);
-  font-size: 72px;
-  font-weight: 700;
-  letter-spacing: 2px;
-}
-
 /* En la máscara el trazo es el doble de grueso: la mitad interior la tapa la
-   letra rellena en negro y queda solo el perímetro exterior (~0.8 de grosor) */
-.the-mask-trazo { fill: none; stroke-width: 1.6; stroke-linejoin: round; }
+   pieza rellena en negro y queda solo el perímetro exterior. Unidades del
+   logotipo (altura de mayúscula = 241) */
+.the-mask-trazo { fill: none; stroke-width: 9; stroke-linejoin: round; }
 
 .the-contorno { fill: var(--the-contorno); }
 .the-linea {

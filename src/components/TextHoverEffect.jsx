@@ -1,47 +1,27 @@
-import { useEffect, useId, useLayoutEffect, useRef, useState } from 'react'
+import { useEffect, useId, useRef, useState } from 'react'
+import { TRAZAM_PIEZAS, TRAZAM_VIEWBOX as VB } from './trazamLogoForma'
 import './TextHoverEffect.css'
 
-// Marca en trazo: la palabra se "dibuja" con una línea y, al acabar, se
+// Marca en trazo: el logotipo se "dibuja" con una línea y, al acabar, se
 // rellena de verde sólido con textura de fibra de madera, y la línea pasa a
 // un verde más oscuro que el relleno. Al pasar el ratón, un halo claro sigue al
 // cursor. Inspirado en el TextHoverEffect de Aceternity UI, sin Tailwind ni
 // framer-motion.
 //
 // El contorno se saca con una máscara (trazo grueso menos la letra rellena):
-// solo queda el perímetro exterior de cada letra, sin las líneas internas
-// donde la fuente solapa piezas (la barra y el palo de la T).
+// solo queda el perímetro exterior de cada pieza, por fuera de la letra.
 //
-// El área de dibujo se ajusta a lo que mide la palabra ya con la fuente
-// cargada: con un área fija, la T y la M se cortaban por los lados.
-const PAD = 4
+// La forma es el logotipo vectorial de Trazam (trazamLogoForma.js).
 
-export default function TextHoverEffect({ text, className = '', duracion = 3 }) {
+const vb = VB
+
+export default function TextHoverEffect({ text = 'Trazam', className = '', duracion = 3 }) {
   const id = useId().replace(/:/g, '')
   const svgRef    = useRef(null)
-  const medidaRef = useRef(null)
   const gradRef   = useRef(null)
   const objetivo  = useRef({ x: 50, y: 50 })
   const actual    = useRef({ x: 50, y: 50 })
   const [hover, setHover] = useState(false)
-  const [vb, setVb] = useState({ x: 0, y: 0, width: 300, height: 100 })
-
-  useLayoutEffect(() => {
-    let vivo = true
-    const medir = () => {
-      const t = medidaRef.current
-      if (!vivo || !t) return
-      try {
-        const b = t.getBBox()
-        if (b.width > 0) {
-          setVb({ x: b.x - PAD, y: b.y - PAD, width: b.width + PAD * 2, height: b.height + PAD * 2 })
-        }
-      } catch { /* sin layout todavía (pestaña oculta): se queda el área por defecto */ }
-    }
-    medir()
-    document.fonts?.ready.then(medir)
-    return () => { vivo = false }
-  }, [text])
-
   // El halo sigue al cursor con un poco de inercia
   useEffect(() => {
     if (!hover) return
@@ -56,7 +36,7 @@ export default function TextHoverEffect({ text, className = '', duracion = 3 }) 
     }
     raf = requestAnimationFrame(paso)
     return () => cancelAnimationFrame(raf)
-  }, [hover, vb])
+  }, [hover])
 
   const mover = (e) => {
     const r = svgRef.current?.getBoundingClientRect()
@@ -67,10 +47,12 @@ export default function TextHoverEffect({ text, className = '', duracion = 3 }) 
     }
   }
 
-  const texto = (props) => (
-    <text x="150" y="50" textAnchor="middle" dominantBaseline="central" className="the-text" {...props}>
-      {text}
-    </text>
+  // Todas las piezas del logo; pathLength normaliza la longitud de cada una
+  // para que el trazo se dibuje a la vez en todas
+  const texto = ({ className: c, ...props }) => (
+    <g className={c} {...props}>
+      {TRAZAM_PIEZAS.map((d, i) => <path key={i} d={d} fillRule="evenodd" pathLength="1000" />)}
+    </g>
   )
   const area = vb
   const x0 = vb.x
@@ -98,7 +80,7 @@ export default function TextHoverEffect({ text, className = '', duracion = 3 }) 
 
         {/* Textura: fibra de madera, vetas horizontales finas */}
         <filter id={`${id}-fibra`} x={x0} y={vb.y} width={vb.width} height={vb.height} filterUnits="userSpaceOnUse">
-          <feTurbulence type="fractalNoise" baseFrequency="0.012 0.32" numOctaves="3" seed="7" result="ruido" />
+          <feTurbulence type="fractalNoise" baseFrequency="0.0026 0.068" numOctaves="3" seed="7" result="ruido" />
           <feColorMatrix in="ruido" type="matrix"
             values="0 0 0 0 1
                     0 0 0 0 1
@@ -107,19 +89,19 @@ export default function TextHoverEffect({ text, className = '', duracion = 3 }) 
         </filter>
 
         {/* Halo del cursor */}
-        <radialGradient ref={gradRef} id={`${id}-halo`} gradientUnits="userSpaceOnUse" r={vb.width * 0.16} cx="150" cy="50">
+        <radialGradient ref={gradRef} id={`${id}-halo`} gradientUnits="userSpaceOnUse" r={vb.width * 0.16} cx={vb.x + vb.width / 2} cy={vb.y + vb.height / 2}>
           <stop offset="0%"   stopColor="#d9f7ea" stopOpacity="0.85" />
           <stop offset="100%" stopColor="#d9f7ea" stopOpacity="0" />
         </radialGradient>
 
         {/* Contorno exterior que se va dibujando */}
         <mask id={`${id}-trazo`} maskUnits="userSpaceOnUse" {...area}>
-          {texto({ className: 'the-text the-mask-trazo the-dibujo', stroke: 'white' })}
+          {texto({ className: 'the-mask-trazo the-dibujo', stroke: 'white' })}
           {texto({ fill: 'black' })}
         </mask>
         {/* Contorno exterior completo (sin animar) */}
         <mask id={`${id}-contorno`} maskUnits="userSpaceOnUse" {...area}>
-          {texto({ className: 'the-text the-mask-trazo', stroke: 'white' })}
+          {texto({ className: 'the-mask-trazo', stroke: 'white' })}
           {texto({ fill: 'black' })}
         </mask>
         {/* La palabra rellena, para limitar textura y halo */}
@@ -127,9 +109,6 @@ export default function TextHoverEffect({ text, className = '', duracion = 3 }) 
           {texto({ fill: 'white' })}
         </mask>
       </defs>
-
-      {/* Solo para medir la palabra (invisible) */}
-      {texto({ ref: medidaRef, fill: 'none', 'aria-hidden': true })}
 
       <rect {...area} className="the-contorno" mask={`url(#${id}-contorno)`} />
       <g className="the-relleno" mask={`url(#${id}-letras)`}>

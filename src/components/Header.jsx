@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
 import { LayoutGrid, LogOut, ChevronDown, UserRound } from 'lucide-react'
 import logoIcon from '../assets/logo_biomasa_icon.png'
+import TrazamLogo from './TrazamLogo'
 import './Header.css'
 
 // Cabecera común. El contenido va en una franja con el mismo ancho máximo y
@@ -52,10 +53,7 @@ export default function Header({ usuario, logout, nav = [] }) {
         <button className="ah-brand" onClick={irInicio}>
           <span className="ah-brand-icon"><img src={logoIcon} alt="COMSA Biomasa" className="ah-brand-icon-img" /></span>
           <span className="ah-brand-sep" aria-hidden="true" />
-          <span className="ah-brand-text">
-            <span className="ah-brand-nombre">TRAZAM</span>
-            <span className="ah-brand-sub">COMSA Service</span>
-          </span>
+          <TrazamLogo className="ah-brand-text ah-brand-logo" />
         </button>
 
         {nav.length > 0 && (

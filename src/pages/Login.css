@@ -54,7 +54,7 @@
 .login-brand-trazam {
   width: clamp(280px, 30vw, 520px);
   max-width: 100%;
-  margin-bottom: -6px;
+  margin-bottom: 10px;
 }
 
 /* Firma corporativa: rótulo pequeño en versalitas sobre el logo, separados
@@ -136,7 +136,7 @@
   display: none;
   flex-direction: column;
   align-items: center;
-  gap: 2px;
+  gap: 14px;
   margin: -12px auto 24px;
 }
 .login-card-logo-mobile img { width: 110px; height: auto; }
