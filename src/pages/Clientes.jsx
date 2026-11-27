@@ -31,6 +31,22 @@ const ORDENES = {
 const ORDEN_DEFECTO = 'Alfabético (A–Z)'
 const ORDEN_KEY = 'clientes.orden'
 
+// Olas de la esquina: una curva base (de x=300 a 500, profundidad 13.65) que
+// se estira a lo ancho (x0 = dónde empieza) y a lo hondo (h). Una capa por
+// tipo del cliente, de delante (principal) a atrás.
+const OLA_BASE = [[478, 13.65, 460, 10.5, 438, 7.7], [412, 4.55, 386, 2.45, 358, 1.4], [336, 0.7, 316, 0.35, 300, 0]]
+const ola = (x0, h) => {
+  const sx = x => +(500 - (500 - x) * (500 - x0) / 200).toFixed(1)
+  const sy = y => +(y * h / 13.65).toFixed(2)
+  const curvas = OLA_BASE.map(c => 'C' + [0, 2, 4].map(k => `${sx(c[k])} ${sy(c[k + 1])}`).join(' ')).join('')
+  return `M${x0} 0H500V${sy(12.6)}${curvas}Z`
+}
+const OLAS = [
+  [{ x0: 300, h: 15, op: 0.24 }],
+  [{ x0: 330, h: 13, op: 0.42 }, { x0: 190, h: 22, op: 0.2 }],
+  [{ x0: 370, h: 10, op: 0.45 }, { x0: 280, h: 16, op: 0.28 }, { x0: 170, h: 22, op: 0.16 }],
+]
+
 const fmtFecha = f => new Date(f).toLocaleDateString('es-ES', { day: 'numeric', month: 'short', year: 'numeric' })
 
 export default function Clientes({ albaranes = [], usuario }) {
@@ -118,9 +134,10 @@ export default function Clientes({ albaranes = [], usuario }) {
     return (
       <div key={p.id} className={`cli-tile ${p.activo ? '' : 'inactivo'}`}
         onClick={() => navigate(`/clientes/${p.id}`)}>
-        {/* Franja superior y ola con los colores de todos los tipos del
-            cliente, en degradado a lo ancho de toda la tarjeta */}
-        <svg className="cli-ola" viewBox="0 0 500 14" preserveAspectRatio="none" aria-hidden="true">
+        {/* Franja superior en degradado con todos sus tipos y, en la esquina,
+            una olita por tipo: la del principal delante, corta y marcada; las
+            demás detrás, más largas, profundas y suaves, para que se vean todas */}
+        <svg className="cli-ola" viewBox="0 0 500 24" preserveAspectRatio="none" aria-hidden="true">
           <defs>
             <linearGradient id={`ola-${p.id}`} gradientUnits="userSpaceOnUse" x1="0" y1="0" x2="500" y2="0">
               {tipos.map((t, i) => (
@@ -128,8 +145,9 @@ export default function Clientes({ albaranes = [], usuario }) {
               ))}
             </linearGradient>
           </defs>
-          <path className="cli-ola-forma" fill={`url(#ola-${p.id})`}
-            d="M300 0H500V12.6C478 13.65 460 10.5 438 7.7C412 4.55 386 2.45 358 1.4C336 0.7 316 0.35 300 0Z" />
+          {tipos.map((t, i) => ({ t, capa: OLAS[tipos.length - 1][i] })).reverse().map(({ t, capa }) => (
+            <path key={t.tipo} d={ola(capa.x0, capa.h)} fill={t.color} opacity={capa.op} />
+          ))}
           <rect width="500" height="3" fill={`url(#ola-${p.id})`} />
         </svg>
         <div className="cli-cuerpo">
