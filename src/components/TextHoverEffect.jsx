@@ -3,8 +3,7 @@ import { TRAZAM_PIEZAS, TRAZAM_VIEWBOX as VB } from './trazamLogoForma'
 import './TextHoverEffect.css'
 
 // Marca en trazo: el logotipo se "dibuja" con una línea y, al acabar, se
-// rellena de verde sólido con textura de fibra de madera, y la línea pasa a
-// un verde más oscuro que el relleno. Al pasar el ratón, un halo claro sigue al
+// rellena del verde del logotipo, y la línea se funde con ese mismo color. Al pasar el ratón, un halo claro sigue al
 // cursor. Inspirado en el TextHoverEffect de Aceternity UI, sin Tailwind ni
 // framer-motion.
 //
@@ -55,7 +54,6 @@ export default function TextHoverEffect({ text = 'Trazam', className = '', durac
     </g>
   )
   const area = vb
-  const x0 = vb.x
 
   return (
     <svg
@@ -71,23 +69,6 @@ export default function TextHoverEffect({ text = 'Trazam', className = '', durac
       style={{ '--the-duracion': `${duracion}s` }}
     >
       <defs>
-        {/* Relleno: verde sólido de la app, solo un leve volumen de arriba
-            abajo (sin degradado lateral, que parecía una transición) */}
-        <linearGradient id={`${id}-relleno`} gradientUnits="userSpaceOnUse" x1={x0} y1={vb.y} x2={x0} y2={vb.y + vb.height}>
-          <stop offset="0%"   stopColor="#21a67b" />
-          <stop offset="100%" stopColor="#14805f" />
-        </linearGradient>
-
-        {/* Textura: fibra de madera, vetas horizontales finas */}
-        <filter id={`${id}-fibra`} x={x0} y={vb.y} width={vb.width} height={vb.height} filterUnits="userSpaceOnUse">
-          <feTurbulence type="fractalNoise" baseFrequency="0.0026 0.068" numOctaves="3" seed="7" result="ruido" />
-          <feColorMatrix in="ruido" type="matrix"
-            values="0 0 0 0 1
-                    0 0 0 0 1
-                    0 0 0 0 1
-                    0 0 0 -2.4 1.6" />
-        </filter>
-
         {/* Halo del cursor */}
         <radialGradient ref={gradRef} id={`${id}-halo`} gradientUnits="userSpaceOnUse" r={vb.width * 0.16} cx={vb.x + vb.width / 2} cy={vb.y + vb.height / 2}>
           <stop offset="0%"   stopColor="#d9f7ea" stopOpacity="0.85" />
@@ -112,8 +93,7 @@ export default function TextHoverEffect({ text = 'Trazam', className = '', durac
 
       <rect {...area} className="the-contorno" mask={`url(#${id}-contorno)`} />
       <g className="the-relleno" mask={`url(#${id}-letras)`}>
-        <rect {...area} fill={`url(#${id}-relleno)`} />
-        <rect {...area} filter={`url(#${id}-fibra)`} className="the-fibra" />
+        <rect {...area} className="the-color" />
         <rect {...area} fill={`url(#${id}-halo)`} className="the-halo" style={{ opacity: hover ? 1 : 0 }} />
       </g>
       <rect {...area} className="the-linea" mask={`url(#${id}-trazo)`} />

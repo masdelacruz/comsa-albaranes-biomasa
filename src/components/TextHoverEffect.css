@@ -7,8 +7,9 @@
   /* Colores de la línea; se cambian desde fuera según el fondo */
   --the-contorno: rgba(255, 255, 255, 0.16);
   --the-linea:    rgba(255, 255, 255, 0.92);
-  /* Al rellenarse, la línea pasa a un verde más oscuro que el relleno */
-  --the-linea-final: #0b4d3a;
+  /* Verde del logotipo: relleno final y color al que pasa la línea */
+  --the-verde: #014937;
+  --the-linea-final: var(--the-verde);
 }
 
 /* En la máscara el trazo es el doble de grueso: la mitad interior la tapa la
@@ -22,8 +23,7 @@
   animation: the-oscurecer 1.1s ease-out var(--the-duracion, 3s) forwards;
 }
 
-/* Vetas de la textura: claras y oscuras sobre el verde */
-.the-fibra { mix-blend-mode: soft-light; opacity: 0.75; }
+.the-color { fill: var(--the-verde); }
 
 .the-dibujo {
   stroke-dasharray: 1000;
