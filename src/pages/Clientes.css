@@ -14,7 +14,7 @@
 .cli-search input { width:100%; padding:8px 12px 8px 32px; border-radius:var(--radius-sm); border:var(--border); font-size:13px; background:#fff; }
 .cli-search-icon { position:absolute; left:11px; top:50%; transform:translateY(-50%); color:var(--gray-400); pointer-events:none; }
 
-.cli-grid { display:grid; grid-template-columns:repeat(auto-fill, minmax(320px, 1fr)); gap:16px; }
+.cli-grid { display:grid; grid-template-columns:repeat(auto-fill, minmax(270px, 1fr)); gap:16px; }
 .cli-vacio { grid-column:1/-1; padding:20px; text-align:center; color:var(--gray-400); font-size:13px; background:#fff; border:var(--border); border-radius:var(--radius-md); }
 
 /* Tarjeta horizontal: franja superior con el color del tipo principal
@@ -29,7 +29,7 @@
   transition:box-shadow .18s ease, transform .18s ease, border-color .18s ease;
 }
 .cli-tile::before { content:''; position:absolute; left:0; right:0; top:0; height:3px; background:var(--tone); z-index:1; }
-.cli-ola { position:absolute; top:0; right:0; width:55%; height:34px; pointer-events:none; }
+.cli-ola { position:absolute; top:0; right:0; width:40%; height:14px; pointer-events:none; }
 .cli-ola path { fill:var(--tone); opacity:.16; }
 .cli-tile:hover {
   border-color:#D6D6CF; transform:translateY(-1px);
@@ -49,14 +49,9 @@
 .cli-datos { min-width:0; flex:1; display:flex; flex-direction:column; gap:8px; padding-left:16px; border-left:1px solid #EAEAE4; align-self:stretch; justify-content:center; }
 .cli-nombre { font-size:16px; font-weight:650; letter-spacing:-0.2px; color:var(--gray-900); line-height:1.25; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
 
-/* Papel en la cadena de suministro: tres puntos unidos por una línea
-   (proveedor → astilladora → instalación); se encienden los del cliente */
-.cli-cadena { display:flex; align-items:center; min-width:0; }
-.cli-eslabon { display:inline-flex; align-items:center; flex-shrink:0; }
-.cli-enlace { width:12px; height:1px; background:#D9D9D2; }
-.cli-punto { width:8px; height:8px; border-radius:50%; border:1.5px solid #D2D2CB; box-sizing:border-box; }
-.cli-punto.on { border-color:var(--c); background:var(--c); box-shadow:0 0 0 2.5px color-mix(in srgb, var(--c) 18%, transparent); }
-.cli-roles { margin-left:10px; font-size:12.5px; color:var(--gray-600); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+/* Papeles: icono del tipo en su color + nombre en gris, en línea */
+.cli-roles { display:flex; flex-wrap:wrap; gap:4px 14px; }
+.cli-rol { display:inline-flex; align-items:center; gap:5px; font-size:12.5px; color:var(--gray-600); white-space:nowrap; }
 .cli-inactivo { color:var(--gray-400); }
 
 /* Pie: nº de albaranes a la izquierda, acciones del panel a la derecha */

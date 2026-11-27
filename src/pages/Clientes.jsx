@@ -130,20 +130,15 @@ export default function Clientes({ albaranes = [], usuario }) {
           </div>
           <div className="cli-datos">
             <div className="cli-nombre" title={p.nombre}>{p.nombre}</div>
-            {/* Papel en la cadena: proveedor → astilladora → instalación. Los
-                puntos del cliente se encienden con su color; los demás quedan
-                huecos. Al lado, los nombres de sus papeles en texto normal. */}
-            <div className="cli-cadena" aria-label={tipos.map(t => t.singular).join(', ')}>
-              {SECCIONES_CLIENTES.map((s, i) => (
-                <span key={s.tipo} className="cli-eslabon">
-                  {i > 0 && <span className="cli-enlace" />}
-                  <span className={`cli-punto${p.tipos.includes(s.tipo) ? ' on' : ''}`} style={{ '--c': s.color }} title={s.singular} />
+            {/* Papeles del cliente: el icono de cada tipo con su color y el
+                nombre en texto normal, sin cajas ni etiquetas */}
+            <div className="cli-roles">
+              {tipos.map(({ tipo, singular, icon: I, color: c }) => (
+                <span key={tipo} className="cli-rol">
+                  <I size={14} color={c} strokeWidth={1.8} aria-hidden="true" />{singular}
                 </span>
               ))}
-              <span className="cli-roles">
-                {tipos.map(t => t.singular).join(' · ')}
-                {!p.activo && <span className="cli-inactivo"> · Inactivo</span>}
-              </span>
+              {!p.activo && <span className="cli-rol cli-inactivo">Inactivo</span>}
             </div>
           </div>
         </div>
