@@ -118,18 +118,33 @@ export default function Clientes({ albaranes = [], usuario }) {
     return (
       <div key={p.id} className={`cli-tile ${p.activo ? '' : 'inactivo'}`} style={{ '--tone': color }}
         onClick={() => navigate(`/clientes/${p.id}`)}>
-        <div className="cli-cabeza">
+        {/* Ola: el color del tipo se extiende desde la franja superior */}
+        <svg className="cli-ola" viewBox="0 0 200 40" preserveAspectRatio="none" aria-hidden="true">
+          <path d="M0 0H200V36C178 39 160 30 138 22C112 13 86 7 58 4C36 2 16 1 0 0Z" />
+        </svg>
+        <div className="cli-cuerpo">
           <div className="cli-logo">
             {logoUrl
               ? <img src={logoUrl} alt="" />
-              : <Icon size={28} color={color} strokeWidth={1.6} />}
+              : <Icon size={26} color={color} strokeWidth={1.6} />}
           </div>
-        </div>
-        <div className="cli-cuerpo">
-          <div className="cli-nombre" title={p.nombre}>{p.nombre}</div>
-          <div className="cli-tipos-tile">
-            {tipos.map(s => <span key={s.tipo} style={{ color: s.color }}>{s.singular}</span>)}
-            {!p.activo && <span className="cli-inactivo">Inactivo</span>}
+          <div className="cli-datos">
+            <div className="cli-nombre" title={p.nombre}>{p.nombre}</div>
+            {/* Papel en la cadena: proveedor → astilladora → instalación. Los
+                puntos del cliente se encienden con su color; los demás quedan
+                huecos. Al lado, los nombres de sus papeles en texto normal. */}
+            <div className="cli-cadena" aria-label={tipos.map(t => t.singular).join(', ')}>
+              {SECCIONES_CLIENTES.map((s, i) => (
+                <span key={s.tipo} className="cli-eslabon">
+                  {i > 0 && <span className="cli-enlace" />}
+                  <span className={`cli-punto${p.tipos.includes(s.tipo) ? ' on' : ''}`} style={{ '--c': s.color }} title={s.singular} />
+                </span>
+              ))}
+              <span className="cli-roles">
+                {tipos.map(t => t.singular).join(' · ')}
+                {!p.activo && <span className="cli-inactivo"> · Inactivo</span>}
+              </span>
+            </div>
           </div>
         </div>
         <div className="cli-pie">
